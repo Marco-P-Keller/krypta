@@ -1,0 +1,57 @@
+name: kryptaapp
+description: "Krypta ECC – Secure encrypted messenger"
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.10.7
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+
+  # State Management
+  provider:
+
+  # Firebase
+  firebase_core:
+  firebase_auth:
+  cloud_firestore:
+  firebase_messaging:
+
+  # Encryption (Curve25519, XChaCha20-Poly1305)
+  cryptography:
+
+  # Secure key/secret storage (Keychain / Keystore)
+  flutter_secure_storage:
+
+  # Local database
+  path_provider:
+  path:
+
+  # Biometric authentication
+  local_auth:
+
+  # QR Code
+  qr_flutter: ^4.1.0
+  mobile_scanner: ^6.0.2
+
+  # UI
+  cupertino_icons: ^1.0.8
+  google_fonts:
+
+  # Utilities
+  intl:
+  uuid:
+  equatable:
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+
+flutter:
+  generate: true
+  uses-material-design: true

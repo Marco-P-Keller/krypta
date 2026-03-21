@@ -1,0 +1,40 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Public key registry
+    match /publicKeys/{userId} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // Encrypted message relay — sender creates, recipient reads/deletes
+    match /messages/{recipientId}/inbox/{messageId} {
+      allow create: if request.auth != null;
+      allow read, delete: if request.auth != null
+                          && request.auth.uid == recipientId;
+    }
+
+    // Delivery / read acknowledgments
+    match /acks/{recipientId}/inbox/{ackId} {
+      allow create: if request.auth != null;
+      allow read, delete: if request.auth != null
+                          && request.auth.uid == recipientId;
+    }
+
+    // Typing indicators
+    match /typing/{userId} {
+      allow read: if request.auth != null && request.auth.uid == userId;
+      allow write: if request.auth != null;
+    }
+
+    // FCM tokens
+    match /fcmTokens/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

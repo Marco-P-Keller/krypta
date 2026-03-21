@@ -1,0 +1,92 @@
+{
+  "@@locale": "en",
+  "appName": "Krypta ECC",
+  "@appName": { "description": "Application name" },
+
+  "calculator": "Calculator",
+  "messenger": "Messenger",
+  "settings": "Settings",
+  "chats": "Chats",
+  "contacts": "Contacts",
+
+  "setupTitle": "Welcome to Krypta ECC",
+  "setupSubtitle": "Set up your secret codes to get started",
+  "secretCodeLabel": "Secret Code",
+  "secretCodeHint": "Enter the code that unlocks your messenger",
+  "decoyCodeLabel": "Decoy Code",
+  "decoyCodeHint": "Enter a code that opens a fake messenger",
+  "deleteCodeLabel": "Delete Code",
+  "deleteCodeHint": "Enter a code that wipes all data instantly",
+  "setupComplete": "Setup Complete",
+  "setupContinue": "Continue",
+  "setupCodesInfo": "All codes must be different and at least 4 digits",
+
+  "newChat": "New Chat",
+  "typeMessage": "Type a message...",
+  "send": "Send",
+  "delivered": "Delivered",
+  "sent": "Sent",
+  "read": "Read",
+  "typing": "typing...",
+
+  "selfDestructTimer": "Self-destruct timer",
+  "seconds30": "30 seconds",
+  "minutes5": "5 minutes",
+  "hour1": "1 hour",
+  "day1": "1 day",
+  "week1": "1 week",
+  "off": "Off",
+
+  "emergencyDelete": "Emergency Delete",
+  "emergencyDeleteDescription": "Immediately wipe all data, keys, and sign out",
+  "allDataDeleted": "All data has been wiped",
+
+  "settingsTitle": "Settings",
+  "securitySettings": "Security",
+  "changeSecretCode": "Change Secret Code",
+  "changeDecoyCode": "Change Decoy Code",
+  "changeDeleteCode": "Change Delete Code",
+  "biometricUnlock": "Biometric Unlock",
+  "biometricDescription": "Require Face ID or fingerprint after code entry",
+  "screenshotProtection": "Screenshot Protection",
+  "screenshotDescription": "Block screenshots in the messenger",
+  "autoDeleteMessages": "Auto-delete Messages",
+  "accountSection": "Account",
+  "privacySection": "Privacy",
+  "dangerZone": "Danger Zone",
+  "deleteAccount": "Delete Account & Data",
+  "about": "About Krypta ECC",
+  "version": "Version {version}",
+  "@version": {
+    "placeholders": {
+      "version": { "type": "String" }
+    }
+  },
+
+  "noChats": "No conversations yet",
+  "noChatsSubtitle": "Start a new chat to begin messaging securely",
+
+  "decoyTitle": "Messages",
+  "encryptionInfo": "Messages are end-to-end encrypted",
+  "anonymousUser": "Anonymous User",
+  "userIdLabel": "Your ID",
+  "userIdCopied": "User ID copied to clipboard",
+  "addContactById": "Add contact by ID",
+  "contactIdHint": "Enter contact ID",
+  "addContact": "Add Contact",
+
+  "myQrCode": "My QR Code",
+  "scanQrCode": "Scan QR Code",
+  "qrScanHint": "Point your camera at a Krypta QR code",
+  "qrShareHint": "Let others scan this to connect",
+
+  "renameChat": "Rename Chat",
+  "chatName": "Chat name",
+  "save": "Save",
+  "cancel": "Cancel",
+  "deleteChat": "Delete Chat",
+  "autoDeleteTimer": "Auto-Delete Timer",
+  "autoDeleteHint": "New messages in this chat will automatically self-destruct after the selected time.",
+  "chatDefault": "Chat default",
+  "burnAfterRead": "Burn after read"
+}

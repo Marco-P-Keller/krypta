@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "744728658266",
+    "project_id": "kryptaecc",
+    "storage_bucket": "kryptaecc.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:744728658266:android:97bb34cb5e91b5e51db363",
+        "android_client_info": {
+          "package_name": "com.example.kryptaapp"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC5jL3OJVfjRbcXiSJep0VewDE88sW9F9M"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
