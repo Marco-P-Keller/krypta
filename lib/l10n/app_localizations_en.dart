@@ -61,6 +61,12 @@ class AppLocalizationsEn extends AppLocalizations {
       'All codes must be different and at least 4 digits';
 
   @override
+  String get back => 'Back';
+
+  @override
+  String get next => 'Next';
+
+  @override
   String get newChat => 'New Chat';
 
   @override
@@ -194,16 +200,38 @@ class AppLocalizationsEn extends AppLocalizations {
   String get addContact => 'Add Contact';
 
   @override
+  String get cannotAddYourself => 'Cannot add yourself';
+
+  @override
+  String get userNotFound => 'User not found';
+
+  @override
   String get myQrCode => 'My QR Code';
 
   @override
   String get scanQrCode => 'Scan QR Code';
 
   @override
+  String get scanQr => 'Scan QR';
+
+  @override
   String get qrScanHint => 'Point your camera at a Krypta QR code';
 
   @override
   String get qrShareHint => 'Let others scan this to connect';
+
+  @override
+  String get yourQrCode => 'Your QR Code';
+
+  @override
+  String get idCopied => 'ID copied';
+
+  @override
+  String get qrWebUnavailable =>
+      'QR scanning is not available on web.\nUse a mobile device to scan QR codes.';
+
+  @override
+  String get thatsYourOwnId => 'That\'s your own ID';
 
   @override
   String get renameChat => 'Rename Chat';
@@ -216,6 +244,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get cancel => 'Cancel';
+
+  @override
+  String get skip => 'Skip';
 
   @override
   String get deleteChat => 'Delete Chat';
@@ -231,5 +262,114 @@ class AppLocalizationsEn extends AppLocalizations {
   String get chatDefault => 'Chat default';
 
   @override
+  String chatDefaultWithTimer(String timer) {
+    return 'Chat default ($timer)';
+  }
+
+  @override
+  String messagesAutoDelete(String timer) {
+    return 'Messages auto-delete after $timer';
+  }
+
+  @override
+  String get onlyVisibleToYou => 'Only visible to you';
+
+  @override
   String get burnAfterRead => 'Burn after read';
+
+  @override
+  String get passwordProtected => 'Password protected';
+
+  @override
+  String get lockMessage => 'Lock Message';
+
+  @override
+  String get lockMessageHint =>
+      'Set a password for the next message. The recipient must enter this password to read it.';
+
+  @override
+  String get enterPassword => 'Enter password';
+
+  @override
+  String get setPassword => 'Set Password';
+
+  @override
+  String get passwordRequired => 'Password Required';
+
+  @override
+  String get passwordRequiredHint =>
+      'Enter the password to decrypt this message.';
+
+  @override
+  String get password => 'Password';
+
+  @override
+  String get unlock => 'Unlock';
+
+  @override
+  String get unlocked => 'Unlocked';
+
+  @override
+  String get wrongPassword => 'Wrong password';
+
+  @override
+  String get tapToUnlock => 'Tap to unlock';
+
+  @override
+  String get nameThisContact => 'Name this contact';
+
+  @override
+  String get nameContactHint =>
+      'Give this contact a name so you know who it is. Only you can see this label.';
+
+  @override
+  String get nameContactPlaceholder => 'e.g. Alex, Mom, Work...';
+
+  @override
+  String get selfDestructTimerLabel => 'Self-Destruct Timer';
+
+  @override
+  String get vaultPassword => 'Vault Password';
+
+  @override
+  String get vaultPasswordDescription =>
+      'Require a strong password after code entry before accessing the messenger';
+
+  @override
+  String get vaultPasswordTitle => 'Vault Locked';
+
+  @override
+  String get vaultPasswordHint =>
+      'Enter your vault password to access the messenger.';
+
+  @override
+  String get setVaultPassword => 'Set Vault Password';
+
+  @override
+  String get changeVaultPassword => 'Change Vault Password';
+
+  @override
+  String get removeVaultPassword => 'Remove Vault Password';
+
+  @override
+  String get vaultPasswordSet => 'Vault password set';
+
+  @override
+  String get vaultPasswordRemoved => 'Vault password removed';
+
+  @override
+  String get vaultPasswordRules =>
+      'At least 10 characters, with uppercase, lowercase, number, and special character.';
+
+  @override
+  String get newPassword => 'New password';
+
+  @override
+  String get confirmPassword => 'Confirm password';
+
+  @override
+  String get passwordsDoNotMatch => 'Passwords do not match';
+
+  @override
+  String get passwordTooWeak => 'Password does not meet the requirements';
 }

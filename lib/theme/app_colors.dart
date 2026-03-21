@@ -2,29 +2,30 @@ import 'package:flutter/material.dart';
 
 abstract final class AppColors {
   // Primary palette
-  static const Color primary = Color(0xFF2C7BE5);
-  static const Color primaryLight = Color(0xFF5DA4F2);
-  static const Color primaryDark = Color(0xFF1A5BBF);
+  static const Color primary = Color(0xFF5B7FFF);
+  static const Color primaryLight = Color(0xFF8BA4FF);
+  static const Color primaryDark = Color(0xFF3A5AE0);
+  static const Color accent = Color(0xFF7C5CFC);
 
   // Surfaces
-  static const Color backgroundDark = Color(0xFF0D0D0F);
-  static const Color surfaceDark = Color(0xFF1A1A1E);
-  static const Color surfaceElevatedDark = Color(0xFF242429);
-  static const Color cardDark = Color(0xFF1E1E23);
+  static const Color backgroundDark = Color(0xFF0A0A0F);
+  static const Color surfaceDark = Color(0xFF12121A);
+  static const Color surfaceElevatedDark = Color(0xFF1C1C28);
+  static const Color cardDark = Color(0xFF181822);
 
-  static const Color backgroundLight = Color(0xFFF8F9FA);
+  static const Color backgroundLight = Color(0xFFF6F7FB);
   static const Color surfaceLight = Color(0xFFFFFFFF);
-  static const Color surfaceElevatedLight = Color(0xFFF0F2F5);
+  static const Color surfaceElevatedLight = Color(0xFFEEF0F6);
   static const Color cardLight = Color(0xFFFFFFFF);
 
   // Text
-  static const Color textPrimaryDark = Color(0xFFF5F5F7);
-  static const Color textSecondaryDark = Color(0xFF8E8E93);
-  static const Color textTertiaryDark = Color(0xFF636366);
+  static const Color textPrimaryDark = Color(0xFFF0F0F5);
+  static const Color textSecondaryDark = Color(0xFF8A8A9A);
+  static const Color textTertiaryDark = Color(0xFF55556A);
 
-  static const Color textPrimaryLight = Color(0xFF1C1C1E);
-  static const Color textSecondaryLight = Color(0xFF636366);
-  static const Color textTertiaryLight = Color(0xFF8E8E93);
+  static const Color textPrimaryLight = Color(0xFF1A1A2E);
+  static const Color textSecondaryLight = Color(0xFF6B6B80);
+  static const Color textTertiaryLight = Color(0xFF9999AD);
 
   // Calculator specific
   static const Color calculatorBg = Color(0xFF000000);
@@ -35,18 +36,20 @@ abstract final class AppColors {
   static const Color calculatorButtonAccentPressed = Color(0xFFFFCC80);
 
   // Status
-  static const Color success = Color(0xFF30D158);
-  static const Color warning = Color(0xFFFFD60A);
-  static const Color error = Color(0xFFFF453A);
-  static const Color destructive = Color(0xFFFF3B30);
+  static const Color success = Color(0xFF34C759);
+  static const Color warning = Color(0xFFFFD54F);
+  static const Color error = Color(0xFFFF4757);
+  static const Color destructive = Color(0xFFFF3B4A);
 
-  // Messenger
-  static const Color messageSent = Color(0xFF2C7BE5);
-  static const Color messageReceived = Color(0xFF2C2C2E);
-  static const Color messageReceivedLight = Color(0xFFE9ECEF);
-  static const Color online = Color(0xFF30D158);
+  // Messenger bubbles
+  static const Color messageSentStart = Color(0xFF5B7FFF);
+  static const Color messageSentEnd = Color(0xFF7C5CFC);
+  static const Color messageSent = Color(0xFF5B7FFF);
+  static const Color messageReceived = Color(0xFF1E1E2D);
+  static const Color messageReceivedLight = Color(0xFFE8EAF2);
+  static const Color online = Color(0xFF34C759);
 
   // Borders & Dividers
-  static const Color dividerDark = Color(0xFF38383A);
-  static const Color dividerLight = Color(0xFFE5E5EA);
+  static const Color dividerDark = Color(0xFF2A2A3A);
+  static const Color dividerLight = Color(0xFFE0E2EA);
 }

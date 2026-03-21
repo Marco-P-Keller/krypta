@@ -20,6 +20,8 @@
   "setupComplete": "Setup Complete",
   "setupContinue": "Continue",
   "setupCodesInfo": "All codes must be different and at least 4 digits",
+  "back": "Back",
+  "next": "Next",
 
   "newChat": "New Chat",
   "typeMessage": "Type a message...",
@@ -74,19 +76,76 @@
   "addContactById": "Add contact by ID",
   "contactIdHint": "Enter contact ID",
   "addContact": "Add Contact",
+  "cannotAddYourself": "Cannot add yourself",
+  "userNotFound": "User not found",
 
   "myQrCode": "My QR Code",
   "scanQrCode": "Scan QR Code",
+  "scanQr": "Scan QR",
   "qrScanHint": "Point your camera at a Krypta QR code",
   "qrShareHint": "Let others scan this to connect",
+  "yourQrCode": "Your QR Code",
+  "idCopied": "ID copied",
+  "qrWebUnavailable": "QR scanning is not available on web.\nUse a mobile device to scan QR codes.",
+  "thatsYourOwnId": "That's your own ID",
 
   "renameChat": "Rename Chat",
   "chatName": "Chat name",
   "save": "Save",
   "cancel": "Cancel",
+  "skip": "Skip",
   "deleteChat": "Delete Chat",
   "autoDeleteTimer": "Auto-Delete Timer",
   "autoDeleteHint": "New messages in this chat will automatically self-destruct after the selected time.",
   "chatDefault": "Chat default",
-  "burnAfterRead": "Burn after read"
+  "chatDefaultWithTimer": "Chat default ({timer})",
+  "@chatDefaultWithTimer": {
+    "placeholders": {
+      "timer": { "type": "String" }
+    }
+  },
+  "messagesAutoDelete": "Messages auto-delete after {timer}",
+  "@messagesAutoDelete": {
+    "placeholders": {
+      "timer": { "type": "String" }
+    }
+  },
+  "onlyVisibleToYou": "Only visible to you",
+
+  "burnAfterRead": "Burn after read",
+  "passwordProtected": "Password protected",
+
+  "lockMessage": "Lock Message",
+  "lockMessageHint": "Set a password for the next message. The recipient must enter this password to read it.",
+  "enterPassword": "Enter password",
+  "setPassword": "Set Password",
+
+  "passwordRequired": "Password Required",
+  "passwordRequiredHint": "Enter the password to decrypt this message.",
+  "password": "Password",
+  "unlock": "Unlock",
+  "unlocked": "Unlocked",
+  "wrongPassword": "Wrong password",
+  "tapToUnlock": "Tap to unlock",
+
+  "nameThisContact": "Name this contact",
+  "nameContactHint": "Give this contact a name so you know who it is. Only you can see this label.",
+  "nameContactPlaceholder": "e.g. Alex, Mom, Work...",
+
+  "selfDestructTimerLabel": "Self-Destruct Timer",
+
+  "vaultPassword": "Vault Password",
+  "vaultPasswordDescription": "Require a strong password after code entry before accessing the messenger",
+  "vaultPasswordTitle": "Vault Locked",
+  "vaultPasswordHint": "Enter your vault password to access the messenger.",
+  "setVaultPassword": "Set Vault Password",
+  "changeVaultPassword": "Change Vault Password",
+  "removeVaultPassword": "Remove Vault Password",
+  "vaultPasswordSet": "Vault password set",
+  "vaultPasswordRemoved": "Vault password removed",
+  "vaultPasswordRules": "At least 10 characters, with uppercase, lowercase, number, and special character.",
+  "newPassword": "New password",
+  "confirmPassword": "Confirm password",
+  "passwordsDoNotMatch": "Passwords do not match",
+  "passwordTooWeak": "Password does not meet the requirements"
 }

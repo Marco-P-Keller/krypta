@@ -112,6 +112,24 @@ class EncryptedLocalStore {
     }
   }
 
+  // --- Decoy Data (separate namespace for fake messenger) ---
+
+  Future<dynamic> loadDecoyData(String key) async {
+    final data = _cache[key];
+    if (data == null) return null;
+    try {
+      return jsonDecode(data);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  Future<void> saveDecoyData(String key, dynamic data) async {
+    final json = jsonEncode(data);
+    _cache[key] = json;
+    await _encryptAndWrite(key, json);
+  }
+
   // --- Wipe ---
 
   Future<void> wipeAll() async {

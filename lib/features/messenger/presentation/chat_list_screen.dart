@@ -32,14 +32,21 @@ class ChatListScreen extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(l10n.chats),
+        title: Text(
+          l10n.chats,
+          style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                fontWeight: FontWeight.w700,
+                letterSpacing: -0.5,
+              ),
+        ),
+        centerTitle: false,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded),
+          icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 20),
           onPressed: onBack,
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.qr_code_rounded),
+            icon: const Icon(Icons.qr_code_rounded, size: 22),
             tooltip: 'QR Code',
             onPressed: () {
               final uid = context.read<MessengerProvider>().userId;
@@ -48,7 +55,7 @@ class ChatListScreen extends StatelessWidget {
           ),
           EmergencyButton(onWipe: onEmergencyWipe),
           IconButton(
-            icon: const Icon(Icons.settings_outlined),
+            icon: const Icon(Icons.settings_outlined, size: 22),
             onPressed: onSettingsTap,
           ),
         ],
@@ -58,13 +65,34 @@ class ChatListScreen extends StatelessWidget {
           if (messenger.chats.isEmpty) {
             return _buildEmptyState(context, l10n, isDark);
           }
-          return _buildChatList(context, messenger);
+          return _buildChatList(context, messenger, isDark);
         },
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: onNewChat,
-        backgroundColor: AppColors.primary,
-        child: const Icon(Icons.edit_outlined, color: Colors.white),
+      floatingActionButton: Container(
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(
+            colors: [AppColors.messageSentStart, AppColors.messageSentEnd],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(18),
+          boxShadow: [
+            BoxShadow(
+              color: AppColors.primary.withValues(alpha: 0.35),
+              blurRadius: 14,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: FloatingActionButton(
+          onPressed: onNewChat,
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          hoverElevation: 0,
+          focusElevation: 0,
+          highlightElevation: 0,
+          child: const Icon(Icons.edit_rounded, color: Colors.white, size: 22),
+        ),
       ),
     );
   }
@@ -74,61 +102,106 @@ class ChatListScreen extends StatelessWidget {
 
     return Center(
       child: Padding(
-        padding: const EdgeInsets.all(40),
+        padding: const EdgeInsets.symmetric(horizontal: 48),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              Icons.lock_outline_rounded,
-              size: 64,
-              color: isDark ? AppColors.textTertiaryDark : AppColors.textTertiaryLight,
+            Container(
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    AppColors.primary.withValues(alpha: 0.08),
+                    AppColors.accent.withValues(alpha: 0.08),
+                  ],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius: BorderRadius.circular(28),
+              ),
+              child: const Icon(
+                Icons.shield_rounded,
+                size: 52,
+                color: AppColors.primary,
+              ),
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 28),
             Text(
               l10n.noChats,
-              style: Theme.of(context).textTheme.headlineSmall,
+              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: -0.3,
+                  ),
               textAlign: TextAlign.center,
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 10),
             Text(
               l10n.noChatsSubtitle,
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                     color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight,
+                    height: 1.5,
                   ),
               textAlign: TextAlign.center,
             ),
-            const SizedBox(height: 24),
-            Text(
-              l10n.encryptionInfo,
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: AppColors.primary,
+            const SizedBox(height: 20),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              decoration: BoxDecoration(
+                color: AppColors.primary.withValues(alpha: 0.08),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.lock_rounded, size: 14, color: AppColors.primary),
+                  const SizedBox(width: 6),
+                  Text(
+                    l10n.encryptionInfo,
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: AppColors.primary,
+                          fontWeight: FontWeight.w500,
+                        ),
                   ),
+                ],
+              ),
             ),
-            const SizedBox(height: 32),
-            // Show user ID for sharing
+            const SizedBox(height: 28),
             if (messenger.userId != null)
               GestureDetector(
                 onTap: () {
                   Clipboard.setData(ClipboardData(text: messenger.userId!));
                   ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text(l10n.userIdCopied)),
+                    SnackBar(
+                      content: Text(l10n.userIdCopied),
+                      behavior: SnackBarBehavior.floating,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
                   );
                 },
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                   decoration: BoxDecoration(
                     color: isDark ? AppColors.surfaceElevatedDark : AppColors.surfaceElevatedLight,
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(
+                      color: isDark
+                          ? AppColors.dividerDark.withValues(alpha: 0.5)
+                          : AppColors.dividerLight.withValues(alpha: 0.5),
+                      width: 0.5,
+                    ),
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(Icons.copy, size: 16, color: AppColors.primary),
+                      const Icon(Icons.copy_rounded, size: 15, color: AppColors.primary),
                       const SizedBox(width: 8),
                       Text(
                         '${l10n.userIdLabel}: ${messenger.userId!.substring(0, 12)}...',
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
                               fontFamily: 'monospace',
+                              letterSpacing: 0.5,
                             ),
                       ),
                     ],
@@ -141,11 +214,20 @@ class ChatListScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildChatList(BuildContext context, MessengerProvider messenger) {
+  Widget _buildChatList(BuildContext context, MessengerProvider messenger, bool isDark) {
     return ListView.separated(
-      padding: const EdgeInsets.symmetric(vertical: 8),
+      padding: const EdgeInsets.only(top: 4, bottom: 100),
       itemCount: messenger.chats.length,
-      separatorBuilder: (context, index) => const Divider(indent: 72, height: 1),
+      separatorBuilder: (context, index) => Padding(
+        padding: const EdgeInsets.only(left: 84),
+        child: Divider(
+          height: 0.5,
+          thickness: 0.5,
+          color: isDark
+              ? AppColors.dividerDark.withValues(alpha: 0.4)
+              : AppColors.dividerLight.withValues(alpha: 0.6),
+        ),
+      ),
       itemBuilder: (context, index) {
         final chat = messenger.chats[index];
         return Dismissible(
@@ -153,9 +235,16 @@ class ChatListScreen extends StatelessWidget {
           direction: DismissDirection.endToStart,
           background: Container(
             alignment: Alignment.centerRight,
-            padding: const EdgeInsets.only(right: 20),
-            color: AppColors.destructive,
-            child: const Icon(Icons.delete_outline, color: Colors.white),
+            padding: const EdgeInsets.only(right: 24),
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                colors: [Color(0xFFFF6B6B), Color(0xFFFF4757)],
+                begin: Alignment.centerLeft,
+                end: Alignment.centerRight,
+              ),
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: const Icon(Icons.delete_outline_rounded, color: Colors.white, size: 24),
           ),
           onDismissed: (_) => messenger.deleteChat(chat.id),
           child: ChatTile(
@@ -170,54 +259,64 @@ class ChatListScreen extends StatelessWidget {
 
   void _showChatContextMenu(
       BuildContext context, Chat chat, MessengerProvider messenger) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final l10n = AppLocalizations.of(context)!;
     showModalBottomSheet(
       context: context,
-      backgroundColor: Colors.transparent,
-      builder: (ctx) => Container(
-        decoration: BoxDecoration(
-          color: isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-        ),
+      builder: (ctx) => Padding(
         padding: EdgeInsets.only(
-          top: 12,
-          bottom: MediaQuery.of(ctx).padding.bottom + 16,
+          bottom: MediaQuery.of(ctx).padding.bottom + 8,
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Container(
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: isDark ? AppColors.dividerDark : AppColors.dividerLight,
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-            const SizedBox(height: 12),
             ListTile(
-              leading: const Icon(Icons.edit_rounded),
-              title: const Text('Rename Chat'),
+              leading: Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: const Icon(Icons.edit_rounded, color: AppColors.primary, size: 20),
+              ),
+              title: Text(l10n.renameChat),
               onTap: () {
                 Navigator.of(ctx).pop();
                 _showRenameDialog(context, chat, messenger);
               },
             ),
             ListTile(
-              leading: const Icon(Icons.timer_outlined),
-              title: const Text('Self-Destruct Timer'),
+              leading: Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: const Icon(Icons.timer_outlined, color: AppColors.primary, size: 20),
+              ),
+              title: Text(l10n.selfDestructTimerLabel),
               subtitle: chat.defaultSelfDestruct != null
                   ? Text(_durationLabel(chat.defaultSelfDestruct))
-                  : const Text('Off'),
+                  : Text(l10n.off),
               onTap: () {
                 Navigator.of(ctx).pop();
                 _showTimerPicker(context, chat, messenger);
               },
             ),
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 20),
+              child: Divider(height: 1),
+            ),
             ListTile(
-              leading: const Icon(Icons.delete_outline, color: AppColors.destructive),
-              title: const Text('Delete Chat',
-                  style: TextStyle(color: AppColors.destructive)),
+              leading: Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: AppColors.destructive.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: const Icon(Icons.delete_outline_rounded, color: AppColors.destructive, size: 20),
+              ),
+              title: Text(l10n.deleteChat,
+                  style: const TextStyle(color: AppColors.destructive)),
               onTap: () {
                 Navigator.of(ctx).pop();
                 messenger.deleteChat(chat.id);
@@ -231,24 +330,25 @@ class ChatListScreen extends StatelessWidget {
 
   void _showRenameDialog(
       BuildContext context, Chat chat, MessengerProvider messenger) {
+    final l10n = AppLocalizations.of(context)!;
     final controller = TextEditingController(text: chat.recipientName);
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Rename Chat'),
+        title: Text(l10n.renameChat),
         content: TextField(
           controller: controller,
           autofocus: true,
           textCapitalization: TextCapitalization.words,
-          decoration: const InputDecoration(
-            hintText: 'Chat name',
-            prefixIcon: Icon(Icons.person_outline, size: 20),
+          decoration: InputDecoration(
+            hintText: l10n.chatName,
+            prefixIcon: const Icon(Icons.person_outline_rounded, size: 20),
           ),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(),
-            child: const Text('Cancel'),
+            child: Text(l10n.cancel),
           ),
           ElevatedButton(
             onPressed: () {
@@ -258,7 +358,7 @@ class ChatListScreen extends StatelessWidget {
               }
               Navigator.of(ctx).pop();
             },
-            child: const Text('Save'),
+            child: Text(l10n.save),
           ),
         ],
       ),
@@ -276,10 +376,11 @@ class ChatListScreen extends StatelessWidget {
       const Duration(days: 7),
     ];
 
+    final l10n = AppLocalizations.of(context)!;
     showDialog(
       context: context,
       builder: (ctx) => SimpleDialog(
-        title: const Text('Auto-Delete Timer'),
+        title: Text(l10n.autoDeleteTimer),
         children: options.map((d) {
           final isSelected = chat.defaultSelfDestruct == d;
           return SimpleDialogOption(
@@ -290,9 +391,10 @@ class ChatListScreen extends StatelessWidget {
             child: Row(
               children: [
                 if (isSelected)
-                  const Icon(Icons.check_circle, color: AppColors.primary, size: 20)
+                  const Icon(Icons.check_circle_rounded, color: AppColors.primary, size: 20)
                 else
-                  const Icon(Icons.radio_button_unchecked, size: 20),
+                  Icon(Icons.radio_button_unchecked_rounded, size: 20,
+                      color: AppColors.textTertiaryDark.withValues(alpha: 0.5)),
                 const SizedBox(width: 12),
                 Text(
                   _durationLabel(d),

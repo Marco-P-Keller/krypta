@@ -75,6 +75,28 @@ class SecureStorageService {
     return value == 'true';
   }
 
+  // --- Vault Password ---
+
+  Future<void> setVaultPassword(String password) async {
+    await _storage.write(key: StorageKeys.vaultPassword, value: password);
+    await _storage.write(key: StorageKeys.vaultPasswordEnabled, value: 'true');
+  }
+
+  Future<void> removeVaultPassword() async {
+    await _storage.delete(key: StorageKeys.vaultPassword);
+    await _storage.write(key: StorageKeys.vaultPasswordEnabled, value: 'false');
+  }
+
+  Future<bool> isVaultPasswordEnabled() async {
+    final value = await _storage.read(key: StorageKeys.vaultPasswordEnabled);
+    return value == 'true';
+  }
+
+  Future<bool> verifyVaultPassword(String input) async {
+    final stored = await _storage.read(key: StorageKeys.vaultPassword);
+    return stored != null && stored == input;
+  }
+
   // --- Wipe ---
 
   Future<void> deleteAll() async {

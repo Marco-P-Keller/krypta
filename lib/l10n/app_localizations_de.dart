@@ -61,6 +61,12 @@ class AppLocalizationsDe extends AppLocalizations {
       'Alle Codes müssen unterschiedlich und mindestens 4 Ziffern lang sein';
 
   @override
+  String get back => 'Zurück';
+
+  @override
+  String get next => 'Weiter';
+
+  @override
   String get newChat => 'Neuer Chat';
 
   @override
@@ -195,10 +201,19 @@ class AppLocalizationsDe extends AppLocalizations {
   String get addContact => 'Kontakt hinzufügen';
 
   @override
+  String get cannotAddYourself => 'Du kannst dich nicht selbst hinzufügen';
+
+  @override
+  String get userNotFound => 'Benutzer nicht gefunden';
+
+  @override
   String get myQrCode => 'Mein QR-Code';
 
   @override
   String get scanQrCode => 'QR-Code scannen';
+
+  @override
+  String get scanQr => 'QR scannen';
 
   @override
   String get qrScanHint => 'Richte die Kamera auf einen Krypta QR-Code';
@@ -206,6 +221,19 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String get qrShareHint =>
       'Andere können diesen Code scannen um sich zu verbinden';
+
+  @override
+  String get yourQrCode => 'Dein QR-Code';
+
+  @override
+  String get idCopied => 'ID kopiert';
+
+  @override
+  String get qrWebUnavailable =>
+      'QR-Scan ist im Web nicht verfügbar.\nVerwende ein Mobilgerät zum Scannen.';
+
+  @override
+  String get thatsYourOwnId => 'Das ist deine eigene ID';
 
   @override
   String get renameChat => 'Chat umbenennen';
@@ -218,6 +246,9 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get cancel => 'Abbrechen';
+
+  @override
+  String get skip => 'Überspringen';
 
   @override
   String get deleteChat => 'Chat löschen';
@@ -233,5 +264,114 @@ class AppLocalizationsDe extends AppLocalizations {
   String get chatDefault => 'Chat-Standard';
 
   @override
+  String chatDefaultWithTimer(String timer) {
+    return 'Chat-Standard ($timer)';
+  }
+
+  @override
+  String messagesAutoDelete(String timer) {
+    return 'Nachrichten löschen sich nach $timer';
+  }
+
+  @override
+  String get onlyVisibleToYou => 'Nur für dich sichtbar';
+
+  @override
   String get burnAfterRead => 'Nach dem Lesen löschen';
+
+  @override
+  String get passwordProtected => 'Passwortgeschützt';
+
+  @override
+  String get lockMessage => 'Nachricht sperren';
+
+  @override
+  String get lockMessageHint =>
+      'Setze ein Passwort für die nächste Nachricht. Der Empfänger muss dieses Passwort eingeben.';
+
+  @override
+  String get enterPassword => 'Passwort eingeben';
+
+  @override
+  String get setPassword => 'Passwort setzen';
+
+  @override
+  String get passwordRequired => 'Passwort erforderlich';
+
+  @override
+  String get passwordRequiredHint =>
+      'Gib das Passwort ein, um diese Nachricht zu entschlüsseln.';
+
+  @override
+  String get password => 'Passwort';
+
+  @override
+  String get unlock => 'Entsperren';
+
+  @override
+  String get unlocked => 'Entsperrt';
+
+  @override
+  String get wrongPassword => 'Falsches Passwort';
+
+  @override
+  String get tapToUnlock => 'Tippen zum Entsperren';
+
+  @override
+  String get nameThisContact => 'Kontakt benennen';
+
+  @override
+  String get nameContactHint =>
+      'Gib diesem Kontakt einen Namen. Nur du kannst dieses Label sehen.';
+
+  @override
+  String get nameContactPlaceholder => 'z.B. Alex, Mama, Arbeit...';
+
+  @override
+  String get selfDestructTimerLabel => 'Selbstzerstörungs-Timer';
+
+  @override
+  String get vaultPassword => 'Tresor-Passwort';
+
+  @override
+  String get vaultPasswordDescription =>
+      'Starkes Passwort nach Code-Eingabe vor dem Zugriff auf den Messenger verlangen';
+
+  @override
+  String get vaultPasswordTitle => 'Tresor gesperrt';
+
+  @override
+  String get vaultPasswordHint =>
+      'Gib dein Tresor-Passwort ein, um auf den Messenger zuzugreifen.';
+
+  @override
+  String get setVaultPassword => 'Tresor-Passwort setzen';
+
+  @override
+  String get changeVaultPassword => 'Tresor-Passwort ändern';
+
+  @override
+  String get removeVaultPassword => 'Tresor-Passwort entfernen';
+
+  @override
+  String get vaultPasswordSet => 'Tresor-Passwort gesetzt';
+
+  @override
+  String get vaultPasswordRemoved => 'Tresor-Passwort entfernt';
+
+  @override
+  String get vaultPasswordRules =>
+      'Mindestens 10 Zeichen, mit Gross-, Kleinbuchstaben, Zahl und Sonderzeichen.';
+
+  @override
+  String get newPassword => 'Neues Passwort';
+
+  @override
+  String get confirmPassword => 'Passwort bestätigen';
+
+  @override
+  String get passwordsDoNotMatch => 'Passwörter stimmen nicht überein';
+
+  @override
+  String get passwordTooWeak => 'Passwort erfüllt die Anforderungen nicht';
 }

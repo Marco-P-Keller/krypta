@@ -161,14 +161,7 @@ class MessengerProvider extends ChangeNotifier {
 
     final chatIdx = _chats.indexWhere((c) => c.recipientId == contactId);
     if (chatIdx != -1) {
-      _chats[chatIdx] = Chat(
-        id: _chats[chatIdx].id,
-        recipientId: contactId,
-        recipientName: newName,
-        lastMessagePreview: _chats[chatIdx].lastMessagePreview,
-        lastMessageTime: _chats[chatIdx].lastMessageTime,
-        unreadCount: _chats[chatIdx].unreadCount,
-      );
+      _chats[chatIdx] = _chats[chatIdx].copyWith(recipientName: newName);
     }
 
     await _localStore.saveContacts(_contacts);

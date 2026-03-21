@@ -244,7 +244,7 @@ class _SetupScreenState extends State<SetupScreen> {
         if (_currentStep > 0)
           TextButton(
             onPressed: () => setState(() => _currentStep--),
-            child: const Text('Back'),
+            child: Text(l10n.back),
           ),
         const Spacer(),
         _buildStepIndicator(),
@@ -261,7 +261,7 @@ class _SetupScreenState extends State<SetupScreen> {
                 setState(() => _currentStep++);
               }
             },
-            child: const Text('Next'),
+            child: Text(l10n.next),
           )
         else
           ElevatedButton(

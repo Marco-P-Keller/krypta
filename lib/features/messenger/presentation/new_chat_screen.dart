@@ -46,10 +46,12 @@ class _NewChatScreenState extends State<NewChatScreen> {
     final messenger = context.read<MessengerProvider>();
 
     if (id == messenger.userId) {
-      setState(() {
-        _isLoading = false;
-        _error = 'Cannot add yourself';
-      });
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+          _error = AppLocalizations.of(context)!.cannotAddYourself;
+        });
+      }
       return;
     }
 
@@ -58,16 +60,79 @@ class _NewChatScreenState extends State<NewChatScreen> {
       if (mounted) {
         setState(() {
           _isLoading = false;
-          _error = 'User not found';
+          _error = AppLocalizations.of(context)!.userNotFound;
         });
       }
       return;
     }
 
-    final chat = messenger.getOrCreateChat(contact);
+    if (!mounted) return;
+    final name = await _showNameDialog(context, contact.shortId);
+    if (!mounted) return;
+
+    if (name != null && name.isNotEmpty) {
+      await messenger.renameContact(contact.id, name);
+    }
+
+    final chat = messenger.getOrCreateChat(
+      messenger.contactForId(contact.id) ?? contact,
+    );
     if (mounted) {
       widget.onChatCreated(chat);
     }
+  }
+
+  Future<String?> _showNameDialog(BuildContext context, String shortId) {
+    final l10n = AppLocalizations.of(context)!;
+    final controller = TextEditingController();
+    return showDialog<String>(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => AlertDialog(
+        title: Text(l10n.nameThisContact),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              l10n.nameContactHint,
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: AppColors.textSecondaryDark,
+                  ),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              'ID: $shortId',
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    fontFamily: 'monospace',
+                    color: AppColors.textTertiaryDark,
+                  ),
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: controller,
+              autofocus: true,
+              textCapitalization: TextCapitalization.words,
+              decoration: InputDecoration(
+                hintText: l10n.nameContactPlaceholder,
+                prefixIcon: const Icon(Icons.person_outline, size: 20),
+              ),
+              onSubmitted: (val) => Navigator.of(ctx).pop(val.trim()),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(null),
+            child: Text(l10n.skip),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.of(ctx).pop(controller.text.trim()),
+            child: Text(l10n.save),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -95,7 +160,7 @@ class _NewChatScreenState extends State<NewChatScreen> {
                 Expanded(
                   child: _QrActionCard(
                     icon: Icons.qr_code_rounded,
-                    label: 'My QR Code',
+                    label: l10n.myQrCode,
                     color: AppColors.primary,
                     onTap: () {
                       if (messenger.userId != null) {
@@ -108,7 +173,7 @@ class _NewChatScreenState extends State<NewChatScreen> {
                 Expanded(
                   child: _QrActionCard(
                     icon: Icons.qr_code_scanner_rounded,
-                    label: 'Scan QR',
+                    label: l10n.scanQr,
                     color: AppColors.success,
                     onTap: widget.onScanQr,
                   ),

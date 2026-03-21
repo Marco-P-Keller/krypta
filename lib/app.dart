@@ -3,6 +3,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:provider/provider.dart';
 import 'l10n/app_localizations.dart';
 import 'features/auth/presentation/setup_screen.dart';
+import 'features/auth/presentation/vault_password_screen.dart';
 import 'features/calculator/logic/code_detector.dart';
 import 'features/calculator/presentation/calculator_screen.dart';
 import 'features/decoy/decoy_messenger_screen.dart';
@@ -58,6 +59,7 @@ class KryptaShell extends StatefulWidget {
 enum _AppScreen {
   calculator,
   setup,
+  vaultPassword,
   messenger,
   decoy,
   chat,
@@ -143,7 +145,6 @@ class _KryptaShellState extends State<KryptaShell> with WidgetsBindingObserver {
   Future<void> _onSecretCode() async {
     final storage = context.read<SecureStorageService>();
     final platform = context.read<PlatformSecurityService>();
-    final messenger = context.read<MessengerProvider>();
 
     final biometricEnabled = await storage.isBiometricEnabled();
 
@@ -153,6 +154,19 @@ class _KryptaShellState extends State<KryptaShell> with WidgetsBindingObserver {
       );
       if (!authenticated) return;
     }
+
+    final vaultEnabled = await storage.isVaultPasswordEnabled();
+    if (vaultEnabled) {
+      if (mounted) setState(() => _currentScreen = _AppScreen.vaultPassword);
+      return;
+    }
+
+    await _unlockMessenger();
+  }
+
+  Future<void> _unlockMessenger() async {
+    final platform = context.read<PlatformSecurityService>();
+    final messenger = context.read<MessengerProvider>();
 
     await messenger.initialize();
     await platform.enableScreenshotProtection();
@@ -209,6 +223,18 @@ class _KryptaShellState extends State<KryptaShell> with WidgetsBindingObserver {
             await codeDetector.loadCodes();
             _navigateTo(_AppScreen.calculator);
           },
+        );
+
+      case _AppScreen.vaultPassword:
+        return VaultPasswordScreen(
+          key: const ValueKey('vault_password'),
+          onVerify: (password) async {
+            final storage = context.read<SecureStorageService>();
+            final ok = await storage.verifyVaultPassword(password);
+            if (ok) await _unlockMessenger();
+            return ok;
+          },
+          onCancel: () => _navigateTo(_AppScreen.calculator),
         );
 
       case _AppScreen.calculator:

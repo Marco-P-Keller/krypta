@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:provider/provider.dart';
+import '../../../l10n/app_localizations.dart';
 import '../../../theme/app_colors.dart';
 import '../data/models/chat_model.dart';
 import '../logic/messenger_provider.dart';
@@ -60,9 +61,10 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
     final messenger = context.read<MessengerProvider>();
 
     if (scannedId == messenger.userId) {
+      if (!mounted) return;
       setState(() {
         _isProcessing = false;
-        _error = 'That\'s your own ID';
+        _error = AppLocalizations.of(context)!.thatsYourOwnId;
       });
       await _controller.start();
       return;
@@ -73,35 +75,100 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
       if (mounted) {
         setState(() {
           _isProcessing = false;
-          _error = 'User not found';
+          _error = AppLocalizations.of(context)!.userNotFound;
         });
         await _controller.start();
       }
       return;
     }
 
-    final chat = messenger.getOrCreateChat(contact);
+    if (!mounted) return;
+    final name = await _showNameDialog(context, contact.shortId);
+    if (!mounted) return;
+
+    if (name != null && name.isNotEmpty) {
+      await messenger.renameContact(contact.id, name);
+    }
+
+    final chat = messenger.getOrCreateChat(
+      messenger.contactForId(contact.id) ?? contact,
+    );
     if (mounted) {
       widget.onChatCreated(chat);
     }
   }
 
+  Future<String?> _showNameDialog(BuildContext context, String shortId) {
+    final l10n = AppLocalizations.of(context)!;
+    final controller = TextEditingController();
+    return showDialog<String>(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => AlertDialog(
+        title: Text(l10n.nameThisContact),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              l10n.nameContactHint,
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: AppColors.textSecondaryDark,
+                  ),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              'ID: $shortId',
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    fontFamily: 'monospace',
+                    color: AppColors.textTertiaryDark,
+                  ),
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: controller,
+              autofocus: true,
+              textCapitalization: TextCapitalization.words,
+              decoration: InputDecoration(
+                hintText: l10n.nameContactPlaceholder,
+                prefixIcon: const Icon(Icons.person_outline, size: 20),
+              ),
+              onSubmitted: (val) => Navigator.of(ctx).pop(val.trim()),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(null),
+            child: Text(l10n.skip),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.of(ctx).pop(controller.text.trim()),
+            child: Text(l10n.save),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+
     if (kIsWeb) {
       return Scaffold(
         appBar: AppBar(
-          title: const Text('Scan QR Code'),
+          title: Text(l10n.scanQrCode),
           leading: IconButton(
             icon: const Icon(Icons.arrow_back_ios_new_rounded),
             onPressed: widget.onBack,
           ),
         ),
-        body: const Center(
+        body: Center(
           child: Padding(
-            padding: EdgeInsets.all(32),
+            padding: const EdgeInsets.all(32),
             child: Text(
-              'QR scanning is not available on web.\nUse a mobile device to scan QR codes.',
+              l10n.qrWebUnavailable,
               textAlign: TextAlign.center,
             ),
           ),
@@ -137,11 +204,11 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
                           color: Colors.white),
                       onPressed: widget.onBack,
                     ),
-                    const Expanded(
+                    Expanded(
                       child: Text(
-                        'Scan QR Code',
+                        l10n.scanQrCode,
                         textAlign: TextAlign.center,
-                        style: TextStyle(
+                        style: const TextStyle(
                           color: Colors.white,
                           fontSize: 17,
                           fontWeight: FontWeight.w600,
@@ -252,9 +319,9 @@ class _ScannerOverlay extends StatelessWidget {
                   ),
                 ),
               if (error == null)
-                const Text(
-                  'Point your camera at a Krypta QR code',
-                  style: TextStyle(
+                Text(
+                  AppLocalizations.of(context)!.qrScanHint,
+                  style: const TextStyle(
                     color: Colors.white70,
                     fontSize: 14,
                   ),

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:qr_flutter/qr_flutter.dart';
+import '../../../../l10n/app_localizations.dart';
 import '../../../../theme/app_colors.dart';
 
 /// Bottom sheet that shows the user's ID as a scannable QR code.
@@ -21,6 +22,7 @@ class QrDisplaySheet extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final l10n = AppLocalizations.of(context)!;
 
     return Container(
       decoration: BoxDecoration(
@@ -46,12 +48,12 @@ class QrDisplaySheet extends StatelessWidget {
           ),
           const SizedBox(height: 24),
           Text(
-            'Your QR Code',
+            l10n.yourQrCode,
             style: Theme.of(context).textTheme.headlineSmall,
           ),
           const SizedBox(height: 8),
           Text(
-            'Let others scan this to connect',
+            l10n.qrShareHint,
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                   color: isDark
                       ? AppColors.textSecondaryDark
@@ -88,7 +90,7 @@ class QrDisplaySheet extends StatelessWidget {
             onTap: () {
               Clipboard.setData(ClipboardData(text: userId));
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('ID copied')),
+                SnackBar(content: Text(l10n.idCopied)),
               );
             },
             child: Container(

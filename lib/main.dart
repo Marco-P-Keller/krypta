@@ -1,10 +1,12 @@
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'app.dart';
 import 'firebase_options.dart';
 import 'features/calculator/logic/code_detector.dart';
+import 'features/decoy/decoy_provider.dart';
 import 'features/messenger/logic/messenger_provider.dart';
 import 'security/encryption/encryption_service.dart';
 import 'security/key_management/key_manager.dart';
@@ -22,6 +24,8 @@ Future<void> main() async {
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
+
+  FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
 
   await SystemChrome.setPreferredOrientations([
     DeviceOrientation.portraitUp,
@@ -43,6 +47,8 @@ Future<void> main() async {
     localStore: localStore,
     firestore: firestoreService,
   );
+
+  final decoyProvider = DecoyProvider(store: localStore);
 
   final messengerProvider = MessengerProvider(
     encryption: encryptionService,
@@ -66,6 +72,7 @@ Future<void> main() async {
         Provider<PlatformSecurityService>.value(value: platformSecurity),
         Provider<NotificationService>.value(value: notificationService),
         Provider<EmergencyWipeService>.value(value: emergencyWipeService),
+        ChangeNotifierProvider<DecoyProvider>.value(value: decoyProvider),
         ChangeNotifierProvider<MessengerProvider>.value(value: messengerProvider),
       ],
       child: const KryptaApp(),

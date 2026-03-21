@@ -4,7 +4,6 @@
  * These functions handle server-side message lifecycle:
  * 1. Message TTL cleanup - auto-delete messages after 24h
  * 2. Push notification triggers - notify recipient of new messages
- * 3. Account cleanup - remove orphaned data
  *
  * SECURITY: The server NEVER has access to plaintext messages.
  * All payloads are encrypted ciphertext. The server is a dumb relay.
@@ -18,7 +17,16 @@ const db = admin.firestore();
 
 /**
  * Triggered when a new encrypted message is written to a user's inbox.
- * Sends a push notification to the recipient (content-free).
+ * Sends a content-free push notification to the recipient.
+ *
+ * Firestore field mapping (from FirestoreService):
+ *   sid  = sender ID
+ *   mid  = message ID
+ *   p    = encrypted payload
+ *   ts   = server timestamp
+ *   sd   = self-destruct ms
+ *   bar  = burn after read
+ *   pw   = password protected
  */
 exports.onNewMessage = functions.firestore
   .document("messages/{recipientId}/inbox/{messageId}")
@@ -26,38 +34,48 @@ exports.onNewMessage = functions.firestore
     const { recipientId } = context.params;
     const messageData = snap.data();
 
-    // Look up the recipient's FCM token
     const tokenDoc = await db.collection("fcmTokens").doc(recipientId).get();
     if (!tokenDoc.exists) return;
 
     const token = tokenDoc.data().token;
     if (!token) return;
 
-    // Send content-free notification (no message preview for security)
-    await admin.messaging().send({
-      token,
-      notification: {
-        title: "New Message",
-        body: "You have a new encrypted message",
-      },
-      data: {
-        type: "new_message",
-        senderId: messageData.senderId || "",
-      },
-      apns: {
-        payload: {
-          aps: {
-            "content-available": 1,
-            sound: "default",
+    try {
+      await admin.messaging().send({
+        token,
+        notification: {
+          title: "New Message",
+          body: "You have a new encrypted message",
+        },
+        data: {
+          type: "new_message",
+          senderId: messageData.sid || "",
+        },
+        apns: {
+          payload: {
+            aps: {
+              "content-available": 1,
+              sound: "default",
+            },
           },
         },
-      },
-    });
+      });
+    } catch (err) {
+      if (
+        err.code === "messaging/registration-token-not-registered" ||
+        err.code === "messaging/invalid-registration-token"
+      ) {
+        await db.collection("fcmTokens").doc(recipientId).delete();
+      }
+      console.error("Push notification failed:", err.message);
+    }
   });
 
 /**
  * Scheduled function: runs every hour to delete expired messages.
  * Messages older than 24 hours are purged regardless of delivery status.
+ *
+ * Uses the 'ts' field (server timestamp) set by FirestoreService.
  */
 exports.cleanupExpiredMessages = functions.pubsub
   .schedule("every 1 hours")
@@ -67,33 +85,21 @@ exports.cleanupExpiredMessages = functions.pubsub
     );
 
     const usersSnapshot = await db.collection("messages").listDocuments();
+    let totalDeleted = 0;
 
     for (const userDoc of usersSnapshot) {
       const expiredMessages = await userDoc
         .collection("inbox")
-        .where("timestamp", "<", cutoff)
+        .where("ts", "<", cutoff)
         .get();
+
+      if (expiredMessages.empty) continue;
 
       const batch = db.batch();
       expiredMessages.docs.forEach((doc) => batch.delete(doc.ref));
       await batch.commit();
+      totalDeleted += expiredMessages.size;
     }
 
-    console.log("Expired message cleanup completed");
-  });
-
-/**
- * Triggered when a message is marked as delivered.
- * Deletes it from the relay after a short grace period.
- */
-exports.onMessageDelivered = functions.firestore
-  .document("messages/{recipientId}/inbox/{messageId}")
-  .onUpdate(async (change, context) => {
-    const after = change.after.data();
-
-    if (after.delivered === true) {
-      // Delete after 60 seconds grace period (allows for sync)
-      await new Promise((resolve) => setTimeout(resolve, 60000));
-      await change.after.ref.delete();
-    }
+    console.log(`Expired message cleanup: deleted ${totalDeleted} messages`);
   });

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../../../../l10n/app_localizations.dart';
 import '../../../../theme/app_colors.dart';
 import '../../data/models/message_model.dart';
 import '../../logic/messenger_provider.dart';
@@ -18,18 +19,15 @@ class MessageBubble extends StatelessWidget {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    return Align(
-      alignment: isMine ? Alignment.centerRight : Alignment.centerLeft,
-      child: Container(
-        constraints: BoxConstraints(
-          maxWidth: MediaQuery.of(context).size.width * 0.75,
-        ),
-        margin: EdgeInsets.only(
-          left: isMine ? 64 : 16,
-          right: isMine ? 16 : 64,
-          top: 2,
-          bottom: 2,
-        ),
+    return Padding(
+      padding: EdgeInsets.only(
+        left: isMine ? 60 : 14,
+        right: isMine ? 14 : 60,
+        top: 3,
+        bottom: 3,
+      ),
+      child: Align(
+        alignment: isMine ? Alignment.centerRight : Alignment.centerLeft,
         child: message.isLocked
             ? _LockedBubble(message: message, isMine: isMine, isDark: isDark)
             : _UnlockedBubble(message: message, isMine: isMine, isDark: isDark),
@@ -38,7 +36,6 @@ class MessageBubble extends StatelessWidget {
   }
 }
 
-/// Shown when the message is password-protected and not yet unlocked.
 class _LockedBubble extends StatelessWidget {
   final Message message;
   final bool isMine;
@@ -51,6 +48,7 @@ class _LockedBubble extends StatelessWidget {
   });
 
   void _showPasswordDialog(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final controller = TextEditingController();
     bool isLoading = false;
     String? error;
@@ -59,24 +57,24 @@ class _LockedBubble extends StatelessWidget {
       context: context,
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setDialogState) => AlertDialog(
-          title: const Row(
+          title: Row(
             children: [
-              Icon(Icons.lock_rounded, color: AppColors.primary, size: 22),
-              SizedBox(width: 10),
-              Text('Password Required'),
+              const Icon(Icons.lock_rounded, color: AppColors.primary, size: 22),
+              const SizedBox(width: 10),
+              Text(l10n.passwordRequired),
             ],
           ),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Text('Enter the password to decrypt this message.'),
+              Text(l10n.passwordRequiredHint),
               const SizedBox(height: 16),
               TextField(
                 controller: controller,
                 obscureText: true,
                 autofocus: true,
                 decoration: InputDecoration(
-                  hintText: 'Password',
+                  hintText: l10n.password,
                   errorText: error,
                   prefixIcon: const Icon(Icons.key_rounded, size: 20),
                 ),
@@ -91,7 +89,7 @@ class _LockedBubble extends StatelessWidget {
           actions: [
             TextButton(
               onPressed: () => Navigator.of(ctx).pop(),
-              child: const Text('Cancel'),
+              child: Text(l10n.cancel),
             ),
             ElevatedButton(
               onPressed: isLoading
@@ -106,7 +104,7 @@ class _LockedBubble extends StatelessWidget {
                       width: 18, height: 18,
                       child: CircularProgressIndicator(strokeWidth: 2),
                     )
-                  : const Text('Unlock'),
+                  : Text(l10n.unlock),
             ),
           ],
         ),
@@ -139,99 +137,102 @@ class _LockedBubble extends StatelessWidget {
       if (dialogContext.mounted) Navigator.of(dialogContext).pop();
     } else {
       setLoading(false);
-      setError('Wrong password');
+      final l10n = parentContext.mounted
+          ? AppLocalizations.of(parentContext)
+          : null;
+      setError(l10n?.wrongPassword ?? 'Wrong password');
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+
     return GestureDetector(
       onTap: () => _showPasswordDialog(context),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      child: DecoratedBox(
         decoration: BoxDecoration(
+          gradient: isMine
+              ? const LinearGradient(
+                  colors: [
+                    Color(0xFF4A6AE5),
+                    Color(0xFF6A4FD4),
+                  ],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                )
+              : null,
           color: isMine
-              ? AppColors.messageSent.withValues(alpha: 0.7)
+              ? null
               : (isDark
-                  ? AppColors.messageReceived.withValues(alpha: 0.7)
-                  : AppColors.messageReceivedLight.withValues(alpha: 0.7)),
+                  ? AppColors.messageReceived.withValues(alpha: 0.8)
+                  : AppColors.messageReceivedLight.withValues(alpha: 0.9)),
           borderRadius: BorderRadius.only(
-            topLeft: const Radius.circular(18),
-            topRight: const Radius.circular(18),
-            bottomLeft: Radius.circular(isMine ? 18 : 4),
-            bottomRight: Radius.circular(isMine ? 4 : 18),
+            topLeft: const Radius.circular(20),
+            topRight: const Radius.circular(20),
+            bottomLeft: Radius.circular(isMine ? 20 : 6),
+            bottomRight: Radius.circular(isMine ? 6 : 20),
           ),
           border: Border.all(
-            color: AppColors.primary.withValues(alpha: 0.3),
-            width: 1,
+            color: isMine
+                ? Colors.white.withValues(alpha: 0.1)
+                : AppColors.primary.withValues(alpha: 0.15),
+            width: 0.5,
           ),
         ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.lock_rounded,
-              color: isMine
-                  ? Colors.white.withValues(alpha: 0.9)
-                  : AppColors.primary,
-              size: 24,
-            ),
-            const SizedBox(height: 6),
-            Text(
-              'Password Protected',
-              style: TextStyle(
-                color: isMine
-                    ? Colors.white.withValues(alpha: 0.9)
-                    : (isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight),
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            const SizedBox(height: 2),
-            Text(
-              'Tap to unlock',
-              style: TextStyle(
-                color: isMine
-                    ? Colors.white.withValues(alpha: 0.6)
-                    : AppColors.primary,
-                fontSize: 11,
-              ),
-            ),
-            const SizedBox(height: 6),
-            Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  _formatTime(message.timestamp),
-                  style: TextStyle(
-                    fontSize: 11,
-                    color: isMine
-                        ? Colors.white.withValues(alpha: 0.7)
-                        : (isDark
-                            ? AppColors.textTertiaryDark
-                            : AppColors.textTertiaryLight),
-                  ),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: isMine
+                      ? Colors.white.withValues(alpha: 0.15)
+                      : AppColors.primary.withValues(alpha: 0.1),
+                  shape: BoxShape.circle,
                 ),
-                if (isMine) ...[
-                  const SizedBox(width: 4),
-                  _StatusIcon(status: message.status, isMine: isMine),
-                ],
-              ],
-            ),
-          ],
+                child: Icon(
+                  Icons.lock_rounded,
+                  color: isMine ? Colors.white : AppColors.primary,
+                  size: 20,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                l10n.passwordProtected,
+                style: TextStyle(
+                  color: isMine
+                      ? Colors.white.withValues(alpha: 0.95)
+                      : (isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight),
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  letterSpacing: 0.1,
+                ),
+              ),
+              const SizedBox(height: 3),
+              Text(
+                l10n.tapToUnlock,
+                style: TextStyle(
+                  color: isMine
+                      ? Colors.white.withValues(alpha: 0.55)
+                      : AppColors.primary.withValues(alpha: 0.8),
+                  fontSize: 11,
+                  fontWeight: FontWeight.w400,
+                ),
+              ),
+              const SizedBox(height: 8),
+              _MetaRow(message: message, isMine: isMine, isDark: isDark),
+            ],
+          ),
         ),
       ),
     );
   }
-
-  String _formatTime(DateTime time) {
-    final hour = time.hour.toString().padLeft(2, '0');
-    final minute = time.minute.toString().padLeft(2, '0');
-    return '$hour:$minute';
-  }
 }
 
-/// Normal message bubble (also used for unlocked password messages).
 class _UnlockedBubble extends StatelessWidget {
   final Message message;
   final bool isMine;
@@ -245,95 +246,130 @@ class _UnlockedBubble extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+    final l10n = AppLocalizations.of(context)!;
+
+    return DecoratedBox(
       decoration: BoxDecoration(
+        gradient: isMine
+            ? const LinearGradient(
+                colors: [
+                  AppColors.messageSentStart,
+                  AppColors.messageSentEnd,
+                ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              )
+            : null,
         color: isMine
-            ? AppColors.messageSent
+            ? null
             : (isDark ? AppColors.messageReceived : AppColors.messageReceivedLight),
         borderRadius: BorderRadius.only(
-          topLeft: const Radius.circular(18),
-          topRight: const Radius.circular(18),
-          bottomLeft: Radius.circular(isMine ? 18 : 4),
-          bottomRight: Radius.circular(isMine ? 4 : 18),
+          topLeft: const Radius.circular(20),
+          topRight: const Radius.circular(20),
+          bottomLeft: Radius.circular(isMine ? 20 : 6),
+          bottomRight: Radius.circular(isMine ? 6 : 20),
         ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.end,
-        children: [
-          // Show a small unlock badge for password-protected messages
-          if (message.isPasswordProtected && message.passwordUnlocked)
-            Padding(
-              padding: const EdgeInsets.only(bottom: 4),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(
-                    Icons.lock_open_rounded,
-                    size: 11,
-                    color: isMine
-                        ? Colors.white.withValues(alpha: 0.6)
-                        : AppColors.primary.withValues(alpha: 0.7),
-                  ),
-                  const SizedBox(width: 3),
-                  Text(
-                    'Unlocked',
-                    style: TextStyle(
-                      fontSize: 10,
-                      color: isMine
-                          ? Colors.white.withValues(alpha: 0.6)
-                          : AppColors.primary.withValues(alpha: 0.7),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          Text(
-            message.decryptedContent ?? '••••••',
-            style: TextStyle(
-              color: isMine
-                  ? Colors.white
-                  : (isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight),
-              fontSize: 15,
-              height: 1.35,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              if (message.selfDestructDuration != null)
-                Padding(
-                  padding: const EdgeInsets.only(right: 4),
-                  child: Icon(
-                    Icons.timer_outlined,
-                    size: 12,
-                    color: isMine
-                        ? Colors.white.withValues(alpha: 0.7)
-                        : (isDark
-                            ? AppColors.textTertiaryDark
-                            : AppColors.textTertiaryLight),
-                  ),
-                ),
-              Text(
-                _formatTime(message.timestamp),
-                style: TextStyle(
-                  fontSize: 11,
-                  color: isMine
-                      ? Colors.white.withValues(alpha: 0.7)
-                      : (isDark
-                          ? AppColors.textTertiaryDark
-                          : AppColors.textTertiaryLight),
-                ),
-              ),
-              if (isMine) ...[
-                const SizedBox(width: 4),
-                _StatusIcon(status: message.status, isMine: isMine),
-              ],
-            ],
+        boxShadow: [
+          BoxShadow(
+            color: isMine
+                ? AppColors.primary.withValues(alpha: 0.15)
+                : Colors.black.withValues(alpha: 0.04),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
           ),
         ],
       ),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(14, 10, 14, 8),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (message.isPasswordProtected && message.passwordUnlocked)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 4),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.lock_open_rounded,
+                      size: 10,
+                      color: isMine
+                          ? Colors.white.withValues(alpha: 0.5)
+                          : AppColors.primary.withValues(alpha: 0.6),
+                    ),
+                    const SizedBox(width: 3),
+                    Text(
+                      l10n.unlocked,
+                      style: TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w500,
+                        letterSpacing: 0.3,
+                        color: isMine
+                            ? Colors.white.withValues(alpha: 0.5)
+                            : AppColors.primary.withValues(alpha: 0.6),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            Text(
+              message.decryptedContent ?? '••••••',
+              style: TextStyle(
+                color: isMine
+                    ? Colors.white
+                    : (isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight),
+                fontSize: 15.5,
+                height: 1.4,
+                letterSpacing: -0.1,
+              ),
+            ),
+            const SizedBox(height: 5),
+            Align(
+              alignment: Alignment.bottomRight,
+              child: _MetaRow(message: message, isMine: isMine, isDark: isDark),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _MetaRow extends StatelessWidget {
+  final Message message;
+  final bool isMine;
+  final bool isDark;
+
+  const _MetaRow({
+    required this.message,
+    required this.isMine,
+    required this.isDark,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final timeColor = isMine
+        ? Colors.white.withValues(alpha: 0.55)
+        : (isDark ? AppColors.textTertiaryDark : AppColors.textTertiaryLight);
+
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        if (message.selfDestructDuration != null)
+          Padding(
+            padding: const EdgeInsets.only(right: 3),
+            child: Icon(Icons.timer_outlined, size: 11, color: timeColor),
+          ),
+        Text(
+          _formatTime(message.timestamp),
+          style: TextStyle(fontSize: 10.5, color: timeColor),
+        ),
+        if (isMine) ...[
+          const SizedBox(width: 4),
+          _StatusIcon(status: message.status, isMine: isMine),
+        ],
+      ],
     );
   }
 
@@ -352,19 +388,23 @@ class _StatusIcon extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = isMine ? Colors.white.withValues(alpha: 0.7) : AppColors.textTertiaryDark;
+    final baseColor = isMine
+        ? Colors.white.withValues(alpha: 0.6)
+        : AppColors.textTertiaryDark;
 
     switch (status) {
       case MessageStatus.sending:
-        return Icon(Icons.access_time, size: 14, color: color);
+        return Icon(Icons.schedule_rounded, size: 13, color: baseColor);
       case MessageStatus.sent:
-        return Icon(Icons.check, size: 14, color: color);
+        return Icon(Icons.check_rounded, size: 13, color: baseColor);
       case MessageStatus.delivered:
-        return Icon(Icons.done_all, size: 14, color: color);
+        return Icon(Icons.done_all_rounded, size: 13, color: baseColor);
       case MessageStatus.read:
-        return Icon(Icons.done_all, size: 14, color: AppColors.primary);
+        return const Icon(Icons.done_all_rounded, size: 13,
+            color: Color(0xFF82FFBA));
       case MessageStatus.failed:
-        return const Icon(Icons.error_outline, size: 14, color: AppColors.error);
+        return const Icon(Icons.error_outline_rounded, size: 13,
+            color: AppColors.error);
     }
   }
 }

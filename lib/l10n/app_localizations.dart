@@ -200,6 +200,18 @@ abstract class AppLocalizations {
   /// **'All codes must be different and at least 4 digits'**
   String get setupCodesInfo;
 
+  /// No description provided for @back.
+  ///
+  /// In en, this message translates to:
+  /// **'Back'**
+  String get back;
+
+  /// No description provided for @next.
+  ///
+  /// In en, this message translates to:
+  /// **'Next'**
+  String get next;
+
   /// No description provided for @newChat.
   ///
   /// In en, this message translates to:
@@ -458,6 +470,18 @@ abstract class AppLocalizations {
   /// **'Add Contact'**
   String get addContact;
 
+  /// No description provided for @cannotAddYourself.
+  ///
+  /// In en, this message translates to:
+  /// **'Cannot add yourself'**
+  String get cannotAddYourself;
+
+  /// No description provided for @userNotFound.
+  ///
+  /// In en, this message translates to:
+  /// **'User not found'**
+  String get userNotFound;
+
   /// No description provided for @myQrCode.
   ///
   /// In en, this message translates to:
@@ -470,6 +494,12 @@ abstract class AppLocalizations {
   /// **'Scan QR Code'**
   String get scanQrCode;
 
+  /// No description provided for @scanQr.
+  ///
+  /// In en, this message translates to:
+  /// **'Scan QR'**
+  String get scanQr;
+
   /// No description provided for @qrScanHint.
   ///
   /// In en, this message translates to:
@@ -481,6 +511,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Let others scan this to connect'**
   String get qrShareHint;
+
+  /// No description provided for @yourQrCode.
+  ///
+  /// In en, this message translates to:
+  /// **'Your QR Code'**
+  String get yourQrCode;
+
+  /// No description provided for @idCopied.
+  ///
+  /// In en, this message translates to:
+  /// **'ID copied'**
+  String get idCopied;
+
+  /// No description provided for @qrWebUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'QR scanning is not available on web.\nUse a mobile device to scan QR codes.'**
+  String get qrWebUnavailable;
+
+  /// No description provided for @thatsYourOwnId.
+  ///
+  /// In en, this message translates to:
+  /// **'That\'s your own ID'**
+  String get thatsYourOwnId;
 
   /// No description provided for @renameChat.
   ///
@@ -506,6 +560,12 @@ abstract class AppLocalizations {
   /// **'Cancel'**
   String get cancel;
 
+  /// No description provided for @skip.
+  ///
+  /// In en, this message translates to:
+  /// **'Skip'**
+  String get skip;
+
   /// No description provided for @deleteChat.
   ///
   /// In en, this message translates to:
@@ -530,11 +590,209 @@ abstract class AppLocalizations {
   /// **'Chat default'**
   String get chatDefault;
 
+  /// No description provided for @chatDefaultWithTimer.
+  ///
+  /// In en, this message translates to:
+  /// **'Chat default ({timer})'**
+  String chatDefaultWithTimer(String timer);
+
+  /// No description provided for @messagesAutoDelete.
+  ///
+  /// In en, this message translates to:
+  /// **'Messages auto-delete after {timer}'**
+  String messagesAutoDelete(String timer);
+
+  /// No description provided for @onlyVisibleToYou.
+  ///
+  /// In en, this message translates to:
+  /// **'Only visible to you'**
+  String get onlyVisibleToYou;
+
   /// No description provided for @burnAfterRead.
   ///
   /// In en, this message translates to:
   /// **'Burn after read'**
   String get burnAfterRead;
+
+  /// No description provided for @passwordProtected.
+  ///
+  /// In en, this message translates to:
+  /// **'Password protected'**
+  String get passwordProtected;
+
+  /// No description provided for @lockMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Lock Message'**
+  String get lockMessage;
+
+  /// No description provided for @lockMessageHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Set a password for the next message. The recipient must enter this password to read it.'**
+  String get lockMessageHint;
+
+  /// No description provided for @enterPassword.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter password'**
+  String get enterPassword;
+
+  /// No description provided for @setPassword.
+  ///
+  /// In en, this message translates to:
+  /// **'Set Password'**
+  String get setPassword;
+
+  /// No description provided for @passwordRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Password Required'**
+  String get passwordRequired;
+
+  /// No description provided for @passwordRequiredHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter the password to decrypt this message.'**
+  String get passwordRequiredHint;
+
+  /// No description provided for @password.
+  ///
+  /// In en, this message translates to:
+  /// **'Password'**
+  String get password;
+
+  /// No description provided for @unlock.
+  ///
+  /// In en, this message translates to:
+  /// **'Unlock'**
+  String get unlock;
+
+  /// No description provided for @unlocked.
+  ///
+  /// In en, this message translates to:
+  /// **'Unlocked'**
+  String get unlocked;
+
+  /// No description provided for @wrongPassword.
+  ///
+  /// In en, this message translates to:
+  /// **'Wrong password'**
+  String get wrongPassword;
+
+  /// No description provided for @tapToUnlock.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap to unlock'**
+  String get tapToUnlock;
+
+  /// No description provided for @nameThisContact.
+  ///
+  /// In en, this message translates to:
+  /// **'Name this contact'**
+  String get nameThisContact;
+
+  /// No description provided for @nameContactHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Give this contact a name so you know who it is. Only you can see this label.'**
+  String get nameContactHint;
+
+  /// No description provided for @nameContactPlaceholder.
+  ///
+  /// In en, this message translates to:
+  /// **'e.g. Alex, Mom, Work...'**
+  String get nameContactPlaceholder;
+
+  /// No description provided for @selfDestructTimerLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Self-Destruct Timer'**
+  String get selfDestructTimerLabel;
+
+  /// No description provided for @vaultPassword.
+  ///
+  /// In en, this message translates to:
+  /// **'Vault Password'**
+  String get vaultPassword;
+
+  /// No description provided for @vaultPasswordDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Require a strong password after code entry before accessing the messenger'**
+  String get vaultPasswordDescription;
+
+  /// No description provided for @vaultPasswordTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Vault Locked'**
+  String get vaultPasswordTitle;
+
+  /// No description provided for @vaultPasswordHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter your vault password to access the messenger.'**
+  String get vaultPasswordHint;
+
+  /// No description provided for @setVaultPassword.
+  ///
+  /// In en, this message translates to:
+  /// **'Set Vault Password'**
+  String get setVaultPassword;
+
+  /// No description provided for @changeVaultPassword.
+  ///
+  /// In en, this message translates to:
+  /// **'Change Vault Password'**
+  String get changeVaultPassword;
+
+  /// No description provided for @removeVaultPassword.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove Vault Password'**
+  String get removeVaultPassword;
+
+  /// No description provided for @vaultPasswordSet.
+  ///
+  /// In en, this message translates to:
+  /// **'Vault password set'**
+  String get vaultPasswordSet;
+
+  /// No description provided for @vaultPasswordRemoved.
+  ///
+  /// In en, this message translates to:
+  /// **'Vault password removed'**
+  String get vaultPasswordRemoved;
+
+  /// No description provided for @vaultPasswordRules.
+  ///
+  /// In en, this message translates to:
+  /// **'At least 10 characters, with uppercase, lowercase, number, and special character.'**
+  String get vaultPasswordRules;
+
+  /// No description provided for @newPassword.
+  ///
+  /// In en, this message translates to:
+  /// **'New password'**
+  String get newPassword;
+
+  /// No description provided for @confirmPassword.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm password'**
+  String get confirmPassword;
+
+  /// No description provided for @passwordsDoNotMatch.
+  ///
+  /// In en, this message translates to:
+  /// **'Passwords do not match'**
+  String get passwordsDoNotMatch;
+
+  /// No description provided for @passwordTooWeak.
+  ///
+  /// In en, this message translates to:
+  /// **'Password does not meet the requirements'**
+  String get passwordTooWeak;
 }
 
 class _AppLocalizationsDelegate
