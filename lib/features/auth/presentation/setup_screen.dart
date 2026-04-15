@@ -22,7 +22,6 @@ class _SetupScreenState extends State<SetupScreen>
   final _controllers = [
     TextEditingController(),
     TextEditingController(),
-    TextEditingController(),
   ];
   late final AnimationController _progressCtrl;
   bool _isLoading = false;
@@ -34,7 +33,7 @@ class _SetupScreenState extends State<SetupScreen>
     _progressCtrl = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 400),
-      value: 1 / 3,
+      value: 1 / 2,
     );
   }
 
@@ -58,9 +57,9 @@ class _SetupScreenState extends State<SetupScreen>
 
   void _next() {
     if (_validateCode(_controllers[_step].text) != null) return;
-    if (_step < 2) {
+    if (_step < 1) {
       setState(() => _step++);
-      _progressCtrl.animateTo((_step + 1) / 3);
+      _progressCtrl.animateTo((_step + 1) / 2);
     } else {
       _completeSetup();
     }
@@ -69,7 +68,7 @@ class _SetupScreenState extends State<SetupScreen>
   void _back() {
     if (_step > 0) {
       setState(() => _step--);
-      _progressCtrl.animateTo((_step + 1) / 3);
+      _progressCtrl.animateTo((_step + 1) / 2);
     }
   }
 
@@ -92,8 +91,7 @@ class _SetupScreenState extends State<SetupScreen>
 
       await Future.wait([
         storage.saveSecretCode(_controllers[0].text),
-        storage.saveDecoyCode(_controllers[1].text),
-        storage.saveDeleteCode(_controllers[2].text),
+        storage.saveDeleteCode(_controllers[1].text),
         storage.saveUserId(user.uid),
         storage.markSetupComplete(),
       ]);
@@ -116,12 +114,6 @@ class _SetupScreenState extends State<SetupScreen>
       color: AppColors.accent,
       title: 'Secret Code',
       subtitle: 'Enter this in the calculator to open your vault.',
-    ),
-    (
-      icon: Icons.shield_outlined,
-      color: Color(0xFF30D158),
-      title: 'Decoy Code',
-      subtitle: 'Opens a fake empty messenger. Use when coerced.',
     ),
     (
       icon: Icons.delete_forever_outlined,
@@ -293,7 +285,7 @@ class _SetupScreenState extends State<SetupScreen>
                             child: CircularProgressIndicator(
                                 strokeWidth: 2, color: Colors.white),
                           )
-                        : Text(_step < 2 ? 'Continue' : 'Finish'),
+                        : Text(_step < 1 ? 'Continue' : 'Finish'),
                   ),
                 ],
               ),

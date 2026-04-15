@@ -353,13 +353,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
             _Divider(isDark: isDark),
             _NavTile(
-              icon: Icons.shield_outlined,
-              title: l10n.changeDecoyCode,
-              onTap: () => _showChangeCodeDialog(
-                  l10n.changeDecoyCode, storage.saveDecoyCode),
-            ),
-            _Divider(isDark: isDark),
-            _NavTile(
               icon: Icons.delete_outline_rounded,
               title: l10n.changeDeleteCode,
               iconColor: AppColors.destructive,

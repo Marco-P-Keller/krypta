@@ -5,7 +5,6 @@ import 'l10n/app_localizations.dart';
 import 'features/auth/presentation/setup_screen.dart';
 import 'features/auth/presentation/vault_password_screen.dart';
 import 'features/calculator/presentation/calculator_screen.dart';
-import 'features/decoy/decoy_messenger_screen.dart';
 import 'features/decoy/decoy_provider.dart';
 import 'features/messenger/data/models/chat_model.dart';
 import 'features/messenger/logic/messenger_provider.dart';
@@ -61,7 +60,6 @@ enum _AppScreen {
   setup,
   vaultPassword,
   messenger,
-  decoy,
   chat,
   newChat,
   qrScanner,
@@ -240,13 +238,6 @@ class _KryptaShellState extends State<KryptaShell> with WidgetsBindingObserver {
         return CalculatorScreen(
           key: const ValueKey('calculator'),
           onSecretCode: _onSecretCode,
-          onDecoyCode: () async {
-            // Enable screenshot protection in decoy too — matching behavior
-            // prevents forensic distinction between real and decoy screens.
-            final platform = context.read<PlatformSecurityService>();
-            await platform.enableScreenshotProtection();
-            _navigateTo(_AppScreen.decoy);
-          },
           onDeleteCode: () => _handleEmergencyWipe(),
         );
 
@@ -260,12 +251,6 @@ class _KryptaShellState extends State<KryptaShell> with WidgetsBindingObserver {
           },
           onNewChat: () => _navigateTo(_AppScreen.newChat),
           onEmergencyWipe: _handleEmergencyWipe,
-          onBack: _backToCalculator,
-        );
-
-      case _AppScreen.decoy:
-        return DecoyMessengerScreen(
-          key: const ValueKey('decoy'),
           onBack: _backToCalculator,
         );
 

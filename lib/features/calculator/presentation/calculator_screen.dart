@@ -10,13 +10,11 @@ import 'widgets/calculator_keypad.dart';
 
 class CalculatorScreen extends StatefulWidget {
   final VoidCallback onSecretCode;
-  final VoidCallback onDecoyCode;
   final VoidCallback onDeleteCode;
 
   const CalculatorScreen({
     super.key,
     required this.onSecretCode,
-    required this.onDecoyCode,
     required this.onDeleteCode,
   });
 
@@ -50,9 +48,8 @@ class _CalculatorScreenState extends State<CalculatorScreen> {
         widget.onSecretCode();
         return;
       case CodeResult.decoy:
-        _logic.clear();
-        widget.onDecoyCode();
-        return;
+        // Decoy mode removed — treat as no match
+        break;
       case CodeResult.delete:
         _logic.clear();
         await _handleDeleteCode();
