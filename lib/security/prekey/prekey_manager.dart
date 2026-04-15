@@ -158,7 +158,7 @@ class PreKeyManager {
         ..addAll(opksList
             .map((e) => OneTimePreKey.fromMap(e as Map<String, dynamic>)));
     } catch (e) {
-      debugPrint('Load prekeys failed: $e');
+      debugPrint('Load prekeys failed');
     }
   }
 }

@@ -24,8 +24,7 @@ class KryptaKeyPair {
   }
 
   @override
-  String toString() =>
-      'KryptaKeyPair(pub: ${publicKeyBase64.substring(0, 8)}...)';
+  String toString() => 'KryptaKeyPair(${publicKey.length}B)';
 }
 
 class EncryptedPayload {

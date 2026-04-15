@@ -6,6 +6,7 @@ import 'features/auth/presentation/setup_screen.dart';
 import 'features/auth/presentation/vault_password_screen.dart';
 import 'features/calculator/presentation/calculator_screen.dart';
 import 'features/decoy/decoy_messenger_screen.dart';
+import 'features/decoy/decoy_provider.dart';
 import 'features/messenger/data/models/chat_model.dart';
 import 'features/messenger/logic/messenger_provider.dart';
 import 'features/messenger/presentation/chat_list_screen.dart';
@@ -119,6 +120,7 @@ class _KryptaShellState extends State<KryptaShell> with WidgetsBindingObserver {
 
   Future<void> _initialize() async {
     final storage = context.read<SecureStorageService>();
+    final decoy = context.read<DecoyProvider>();
     final isSetup = await storage.isSetupComplete();
 
     if (!isSetup) {
@@ -129,6 +131,12 @@ class _KryptaShellState extends State<KryptaShell> with WidgetsBindingObserver {
       });
       return;
     }
+
+    // Ensure decoy files always exist on disk — prevents forensic
+    // distinction based on file existence patterns.
+    try {
+      await decoy.ensureDecoyFilesExist();
+    } catch (_) {}
 
     if (!mounted) return;
     setState(() {
@@ -232,7 +240,13 @@ class _KryptaShellState extends State<KryptaShell> with WidgetsBindingObserver {
         return CalculatorScreen(
           key: const ValueKey('calculator'),
           onSecretCode: _onSecretCode,
-          onDecoyCode: () => _navigateTo(_AppScreen.decoy),
+          onDecoyCode: () async {
+            // Enable screenshot protection in decoy too — matching behavior
+            // prevents forensic distinction between real and decoy screens.
+            final platform = context.read<PlatformSecurityService>();
+            await platform.enableScreenshotProtection();
+            _navigateTo(_AppScreen.decoy);
+          },
           onDeleteCode: () => _handleEmergencyWipe(),
         );
 

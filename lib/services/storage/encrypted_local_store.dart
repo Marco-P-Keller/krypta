@@ -155,6 +155,52 @@ class EncryptedLocalStore {
     }
   }
 
+  // --- Key Rotation ---
+
+  /// Re-encrypt all local data with a new storage key.
+  ///
+  /// Flow:
+  /// 1. Generate new key
+  /// 2. Decrypt each file with old key
+  /// 3. Re-encrypt with new key
+  /// 4. Store new key in keychain
+  /// 5. Delete old key
+  ///
+  /// This is a destructive operation — if interrupted, data may be lost.
+  /// Call only when the app is in the foreground and has battery.
+  Future<bool> rotateStorageKey() async {
+    if (_storageKey == null || _basePath == null) return false;
+
+    final oldKey = _storageKey!;
+    final newKey = _encryption.generateLocalStorageKey();
+
+    try {
+      // Re-encrypt all cached data with new key
+      for (final entry in _cache.entries) {
+        final plaintext = Uint8List.fromList(utf8.encode(entry.value));
+        final encrypted = await _encryption.encryptLocal(
+          plaintext: plaintext,
+          key: newKey,
+        );
+        await io.writeFileBytes('$_basePath/${entry.key}.enc', encrypted);
+      }
+
+      // Store new key
+      await _secureStorage.write(
+        key: StorageKeys.databaseKey,
+        value: base64Encode(newKey),
+      );
+      _storageKey = newKey;
+
+      return true;
+    } catch (e) {
+      // Rollback: try to restore old key
+      _storageKey = oldKey;
+      debugPrint('Key rotation failed');
+      return false;
+    }
+  }
+
   // --- Wipe ---
 
   Future<void> wipeAll() async {
@@ -184,7 +230,7 @@ class EncryptedLocalStore {
           _cache[fileName] = utf8.decode(decrypted);
         }
       } catch (e) {
-        debugPrint('Decrypt $fileName failed: $e');
+        debugPrint('Decrypt failed for local store entry');
       }
     }
   }
@@ -200,7 +246,7 @@ class EncryptedLocalStore {
       );
       await io.writeFileBytes('$_basePath/$name.enc', encrypted);
     } catch (e) {
-      debugPrint('Encrypt/write $name failed: $e');
+      debugPrint('Encrypt/write failed for local store entry');
     }
   }
 }

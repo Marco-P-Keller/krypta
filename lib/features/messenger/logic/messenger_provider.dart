@@ -153,7 +153,7 @@ class MessengerProvider extends ChangeNotifier {
           );
         }
       } catch (e) {
-        debugPrint('PreKey management failed: $e');
+        debugPrint('PreKey management failed');
       }
 
       // Register for push notifications
@@ -166,6 +166,8 @@ class MessengerProvider extends ChangeNotifier {
 
     _startSync();
     _startSelfDestructTimer();
+    // Immediately clean up any expired/burnt messages from previous session
+    _cleanupExpiredMessages();
     _isInitialized = true;
     notifyListeners();
   }
@@ -385,7 +387,7 @@ class MessengerProvider extends ChangeNotifier {
 
       _updateMessageStatus(chatId, messageId, MessageStatus.sent);
     } catch (e) {
-      debugPrint('Send failed: $e');
+      debugPrint('Send failed');
       _updateMessageStatus(chatId, messageId, MessageStatus.failed);
     }
   }
@@ -555,7 +557,7 @@ class MessengerProvider extends ChangeNotifier {
         await _firestore.deleteRelayedMessage(userId!, change.doc.id);
         notifyListeners();
       } catch (e) {
-        debugPrint('Process incoming message failed: $e');
+        debugPrint('Process incoming message failed');
         try { await _firestore.deleteRelayedMessage(userId!, change.doc.id); } catch (_) {}
       }
     }
@@ -576,7 +578,13 @@ class MessengerProvider extends ChangeNotifier {
         final messages = _messagesByChat[chatId]!;
         final idx = messages.indexWhere((m) => m.id == messageId);
         if (idx != -1) {
-          messages[idx] = messages[idx].copyWith(
+          final msg = messages[idx];
+          // Verify: only accept ACKs for messages WE sent (prevent fake ACK injection)
+          if (msg.senderId != userId) break;
+          // Verify: only advance status forward (delivered → read, not backward)
+          if (msg.status == MessageStatus.read) break;
+
+          messages[idx] = msg.copyWith(
             status: newStatus,
             readAt: type == 'read' ? DateTime.now() : null,
           );
@@ -597,6 +605,8 @@ class MessengerProvider extends ChangeNotifier {
 
     if (data != null) {
       for (final entry in data.entries) {
+        // Only accept typing indicators from known contacts
+        if (contactForId(entry.key) == null) continue;
         if (entry.value is Timestamp) {
           final ts = entry.value as Timestamp;
           _typingStates[entry.key] = DateTime.now().difference(ts.toDate()).inSeconds < 5;
@@ -614,6 +624,18 @@ class MessengerProvider extends ChangeNotifier {
   }
 
   // --- Self-Destruct ---
+
+  /// Remove all expired/burnt messages immediately (called on init).
+  void _cleanupExpiredMessages() {
+    for (final chatId in _messagesByChat.keys) {
+      final messages = _messagesByChat[chatId]!;
+      final before = messages.length;
+      messages.removeWhere((m) => m.isExpired || m.shouldBurn);
+      if (messages.length != before) {
+        _localStore.saveMessages(chatId, messages);
+      }
+    }
+  }
 
   void _startSelfDestructTimer() {
     _selfDestructTimer = Timer.periodic(const Duration(seconds: 1), (_) {

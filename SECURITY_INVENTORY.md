@@ -2,15 +2,17 @@
 
 ## Key Material
 
-| Key | Storage | Format | Lifecycle |
-|-----|---------|--------|-----------|
-| Identity X25519 private | Keychain/Keystore (`krypta_id_priv`) | Base64 | Created once, deleted on wipe |
-| Identity X25519 public | Keychain/Keystore (`krypta_id_pub`) + Firestore | Base64 | Created once, deleted on wipe |
-| Signed PreKey private | EncryptedLocalStore (`prekey_state`) | XChaCha20 encrypted | Rotated every 7 days |
-| Signed PreKey public | EncryptedLocalStore + Firestore | Base64 in bundle | Rotated every 7 days |
-| One-Time PreKeys | EncryptedLocalStore | XChaCha20 encrypted | Consumed on use |
-| Database encryption key | Keychain/Keystore (`krypta_db_key`) | Base64 (256-bit) | Created once, deleted on wipe |
-| Double Ratchet state (per chat) | EncryptedLocalStore (`ratchet_{chatId}`) | XChaCha20 encrypted | Evolves per message |
+| Key | Storage | Format | Created | Rotated | Deleted |
+|-----|---------|--------|---------|---------|---------|
+| Identity X25519 private | Keychain (`krypta_id_priv`) | Base64 | First setup | Never | Emergency wipe |
+| Identity X25519 public | Keychain (`krypta_id_pub`) + Firestore | Base64 | First setup | Never | Emergency wipe |
+| Signed PreKey private | EncryptedLocalStore (`prekey_state`) | XChaCha20 | First messenger init | Every 7 days (auto) | Emergency wipe |
+| Signed PreKey public | EncryptedLocalStore + Firestore | Base64 | First messenger init | Every 7 days (auto) | Emergency wipe |
+| One-Time PreKeys (pool) | EncryptedLocalStore | XChaCha20 | First messenger init | Replenished when <20 | Consumed on use / wipe |
+| Database encryption key | Keychain (`krypta_db_key`) | Base64 256-bit | First data write | Via `rotateStorageKey()` | Emergency wipe |
+| Ratchet root key (per chat) | EncryptedLocalStore (`ratchet_*`) | XChaCha20 | First message in chat | Every DH ratchet step | Chat delete / wipe |
+| Ratchet chain keys | EncryptedLocalStore (`ratchet_*`) | XChaCha20 | Session init | Every message | Overwritten by ratchet |
+| Ratchet message keys | In-memory only (skipped keys) | RAM | On decrypt of skipped msg | Never | Used once, then deleted |
 
 ## Hashed Secrets (not recoverable)
 
