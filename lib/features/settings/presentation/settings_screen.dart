@@ -3,7 +3,6 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../core/constants/app_constants.dart';
-import '../../calculator/logic/code_detector.dart';
 import '../../../services/platform/platform_security_service.dart';
 import '../../../services/storage/secure_storage_service.dart';
 import '../../../theme/app_colors.dart';
@@ -72,7 +71,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   void _showChangeCodeDialog(String title, Future<void> Function(String) onSave) {
     final controller = TextEditingController();
-    final codeDetector = context.read<CodeDetector>();
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -98,7 +96,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
               final code = controller.text;
               if (code.length >= AppConstants.minCodeLength) {
                 await onSave(code);
-                await codeDetector.loadCodes();
                 if (ctx.mounted) Navigator.of(ctx).pop();
               }
             },

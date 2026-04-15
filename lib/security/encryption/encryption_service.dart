@@ -157,24 +157,28 @@ class EncryptionService {
 
   // --- Password-Protected Message Encryption ---
   //
-  // Flow: password → PBKDF2(100k rounds) → 256-bit key → XChaCha20-Poly1305
-  // Output: base64 JSON {s: salt, n: nonce, m: mac, c: ciphertext}
+  // v2 flow: password → Argon2id(19 MiB, 2 iter, p=1) → 256-bit key → XChaCha20-Poly1305
+  // Output: base64 JSON {v: 2, s: salt, n: nonce, m: mac, c: ciphertext}
+  //
+  // v1 (legacy PBKDF2) is still readable for migration; new writes always use v2.
   // The result is stored as `decryptedContent` and transmitted inside E2E.
+
+  static final _argon2 = Argon2id(
+    parallelism: 1,
+    memory: 19456, // 19 MiB — OWASP minimum for interactive logins
+    iterations: 2,
+    hashLength: 32,
+  );
 
   Future<String> encryptWithPassword({
     required String plaintext,
     required String password,
   }) async {
-    final random = Random.secure();
-    final salt = Uint8List.fromList(List.generate(16, (_) => random.nextInt(256)));
-
-    final pbkdf2 = Pbkdf2(
-      macAlgorithm: Hmac.sha256(),
-      iterations: 100000,
-      bits: 256,
+    final salt = Uint8List.fromList(
+      List.generate(16, (_) => Random.secure().nextInt(256)),
     );
 
-    final derivedKey = await pbkdf2.deriveKey(
+    final derivedKey = await _argon2.deriveKey(
       secretKey: SecretKey(utf8.encode(password)),
       nonce: salt,
     );
@@ -185,6 +189,7 @@ class EncryptionService {
     );
 
     final payload = {
+      'v': 2,
       's': base64Encode(salt),
       'n': base64Encode(Uint8List.fromList(secretBox.nonce)),
       'm': base64Encode(Uint8List.fromList(secretBox.mac.bytes)),
@@ -202,21 +207,30 @@ class EncryptionService {
       final jsonStr = utf8.decode(base64Decode(encryptedBase64));
       final payload = jsonDecode(jsonStr) as Map<String, dynamic>;
 
+      final version = (payload['v'] as int?) ?? 1;
       final salt = base64Decode(payload['s'] as String);
       final nonce = base64Decode(payload['n'] as String);
       final mac = base64Decode(payload['m'] as String);
       final ciphertext = base64Decode(payload['c'] as String);
 
-      final pbkdf2 = Pbkdf2(
-        macAlgorithm: Hmac.sha256(),
-        iterations: 100000,
-        bits: 256,
-      );
-
-      final derivedKey = await pbkdf2.deriveKey(
-        secretKey: SecretKey(utf8.encode(password)),
-        nonce: salt,
-      );
+      final SecretKey derivedKey;
+      if (version >= 2) {
+        // v2: Argon2id
+        derivedKey = await _argon2.deriveKey(
+          secretKey: SecretKey(utf8.encode(password)),
+          nonce: salt,
+        );
+      } else {
+        // v1 legacy: PBKDF2 — read-only migration path
+        derivedKey = await Pbkdf2(
+          macAlgorithm: Hmac.sha256(),
+          iterations: 100000,
+          bits: 256,
+        ).deriveKey(
+          secretKey: SecretKey(utf8.encode(password)),
+          nonce: salt,
+        );
+      }
 
       final secretBox = SecretBox(ciphertext, nonce: nonce, mac: Mac(mac));
       final decrypted = await _cipher.decrypt(secretBox, secretKey: derivedKey);

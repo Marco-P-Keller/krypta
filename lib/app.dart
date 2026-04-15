@@ -4,7 +4,6 @@ import 'package:provider/provider.dart';
 import 'l10n/app_localizations.dart';
 import 'features/auth/presentation/setup_screen.dart';
 import 'features/auth/presentation/vault_password_screen.dart';
-import 'features/calculator/logic/code_detector.dart';
 import 'features/calculator/presentation/calculator_screen.dart';
 import 'features/decoy/decoy_messenger_screen.dart';
 import 'features/messenger/data/models/chat_model.dart';
@@ -120,8 +119,6 @@ class _KryptaShellState extends State<KryptaShell> with WidgetsBindingObserver {
 
   Future<void> _initialize() async {
     final storage = context.read<SecureStorageService>();
-    final codeDetector = context.read<CodeDetector>();
-
     final isSetup = await storage.isSetupComplete();
 
     if (!isSetup) {
@@ -132,8 +129,6 @@ class _KryptaShellState extends State<KryptaShell> with WidgetsBindingObserver {
       });
       return;
     }
-
-    await codeDetector.loadCodes();
 
     if (!mounted) return;
     setState(() {
@@ -218,11 +213,7 @@ class _KryptaShellState extends State<KryptaShell> with WidgetsBindingObserver {
       case _AppScreen.setup:
         return SetupScreen(
           key: const ValueKey('setup'),
-          onSetupComplete: () async {
-            final codeDetector = context.read<CodeDetector>();
-            await codeDetector.loadCodes();
-            _navigateTo(_AppScreen.calculator);
-          },
+          onSetupComplete: () => _navigateTo(_AppScreen.calculator),
         );
 
       case _AppScreen.vaultPassword:

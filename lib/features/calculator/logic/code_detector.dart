@@ -4,48 +4,29 @@ enum CodeResult { none, secret, decoy, delete }
 
 /// Detects if the user has entered a special code on the calculator.
 ///
-/// Checks the current display value against stored codes.
-/// Uses a buffer that tracks the sequence of digits entered via "=".
+/// Security: codes are stored as Argon2id hashes — this class never
+/// sees plaintext codes in memory after setup. Each check runs the
+/// Argon2id KDF against the stored hash.
+///
+/// Delete code is verified FIRST to prevent an attacker from cancelling
+/// a wipe by guessing the secret code at the same moment.
 class CodeDetector {
   final SecureStorageService _storage;
 
-  String? _cachedSecretCode;
-  String? _cachedDecoyCode;
-  String? _cachedDeleteCode;
-
   CodeDetector({required SecureStorageService storage}) : _storage = storage;
 
-  Future<void> loadCodes() async {
-    _cachedSecretCode = await _storage.getSecretCode();
-    _cachedDecoyCode = await _storage.getDecoyCode();
-    _cachedDeleteCode = await _storage.getDeleteCode();
-  }
-
-  /// Check the current display value against known codes.
+  /// Check the current display value against stored (hashed) codes.
   /// Called when the user presses "=" on the calculator.
-  CodeResult checkCode(String displayValue) {
+  /// Returns the matched CodeResult, or [CodeResult.none].
+  Future<CodeResult> checkCode(String displayValue) async {
     final cleaned = displayValue.replaceAll(RegExp(r'[^0-9]'), '');
-
     if (cleaned.isEmpty) return CodeResult.none;
 
-    if (_cachedDeleteCode != null && cleaned == _cachedDeleteCode) {
-      return CodeResult.delete;
-    }
-
-    if (_cachedSecretCode != null && cleaned == _cachedSecretCode) {
-      return CodeResult.secret;
-    }
-
-    if (_cachedDecoyCode != null && cleaned == _cachedDecoyCode) {
-      return CodeResult.decoy;
-    }
+    // Delete code checked first — highest priority
+    if (await _storage.verifyDeleteCode(cleaned)) return CodeResult.delete;
+    if (await _storage.verifySecretCode(cleaned)) return CodeResult.secret;
+    if (await _storage.verifyDecoyCode(cleaned)) return CodeResult.decoy;
 
     return CodeResult.none;
-  }
-
-  void clearCache() {
-    _cachedSecretCode = null;
-    _cachedDecoyCode = null;
-    _cachedDeleteCode = null;
   }
 }

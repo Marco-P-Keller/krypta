@@ -6,7 +6,7 @@ import '../../../../theme/app_typography.dart';
 class CalculatorKeypad extends StatelessWidget {
   final void Function(String digit) onDigit;
   final void Function(String op) onOperator;
-  final VoidCallback onEquals;
+  final Future<void> Function() onEquals;
   final VoidCallback onClear;
   final VoidCallback onDecimal;
   final VoidCallback onToggleSign;

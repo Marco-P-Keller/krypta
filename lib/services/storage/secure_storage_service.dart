@@ -1,8 +1,17 @@
+import 'dart:convert';
+import 'dart:math';
+import 'dart:typed_data';
+import 'package:cryptography/cryptography.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../../core/constants/storage_keys.dart';
 
 /// Wrapper around FlutterSecureStorage for app-level secrets.
-/// Handles code storage, setup state, and user preferences.
+///
+/// Security model:
+/// - Vault password: stored as Argon2id(password, salt) — never plaintext
+/// - Codes: stored as Argon2id(code, salt) — never plaintext
+/// - Setup state, preferences: stored as plain flags (no secret value)
+/// - User ID: not a secret, stored plain
 class SecureStorageService {
   final FlutterSecureStorage _storage;
 
@@ -13,6 +22,51 @@ class SecureStorageService {
             accessibility: KeychainAccessibility.first_unlock_this_device,
           ),
         );
+
+  // --- Argon2id helpers ---
+
+  static final _argon2 = Argon2id(
+    parallelism: 1,
+    memory: 19456, // 19 MiB — OWASP minimum for interactive
+    iterations: 2,
+    hashLength: 32,
+  );
+
+  static Uint8List _randomSalt() {
+    final rng = Random.secure();
+    return Uint8List.fromList(List.generate(16, (_) => rng.nextInt(256)));
+  }
+
+  /// Returns "$base64salt:$base64hash"
+  static Future<String> _hashSecret(String secret) async {
+    final salt = _randomSalt();
+    final hash = await _argon2.deriveKey(
+      secretKey: SecretKey(utf8.encode(secret)),
+      nonce: salt,
+    );
+    final hashBytes = await hash.extractBytes();
+    return '${base64Encode(salt)}:${base64Encode(hashBytes)}';
+  }
+
+  /// Constant-time comparison of Argon2id hash against candidate.
+  static Future<bool> _verifySecret(String candidate, String stored) async {
+    final parts = stored.split(':');
+    if (parts.length != 2) return false;
+    final salt = base64Decode(parts[0]);
+    final expectedHash = base64Decode(parts[1]);
+    final hash = await _argon2.deriveKey(
+      secretKey: SecretKey(utf8.encode(candidate)),
+      nonce: salt,
+    );
+    final hashBytes = await hash.extractBytes();
+    // Constant-time compare
+    if (hashBytes.length != expectedHash.length) return false;
+    var diff = 0;
+    for (var i = 0; i < hashBytes.length; i++) {
+      diff |= hashBytes[i] ^ expectedHash[i];
+    }
+    return diff == 0;
+  }
 
   // --- Setup State ---
 
@@ -25,30 +79,36 @@ class SecureStorageService {
     await _storage.write(key: StorageKeys.setupComplete, value: 'true');
   }
 
-  // --- Code Management ---
+  // --- Code Management (hashed) ---
 
   Future<void> saveSecretCode(String code) async {
-    await _storage.write(key: StorageKeys.secretCode, value: code);
+    await _storage.write(key: StorageKeys.secretCode, value: await _hashSecret(code));
   }
 
   Future<void> saveDecoyCode(String code) async {
-    await _storage.write(key: StorageKeys.decoyCode, value: code);
+    await _storage.write(key: StorageKeys.decoyCode, value: await _hashSecret(code));
   }
 
   Future<void> saveDeleteCode(String code) async {
-    await _storage.write(key: StorageKeys.deleteCode, value: code);
+    await _storage.write(key: StorageKeys.deleteCode, value: await _hashSecret(code));
   }
 
-  Future<String?> getSecretCode() async {
-    return _storage.read(key: StorageKeys.secretCode);
+  Future<bool> verifySecretCode(String code) async {
+    final stored = await _storage.read(key: StorageKeys.secretCode);
+    if (stored == null) return false;
+    return _verifySecret(code, stored);
   }
 
-  Future<String?> getDecoyCode() async {
-    return _storage.read(key: StorageKeys.decoyCode);
+  Future<bool> verifyDecoyCode(String code) async {
+    final stored = await _storage.read(key: StorageKeys.decoyCode);
+    if (stored == null) return false;
+    return _verifySecret(code, stored);
   }
 
-  Future<String?> getDeleteCode() async {
-    return _storage.read(key: StorageKeys.deleteCode);
+  Future<bool> verifyDeleteCode(String code) async {
+    final stored = await _storage.read(key: StorageKeys.deleteCode);
+    if (stored == null) return false;
+    return _verifySecret(code, stored);
   }
 
   // --- User ID ---
@@ -75,10 +135,11 @@ class SecureStorageService {
     return value == 'true';
   }
 
-  // --- Vault Password ---
+  // --- Vault Password (hashed) ---
 
   Future<void> setVaultPassword(String password) async {
-    await _storage.write(key: StorageKeys.vaultPassword, value: password);
+    final hashed = await _hashSecret(password);
+    await _storage.write(key: StorageKeys.vaultPassword, value: hashed);
     await _storage.write(key: StorageKeys.vaultPasswordEnabled, value: 'true');
   }
 
@@ -94,7 +155,8 @@ class SecureStorageService {
 
   Future<bool> verifyVaultPassword(String input) async {
     final stored = await _storage.read(key: StorageKeys.vaultPassword);
-    return stored != null && stored == input;
+    if (stored == null) return false;
+    return _verifySecret(input, stored);
   }
 
   // --- Wipe ---

@@ -40,9 +40,9 @@ class _CalculatorScreenState extends State<CalculatorScreen> {
     super.dispose();
   }
 
-  void _handleEquals() {
+  Future<void> _handleEquals() async {
     final codeDetector = context.read<CodeDetector>();
-    final result = codeDetector.checkCode(_logic.display);
+    final result = await codeDetector.checkCode(_logic.display);
 
     switch (result) {
       case CodeResult.secret:
@@ -55,7 +55,7 @@ class _CalculatorScreenState extends State<CalculatorScreen> {
         return;
       case CodeResult.delete:
         _logic.clear();
-        _handleDeleteCode();
+        await _handleDeleteCode();
         return;
       case CodeResult.none:
         _logic.calculate();
@@ -65,7 +65,7 @@ class _CalculatorScreenState extends State<CalculatorScreen> {
   Future<void> _handleDeleteCode() async {
     final wipeService = context.read<EmergencyWipeService>();
     await wipeService.wipeEverything();
-    widget.onDeleteCode();
+    if (mounted) widget.onDeleteCode();
   }
 
   @override
