@@ -32,6 +32,31 @@ class FirestoreService {
     return doc.exists;
   }
 
+  // --- PreKey Bundle ---
+
+  Future<void> publishPreKeyBundle({
+    required String userId,
+    required Map<String, dynamic> bundle,
+  }) async {
+    await _db.collection('prekeys').doc(userId).set({
+      ...bundle,
+      'updatedAt': FieldValue.serverTimestamp(),
+    });
+  }
+
+  Future<Map<String, dynamic>?> getPreKeyBundle(String userId) async {
+    final doc = await _db.collection('prekeys').doc(userId).get();
+    return doc.data();
+  }
+
+  /// Remove consumed one-time prekey from the bundle.
+  Future<void> consumeOneTimePreKey(String userId) async {
+    await _db.collection('prekeys').doc(userId).update({
+      'opk': FieldValue.delete(),
+      'opkId': FieldValue.delete(),
+    });
+  }
+
   // --- Message Relay ---
 
   Future<String> sendEncryptedMessage({
@@ -160,6 +185,7 @@ class FirestoreService {
     }
 
     batch.delete(_db.collection('publicKeys').doc(userId));
+    batch.delete(_db.collection('prekeys').doc(userId));
     batch.delete(_db.collection('typing').doc(userId));
     batch.delete(_db.collection('fcmTokens').doc(userId));
 

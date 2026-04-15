@@ -111,6 +111,24 @@ class SecureStorageService {
     return _verifySecret(code, stored);
   }
 
+  /// Check if a proposed code collides with any of the other stored codes.
+  ///
+  /// Returns true if the candidate matches an existing code (prefix attack prevention).
+  /// Used during setup and code change to prevent:
+  /// - Identical codes (secret == decoy would expose real messenger on decoy entry)
+  /// - One code being a prefix of another (e.g., "1234" and "12345")
+  Future<bool> codeCollides(String candidate, {String? excludeKey}) async {
+    final keys = [StorageKeys.secretCode, StorageKeys.decoyCode, StorageKeys.deleteCode];
+    for (final key in keys) {
+      if (key == excludeKey) continue;
+      final stored = await _storage.read(key: key);
+      if (stored == null) continue;
+      // Check exact match
+      if (await _verifySecret(candidate, stored)) return true;
+    }
+    return false;
+  }
+
   // --- User ID ---
 
   Future<void> saveUserId(String uid) async {

@@ -6,6 +6,9 @@ import 'package:uuid/uuid.dart';
 import '../../../security/encryption/encryption_service.dart';
 import '../../../security/encryption/key_pair_model.dart';
 import '../../../security/key_management/key_manager.dart';
+import '../../../security/ratchet/double_ratchet.dart';
+import '../../../security/ratchet/ratchet_message.dart';
+import '../../../security/ratchet/ratchet_state.dart';
 import '../../../services/firebase/auth_service.dart';
 import '../../../services/firebase/firestore_service.dart';
 import '../../../services/notification/notification_service.dart';
@@ -28,6 +31,7 @@ class MessengerProvider extends ChangeNotifier {
   List<Chat> _chats = [];
   List<Contact> _contacts = [];
   final Map<String, List<Message>> _messagesByChat = {};
+  final Map<String, RatchetState> _ratchetStates = {};
   final Map<String, bool> _typingStates = {};
   String? _activeChatId;
 
@@ -97,6 +101,11 @@ class MessengerProvider extends ChangeNotifier {
 
     for (final chat in _chats) {
       _messagesByChat[chat.id] = await _localStore.loadMessages(chat.id);
+      // Load ratchet state for each chat
+      final rState = await _localStore.loadRatchetState(chat.id);
+      if (rState != null) {
+        _ratchetStates[chat.id] = RatchetState.fromMap(rState);
+      }
     }
 
     // Ensure key pair exists and is registered
@@ -130,17 +139,31 @@ class MessengerProvider extends ChangeNotifier {
   Future<Contact?> addContact(String contactId) async {
     if (contactId == userId) return null;
 
-    final existing = contactForId(contactId);
-    if (existing != null) return existing;
-
     try {
       final publicKeyBase64 = await _firestore.getPublicKey(contactId);
       if (publicKeyBase64 == null) return null;
+      final newPublicKey = base64Decode(publicKeyBase64);
+
+      final existing = contactForId(contactId);
+      if (existing != null) {
+        // Key change detection: if the public key changed, warn and reset trust
+        if (base64Encode(existing.publicKey) != publicKeyBase64) {
+          final idx = _contacts.indexWhere((c) => c.id == contactId);
+          _contacts[idx] = existing.copyWith(
+            publicKey: newPublicKey,
+            isVerified: false,
+            previousPublicKey: existing.publicKey,
+          );
+          await _localStore.saveContacts(_contacts);
+          notifyListeners();
+        }
+        return contactForId(contactId);
+      }
 
       final contact = Contact(
         id: contactId,
         displayName: 'User ${contactId.substring(0, 6)}',
-        publicKey: base64Decode(publicKeyBase64),
+        publicKey: newPublicKey,
         addedAt: DateTime.now(),
       );
 
@@ -152,6 +175,27 @@ class MessengerProvider extends ChangeNotifier {
       debugPrint('Add contact failed: $e');
       return null;
     }
+  }
+
+  /// Mark a contact as verified (after QR code / fingerprint check).
+  Future<void> markContactVerified(String contactId) async {
+    final idx = _contacts.indexWhere((c) => c.id == contactId);
+    if (idx == -1) return;
+    _contacts[idx] = _contacts[idx].copyWith(
+      isVerified: true,
+      previousPublicKey: null,
+    );
+    await _localStore.saveContacts(_contacts);
+    notifyListeners();
+  }
+
+  /// Acknowledge a key change (dismisses the warning).
+  Future<void> acknowledgeKeyChange(String contactId) async {
+    final idx = _contacts.indexWhere((c) => c.id == contactId);
+    if (idx == -1) return;
+    _contacts[idx] = _contacts[idx].copyWith(previousPublicKey: null);
+    await _localStore.saveContacts(_contacts);
+    notifyListeners();
   }
 
   Future<void> renameContact(String contactId, String newName) async {
@@ -280,16 +324,24 @@ class MessengerProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final payload = await _encryption.encryptMessage(
-        plaintext: contentForTransmission,
-        recipientPublicKey: contact.publicKey,
-      );
+      final Map<String, dynamic> payloadMap;
+
+      if (_ratchetStates.containsKey(chatId)) {
+        // ── v2: Double Ratchet encryption ──
+        payloadMap = await _encryptWithRatchet(
+            chatId, contentForTransmission);
+      } else {
+        // ── Initialize ratchet for first message, then encrypt ──
+        await _initRatchetAsSender(chatId, contact);
+        payloadMap = await _encryptWithRatchet(
+            chatId, contentForTransmission);
+      }
 
       await _firestore.sendEncryptedMessage(
         senderId: userId!,
         recipientId: chat.recipientId,
         messageId: messageId,
-        encryptedPayload: payload.toMap(),
+        encryptedPayload: payloadMap.map((k, v) => MapEntry(k, v.toString())),
         selfDestructMs: selfDestruct?.inMilliseconds,
         burnAfterRead: burnAfterRead,
         isPasswordProtected: hasPassword,
@@ -403,14 +455,6 @@ class MessengerProvider extends ChangeNotifier {
         final burnAfterRead = data['bar'] as bool? ?? false;
         final isPasswordProtected = data['pw'] as bool? ?? false;
 
-        // Decrypt E2E layer
-        final keyPair = await _keyManager.getOrCreateIdentityKeyPair();
-        final payload = EncryptedPayload.fromMap(payloadMap);
-        final plaintext = await _encryption.decryptMessage(
-          payload: payload,
-          privateKey: keyPair.privateKey,
-        );
-
         // Ensure contact exists
         var contact = contactForId(senderId);
         contact ??= await addContact(senderId);
@@ -428,8 +472,22 @@ class MessengerProvider extends ChangeNotifier {
           continue;
         }
 
-        // If password-protected, `plaintext` is the encrypted blob (not real text).
-        // The recipient must enter the password to see the actual message.
+        // Decrypt: v2 (ratchet) or v1 (legacy ephemeral)
+        final version = payloadMap['v'] as int? ?? 1;
+        final String plaintext;
+
+        if (version >= 2) {
+          plaintext = await _decryptWithRatchet(
+              chat.id, contact, payloadMap);
+        } else {
+          final keyPair = await _keyManager.getOrCreateIdentityKeyPair();
+          final payload = EncryptedPayload.fromMap(payloadMap);
+          plaintext = await _encryption.decryptMessage(
+            payload: payload,
+            privateKey: keyPair.privateKey,
+          );
+        }
+
         final message = Message(
           id: messageId,
           chatId: chat.id,
@@ -548,6 +606,92 @@ class MessengerProvider extends ChangeNotifier {
     }
   }
 
+  // --- Double Ratchet Helpers ---
+
+  /// Initialize a ratchet session as sender for a new chat.
+  Future<void> _initRatchetAsSender(String chatId, Contact contact) async {
+    final keyPair = await _keyManager.getOrCreateIdentityKeyPair();
+    final (ephPub, ephPriv) = await DoubleRatchet.generateEphemeralKeyPair();
+
+    final sharedSecret = await DoubleRatchet.deriveInitialSharedSecret(
+      senderEphemeralPrivate: ephPriv,
+      senderIdentityPrivate: keyPair.privateKey,
+      recipientIdentityPublic: contact.publicKey,
+    );
+
+    final state = await DoubleRatchet.initAsSender(
+      sharedSecret: sharedSecret,
+      recipientRatchetPublicKey: contact.publicKey,
+    );
+
+    _ratchetStates[chatId] = state;
+    await _localStore.saveRatchetState(chatId, state.toMap());
+  }
+
+  /// Initialize a ratchet session as receiver (first message from them).
+  Future<void> _initRatchetAsReceiver(
+      String chatId, Contact contact) async {
+    final keyPair = await _keyManager.getOrCreateIdentityKeyPair();
+
+    final sharedSecret = await DoubleRatchet.deriveInitialSharedSecret(
+      senderEphemeralPrivate: keyPair.privateKey,
+      senderIdentityPrivate: keyPair.privateKey,
+      recipientIdentityPublic: contact.publicKey,
+    );
+
+    final state = DoubleRatchet.initAsReceiver(
+      sharedSecret: sharedSecret,
+      ratchetPublicKey: keyPair.publicKey,
+      ratchetPrivateKey: keyPair.privateKey,
+    );
+
+    _ratchetStates[chatId] = state;
+    await _localStore.saveRatchetState(chatId, state.toMap());
+  }
+
+  /// Encrypt using Double Ratchet. Returns the Firestore payload map.
+  Future<Map<String, dynamic>> _encryptWithRatchet(
+      String chatId, String content) async {
+    final state = _ratchetStates[chatId]!;
+    final ad = Uint8List.fromList(utf8.encode(userId!));
+    final plaintext = Uint8List.fromList(utf8.encode(content));
+
+    final (newState, ratchetMsg) = await DoubleRatchet.encrypt(
+      state: state,
+      plaintext: plaintext,
+      associatedData: ad,
+    );
+
+    _ratchetStates[chatId] = newState;
+    await _localStore.saveRatchetState(chatId, newState.toMap());
+
+    return ratchetMsg.toPayloadMap();
+  }
+
+  /// Decrypt using Double Ratchet. Returns plaintext string.
+  Future<String> _decryptWithRatchet(
+      String chatId, Contact contact, Map<String, dynamic> payloadMap) async {
+    // Init receiver session if we don't have one yet
+    if (!_ratchetStates.containsKey(chatId)) {
+      await _initRatchetAsReceiver(chatId, contact);
+    }
+
+    final state = _ratchetStates[chatId]!;
+    final ratchetMsg = RatchetMessage.fromPayloadMap(payloadMap);
+    final ad = Uint8List.fromList(utf8.encode(contact.id));
+
+    final (newState, plaintext) = await DoubleRatchet.decrypt(
+      state: state,
+      message: ratchetMsg,
+      associatedData: ad,
+    );
+
+    _ratchetStates[chatId] = newState;
+    await _localStore.saveRatchetState(chatId, newState.toMap());
+
+    return utf8.decode(plaintext);
+  }
+
   // --- Helpers ---
 
   void _addMessageToChat(String chatId, Message message) {
@@ -587,6 +731,7 @@ class MessengerProvider extends ChangeNotifier {
     _chats.clear();
     _contacts.clear();
     _messagesByChat.clear();
+    _ratchetStates.clear();
     _typingStates.clear();
     _activeChatId = null;
     _isInitialized = false;

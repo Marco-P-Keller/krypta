@@ -7,13 +7,20 @@ import '../../security/key_management/key_manager.dart';
 
 /// Immediate, complete, irreversible data destruction.
 ///
-/// Wipe sequence (NO confirmation dialog):
-/// 1. Delete all local encrypted data files
-/// 2. Destroy all encryption keys from keychain
-/// 3. Clear secure storage (codes, preferences)
-/// 4. Delete user data from Firestore
-/// 5. Sign out and delete Firebase account
-/// 6. Clear in-memory caches
+/// Wipe matrix — every item is wiped in priority order:
+///
+/// Phase 1 — Local (no network, highest priority):
+///   [x] Encrypted local store (chats, messages, contacts, ratchet states)
+///   [x] All encryption keys (identity, prekeys, database key)
+///   [x] Secure storage (codes, vault password, settings flags)
+///   [x] In-memory caches (key manager, provider state)
+///
+/// Phase 2 — Server (best effort, non-blocking):
+///   [x] Firestore user data (messages, acks, typing, FCM, public keys, prekeys)
+///
+/// Phase 3 — Auth (best effort):
+///   [x] Delete Firebase account
+///   [x] Sign out
 class EmergencyWipeService {
   final SecureStorageService _secureStorage;
   final KeyManager _keyManager;
@@ -36,10 +43,10 @@ class EmergencyWipeService {
   Future<void> wipeEverything() async {
     final userId = _auth.currentUser?.uid;
 
-    // Phase 1: Local wipe (highest priority, no network needed)
+    // Phase 1: Local wipe (highest priority — no network needed)
     await _wipeLocal();
 
-    // Phase 2: Server cleanup (best effort)
+    // Phase 2: Server cleanup (best effort — don't block on failure)
     await _wipeServer(userId);
 
     // Phase 3: Auth cleanup
@@ -47,9 +54,28 @@ class EmergencyWipeService {
   }
 
   Future<void> _wipeLocal() async {
-    try { await _localStore.wipeAll(); } catch (e) { debugPrint('Wipe local store: $e'); }
-    try { await _keyManager.deleteAllKeys(); } catch (e) { debugPrint('Wipe keys: $e'); }
-    try { await _secureStorage.deleteAll(); } catch (e) { debugPrint('Wipe secure storage: $e'); }
+    // 1. Encrypted local files (chats, messages, contacts, ratchet states, decoy data)
+    try {
+      await _localStore.wipeAll();
+    } catch (e) {
+      debugPrint('Wipe local store: $e');
+    }
+
+    // 2. All cryptographic keys (identity, prekeys, database key)
+    try {
+      await _keyManager.deleteAllKeys();
+    } catch (e) {
+      debugPrint('Wipe keys: $e');
+    }
+
+    // 3. Secure storage (hashed codes, vault password hash, settings)
+    try {
+      await _secureStorage.deleteAll();
+    } catch (e) {
+      debugPrint('Wipe secure storage: $e');
+    }
+
+    // 4. Clear in-memory caches
     _keyManager.clearMemoryCache();
   }
 
@@ -63,7 +89,11 @@ class EmergencyWipeService {
   }
 
   Future<void> _wipeAuth() async {
-    try { await _auth.currentUser?.delete(); } catch (_) {}
-    try { await _auth.signOut(); } catch (_) {}
+    try {
+      await _auth.currentUser?.delete();
+    } catch (_) {}
+    try {
+      await _auth.signOut();
+    } catch (_) {}
   }
 }

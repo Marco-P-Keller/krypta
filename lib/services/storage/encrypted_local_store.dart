@@ -130,6 +130,31 @@ class EncryptedLocalStore {
     await _encryptAndWrite(key, json);
   }
 
+  // --- Ratchet State (Double Ratchet per chat) ---
+
+  Future<Map<String, dynamic>?> loadRatchetState(String chatId) async {
+    final data = _cache['ratchet_$chatId'];
+    if (data == null) return null;
+    try {
+      return jsonDecode(data) as Map<String, dynamic>;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  Future<void> saveRatchetState(String chatId, Map<String, dynamic> state) async {
+    final json = jsonEncode(state);
+    _cache['ratchet_$chatId'] = json;
+    await _encryptAndWrite('ratchet_$chatId', json);
+  }
+
+  Future<void> deleteRatchetState(String chatId) async {
+    _cache.remove('ratchet_$chatId');
+    if (_basePath != null) {
+      await io.deleteFileAt('$_basePath/ratchet_$chatId.enc');
+    }
+  }
+
   // --- Wipe ---
 
   Future<void> wipeAll() async {
