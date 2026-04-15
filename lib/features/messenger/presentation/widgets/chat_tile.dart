@@ -1,14 +1,15 @@
 import 'package:flutter/material.dart';
 import '../../../../theme/app_colors.dart';
+import '../../../../theme/app_spacing.dart';
 import '../../data/models/chat_model.dart';
 
 const _avatarGradients = [
-  [Color(0xFF5B7FFF), Color(0xFF7C5CFC)],
-  [Color(0xFF00C9A7), Color(0xFF00B4D8)],
-  [Color(0xFFFF6B6B), Color(0xFFFF8E72)],
-  [Color(0xFFFFC75F), Color(0xFFFF9671)],
-  [Color(0xFFE04DE8), Color(0xFF7C5CFC)],
-  [Color(0xFF43E97B), Color(0xFF38F9D7)],
+  [Color(0xFF0A84FF), Color(0xFF5856D6)],
+  [Color(0xFF30D158), Color(0xFF34C759)],
+  [Color(0xFFFF453A), Color(0xFFFF6B6B)],
+  [Color(0xFFFFD60A), Color(0xFFFF9F0A)],
+  [Color(0xFFBF5AF2), Color(0xFF5856D6)],
+  [Color(0xFF32ADE6), Color(0xFF007AFF)],
 ];
 
 class ChatTile extends StatelessWidget {
@@ -23,7 +24,7 @@ class ChatTile extends StatelessWidget {
     this.onLongPress,
   });
 
-  List<Color> _gradientForName(String name) {
+  List<Color> _gradientFor(String name) {
     final idx = name.isEmpty ? 0 : name.codeUnitAt(0) % _avatarGradients.length;
     return _avatarGradients[idx];
   }
@@ -32,33 +33,27 @@ class ChatTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final hasUnread = chat.unreadCount > 0;
-    final colors = _gradientForName(chat.recipientName);
+    final colors = _gradientFor(chat.recipientName);
 
     return InkWell(
       onTap: onTap,
       onLongPress: onLongPress,
-      borderRadius: BorderRadius.circular(16),
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.screenPadding, vertical: 10),
         child: Row(
           children: [
+            // Circular avatar
             Container(
-              width: 54,
-              height: 54,
+              width: 56,
+              height: 56,
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   colors: colors,
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 ),
-                borderRadius: BorderRadius.circular(18),
-                boxShadow: [
-                  BoxShadow(
-                    color: colors[0].withValues(alpha: 0.25),
-                    blurRadius: 10,
-                    offset: const Offset(0, 3),
-                  ),
-                ],
+                shape: BoxShape.circle,
               ),
               child: Center(
                 child: Text(
@@ -67,111 +62,96 @@ class ChatTile extends StatelessWidget {
                       : '?',
                   style: const TextStyle(
                     color: Colors.white,
-                    fontSize: 20,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: 0.5,
+                    fontSize: 22,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
               ),
             ),
             const SizedBox(width: 14),
+
+            // Content
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  // Name + time row
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Expanded(
+                        child: Text(
+                          chat.recipientName,
+                          style: Theme.of(context)
+                              .textTheme
+                              .titleMedium
+                              ?.copyWith(
+                                fontWeight: hasUnread
+                                    ? FontWeight.w700
+                                    : FontWeight.w500,
+                              ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      if (chat.lastMessageTime != null)
+                        Text(
+                          _formatTimestamp(chat.lastMessageTime!),
+                          style:
+                              Theme.of(context).textTheme.bodySmall?.copyWith(
+                                    color: hasUnread
+                                        ? AppColors.accent
+                                        : (isDark
+                                            ? AppColors.textTertiaryDark
+                                            : AppColors.textTertiaryLight),
+                                    fontWeight: hasUnread
+                                        ? FontWeight.w600
+                                        : FontWeight.w400,
+                                    fontSize: 12,
+                                  ),
+                        ),
+                    ],
+                  ),
+                  const SizedBox(height: 3),
+
+                  // Preview + unread badge
                   Row(
                     children: [
                       Expanded(
-                        child: Row(
-                          children: [
-                            Flexible(
-                              child: Text(
-                                chat.recipientName,
-                                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                      fontWeight: hasUnread
-                                          ? FontWeight.w700
-                                          : FontWeight.w600,
-                                      letterSpacing: -0.2,
+                        child: chat.isTyping
+                            ? _TypingIndicator(isDark: isDark)
+                            : Text(
+                                chat.lastMessagePreview ?? '',
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .bodyMedium
+                                    ?.copyWith(
+                                      color: isDark
+                                          ? AppColors.textSecondaryDark
+                                          : AppColors.textSecondaryLight,
+                                      fontSize: 14,
                                     ),
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                               ),
-                            ),
-                            if (chat.defaultSelfDestruct != null) ...[
-                              const SizedBox(width: 5),
-                              Container(
-                                padding: const EdgeInsets.all(3),
-                                decoration: BoxDecoration(
-                                  color: AppColors.primary.withValues(alpha: 0.1),
-                                  borderRadius: BorderRadius.circular(6),
-                                ),
-                                child: const Icon(Icons.timer_outlined,
-                                    size: 12, color: AppColors.primary),
-                              ),
-                            ],
-                          ],
-                        ),
                       ),
-                      const SizedBox(width: 8),
-                      if (chat.lastMessageTime != null)
-                        Text(
-                          _formatTimestamp(chat.lastMessageTime!),
-                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                fontSize: 11.5,
-                                color: hasUnread
-                                    ? AppColors.primary
-                                    : (isDark
-                                        ? AppColors.textTertiaryDark
-                                        : AppColors.textTertiaryLight),
-                                fontWeight: hasUnread
-                                    ? FontWeight.w600
-                                    : FontWeight.w400,
-                              ),
-                        ),
-                    ],
-                  ),
-                  const SizedBox(height: 5),
-                  Row(
-                    children: [
-                      if (chat.isTyping)
-                        Expanded(
-                          child: _TypingIndicator(context: context),
-                        )
-                      else
-                        Expanded(
-                          child: Text(
-                            chat.lastMessagePreview ?? '',
-                            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                  color: isDark
-                                      ? AppColors.textSecondaryDark
-                                      : AppColors.textSecondaryLight,
-                                  fontSize: 13.5,
-                                  height: 1.3,
-                                ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
                       if (hasUnread) ...[
-                        const SizedBox(width: 10),
+                        const SizedBox(width: 8),
                         Container(
                           padding: const EdgeInsets.symmetric(
-                            horizontal: 7,
-                            vertical: 3,
-                          ),
+                              horizontal: 7, vertical: 2),
                           decoration: BoxDecoration(
-                            gradient: const LinearGradient(
-                              colors: [AppColors.messageSentStart, AppColors.messageSentEnd],
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
-                            ),
-                            borderRadius: BorderRadius.circular(10),
+                            color: AppColors.accent,
+                            borderRadius:
+                                BorderRadius.circular(AppSpacing.radiusFull),
                           ),
                           child: Text(
-                            chat.unreadCount.toString(),
+                            chat.unreadCount > 99
+                                ? '99+'
+                                : chat.unreadCount.toString(),
                             style: const TextStyle(
                               color: Colors.white,
-                              fontSize: 11,
+                              fontSize: 12,
                               fontWeight: FontWeight.w700,
                             ),
                           ),
@@ -191,7 +171,6 @@ class ChatTile extends StatelessWidget {
   String _formatTimestamp(DateTime time) {
     final now = DateTime.now();
     final diff = now.difference(time);
-
     if (diff.inDays == 0) {
       return '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}';
     } else if (diff.inDays == 1) {
@@ -200,45 +179,66 @@ class ChatTile extends StatelessWidget {
       const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
       return days[time.weekday - 1];
     } else {
-      return '${time.day}.${time.month}.${time.year}';
+      return '${time.day}.${time.month}';
     }
   }
 }
 
-class _TypingIndicator extends StatelessWidget {
-  final BuildContext context;
-  const _TypingIndicator({required this.context});
+class _TypingIndicator extends StatefulWidget {
+  final bool isDark;
+  const _TypingIndicator({required this.isDark});
 
   @override
-  Widget build(BuildContext outerContext) {
+  State<_TypingIndicator> createState() => _TypingIndicatorState();
+}
+
+class _TypingIndicatorState extends State<_TypingIndicator>
+    with TickerProviderStateMixin {
+  final _controllers = <AnimationController>[];
+
+  @override
+  void initState() {
+    super.initState();
+    for (int i = 0; i < 3; i++) {
+      final ctrl = AnimationController(
+        vsync: this,
+        duration: const Duration(milliseconds: 600),
+      )..repeat(
+          reverse: true,
+          period: Duration(milliseconds: 600 + i * 150),
+        );
+      _controllers.add(ctrl);
+    }
+  }
+
+  @override
+  void dispose() {
+    for (final c in _controllers) {
+      c.dispose();
+    }
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        _buildDot(0),
-        _buildDot(1),
-        _buildDot(2),
-        const SizedBox(width: 4),
-        Text(
-          'typing',
-          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: AppColors.primary,
-                fontStyle: FontStyle.italic,
-                fontSize: 13,
+        for (int i = 0; i < 3; i++)
+          AnimatedBuilder(
+            animation: _controllers[i],
+            builder: (context, child) => Container(
+              width: 5,
+              height: 5,
+              margin: const EdgeInsets.only(right: 3),
+              decoration: BoxDecoration(
+                color: AppColors.accent
+                    .withValues(alpha: 0.4 + _controllers[i].value * 0.6),
+                shape: BoxShape.circle,
               ),
-        ),
+            ),
+          ),
       ],
-    );
-  }
-
-  Widget _buildDot(int index) {
-    return Container(
-      width: 5,
-      height: 5,
-      margin: const EdgeInsets.symmetric(horizontal: 1.5),
-      decoration: BoxDecoration(
-        color: AppColors.primary.withValues(alpha: 0.4 + index * 0.2),
-        shape: BoxShape.circle,
-      ),
     );
   }
 }
