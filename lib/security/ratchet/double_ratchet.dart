@@ -195,6 +195,7 @@ class DoubleRatchet {
   }
 
   /// Store skipped message keys up to [until] in the receiving chain.
+  /// Prunes oldest entries if total exceeds [_maxSkip] to prevent unbounded growth.
   static Future<RatchetState> _skipMessageKeys(
       RatchetState s, int until) async {
     if (s.receiveMessageNumber + _maxSkip < until) {
@@ -210,6 +211,10 @@ class DoubleRatchet {
           '${base64Encode(state.dhReceivingPublic!)}:${state.receiveMessageNumber}';
       final newSkipped =
           Map<String, Uint8List>.from(state.skippedMessageKeys)..[key] = mk;
+      // Prune oldest entries if exceeding max
+      while (newSkipped.length > _maxSkip) {
+        newSkipped.remove(newSkipped.keys.first);
+      }
       state = state.copyWith(
         receivingChainKey: newCk,
         receiveMessageNumber: state.receiveMessageNumber + 1,

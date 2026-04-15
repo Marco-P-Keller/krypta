@@ -153,12 +153,13 @@ class _KryptaShellState extends State<KryptaShell> with WidgetsBindingObserver {
       final authenticated = await platform.authenticate(
         reason: 'Unlock Krypta Messenger',
       );
-      if (!authenticated) return;
+      if (!authenticated || !mounted) return;
     }
 
     final vaultEnabled = await storage.isVaultPasswordEnabled();
+    if (!mounted) return;
     if (vaultEnabled) {
-      if (mounted) setState(() => _currentScreen = _AppScreen.vaultPassword);
+      setState(() => _currentScreen = _AppScreen.vaultPassword);
       return;
     }
 
@@ -255,6 +256,10 @@ class _KryptaShellState extends State<KryptaShell> with WidgetsBindingObserver {
         );
 
       case _AppScreen.chat:
+        if (_selectedChat == null) {
+          _navigateTo(_AppScreen.messenger);
+          return const SizedBox.shrink();
+        }
         return ChatScreen(
           key: ValueKey('chat_${_selectedChat?.id}'),
           chat: _selectedChat!,

@@ -56,7 +56,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Future<void> _toggleBiometric(bool value) async {
     final storage = context.read<SecureStorageService>();
     await storage.setBiometricEnabled(value);
-    setState(() => _biometricEnabled = value);
+    if (mounted) setState(() => _biometricEnabled = value);
   }
 
   Future<void> _toggleScreenshotProtection(bool value) async {
@@ -66,7 +66,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     } else {
       await platform.disableScreenshotProtection();
     }
-    setState(() => _screenshotProtection = value);
+    if (mounted) setState(() => _screenshotProtection = value);
   }
 
   void _showChangeCodeDialog(String title, Future<void> Function(String) onSave) {
@@ -230,9 +230,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     ),
                   ),
                   onChanged: (_) {
-                    if (pwError != null) {
-                      setDialogState(() => pwError = null);
-                    }
+                    setDialogState(() {
+                      if (pwError != null) pwError = null;
+                    });
                   },
                 ),
                 const SizedBox(height: 12),

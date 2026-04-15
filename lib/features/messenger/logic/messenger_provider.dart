@@ -165,9 +165,9 @@ class MessengerProvider extends ChangeNotifier {
     }
 
     _startSync();
-    _startSelfDestructTimer();
-    // Immediately clean up any expired/burnt messages from previous session
+    // Clean up expired messages BEFORE starting timer to avoid concurrent modification
     _cleanupExpiredMessages();
+    _startSelfDestructTimer();
     _isInitialized = true;
     notifyListeners();
   }
