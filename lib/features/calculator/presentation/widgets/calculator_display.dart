@@ -9,14 +9,13 @@ class CalculatorDisplay extends StatelessWidget {
   const CalculatorDisplay({
     super.key,
     required this.displayValue,
-    this.expression = '',
+    required this.expression,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(24, 0, 24, 8),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.end,
         mainAxisAlignment: MainAxisAlignment.end,
@@ -24,22 +23,26 @@ class CalculatorDisplay extends StatelessWidget {
           if (expression.isNotEmpty)
             Text(
               expression,
-              style: AppTypography.textTheme.bodyLarge?.copyWith(
+              style: const TextStyle(
                 color: AppColors.textSecondaryDark,
-                fontSize: 20,
+                fontSize: 22,
+                fontWeight: FontWeight.w300,
+                letterSpacing: -0.5,
               ),
               textAlign: TextAlign.right,
               maxLines: 1,
+              overflow: TextOverflow.ellipsis,
             ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 4),
           FittedBox(
             fit: BoxFit.scaleDown,
             alignment: Alignment.centerRight,
             child: Text(
-              displayValue,
+              displayValue.isEmpty ? '0' : displayValue,
               style: AppTypography.calculatorDisplay.copyWith(
                 color: AppColors.calculatorDisplay,
               ),
+              textAlign: TextAlign.right,
               maxLines: 1,
             ),
           ),
