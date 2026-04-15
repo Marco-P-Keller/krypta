@@ -178,11 +178,9 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
   }
 
   PreferredSizeWidget _buildAppBar(BuildContext context, AppLocalizations l10n) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
     return AppBar(
       leading: IconButton(
-        icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 20),
+        icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 18),
         onPressed: widget.onBack,
       ),
       titleSpacing: 0,
@@ -191,22 +189,22 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
           final chat = messenger.chatById(widget.chat.id);
           final name = chat?.recipientName ?? widget.chat.recipientName;
           final isTyping = messenger.isTyping(widget.chat.recipientId);
-          final hasTimer = chat?.defaultSelfDestruct != null;
           final colors = _avatarGradient(name);
+
           return GestureDetector(
             onTap: () => ChatSettingsSheet.show(context, widget.chat.id),
             child: Row(
               children: [
                 Container(
-                  width: 36,
-                  height: 36,
+                  width: 38,
+                  height: 38,
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
                       colors: colors,
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                     ),
-                    borderRadius: BorderRadius.circular(12),
+                    shape: BoxShape.circle,
                   ),
                   child: Center(
                     child: Text(
@@ -214,7 +212,7 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
                       style: const TextStyle(
                         color: Colors.white,
                         fontSize: 15,
-                        fontWeight: FontWeight.w700,
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
                   ),
@@ -224,52 +222,20 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Flexible(
-                            child: Text(
-                              name,
-                              overflow: TextOverflow.ellipsis,
-                              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                    fontWeight: FontWeight.w600,
-                                    letterSpacing: -0.2,
-                                  ),
+                      Text(
+                        name,
+                        overflow: TextOverflow.ellipsis,
+                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                              fontWeight: FontWeight.w600,
                             ),
-                          ),
-                          if (hasTimer) ...[
-                            const SizedBox(width: 5),
-                            Container(
-                              padding: const EdgeInsets.all(2),
-                              decoration: BoxDecoration(
-                                color: AppColors.primary.withValues(alpha: 0.12),
-                                borderRadius: BorderRadius.circular(5),
-                              ),
-                              child: const Icon(Icons.timer_outlined,
-                                  size: 12, color: AppColors.primary),
-                            ),
-                          ],
-                        ],
                       ),
                       if (isTyping)
                         Text(
                           l10n.typing,
-                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                color: AppColors.primary,
-                                fontSize: 11,
-                              ),
-                        )
-                      else
-                        Text(
-                          l10n.encryptionInfo,
-                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                color: isDark
-                                    ? AppColors.textTertiaryDark
-                                    : AppColors.textTertiaryLight,
-                                fontSize: 11,
-                              ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            color: AppColors.accent,
+                            fontSize: 12,
+                          ),
                         ),
                     ],
                   ),
@@ -492,32 +458,39 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
   }
 
   Widget _buildMessageInput(BuildContext context, AppLocalizations l10n, bool isDark) {
-    final secondaryIcon = isDark
+    final dimColor = isDark
         ? AppColors.textTertiaryDark
         : AppColors.textTertiaryLight;
 
     return Container(
       padding: EdgeInsets.only(
-        left: 6,
+        left: 8,
         right: 8,
-        top: 10,
-        bottom: MediaQuery.of(context).padding.bottom + 10,
+        top: 8,
+        bottom: MediaQuery.of(context).padding.bottom + 8,
       ),
       decoration: BoxDecoration(
         color: isDark ? AppColors.backgroundDark : AppColors.backgroundLight,
+        border: Border(
+          top: BorderSide(
+            color: isDark ? AppColors.dividerDark : AppColors.dividerLight,
+            width: 0.33,
+          ),
+        ),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.end,
         children: [
+          // Lock icon
           Padding(
-            padding: const EdgeInsets.only(bottom: 4),
+            padding: const EdgeInsets.only(bottom: 6),
             child: IconButton(
               icon: Icon(
                 _messagePassword != null
                     ? Icons.lock_rounded
                     : Icons.lock_outline_rounded,
-                color: _messagePassword != null ? AppColors.warning : secondaryIcon,
-                size: 20,
+                color: _messagePassword != null ? AppColors.warning : dimColor,
+                size: 22,
               ),
               onPressed: _showPasswordSetDialog,
               visualDensity: VisualDensity.compact,
@@ -525,17 +498,18 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
               constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
             ),
           ),
+          // Timer icon
           Padding(
-            padding: const EdgeInsets.only(bottom: 4),
+            padding: const EdgeInsets.only(bottom: 6),
             child: PopupMenuButton<String>(
               icon: Icon(
                 _perMessageTimer != null || _burnAfterRead
                     ? Icons.timer_rounded
                     : Icons.timer_outlined,
                 color: _perMessageTimer != null || _burnAfterRead
-                    ? AppColors.primary
-                    : secondaryIcon,
-                size: 20,
+                    ? AppColors.accent
+                    : dimColor,
+                size: 22,
               ),
               padding: EdgeInsets.zero,
               onSelected: (value) {
@@ -592,19 +566,15 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
             ),
           ),
           const SizedBox(width: 4),
+          // Text field
           Expanded(
             child: Container(
+              constraints: const BoxConstraints(maxHeight: 120),
               decoration: BoxDecoration(
                 color: isDark
                     ? AppColors.surfaceElevatedDark
                     : AppColors.surfaceElevatedLight,
-                borderRadius: BorderRadius.circular(24),
-                border: Border.all(
-                  color: isDark
-                      ? AppColors.dividerDark.withValues(alpha: 0.5)
-                      : AppColors.dividerLight.withValues(alpha: 0.5),
-                  width: 0.5,
-                ),
+                borderRadius: BorderRadius.circular(22),
               ),
               child: TextField(
                 controller: _controller,
@@ -613,12 +583,24 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
                 maxLines: 5,
                 minLines: 1,
                 onChanged: _onTextChanged,
-                style: const TextStyle(fontSize: 15),
+                style: TextStyle(
+                  fontSize: 17,
+                  color: isDark
+                      ? AppColors.textPrimaryDark
+                      : AppColors.textPrimaryLight,
+                  height: 1.35,
+                ),
                 decoration: InputDecoration(
                   hintText: l10n.typeMessage,
+                  hintStyle: TextStyle(
+                    color: isDark
+                        ? AppColors.textTertiaryDark
+                        : AppColors.textTertiaryLight,
+                    fontSize: 17,
+                  ),
                   border: InputBorder.none,
                   contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 18,
+                    horizontal: 16,
                     vertical: 10,
                   ),
                 ),
@@ -627,30 +609,23 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
             ),
           ),
           const SizedBox(width: 8),
+          // Send button — circular, no shadow
           Padding(
             padding: const EdgeInsets.only(bottom: 2),
-            child: Container(
-              width: 40,
-              height: 40,
-              decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  colors: [AppColors.messageSentStart, AppColors.messageSentEnd],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
+            child: GestureDetector(
+              onTap: _sendMessage,
+              child: Container(
+                width: 36,
+                height: 36,
+                decoration: const BoxDecoration(
+                  color: AppColors.accent,
+                  shape: BoxShape.circle,
                 ),
-                borderRadius: BorderRadius.circular(14),
-                boxShadow: [
-                  BoxShadow(
-                    color: AppColors.primary.withValues(alpha: 0.3),
-                    blurRadius: 8,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
-              ),
-              child: IconButton(
-                icon: const Icon(Icons.arrow_upward_rounded, color: Colors.white, size: 20),
-                onPressed: _sendMessage,
-                padding: EdgeInsets.zero,
+                child: const Icon(
+                  Icons.arrow_upward_rounded,
+                  color: Colors.white,
+                  size: 20,
+                ),
               ),
             ),
           ),
