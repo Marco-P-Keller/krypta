@@ -6,6 +6,7 @@ import 'package:uuid/uuid.dart';
 import '../../../security/encryption/encryption_service.dart';
 import '../../../security/encryption/key_pair_model.dart';
 import '../../../security/key_management/key_manager.dart';
+import '../../../security/prekey/prekey_manager.dart';
 import '../../../security/ratchet/double_ratchet.dart';
 import '../../../security/ratchet/ratchet_message.dart';
 import '../../../security/ratchet/ratchet_state.dart';
@@ -26,6 +27,7 @@ class MessengerProvider extends ChangeNotifier {
   final FirestoreService _firestore;
   final EncryptedLocalStore _localStore;
   final NotificationService _notifications;
+  final PreKeyManager _preKeyManager;
   final _uuid = const Uuid();
 
   List<Chat> _chats = [];
@@ -50,12 +52,14 @@ class MessengerProvider extends ChangeNotifier {
     required FirestoreService firestore,
     required EncryptedLocalStore localStore,
     required NotificationService notifications,
+    PreKeyManager? preKeyManager,
   })  : _encryption = encryption,
         _keyManager = keyManager,
         _auth = auth,
         _firestore = firestore,
         _localStore = localStore,
-        _notifications = notifications;
+        _notifications = notifications,
+        _preKeyManager = preKeyManager ?? PreKeyManager(localStore: localStore);
 
   // --- Getters ---
 
@@ -69,6 +73,13 @@ class MessengerProvider extends ChangeNotifier {
       List.unmodifiable(_messagesByChat[chatId] ?? []);
 
   bool isTyping(String contactId) => _typingStates[contactId] ?? false;
+
+  /// Get our identity public key for safety number generation.
+  Future<Uint8List?> getIdentityPublicKey() async {
+    if (!_keyManager.hasKeysInMemory) return null;
+    final kp = await _keyManager.getOrCreateIdentityKeyPair();
+    return kp.publicKey;
+  }
 
   Contact? contactForId(String id) {
     for (final c in _contacts) {
@@ -118,6 +129,31 @@ class MessengerProvider extends ChangeNotifier {
         );
       } catch (e) {
         debugPrint('Public key registration failed: $e');
+      }
+
+      // PreKey management: init, rotate if needed, replenish OTPs
+      try {
+        await _preKeyManager.init();
+        if (_preKeyManager.needsRotation()) {
+          await _preKeyManager.generateSignedPreKey(keyPair);
+        }
+        if (_preKeyManager.needsReplenishment()) {
+          await _preKeyManager.generateOneTimePreKeys(100);
+        }
+        // Publish updated bundle
+        if (_preKeyManager.currentSignedPreKey != null) {
+          final sig = await _preKeyManager.signPreKey(
+            _preKeyManager.currentSignedPreKey!.publicKey,
+            keyPair.privateKey,
+          );
+          final bundle = _preKeyManager.buildBundle(keyPair, sig);
+          await _firestore.publishPreKeyBundle(
+            userId: userId!,
+            bundle: bundle.toMap(),
+          );
+        }
+      } catch (e) {
+        debugPrint('PreKey management failed: $e');
       }
 
       // Register for push notifications

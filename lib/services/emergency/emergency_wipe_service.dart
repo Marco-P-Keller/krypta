@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import '../firebase/firestore_service.dart';
 import '../storage/secure_storage_service.dart';
 import '../storage/encrypted_local_store.dart';
+import '../storage/file_helper.dart' as io;
 import '../../security/key_management/key_manager.dart';
 
 /// Immediate, complete, irreversible data destruction.
@@ -77,6 +78,13 @@ class EmergencyWipeService {
 
     // 4. Clear in-memory caches
     _keyManager.clearMemoryCache();
+
+    // 5. Wipe cache/temp directories (image cache, HTTP cache, temp files)
+    try {
+      await io.wipeCacheAndTemp();
+    } catch (e) {
+      debugPrint('Wipe cache/temp: $e');
+    }
   }
 
   Future<void> _wipeServer(String? userId) async {

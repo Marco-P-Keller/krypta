@@ -8,3 +8,4 @@ Future<Uint8List?> readFileBytes(String path) async => null;
 Future<List<String>> listEncFiles(String dirPath) async => [];
 Future<void> deleteFileAt(String path) async {}
 Future<void> deleteDirRecursive(String path) async {}
+Future<void> wipeCacheAndTemp() async {}

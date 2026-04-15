@@ -48,3 +48,29 @@ Future<void> deleteDirRecursive(String path) async {
   final dir = Directory(path);
   if (await dir.exists()) await dir.delete(recursive: true);
 }
+
+/// Wipe all application cache and temp directories.
+/// Covers: image cache, HTTP cache, temp files, notification payloads.
+Future<void> wipeCacheAndTemp() async {
+  try {
+    final tempDir = await getTemporaryDirectory();
+    if (await Directory(tempDir.path).exists()) {
+      await for (final entity in Directory(tempDir.path).list()) {
+        try {
+          await entity.delete(recursive: true);
+        } catch (_) {}
+      }
+    }
+  } catch (_) {}
+
+  try {
+    final cacheDir = await getApplicationCacheDirectory();
+    if (await Directory(cacheDir.path).exists()) {
+      await for (final entity in Directory(cacheDir.path).list()) {
+        try {
+          await entity.delete(recursive: true);
+        } catch (_) {}
+      }
+    }
+  } catch (_) {}
+}
