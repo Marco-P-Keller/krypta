@@ -137,5 +137,8 @@
   "copied": "Kopiert",
   "delete": "Löschen",
   "deleteMessage": "Nachricht löschen",
-  "deleteMessageConfirm": "Diese Nachricht wird dauerhaft von diesem Gerät gelöscht."
+  "deleteMessageConfirm": "Diese Nachricht wird dauerhaft von diesem Gerät gelöscht.",
+  "deleteForMe": "Für mich löschen",
+  "deleteForEveryone": "Für alle löschen",
+  "deleteForEveryoneConfirm": "Diese Nachricht wird für dich und den Empfänger gelöscht."
 }

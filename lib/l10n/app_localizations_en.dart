@@ -388,4 +388,14 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get deleteMessageConfirm =>
       'This message will be permanently deleted from this device.';
+
+  @override
+  String get deleteForMe => 'Delete for me';
+
+  @override
+  String get deleteForEveryone => 'Delete for everyone';
+
+  @override
+  String get deleteForEveryoneConfirm =>
+      'This message will be deleted for both you and the recipient.';
 }

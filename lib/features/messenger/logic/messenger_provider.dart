@@ -281,12 +281,46 @@ class MessengerProvider extends ChangeNotifier {
     }
   }
 
-  Future<void> deleteMessage(String chatId, String messageId) async {
+  /// Delete a message locally only (visible change only on this device).
+  Future<void> deleteMessageForMe(String chatId, String messageId) async {
     final messages = _messagesByChat[chatId];
     if (messages == null) return;
     messages.removeWhere((m) => m.id == messageId);
     await _localStore.saveMessages(chatId, messages);
-    // Update chat preview to last remaining message
+    if (messages.isNotEmpty) {
+      final last = messages.last;
+      _updateChatPreview(chatId, last.decryptedContent ?? '', last.timestamp);
+    }
+    notifyListeners();
+  }
+
+  /// Delete a message for both users.
+  /// Removes locally and sends a delete command to the recipient.
+  Future<void> deleteMessageForEveryone(String chatId, String messageId) async {
+    final messages = _messagesByChat[chatId];
+    if (messages == null) return;
+    final msgIdx = messages.indexWhere((m) => m.id == messageId);
+    if (msgIdx == -1) return;
+    final msg = messages[msgIdx];
+
+    // Only allow deleting own messages for everyone
+    if (msg.senderId != userId) return;
+
+    // Send delete command to recipient
+    final chat = chatById(chatId);
+    if (chat != null && userId != null) {
+      try {
+        await _firestore.sendAck(
+          recipientId: chat.recipientId,
+          messageId: messageId,
+          type: 'delete',
+        );
+      } catch (_) {}
+    }
+
+    // Delete locally
+    messages.removeAt(msgIdx);
+    await _localStore.saveMessages(chatId, messages);
     if (messages.isNotEmpty) {
       final last = messages.last;
       _updateChatPreview(chatId, last.decryptedContent ?? '', last.timestamp);
@@ -585,6 +619,23 @@ class MessengerProvider extends ChangeNotifier {
 
       final messageId = data['mid'] as String;
       final type = data['type'] as String;
+
+      // Handle remote delete command
+      if (type == 'delete') {
+        for (final chatId in _messagesByChat.keys) {
+          final messages = _messagesByChat[chatId]!;
+          final idx = messages.indexWhere((m) => m.id == messageId);
+          if (idx != -1) {
+            messages.removeAt(idx);
+            await _localStore.saveMessages(chatId, messages);
+            changed = true;
+            break;
+          }
+        }
+        try { await _firestore.deleteAck(userId!, change.doc.id); } catch (_) {}
+        continue;
+      }
+
       final newStatus = type == 'read' ? MessageStatus.read : MessageStatus.delivered;
 
       for (final chatId in _messagesByChat.keys) {

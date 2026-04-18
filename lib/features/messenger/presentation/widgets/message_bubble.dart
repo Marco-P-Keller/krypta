@@ -62,28 +62,37 @@ class MessageBubble extends StatelessWidget {
                 },
               ),
             ListTile(
-              leading: const Icon(Icons.delete_outline_rounded,
-                  color: AppColors.destructive),
-              title: Text(l10n.delete,
-                  style: const TextStyle(color: AppColors.destructive)),
+              leading: const Icon(Icons.delete_outline_rounded),
+              title: Text(l10n.deleteForMe),
               onTap: () {
                 Navigator.of(ctx).pop();
-                _confirmDelete(context, messenger);
+                messenger.deleteMessageForMe(message.chatId, message.id);
               },
             ),
+            if (isMine)
+              ListTile(
+                leading: const Icon(Icons.delete_forever_rounded,
+                    color: AppColors.destructive),
+                title: Text(l10n.deleteForEveryone,
+                    style: const TextStyle(color: AppColors.destructive)),
+                onTap: () {
+                  Navigator.of(ctx).pop();
+                  _confirmDeleteForEveryone(context, messenger);
+                },
+              ),
           ],
         ),
       ),
     );
   }
 
-  void _confirmDelete(BuildContext context, MessengerProvider messenger) {
+  void _confirmDeleteForEveryone(BuildContext context, MessengerProvider messenger) {
     final l10n = AppLocalizations.of(context)!;
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: Text(l10n.deleteMessage),
-        content: Text(l10n.deleteMessageConfirm),
+        title: Text(l10n.deleteForEveryone),
+        content: Text(l10n.deleteForEveryoneConfirm),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(),
@@ -94,7 +103,7 @@ class MessageBubble extends StatelessWidget {
               backgroundColor: AppColors.destructive,
             ),
             onPressed: () {
-              messenger.deleteMessage(message.chatId, message.id);
+              messenger.deleteMessageForEveryone(message.chatId, message.id);
               Navigator.of(ctx).pop();
             },
             child: Text(l10n.delete),
@@ -119,6 +128,7 @@ class MessageBubble extends StatelessWidget {
         alignment: isMine ? Alignment.centerRight : Alignment.centerLeft,
         child: GestureDetector(
           onLongPress: () => _showMessageMenu(context, isDark),
+          onDoubleTap: () => _showMessageMenu(context, isDark),
           child: message.isLocked
               ? _LockedBubble(
                   message: message,

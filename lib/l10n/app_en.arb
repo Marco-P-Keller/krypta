@@ -153,5 +153,8 @@
   "copied": "Copied",
   "delete": "Delete",
   "deleteMessage": "Delete Message",
-  "deleteMessageConfirm": "This message will be permanently deleted from this device."
+  "deleteMessageConfirm": "This message will be permanently deleted from this device.",
+  "deleteForMe": "Delete for me",
+  "deleteForEveryone": "Delete for everyone",
+  "deleteForEveryoneConfirm": "This message will be deleted for both you and the recipient."
 }

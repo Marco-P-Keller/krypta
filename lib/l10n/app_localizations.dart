@@ -823,6 +823,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'This message will be permanently deleted from this device.'**
   String get deleteMessageConfirm;
+
+  /// No description provided for @deleteForMe.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete for me'**
+  String get deleteForMe;
+
+  /// No description provided for @deleteForEveryone.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete for everyone'**
+  String get deleteForEveryone;
+
+  /// No description provided for @deleteForEveryoneConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'This message will be deleted for both you and the recipient.'**
+  String get deleteForEveryoneConfirm;
 }
 
 class _AppLocalizationsDelegate

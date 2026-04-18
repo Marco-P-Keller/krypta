@@ -147,7 +147,7 @@ class _SetupScreenState extends State<SetupScreen>
             ),
 
             Expanded(
-              child: Padding(
+              child: SingleChildScrollView(
                 padding: const EdgeInsets.symmetric(
                     horizontal: AppSpacing.screenPadding),
                 child: Column(
