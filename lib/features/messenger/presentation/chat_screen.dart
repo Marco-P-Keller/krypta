@@ -484,85 +484,91 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
           // Lock icon
           Padding(
             padding: const EdgeInsets.only(bottom: 6),
-            child: IconButton(
-              icon: Icon(
-                _messagePassword != null
-                    ? Icons.lock_rounded
-                    : Icons.lock_outline_rounded,
-                color: _messagePassword != null ? AppColors.warning : dimColor,
-                size: 22,
+            child: SizedBox(
+              width: 36,
+              height: 36,
+              child: IconButton(
+                icon: Icon(
+                  _messagePassword != null
+                      ? Icons.lock_rounded
+                      : Icons.lock_outline_rounded,
+                  color: _messagePassword != null ? AppColors.warning : dimColor,
+                  size: 22,
+                ),
+                onPressed: _showPasswordSetDialog,
+                padding: EdgeInsets.zero,
               ),
-              onPressed: _showPasswordSetDialog,
-              visualDensity: VisualDensity.compact,
-              padding: EdgeInsets.zero,
-              constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
             ),
           ),
           // Timer icon
           Padding(
             padding: const EdgeInsets.only(bottom: 6),
-            child: PopupMenuButton<String>(
-              icon: Icon(
-                _perMessageTimer != null || _burnAfterRead
-                    ? Icons.timer_rounded
-                    : Icons.timer_outlined,
-                color: _perMessageTimer != null || _burnAfterRead
-                    ? AppColors.accent
-                    : dimColor,
-                size: 22,
-              ),
-              padding: EdgeInsets.zero,
-              onSelected: (value) {
-                setState(() {
-                  _hasPerMessageOverride = true;
-                  if (value == 'burn') {
-                    _burnAfterRead = true;
-                    _perMessageTimer = null;
-                  } else if (value == 'off') {
-                    _burnAfterRead = false;
-                    _perMessageTimer = null;
-                  } else if (value == 'default') {
-                    _hasPerMessageOverride = false;
-                    _burnAfterRead = false;
-                    _perMessageTimer = null;
-                  } else {
-                    _burnAfterRead = false;
-                    _perMessageTimer = Duration(seconds: int.parse(value));
-                  }
-                });
-              },
-              itemBuilder: (context) {
-                final chat = context
-                    .read<MessengerProvider>()
-                    .chatById(widget.chat.id);
-                final hasDefault = chat?.defaultSelfDestruct != null;
-                return [
-                  if (hasDefault)
+            child: SizedBox(
+              width: 36,
+              height: 36,
+              child: PopupMenuButton<String>(
+                icon: Icon(
+                  _perMessageTimer != null || _burnAfterRead
+                      ? Icons.timer_rounded
+                      : Icons.timer_outlined,
+                  color: _perMessageTimer != null || _burnAfterRead
+                      ? AppColors.accent
+                      : dimColor,
+                  size: 22,
+                ),
+                padding: EdgeInsets.zero,
+                onSelected: (value) {
+                  setState(() {
+                    _hasPerMessageOverride = true;
+                    if (value == 'burn') {
+                      _burnAfterRead = true;
+                      _perMessageTimer = null;
+                    } else if (value == 'off') {
+                      _burnAfterRead = false;
+                      _perMessageTimer = null;
+                    } else if (value == 'default') {
+                      _hasPerMessageOverride = false;
+                      _burnAfterRead = false;
+                      _perMessageTimer = null;
+                    } else {
+                      _burnAfterRead = false;
+                      _perMessageTimer = Duration(seconds: int.parse(value));
+                    }
+                  });
+                },
+                itemBuilder: (context) {
+                  final chat = context
+                      .read<MessengerProvider>()
+                      .chatById(widget.chat.id);
+                  final hasDefault = chat?.defaultSelfDestruct != null;
+                  return [
+                    if (hasDefault)
+                      PopupMenuItem(
+                        value: 'default',
+                        child: Text(l10n.chatDefaultWithTimer(
+                            _durationLabel(chat!.defaultSelfDestruct))),
+                      ),
+                    PopupMenuItem(value: 'off', child: Text(l10n.off)),
+                    PopupMenuItem(value: '30', child: Text(l10n.seconds30)),
+                    PopupMenuItem(value: '300', child: Text(l10n.minutes5)),
+                    PopupMenuItem(value: '3600', child: Text(l10n.hour1)),
+                    PopupMenuItem(value: '86400', child: Text(l10n.day1)),
+                    PopupMenuItem(value: '604800', child: Text(l10n.week1)),
+                    const PopupMenuDivider(),
                     PopupMenuItem(
-                      value: 'default',
-                      child: Text(l10n.chatDefaultWithTimer(
-                          _durationLabel(chat!.defaultSelfDestruct))),
+                      value: 'burn',
+                      child: Row(
+                        children: [
+                          const Icon(Icons.local_fire_department_rounded,
+                              color: AppColors.destructive, size: 18),
+                          const SizedBox(width: 8),
+                          Text(l10n.burnAfterRead),
+                        ],
+                      ),
                     ),
-                  PopupMenuItem(value: 'off', child: Text(l10n.off)),
-                  PopupMenuItem(value: '30', child: Text(l10n.seconds30)),
-                  PopupMenuItem(value: '300', child: Text(l10n.minutes5)),
-                  PopupMenuItem(value: '3600', child: Text(l10n.hour1)),
-                  PopupMenuItem(value: '86400', child: Text(l10n.day1)),
-                  PopupMenuItem(value: '604800', child: Text(l10n.week1)),
-                  const PopupMenuDivider(),
-                  PopupMenuItem(
-                    value: 'burn',
-                    child: Row(
-                      children: [
-                        const Icon(Icons.local_fire_department_rounded,
-                            color: AppColors.destructive, size: 18),
-                        const SizedBox(width: 8),
-                        Text(l10n.burnAfterRead),
-                      ],
-                    ),
-                  ),
-                ];
-              },
+                  ];
+                },
+              ),
             ),
           ),
           const SizedBox(width: 4),
