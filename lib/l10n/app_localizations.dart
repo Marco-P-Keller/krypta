@@ -793,6 +793,36 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Password does not meet the requirements'**
   String get passwordTooWeak;
+
+  /// No description provided for @copy.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy'**
+  String get copy;
+
+  /// No description provided for @copied.
+  ///
+  /// In en, this message translates to:
+  /// **'Copied'**
+  String get copied;
+
+  /// No description provided for @delete.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete'**
+  String get delete;
+
+  /// No description provided for @deleteMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete Message'**
+  String get deleteMessage;
+
+  /// No description provided for @deleteMessageConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'This message will be permanently deleted from this device.'**
+  String get deleteMessageConfirm;
 }
 
 class _AppLocalizationsDelegate

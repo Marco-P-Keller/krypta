@@ -281,6 +281,19 @@ class MessengerProvider extends ChangeNotifier {
     }
   }
 
+  Future<void> deleteMessage(String chatId, String messageId) async {
+    final messages = _messagesByChat[chatId];
+    if (messages == null) return;
+    messages.removeWhere((m) => m.id == messageId);
+    await _localStore.saveMessages(chatId, messages);
+    // Update chat preview to last remaining message
+    if (messages.isNotEmpty) {
+      final last = messages.last;
+      _updateChatPreview(chatId, last.decryptedContent ?? '', last.timestamp);
+    }
+    notifyListeners();
+  }
+
   Future<void> deleteChat(String chatId) async {
     _chats.removeWhere((c) => c.id == chatId);
     _messagesByChat.remove(chatId);

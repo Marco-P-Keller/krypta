@@ -131,5 +131,11 @@
   "newPassword": "Neues Passwort",
   "confirmPassword": "Passwort bestätigen",
   "passwordsDoNotMatch": "Passwörter stimmen nicht überein",
-  "passwordTooWeak": "Passwort erfüllt die Anforderungen nicht"
+  "passwordTooWeak": "Passwort erfüllt die Anforderungen nicht",
+
+  "copy": "Kopieren",
+  "copied": "Kopiert",
+  "delete": "Löschen",
+  "deleteMessage": "Nachricht löschen",
+  "deleteMessageConfirm": "Diese Nachricht wird dauerhaft von diesem Gerät gelöscht."
 }

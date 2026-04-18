@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../../../theme/app_colors.dart';
@@ -18,6 +19,91 @@ class MessageBubble extends StatelessWidget {
     this.isLastInGroup = true,
   });
 
+  void _showMessageMenu(BuildContext context, bool isDark) {
+    HapticFeedback.mediumImpact();
+    final messenger = context.read<MessengerProvider>();
+    final l10n = AppLocalizations.of(context)!;
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => Container(
+        decoration: BoxDecoration(
+          color: isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        padding: EdgeInsets.only(
+          top: 12,
+          bottom: MediaQuery.of(ctx).padding.bottom + 16,
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: isDark ? AppColors.dividerDark : AppColors.dividerLight,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const SizedBox(height: 8),
+            if (!message.isLocked && message.decryptedContent != null)
+              ListTile(
+                leading: const Icon(Icons.copy_rounded),
+                title: Text(l10n.copy),
+                onTap: () {
+                  Clipboard.setData(
+                      ClipboardData(text: message.decryptedContent!));
+                  Navigator.of(ctx).pop();
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text(l10n.copied)),
+                  );
+                },
+              ),
+            ListTile(
+              leading: const Icon(Icons.delete_outline_rounded,
+                  color: AppColors.destructive),
+              title: Text(l10n.delete,
+                  style: const TextStyle(color: AppColors.destructive)),
+              onTap: () {
+                Navigator.of(ctx).pop();
+                _confirmDelete(context, messenger);
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _confirmDelete(BuildContext context, MessengerProvider messenger) {
+    final l10n = AppLocalizations.of(context)!;
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(l10n.deleteMessage),
+        content: Text(l10n.deleteMessageConfirm),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: Text(l10n.cancel),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(
+              backgroundColor: AppColors.destructive,
+            ),
+            onPressed: () {
+              messenger.deleteMessage(message.chatId, message.id);
+              Navigator.of(ctx).pop();
+            },
+            child: Text(l10n.delete),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -31,19 +117,22 @@ class MessageBubble extends StatelessWidget {
       ),
       child: Align(
         alignment: isMine ? Alignment.centerRight : Alignment.centerLeft,
-        child: message.isLocked
-            ? _LockedBubble(
-                message: message,
-                isMine: isMine,
-                isDark: isDark,
-                isLast: isLastInGroup,
-              )
-            : _UnlockedBubble(
-                message: message,
-                isMine: isMine,
-                isDark: isDark,
-                isLast: isLastInGroup,
-              ),
+        child: GestureDetector(
+          onLongPress: () => _showMessageMenu(context, isDark),
+          child: message.isLocked
+              ? _LockedBubble(
+                  message: message,
+                  isMine: isMine,
+                  isDark: isDark,
+                  isLast: isLastInGroup,
+                )
+              : _UnlockedBubble(
+                  message: message,
+                  isMine: isMine,
+                  isDark: isDark,
+                  isLast: isLastInGroup,
+                ),
+        ),
       ),
     );
   }

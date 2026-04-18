@@ -374,4 +374,20 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get passwordTooWeak => 'Passwort erfüllt die Anforderungen nicht';
+
+  @override
+  String get copy => 'Kopieren';
+
+  @override
+  String get copied => 'Kopiert';
+
+  @override
+  String get delete => 'Löschen';
+
+  @override
+  String get deleteMessage => 'Nachricht löschen';
+
+  @override
+  String get deleteMessageConfirm =>
+      'Diese Nachricht wird dauerhaft von diesem Gerät gelöscht.';
 }
