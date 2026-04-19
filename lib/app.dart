@@ -71,7 +71,6 @@ enum _AppScreen {
 class _KryptaShellState extends State<KryptaShell> with WidgetsBindingObserver {
   _AppScreen _currentScreen = _AppScreen.calculator;
   bool _isInitialized = false;
-  bool _needsBiometric = false;
   Chat? _selectedChat;
 
   @override
@@ -87,34 +86,24 @@ class _KryptaShellState extends State<KryptaShell> with WidgetsBindingObserver {
     super.dispose();
   }
 
-  /// When app returns to foreground after being in messenger,
-  /// require biometric re-auth if enabled.
+  /// When app goes to background, always lock back to calculator.
+  /// This ensures the messenger is never visible when returning to the app.
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.paused) {
+    if (state == AppLifecycleState.paused || state == AppLifecycleState.inactive) {
       if (_currentScreen != _AppScreen.calculator &&
-          _currentScreen != _AppScreen.setup) {
-        _needsBiometric = true;
+          _currentScreen != _AppScreen.setup &&
+          _currentScreen != _AppScreen.tutorial) {
+        // Disable screenshot protection and return to calculator
+        final platform = context.read<PlatformSecurityService>();
+        platform.disableScreenshotProtection();
+        if (mounted) {
+          setState(() {
+            _currentScreen = _AppScreen.calculator;
+            _selectedChat = null;
+          });
+        }
       }
-    }
-    if (state == AppLifecycleState.resumed && _needsBiometric) {
-      _needsBiometric = false;
-      _checkBiometricOnResume();
-    }
-  }
-
-  Future<void> _checkBiometricOnResume() async {
-    final storage = context.read<SecureStorageService>();
-    final platform = context.read<PlatformSecurityService>();
-
-    final biometricEnabled = await storage.isBiometricEnabled();
-    if (!biometricEnabled) return;
-
-    final authenticated = await platform.authenticate(
-      reason: 'Authenticate to return to Krypta',
-    );
-    if (!authenticated && mounted) {
-      setState(() => _currentScreen = _AppScreen.calculator);
     }
   }
 
