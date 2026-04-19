@@ -241,6 +241,7 @@ class _KryptaShellState extends State<KryptaShell> with WidgetsBindingObserver {
             return ok;
           },
           onCancel: () => _navigateTo(_AppScreen.calculator),
+          onEmergencyWipe: _handleEmergencyWipe,
         );
 
       case _AppScreen.calculator:

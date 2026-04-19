@@ -5,14 +5,17 @@ import '../../../theme/app_spacing.dart';
 
 /// Full-screen vault password gate.
 /// Shown after the calculator secret code, before the messenger.
+/// After 5 failed attempts, triggers emergency wipe.
 class VaultPasswordScreen extends StatefulWidget {
   final Future<bool> Function(String password) onVerify;
   final VoidCallback onCancel;
+  final VoidCallback onEmergencyWipe;
 
   const VaultPasswordScreen({
     super.key,
     required this.onVerify,
     required this.onCancel,
+    required this.onEmergencyWipe,
   });
 
   @override
@@ -24,9 +27,13 @@ class _VaultPasswordScreenState extends State<VaultPasswordScreen>
   final _controller = TextEditingController();
   late final AnimationController _shakeCtrl;
   late final Animation<double> _shakeAnim;
+  static const _maxAttempts = 5;
+  static const _warningAfter = 2;
+
   bool _isLoading = false;
   bool _obscure = true;
   String? _error;
+  int _failedAttempts = 0;
 
   @override
   void initState() {
@@ -57,11 +64,21 @@ class _VaultPasswordScreenState extends State<VaultPasswordScreen>
     if (!mounted) return;
 
     if (!ok) {
+      _failedAttempts++;
       _controller.clear();
       _shakeCtrl.forward(from: 0);
+
+      if (_failedAttempts >= _maxAttempts) {
+        widget.onEmergencyWipe();
+        return;
+      }
+
+      final remaining = _maxAttempts - _failedAttempts;
       setState(() {
         _isLoading = false;
-        _error = AppLocalizations.of(context)!.wrongPassword;
+        _error = _failedAttempts >= _warningAfter
+            ? 'Falsches Passwort. Noch $remaining Versuch${remaining == 1 ? '' : 'e'}, danach werden alle Daten gelöscht.'
+            : AppLocalizations.of(context)!.wrongPassword;
       });
     }
   }
@@ -158,7 +175,6 @@ class _VaultPasswordScreenState extends State<VaultPasswordScreen>
                     filled: true,
                     fillColor: AppColors.surfaceElevatedDark,
                     hintText: l10n.enterPassword,
-                    errorText: _error,
                     border: OutlineInputBorder(
                       borderRadius:
                           BorderRadius.circular(AppSpacing.radiusMd),
@@ -192,6 +208,51 @@ class _VaultPasswordScreenState extends State<VaultPasswordScreen>
                   ),
                 ),
               ),
+
+              if (_error != null) ...[
+                const SizedBox(height: 12),
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: _failedAttempts >= _warningAfter
+                        ? AppColors.destructive.withValues(alpha: 0.1)
+                        : AppColors.error.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
+                    border: _failedAttempts >= _warningAfter
+                        ? Border.all(
+                            color: AppColors.destructive.withValues(alpha: 0.3))
+                        : null,
+                  ),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Icon(
+                        _failedAttempts >= _warningAfter
+                            ? Icons.warning_amber_rounded
+                            : Icons.error_outline_rounded,
+                        size: 18,
+                        color: _failedAttempts >= _warningAfter
+                            ? AppColors.destructive
+                            : AppColors.error,
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          _error!,
+                          style: TextStyle(
+                            color: _failedAttempts >= _warningAfter
+                                ? AppColors.destructive
+                                : AppColors.error,
+                            fontSize: 13,
+                            height: 1.4,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
 
               const SizedBox(height: AppSpacing.md),
 
