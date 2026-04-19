@@ -126,7 +126,7 @@ class _KryptaShellState extends State<KryptaShell> with WidgetsBindingObserver {
     if (!isSetup) {
       if (!mounted) return;
       setState(() {
-        _currentScreen = _AppScreen.setup;
+        _currentScreen = _AppScreen.tutorial;
         _isInitialized = true;
       });
       return;
@@ -222,13 +222,13 @@ class _KryptaShellState extends State<KryptaShell> with WidgetsBindingObserver {
       case _AppScreen.setup:
         return SetupScreen(
           key: const ValueKey('setup'),
-          onSetupComplete: () => _navigateTo(_AppScreen.tutorial),
+          onSetupComplete: () => _navigateTo(_AppScreen.calculator),
         );
 
       case _AppScreen.tutorial:
         return TutorialScreen(
           key: const ValueKey('tutorial'),
-          onComplete: () => _navigateTo(_AppScreen.calculator),
+          onComplete: () => _navigateTo(_AppScreen.setup),
         );
 
       case _AppScreen.vaultPassword:
