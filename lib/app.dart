@@ -3,6 +3,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:provider/provider.dart';
 import 'l10n/app_localizations.dart';
 import 'features/auth/presentation/setup_screen.dart';
+import 'features/auth/presentation/tutorial_screen.dart';
 import 'features/auth/presentation/vault_password_screen.dart';
 import 'features/calculator/presentation/calculator_screen.dart';
 import 'features/decoy/decoy_provider.dart';
@@ -58,6 +59,7 @@ class KryptaShell extends StatefulWidget {
 enum _AppScreen {
   calculator,
   setup,
+  tutorial,
   vaultPassword,
   messenger,
   chat,
@@ -220,7 +222,13 @@ class _KryptaShellState extends State<KryptaShell> with WidgetsBindingObserver {
       case _AppScreen.setup:
         return SetupScreen(
           key: const ValueKey('setup'),
-          onSetupComplete: () => _navigateTo(_AppScreen.calculator),
+          onSetupComplete: () => _navigateTo(_AppScreen.tutorial),
+        );
+
+      case _AppScreen.tutorial:
+        return TutorialScreen(
+          key: const ValueKey('tutorial'),
+          onComplete: () => _navigateTo(_AppScreen.calculator),
         );
 
       case _AppScreen.vaultPassword:
