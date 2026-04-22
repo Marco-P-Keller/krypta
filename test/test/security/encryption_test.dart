@@ -39,52 +39,73 @@ void main() {
 
   group('E2E Message Encryption', () {
     test('encrypt and decrypt roundtrip', () async {
-      await encryption.generateIdentityKeyPair(); // alice (unused)
+      final alice = await encryption.generateIdentityKeyPair();
       final bob = await encryption.generateIdentityKeyPair();
 
       final payload = await encryption.encryptMessage(
         plaintext: 'Hello Bob!',
         recipientPublicKey: bob.publicKey,
+        senderPublicKey: alice.publicKey,
       );
 
       final decrypted = await encryption.decryptMessage(
         payload: payload,
         privateKey: bob.privateKey,
+        senderPublicKey: alice.publicKey,
+        recipientPublicKey: bob.publicKey,
       );
 
       expect(decrypted, 'Hello Bob!');
     });
 
     test('each encryption produces different ciphertext (ephemeral keys)', () async {
+      final alice = await encryption.generateIdentityKeyPair();
       final bob = await encryption.generateIdentityKeyPair();
 
       final p1 = await encryption.encryptMessage(
-        plaintext: 'same', recipientPublicKey: bob.publicKey);
+        plaintext: 'same',
+        recipientPublicKey: bob.publicKey,
+        senderPublicKey: alice.publicKey,
+      );
       final p2 = await encryption.encryptMessage(
-        plaintext: 'same', recipientPublicKey: bob.publicKey);
+        plaintext: 'same',
+        recipientPublicKey: bob.publicKey,
+        senderPublicKey: alice.publicKey,
+      );
 
       expect(base64Encode(p1.ciphertext), isNot(equals(base64Encode(p2.ciphertext))));
     });
 
     test('wrong key fails decryption', () async {
+      final alice = await encryption.generateIdentityKeyPair();
       final bob = await encryption.generateIdentityKeyPair();
       final eve = await encryption.generateIdentityKeyPair();
 
       final payload = await encryption.encryptMessage(
         plaintext: 'For Bob only',
         recipientPublicKey: bob.publicKey,
+        senderPublicKey: alice.publicKey,
       );
 
       expect(
-        () => encryption.decryptMessage(payload: payload, privateKey: eve.privateKey),
+        () => encryption.decryptMessage(
+          payload: payload,
+          privateKey: eve.privateKey,
+          senderPublicKey: alice.publicKey,
+          recipientPublicKey: eve.publicKey,
+        ),
         throwsA(anything),
       );
     });
 
     test('tampered ciphertext fails', () async {
+      final alice = await encryption.generateIdentityKeyPair();
       final bob = await encryption.generateIdentityKeyPair();
       final payload = await encryption.encryptMessage(
-        plaintext: 'test', recipientPublicKey: bob.publicKey);
+        plaintext: 'test',
+        recipientPublicKey: bob.publicKey,
+        senderPublicKey: alice.publicKey,
+      );
 
       final tampered = Uint8List.fromList(payload.ciphertext);
       tampered[0] ^= 0xFF;
@@ -93,6 +114,8 @@ void main() {
         () => encryption.decryptMessage(
           payload: payload.copyWith(ciphertext: tampered),
           privateKey: bob.privateKey,
+          senderPublicKey: alice.publicKey,
+          recipientPublicKey: bob.publicKey,
         ),
         throwsA(anything),
       );

@@ -1,15 +1,27 @@
+import 'dart:async';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:local_auth/local_auth.dart';
 
 /// Platform security: biometric auth, screenshot protection,
-/// root/jailbreak/Frida/debugger detection.
+/// root/jailbreak/Frida/debugger detection, screenshot event detection.
 ///
 /// All operations are no-ops on web.
 class PlatformSecurityService {
   final LocalAuthentication _localAuth;
   static const _channel = MethodChannel('krypta/security');
+  static const _screenshotEventChannel = EventChannel('krypta/screenshot_events');
+
+  /// Stream of screenshot events from the native platform.
+  /// Emits `true` when a screenshot was blocked (protection on),
+  /// emits `false` when a screenshot was taken (protection off).
+  Stream<bool>? _screenshotStream;
+
+  /// Whether screenshot protection is currently enabled.
+  bool _screenshotProtectionActive = false;
+
+  bool get isScreenshotProtectionActive => _screenshotProtectionActive;
 
   /// Cached result of device compromise check.
   /// Call [invalidateDeviceCache] on app resume to re-check periodically.
@@ -46,6 +58,7 @@ class PlatformSecurityService {
   // --- Screenshot Protection ---
 
   Future<void> enableScreenshotProtection() async {
+    _screenshotProtectionActive = true;
     if (kIsWeb) return;
     try {
       await _channel.invokeMethod('enableSecureFlag');
@@ -53,10 +66,23 @@ class PlatformSecurityService {
   }
 
   Future<void> disableScreenshotProtection() async {
+    _screenshotProtectionActive = false;
     if (kIsWeb) return;
     try {
       await _channel.invokeMethod('disableSecureFlag');
     } catch (_) {}
+  }
+
+  // --- Screenshot Event Detection ---
+
+  /// Stream that emits when a screenshot event is detected.
+  /// Each event is a `Map` with `"blocked"` = true/false.
+  Stream<bool> get onScreenshotDetected {
+    _screenshotStream ??= _screenshotEventChannel
+        .receiveBroadcastStream()
+        .map((event) => event == true)
+        .handleError((_) {});
+    return _screenshotStream!;
   }
 
   // --- Device Integrity Check ---

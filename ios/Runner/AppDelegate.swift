@@ -5,6 +5,9 @@ import Security
 @main
 @objc class AppDelegate: FlutterAppDelegate {
   private let securityChannel = "krypta/security"
+  private let screenshotEventChannel = "krypta/screenshot_events"
+  private var screenshotEventSink: FlutterEventSink?
+  private var isSecureFlagEnabled = false
 
   override func application(
     _ application: UIApplication,
@@ -21,6 +24,13 @@ import Security
       channel.setMethodCallHandler { [weak self] call, result in
         self?.handleMethodCall(call, result: result)
       }
+
+      // Screenshot event detection via EventChannel
+      let eventChannel = FlutterEventChannel(
+        name: screenshotEventChannel,
+        binaryMessenger: controller.binaryMessenger
+      )
+      eventChannel.setStreamHandler(ScreenshotStreamHandler(delegate: self))
     }
 
     return super.application(application, didFinishLaunchingWithOptions: launchOptions)
@@ -31,9 +41,10 @@ import Security
   private func handleMethodCall(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
     switch call.method {
     case "enableSecureFlag":
-      // iOS uses blur overlay approach instead of FLAG_SECURE
+      isSecureFlagEnabled = true
       result(true)
     case "disableSecureFlag":
+      isSecureFlagEnabled = false
       result(true)
     case "isStrongBoxAvailable":
       // iOS equivalent: Secure Enclave
@@ -213,5 +224,52 @@ import Security
     blurView.frame = window.bounds
     blurView.tag = 9999
     window.addSubview(blurView)
+  }
+
+  // MARK: - Screenshot Event Detection
+
+  func startScreenshotDetection() {
+    NotificationCenter.default.addObserver(
+      self,
+      selector: #selector(screenshotTaken),
+      name: UIApplication.userDidTakeScreenshotNotification,
+      object: nil
+    )
+  }
+
+  func stopScreenshotDetection() {
+    NotificationCenter.default.removeObserver(
+      self,
+      name: UIApplication.userDidTakeScreenshotNotification,
+      object: nil
+    )
+  }
+
+  @objc private func screenshotTaken() {
+    // isSecureFlagEnabled = true means protection was active (blocked attempt)
+    // isSecureFlagEnabled = false means screenshot was actually taken
+    screenshotEventSink?(isSecureFlagEnabled)
+  }
+}
+
+// MARK: - Screenshot EventChannel Stream Handler
+
+class ScreenshotStreamHandler: NSObject, FlutterStreamHandler {
+  weak var delegate: AppDelegate?
+
+  init(delegate: AppDelegate) {
+    self.delegate = delegate
+  }
+
+  func onListen(withArguments arguments: Any?, eventSink events: @escaping FlutterEventSink) -> FlutterError? {
+    delegate?.screenshotEventSink = events
+    delegate?.startScreenshotDetection()
+    return nil
+  }
+
+  func onCancel(withArguments arguments: Any?) -> FlutterError? {
+    delegate?.screenshotEventSink = nil
+    delegate?.stopScreenshotDetection()
+    return nil
   }
 }

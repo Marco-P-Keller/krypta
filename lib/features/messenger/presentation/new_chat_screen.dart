@@ -82,10 +82,11 @@ class _NewChatScreenState extends State<NewChatScreen> {
     }
   }
 
-  Future<String?> _showNameDialog(BuildContext context, String shortId) {
+  Future<String?> _showNameDialog(BuildContext context, String shortId) async {
     final l10n = AppLocalizations.of(context)!;
     final controller = TextEditingController();
-    return showDialog<String>(
+    try {
+      return await showDialog<String>(
       context: context,
       barrierDismissible: false,
       builder: (ctx) => AlertDialog(
@@ -132,7 +133,10 @@ class _NewChatScreenState extends State<NewChatScreen> {
           ),
         ],
       ),
-    );
+      );
+    } finally {
+      controller.dispose();
+    }
   }
 
   @override

@@ -594,7 +594,7 @@ class _ChatSettingsSheetState extends State<ChatSettingsSheet> {
           ),
         ],
       ),
-    );
+    ).then((_) => controller.dispose());
   }
 
   Future<void> _showSafetyNumber(

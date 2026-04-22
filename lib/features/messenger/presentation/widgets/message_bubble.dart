@@ -324,7 +324,7 @@ class _LockedBubble extends StatelessWidget {
           ],
         ),
       ),
-    );
+    ).then((_) => controller.dispose());
   }
 
   Future<void> _tryUnlock(

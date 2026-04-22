@@ -1,12 +1,18 @@
 package com.example.kryptaapp
 
+import android.database.ContentObserver
+import android.net.Uri
 import android.os.Build
+import android.os.Handler
+import android.os.Looper
+import android.provider.MediaStore
 import android.security.keystore.KeyGenParameterSpec
 import android.security.keystore.KeyProperties
 import android.security.keystore.StrongBoxUnavailableException
 import android.view.WindowManager
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
+import io.flutter.plugin.common.EventChannel
 import io.flutter.plugin.common.MethodChannel
 import java.security.KeyStore
 import javax.crypto.Cipher
@@ -16,8 +22,13 @@ import javax.crypto.spec.GCMParameterSpec
 
 class MainActivity : FlutterActivity() {
     private val CHANNEL = "krypta/security"
+    private val SCREENSHOT_EVENT_CHANNEL = "krypta/screenshot_events"
     private val HARDWARE_KEY_ALIAS = "krypta_hw_wrapping_key"
     private val GCM_TAG_LENGTH = 128
+
+    private var screenshotEventSink: EventChannel.EventSink? = null
+    private var screenshotObserver: ContentObserver? = null
+    private var isSecureFlagEnabled = true
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
@@ -29,9 +40,23 @@ class MainActivity : FlutterActivity() {
             WindowManager.LayoutParams.FLAG_SECURE
         )
 
+        // Screenshot event detection via EventChannel
+        EventChannel(flutterEngine.dartExecutor.binaryMessenger, SCREENSHOT_EVENT_CHANNEL)
+            .setStreamHandler(object : EventChannel.StreamHandler {
+                override fun onListen(arguments: Any?, events: EventChannel.EventSink?) {
+                    screenshotEventSink = events
+                    startScreenshotDetection()
+                }
+                override fun onCancel(arguments: Any?) {
+                    screenshotEventSink = null
+                    stopScreenshotDetection()
+                }
+            })
+
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, CHANNEL).setMethodCallHandler { call, result ->
             when (call.method) {
                 "enableSecureFlag" -> {
+                    isSecureFlagEnabled = true
                     window.setFlags(
                         WindowManager.LayoutParams.FLAG_SECURE,
                         WindowManager.LayoutParams.FLAG_SECURE
@@ -39,6 +64,7 @@ class MainActivity : FlutterActivity() {
                     result.success(true)
                 }
                 "disableSecureFlag" -> {
+                    isSecureFlagEnabled = false
                     window.clearFlags(WindowManager.LayoutParams.FLAG_SECURE)
                     result.success(true)
                 }
@@ -229,5 +255,49 @@ class MainActivity : FlutterActivity() {
         if (ks.containsAlias("krypta_strongbox_probe")) {
             ks.deleteEntry("krypta_strongbox_probe")
         }
+    }
+
+    // --- Screenshot Detection ---
+
+    private fun startScreenshotDetection() {
+        if (screenshotObserver != null) return
+
+        // Use Android 14+ ScreenCaptureCallback if available
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+            registerScreenCaptureCallback(mainExecutor) {
+                // blocked = true when FLAG_SECURE is on (screenshot was blocked)
+                screenshotEventSink?.success(isSecureFlagEnabled)
+            }
+        }
+
+        // ContentObserver on MediaStore as fallback / supplement for all versions.
+        // Detects when a new image is saved to the Screenshots directory.
+        val handler = Handler(Looper.getMainLooper())
+        screenshotObserver = object : ContentObserver(handler) {
+            override fun onChange(selfChange: Boolean, uri: Uri?) {
+                super.onChange(selfChange, uri)
+                // Only notify if screenshot protection is OFF (screenshot was actually taken)
+                if (!isSecureFlagEnabled) {
+                    screenshotEventSink?.success(false)
+                }
+            }
+        }
+        contentResolver.registerContentObserver(
+            MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
+            true,
+            screenshotObserver!!
+        )
+    }
+
+    private fun stopScreenshotDetection() {
+        screenshotObserver?.let {
+            contentResolver.unregisterContentObserver(it)
+        }
+        screenshotObserver = null
+    }
+
+    override fun onDestroy() {
+        stopScreenshotDetection()
+        super.onDestroy()
     }
 }

@@ -49,6 +49,8 @@
 	<string>Authenticate to unlock the app</string>
 	<key>NSCameraUsageDescription</key>
 	<string>Camera access is needed to scan QR codes</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Access to your photo library is needed to import QR codes</string>
 	<key>UIBackgroundModes</key>
 	<array>
 		<string>fetch</string>

@@ -106,54 +106,58 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final controller = TextEditingController();
     bool? result;
 
-    await showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Authentifizierung'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              'Tresor-Passwort eingeben um Sicherheitseinstellungen zu ändern.',
-              style: Theme.of(context).textTheme.bodySmall,
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: controller,
-              obscureText: true,
-              autofocus: true,
-              decoration: const InputDecoration(
-                hintText: '••••••••••',
-                prefixIcon: Icon(Icons.lock_outline, size: 20),
+    try {
+      await showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (ctx) => AlertDialog(
+          title: const Text('Authentifizierung'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                'Tresor-Passwort eingeben um Sicherheitseinstellungen zu ändern.',
+                style: Theme.of(context).textTheme.bodySmall,
               ),
-              onSubmitted: (_) async {
+              const SizedBox(height: 12),
+              TextField(
+                controller: controller,
+                obscureText: true,
+                autofocus: true,
+                decoration: const InputDecoration(
+                  hintText: '••••••••••',
+                  prefixIcon: Icon(Icons.lock_outline, size: 20),
+                ),
+                onSubmitted: (_) async {
+                  final ok = await storage.verifyVaultPassword(controller.text);
+                  result = ok;
+                  if (ctx.mounted) Navigator.of(ctx).pop();
+                },
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                result = false;
+                Navigator.of(ctx).pop();
+              },
+              child: const Text('Abbrechen'),
+            ),
+            ElevatedButton(
+              onPressed: () async {
                 final ok = await storage.verifyVaultPassword(controller.text);
                 result = ok;
                 if (ctx.mounted) Navigator.of(ctx).pop();
               },
+              child: const Text('Bestätigen'),
             ),
           ],
         ),
-        actions: [
-          TextButton(
-            onPressed: () {
-              result = false;
-              Navigator.of(ctx).pop();
-            },
-            child: const Text('Abbrechen'),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              final ok = await storage.verifyVaultPassword(controller.text);
-              result = ok;
-              if (ctx.mounted) Navigator.of(ctx).pop();
-            },
-            child: const Text('Bestätigen'),
-          ),
-        ],
-      ),
-    );
+      );
+    } finally {
+      controller.dispose();
+    }
 
     return result ?? false;
   }
@@ -251,7 +255,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ),
         ],
       ),
-    );
+    ).then((_) => controller.dispose());
   }
 
   static bool _isStrongPassword(String pw) {
@@ -537,7 +541,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ],
         ),
       ),
-    );
+    ).then((_) {
+      pwController.dispose();
+      confirmController.dispose();
+    });
   }
 
   @override

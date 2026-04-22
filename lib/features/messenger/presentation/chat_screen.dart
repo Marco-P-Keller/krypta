@@ -1,6 +1,8 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../l10n/app_localizations.dart';
+import '../../../services/platform/platform_security_service.dart';
 import '../../../theme/app_colors.dart';
 import '../../../widgets/emergency_button.dart';
 import '../data/models/chat_model.dart';
@@ -32,6 +34,7 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
   bool _hasPerMessageOverride = false;
   bool _burnAfterRead = false;
   String? _messagePassword;
+  StreamSubscription<bool>? _screenshotSub;
 
   @override
   void initState() {
@@ -40,10 +43,12 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
     final messenger = context.read<MessengerProvider>();
     messenger.setActiveChat(widget.chat.id);
     _markVisibleMessagesAsRead(messenger);
+    _listenForScreenshots();
   }
 
   @override
   void dispose() {
+    _screenshotSub?.cancel();
     // Clear sensitive state from memory immediately on screen exit.
     _messagePassword = null;
     _controller.clear();
@@ -56,6 +61,39 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
     _focusNode.dispose();
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
+  }
+
+  void _listenForScreenshots() {
+    final platform = context.read<PlatformSecurityService>();
+    _screenshotSub = platform.onScreenshotDetected.listen((blocked) {
+      if (!mounted) return;
+      final snackBar = SnackBar(
+        content: Row(
+          children: [
+            Icon(
+              blocked ? Icons.shield_rounded : Icons.screenshot_rounded,
+              color: Colors.white,
+              size: 20,
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                blocked
+                    ? 'Es wurde versucht, einen Screenshot zu machen'
+                    : 'Es wurde ein Screenshot gemacht',
+                style: const TextStyle(color: Colors.white),
+              ),
+            ),
+          ],
+        ),
+        backgroundColor: blocked ? AppColors.warning : AppColors.destructive,
+        behavior: SnackBarBehavior.floating,
+        margin: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        duration: const Duration(seconds: 3),
+      );
+      ScaffoldMessenger.of(context).showSnackBar(snackBar);
+    });
   }
 
   Duration? get _effectiveTimer {
@@ -227,6 +265,7 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
                     children: [
                       Text(
                         name,
+                        maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: Theme.of(context).textTheme.titleLarge?.copyWith(
                               fontWeight: FontWeight.w600,
