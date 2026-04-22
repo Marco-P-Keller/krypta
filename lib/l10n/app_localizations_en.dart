@@ -252,6 +252,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get deleteChat => 'Delete Chat';
 
   @override
+  String get clearChat => 'Clear Chat';
+
+  @override
+  String get clearChatConfirm =>
+      'Delete all messages in this chat? This cannot be undone.';
+
+  @override
   String get autoDeleteTimer => 'Auto-Delete Timer';
 
   @override
@@ -398,4 +405,29 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get deleteForEveryoneConfirm =>
       'This message will be deleted for both you and the recipient.';
+
+  @override
+  String get qrInvalidFormat =>
+      'Invalid QR code format. Only Krypta QR codes are accepted.';
+
+  @override
+  String get qrUnsupportedVersion =>
+      'Unsupported QR code version. Please update the app.';
+
+  @override
+  String get qrFingerprintMismatch =>
+      'Security warning: QR code fingerprint is tampered. Operation aborted.';
+
+  @override
+  String get qrKeyMismatch =>
+      'SECURITY WARNING: Server key does NOT match the QR code key. Possible attack detected. Contact has been blocked.';
+
+  @override
+  String get qrVerified => 'Key verified';
+
+  @override
+  String get privacyPolicy => 'Privacy Policy';
+
+  @override
+  String get legalSection => 'Legal';
 }

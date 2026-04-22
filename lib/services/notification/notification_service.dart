@@ -6,7 +6,7 @@ import '../firebase/firestore_service.dart';
 /// Must be a top-level function (not a class method) per Firebase requirements.
 @pragma('vm:entry-point')
 Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
-  debugPrint('FCM background: ${message.messageId}');
+  // Background message received — no metadata logged for privacy.
 }
 
 /// Push notification service.
@@ -42,15 +42,15 @@ class NotificationService {
         });
       }
 
-      FirebaseMessaging.onMessage.listen((message) {
-        debugPrint('FCM foreground: ${message.messageId}');
+      FirebaseMessaging.onMessage.listen((_) {
+        // Foreground push received — no metadata logged.
       });
 
-      FirebaseMessaging.onMessageOpenedApp.listen((message) {
-        debugPrint('FCM opened app: ${message.messageId}');
+      FirebaseMessaging.onMessageOpenedApp.listen((_) {
+        // Notification tap — no metadata logged.
       });
     } catch (e) {
-      debugPrint('Notification init failed: $e');
+      if (kDebugMode) debugPrint('Notification init failed');
     }
   }
 }

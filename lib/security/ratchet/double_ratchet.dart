@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:typed_data';
 import 'package:cryptography/cryptography.dart';
+import '../memory/sensitive_buffer.dart';
 import 'ratchet_message.dart';
 import 'ratchet_state.dart';
 
@@ -18,7 +19,13 @@ class DoubleRatchet {
   static final _hmac = Hmac.sha256();
 
   /// Maximum number of messages to skip (prevents DoS via huge skip).
-  static const _maxSkip = 1000;
+  /// Signal reference uses 100-200; 200 balances security and usability.
+  static const _maxSkip = 200;
+
+  /// Maximum age for skipped message keys (7 days).
+  /// Keys older than this are zeroed and pruned to preserve forward secrecy.
+  /// Shorter window (vs. Signal's 30 days) reduces RAM/disk exposure.
+  static const _maxSkipAge = Duration(days: 7);
 
   // ─── Session Initialization ────────────────────────────────────────────────
 
@@ -36,6 +43,8 @@ class DoubleRatchet {
 
     final dhOut = await _dh(dhPrivate, recipientRatchetPublicKey);
     final (newRootKey, sendingChainKey) = await _kdfRootKey(sharedSecret, dhOut);
+    // Zero intermediate DH output — it's been consumed by KDF.
+    SensitiveBuffer.zeroBytes(dhOut);
 
     return RatchetState(
       rootKey: newRootKey,
@@ -89,6 +98,8 @@ class DoubleRatchet {
 
     final ad = _concat(associatedData, header.toBytes());
     final encrypted = await _encryptWithKey(messageKey, plaintext, ad);
+    // Zero the message key — it's been used for encryption and is no longer needed.
+    SensitiveBuffer.zeroBytes(messageKey);
 
     return (
       s.copyWith(
@@ -109,7 +120,7 @@ class DoubleRatchet {
     required RatchetMessage message,
     required Uint8List associatedData,
   }) async {
-    var s = state;
+    var s = _pruneExpiredSkippedKeys(state);
     final header = message.header;
 
     // Try skipped message keys first (out-of-order delivery)
@@ -120,6 +131,8 @@ class DoubleRatchet {
         ..remove(skippedKey);
       final ad = _concat(associatedData, header.toBytes());
       final plaintext = await _decryptWithKey(mk, message.ciphertext, ad);
+      // Zero the consumed message key — used once, then destroyed.
+      SensitiveBuffer.zeroBytes(mk);
       return (s.copyWith(skippedMessageKeys: newSkipped), plaintext);
     }
 
@@ -142,6 +155,8 @@ class DoubleRatchet {
 
     final ad = _concat(associatedData, header.toBytes());
     final plaintext = await _decryptWithKey(messageKey, message.ciphertext, ad);
+    // Zero the message key after decryption — single-use.
+    SensitiveBuffer.zeroBytes(messageKey);
     return (s, plaintext);
   }
 
@@ -155,6 +170,7 @@ class DoubleRatchet {
 
     final dhOut = await _dh(priv, s.dhReceivingPublic!);
     final (newRk, ck) = await _kdfRootKey(s.rootKey, dhOut);
+    SensitiveBuffer.zeroBytes(dhOut);
 
     return s.copyWith(
       rootKey: newRk,
@@ -172,6 +188,7 @@ class DoubleRatchet {
     // Derive receiving chain key from current sending key + new remote key
     final dhOut1 = await _dh(s.dhSendingPrivate, remotePub);
     final (rk1, ckr) = await _kdfRootKey(s.rootKey, dhOut1);
+    SensitiveBuffer.zeroBytes(dhOut1);
 
     // Generate fresh sending DH key pair for response
     final kp = await _x25519.newKeyPair();
@@ -180,6 +197,7 @@ class DoubleRatchet {
 
     final dhOut2 = await _dh(newPriv, remotePub);
     final (rk2, cks) = await _kdfRootKey(rk1, dhOut2);
+    SensitiveBuffer.zeroBytes(dhOut2);
 
     return s.copyWith(
       rootKey: rk2,
@@ -205,23 +223,62 @@ class DoubleRatchet {
     if (s.receivingChainKey == null) return s;
 
     var state = s;
+    final now = DateTime.now().millisecondsSinceEpoch;
     while (state.receiveMessageNumber < until) {
       final (newCk, mk) = await _kdfChainKey(state.receivingChainKey!);
       final key =
           '${base64Encode(state.dhReceivingPublic!)}:${state.receiveMessageNumber}';
       final newSkipped =
           Map<String, Uint8List>.from(state.skippedMessageKeys)..[key] = mk;
-      // Prune oldest entries if exceeding max
+      final newTimestamps =
+          Map<String, int>.from(state.skippedKeyTimestamps)..[key] = now;
+      // Prune oldest entries (by timestamp) if exceeding max count
       while (newSkipped.length > _maxSkip) {
-        newSkipped.remove(newSkipped.keys.first);
+        // Find the key with the oldest timestamp, not just insertion order
+        String? oldestKey;
+        int oldestTime = 0x1FFFFFFFFFFFFF; // Max safe integer in JS
+        for (final e in newTimestamps.entries) {
+          if (e.value < oldestTime) {
+            oldestTime = e.value;
+            oldestKey = e.key;
+          }
+        }
+        if (oldestKey == null) break;
+        newSkipped.remove(oldestKey);
+        newTimestamps.remove(oldestKey);
       }
       state = state.copyWith(
         receivingChainKey: newCk,
         receiveMessageNumber: state.receiveMessageNumber + 1,
         skippedMessageKeys: newSkipped,
+        skippedKeyTimestamps: newTimestamps,
       );
     }
     return state;
+  }
+
+  /// Remove skipped message keys older than [_maxSkipAge] to preserve forward secrecy.
+  static RatchetState _pruneExpiredSkippedKeys(RatchetState s) {
+    if (s.skippedKeyTimestamps.isEmpty) return s;
+    final cutoff = DateTime.now().millisecondsSinceEpoch -
+        _maxSkipAge.inMilliseconds;
+    final expired = s.skippedKeyTimestamps.entries
+        .where((e) => e.value < cutoff)
+        .map((e) => e.key)
+        .toList();
+    if (expired.isEmpty) return s;
+    final newSkipped = Map<String, Uint8List>.from(s.skippedMessageKeys);
+    final newTimestamps = Map<String, int>.from(s.skippedKeyTimestamps);
+    for (final key in expired) {
+      // Zero the key bytes before removing the reference.
+      final keyBytes = newSkipped.remove(key);
+      if (keyBytes != null) SensitiveBuffer.zeroBytes(keyBytes);
+      newTimestamps.remove(key);
+    }
+    return s.copyWith(
+      skippedMessageKeys: newSkipped,
+      skippedKeyTimestamps: newTimestamps,
+    );
   }
 
   // ─── KDF Functions ─────────────────────────────────────────────────────────
@@ -252,12 +309,24 @@ class DoubleRatchet {
 
   static Future<Uint8List> _dh(
       Uint8List privateKey, Uint8List publicKey) async {
+    // Validate key lengths to prevent malformed key attacks
+    if (publicKey.length != 32) {
+      throw StateError('Invalid DH public key length: ${publicKey.length}');
+    }
+    if (privateKey.length != 32) {
+      throw StateError('Invalid DH private key length: ${privateKey.length}');
+    }
     final kp = await _x25519.newKeyPairFromSeed(privateKey);
     final shared = await _x25519.sharedSecretKey(
       keyPair: kp,
       remotePublicKey: SimplePublicKey(publicKey, type: KeyPairType.x25519),
     );
-    return Uint8List.fromList(await shared.extractBytes());
+    final bytes = Uint8List.fromList(await shared.extractBytes());
+    // Reject all-zero DH output (small-subgroup / low-order point)
+    if (bytes.every((b) => b == 0)) {
+      throw StateError('DH ratchet produced zero shared secret');
+    }
+    return bytes;
   }
 
   static Future<EncryptedRatchetMessage> _encryptWithKey(
@@ -296,33 +365,6 @@ class DoubleRatchet {
       diff |= a[i] ^ b[i];
     }
     return diff == 0;
-  }
-
-  /// Generate an initial shared secret from two X25519 key pairs (simplified X3DH).
-  ///
-  /// Used when no prekey bundle is available.
-  /// DH(sender_ephemeral_priv, recipient_identity_pub) XOR'd with
-  /// DH(sender_identity_priv, recipient_identity_pub) → HKDF → 32 bytes
-  static Future<Uint8List> deriveInitialSharedSecret({
-    required Uint8List senderEphemeralPrivate,
-    required Uint8List senderIdentityPrivate,
-    required Uint8List recipientIdentityPublic,
-  }) async {
-    final dh1 = await _dh(senderEphemeralPrivate, recipientIdentityPublic);
-    final dh2 = await _dh(senderIdentityPrivate, recipientIdentityPublic);
-
-    // Concatenate both DH outputs as IKM for HKDF
-    final ikm = Uint8List(dh1.length + dh2.length)
-      ..setRange(0, dh1.length, dh1)
-      ..setRange(dh1.length, dh1.length + dh2.length, dh2);
-
-    final hkdf = Hkdf(hmac: Hmac.sha256(), outputLength: 32);
-    final derived = await hkdf.deriveKey(
-      secretKey: SecretKey(ikm),
-      nonce: Uint8List(32), // zero salt
-      info: utf8.encode('KryptaSessionInit-v1'),
-    );
-    return Uint8List.fromList(await derived.extractBytes());
   }
 
   /// Generate a fresh ephemeral X25519 key pair.

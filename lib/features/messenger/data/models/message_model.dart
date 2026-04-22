@@ -50,7 +50,7 @@ class Message extends Equatable {
   bool get isLocked => isPasswordProtected && !passwordUnlocked;
 
   Message copyWith({
-    String? decryptedContent,
+    Object? decryptedContent = _sentinel,
     MessageStatus? status,
     DateTime? readAt,
     bool? passwordUnlocked,
@@ -61,7 +61,9 @@ class Message extends Equatable {
       senderId: senderId,
       recipientId: recipientId,
       encryptedContent: encryptedContent,
-      decryptedContent: decryptedContent ?? this.decryptedContent,
+      decryptedContent: decryptedContent == _sentinel
+          ? this.decryptedContent
+          : decryptedContent as String?,
       timestamp: timestamp,
       status: status ?? this.status,
       selfDestructDuration: selfDestructDuration,
@@ -78,7 +80,9 @@ class Message extends Equatable {
         'senderId': senderId,
         'recipientId': recipientId,
         'encryptedContent': encryptedContent,
-        'decryptedContent': decryptedContent,
+        // decryptedContent is NEVER persisted to disk.
+        // Plaintext exists only in RAM for UI display and is cleared
+        // on chat switch, memory scrub, or app restart.
         'timestamp': timestamp.millisecondsSinceEpoch,
         'status': status.index,
         'selfDestructMs': selfDestructDuration?.inMilliseconds,
@@ -95,7 +99,9 @@ class Message extends Equatable {
       senderId: map['senderId'] as String,
       recipientId: map['recipientId'] as String,
       encryptedContent: map['encryptedContent'] as String,
-      decryptedContent: map['decryptedContent'] as String?,
+      // decryptedContent never loaded from disk — RAM-only field.
+      // After app restart, messages appear without content (maximum security).
+      // Password-protected messages can be re-unlocked from encryptedContent.
       timestamp: DateTime.fromMillisecondsSinceEpoch(map['timestamp'] as int),
       status: MessageStatus.values[map['status'] as int],
       selfDestructDuration: map['selfDestructMs'] != null
@@ -113,3 +119,5 @@ class Message extends Equatable {
   @override
   List<Object?> get props => [id, chatId, senderId, timestamp, status];
 }
+
+const _sentinel = Object();

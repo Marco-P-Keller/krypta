@@ -40,9 +40,15 @@ class EncryptionService {
 
   // --- E2E Message Encryption ---
 
+  /// Encrypt a message using ephemeral ECDH with mandatory AAD binding.
+  ///
+  /// [senderPublicKey] and [recipientPublicKey] are included as AAD to bind
+  /// the ciphertext to both parties, preventing cross-conversation replay.
+  /// AAD is mandatory — encryption without AAD is not allowed.
   Future<EncryptedPayload> encryptMessage({
     required String plaintext,
     required Uint8List recipientPublicKey,
+    required Uint8List senderPublicKey,
   }) async {
     final ephemeralKeyPair = await _x25519.newKeyPair();
     final ephemeralPublicKey = await ephemeralKeyPair.extractPublicKey();
@@ -60,9 +66,13 @@ class EncryptionService {
       info: 'krypta-ecc-msg-v1',
     );
 
+    // AAD: sender_pub || recipient_pub — mandatory, binds ciphertext to conversation.
+    final aad = _buildMessageAad(senderPublicKey, recipientPublicKey);
+
     final secretBox = await _cipher.encrypt(
       utf8.encode(plaintext),
       secretKey: derivedKey,
+      aad: aad,
     );
 
     return EncryptedPayload(
@@ -73,9 +83,15 @@ class EncryptionService {
     );
   }
 
+  /// Decrypt a message using ephemeral ECDH with mandatory AAD validation.
+  ///
+  /// [senderPublicKey] and [recipientPublicKey] are required for AAD reconstruction.
+  /// No fallback to AAD-free decryption — messages without valid AAD are rejected.
   Future<String> decryptMessage({
     required EncryptedPayload payload,
     required Uint8List privateKey,
+    required Uint8List senderPublicKey,
+    required Uint8List recipientPublicKey,
   }) async {
     final recipientKeyPair = await _x25519.newKeyPairFromSeed(privateKey);
 
@@ -98,11 +114,13 @@ class EncryptionService {
       mac: Mac(payload.mac),
     );
 
+    // Mandatory AAD validation — no fallback to AAD-free decryption.
+    final aad = _buildMessageAad(senderPublicKey, recipientPublicKey);
     final decrypted = await _cipher.decrypt(
       secretBox,
       secretKey: derivedKey,
+      aad: aad,
     );
-
     return utf8.decode(decrypted);
   }
 
@@ -142,6 +160,11 @@ class EncryptionService {
   }) async {
     const nonceLen = 24;
     const macLen = 16;
+    const minLen = nonceLen + macLen; // 40 bytes minimum (nonce + mac, no ciphertext)
+
+    if (encrypted.length < minLen) {
+      throw FormatException('Encrypted data too short: ${encrypted.length} < $minLen');
+    }
 
     final nonce = encrypted.sublist(0, nonceLen);
     final mac = encrypted.sublist(nonceLen, nonceLen + macLen);
@@ -213,24 +236,13 @@ class EncryptionService {
       final mac = base64Decode(payload['m'] as String);
       final ciphertext = base64Decode(payload['c'] as String);
 
-      final SecretKey derivedKey;
-      if (version >= 2) {
-        // v2: Argon2id
-        derivedKey = await _argon2.deriveKey(
-          secretKey: SecretKey(utf8.encode(password)),
-          nonce: salt,
-        );
-      } else {
-        // v1 legacy: PBKDF2 — read-only migration path
-        derivedKey = await Pbkdf2(
-          macAlgorithm: Hmac.sha256(),
-          iterations: 100000,
-          bits: 256,
-        ).deriveKey(
-          secretKey: SecretKey(utf8.encode(password)),
-          nonce: salt,
-        );
-      }
+      // Only Argon2id v2 is supported. v1 (PBKDF2) messages are rejected.
+      if (version < 2) return null;
+
+      final derivedKey = await _argon2.deriveKey(
+        secretKey: SecretKey(utf8.encode(password)),
+        nonce: salt,
+      );
 
       final secretBox = SecretBox(ciphertext, nonce: nonce, mac: Mac(mac));
       final decrypted = await _cipher.decrypt(secretBox, secretKey: derivedKey);
@@ -240,16 +252,72 @@ class EncryptionService {
     }
   }
 
+  // --- Message Padding (traffic analysis protection) ---
+  //
+  // Pads plaintext to the next power-of-2 block (min 256 bytes) so an observer
+  // cannot infer message length from ciphertext size.
+  // Format: [4-byte big-endian original length][original bytes][random padding]
+
+  static const _minPaddedSize = 256;
+
+  /// Pad plaintext to a fixed block size before encryption.
+  static Uint8List padPlaintext(Uint8List plaintext) {
+    final totalNeeded = 4 + plaintext.length; // 4-byte length prefix
+    var blockSize = _minPaddedSize;
+    while (blockSize < totalNeeded) {
+      blockSize *= 2;
+    }
+
+    final padded = Uint8List(blockSize);
+    // Write original length as 4-byte big-endian
+    padded[0] = (plaintext.length >> 24) & 0xFF;
+    padded[1] = (plaintext.length >> 16) & 0xFF;
+    padded[2] = (plaintext.length >> 8) & 0xFF;
+    padded[3] = plaintext.length & 0xFF;
+    padded.setRange(4, 4 + plaintext.length, plaintext);
+
+    // Fill remaining bytes with random data (not zeros — prevents pattern analysis)
+    final random = Random.secure();
+    for (var i = 4 + plaintext.length; i < blockSize; i++) {
+      padded[i] = random.nextInt(256);
+    }
+    return padded;
+  }
+
+  /// Remove padding after decryption.
+  static Uint8List unpadPlaintext(Uint8List padded) {
+    if (padded.length < 4) throw FormatException('Padded data too short');
+    final length = (padded[0] << 24) | (padded[1] << 16) | (padded[2] << 8) | padded[3];
+    if (length < 0 || 4 + length > padded.length) {
+      throw FormatException('Invalid padding length');
+    }
+    return padded.sublist(4, 4 + length);
+  }
+
   // --- Helpers ---
 
   Future<SecretKey> _deriveKey({
     required SecretKey sharedSecret,
     required String info,
   }) async {
+    // Use 32-byte zero salt per RFC 5869 (hash-length zeros when no salt)
     return _hkdf.deriveKey(
       secretKey: sharedSecret,
-      nonce: Uint8List(0),
+      nonce: Uint8List(32),
       info: utf8.encode(info),
     );
+  }
+
+  /// Build AAD for V1 messages: sender_pub || recipient_pub.
+  /// Binds ciphertext to the conversation so it cannot be replayed between
+  /// different sender/recipient pairs.
+  static Uint8List _buildMessageAad(
+      Uint8List? senderPub, Uint8List? recipientPub) {
+    final sLen = senderPub?.length ?? 0;
+    final rLen = recipientPub?.length ?? 0;
+    final aad = Uint8List(sLen + rLen);
+    if (senderPub != null) aad.setRange(0, sLen, senderPub);
+    if (recipientPub != null) aad.setRange(sLen, sLen + rLen, recipientPub);
+    return aad;
   }
 }

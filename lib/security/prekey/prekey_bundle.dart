@@ -15,6 +15,9 @@ class PreKeyBundle {
   final int signedPreKeyId;
   final Uint8List? oneTimePreKeyPublic;
   final int? oneTimePreKeyId;
+  /// Ed25519 signing public key (derived from identity private key).
+  /// Used to verify signedPreKeySignature. Null for legacy v1 bundles.
+  final Uint8List? signingPublicKey;
 
   const PreKeyBundle({
     required this.identityPublicKey,
@@ -23,6 +26,7 @@ class PreKeyBundle {
     required this.signedPreKeyId,
     this.oneTimePreKeyPublic,
     this.oneTimePreKeyId,
+    this.signingPublicKey,
   });
 
   Map<String, dynamic> toMap() => {
@@ -32,6 +36,7 @@ class PreKeyBundle {
         'spkId': signedPreKeyId,
         if (oneTimePreKeyPublic != null) 'opk': base64Encode(oneTimePreKeyPublic!),
         if (oneTimePreKeyId != null) 'opkId': oneTimePreKeyId,
+        if (signingPublicKey != null) 'sigPk': base64Encode(signingPublicKey!),
       };
 
   factory PreKeyBundle.fromMap(Map<String, dynamic> map) => PreKeyBundle(
@@ -42,6 +47,8 @@ class PreKeyBundle {
         oneTimePreKeyPublic:
             map['opk'] != null ? base64Decode(map['opk'] as String) : null,
         oneTimePreKeyId: map['opkId'] as int?,
+        signingPublicKey:
+            map['sigPk'] != null ? base64Decode(map['sigPk'] as String) : null,
       );
 }
 

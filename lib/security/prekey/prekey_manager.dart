@@ -15,10 +15,14 @@ class PreKeyManager {
   static final _ed25519 = Ed25519();
 
   static const Duration _signedPreKeyRotation = Duration(days: 7);
+  static const Duration _signedPreKeyOverlap = Duration(hours: 48);
 
   final EncryptedLocalStore _localStore;
 
   SignedPreKey? _currentSignedPreKey;
+  /// Previous signed prekeys kept for [_signedPreKeyOverlap] duration so that
+  /// sessions initiated with the old key still complete successfully.
+  final List<SignedPreKey> _previousSignedPreKeys = [];
   final List<OneTimePreKey> _oneTimePreKeys = [];
   int _nextPreKeyId = 0;
 
@@ -34,7 +38,17 @@ class PreKeyManager {
   }
 
   /// Generate a signed prekey (X25519 key pair, signed with Ed25519 identity).
+  ///
+  /// If a current signed prekey exists, it is moved to [_previousSignedPreKeys]
+  /// with a 48h overlap window so in-flight sessions using the old key complete.
   Future<SignedPreKey> generateSignedPreKey(KryptaKeyPair identityKeyPair) async {
+    // Rotate current → previous (48h overlap window)
+    if (_currentSignedPreKey != null) {
+      _previousSignedPreKeys.add(_currentSignedPreKey!);
+    }
+    // Prune previous keys that have exceeded the overlap window
+    _pruneExpiredPreviousKeys();
+
     final kp = await _x25519.newKeyPair();
     final pub = Uint8List.fromList((await kp.extractPublicKey()).bytes);
     final priv = Uint8List.fromList(await kp.extractPrivateKeyBytes());
@@ -51,24 +65,64 @@ class PreKeyManager {
     return spk;
   }
 
+  /// Look up a signed prekey by ID (current or previous within overlap window).
+  ///
+  /// Returns null if the key is expired or not found.
+  SignedPreKey? findSignedPreKey(int id) {
+    if (_currentSignedPreKey?.id == id) return _currentSignedPreKey;
+    _pruneExpiredPreviousKeys();
+    for (final spk in _previousSignedPreKeys) {
+      if (spk.id == id) return spk;
+    }
+    return null;
+  }
+
+  /// Remove previous signed prekeys older than the overlap window.
+  void _pruneExpiredPreviousKeys() {
+    final cutoff = DateTime.now().subtract(_signedPreKeyOverlap);
+    _previousSignedPreKeys.removeWhere((spk) => spk.createdAt.isBefore(cutoff));
+  }
+
   /// Sign a prekey's public key bytes using Ed25519.
-  Future<Uint8List> signPreKey(
+  ///
+  /// Returns (signature, ed25519PublicKey) so the bundle can include the
+  /// signing public key for verification.
+  Future<(Uint8List, Uint8List)> signPreKey(
       Uint8List preKeyPublic, Uint8List identityPrivateKey) async {
-    // Derive Ed25519 signing key from X25519 seed
+    // Derive Ed25519 signing key from X25519 identity private seed
     final signingKeyPair = await _ed25519.newKeyPairFromSeed(identityPrivateKey);
+    final signingPub = await signingKeyPair.extractPublicKey();
     final signature = await _ed25519.sign(preKeyPublic, keyPair: signingKeyPair);
-    return Uint8List.fromList(signature.bytes);
+    return (
+      Uint8List.fromList(signature.bytes),
+      Uint8List.fromList(signingPub.bytes),
+    );
   }
 
   /// Verify a signed prekey signature.
+  ///
+  /// Uses the Ed25519 signing public key included in the bundle (derived from
+  /// the signer's identity private key). Identity binding is established via
+  /// out-of-band Safety Number verification of the X25519 identity key.
+  /// Verify a signed prekey signature.
+  ///
+  /// Requires the Ed25519 signing public key (v2 bundles). V1 bundles that
+  /// lack a signing key are rejected — they must re-publish with v2.
+  /// The old v1 fallback used the X25519 identity public key as Ed25519 seed,
+  /// which is cryptographically broken (anyone with the public key could forge
+  /// signatures). Removing it prevents MITM via forged prekey signatures.
   static Future<bool> verifyPreKeySignature({
     required Uint8List preKeyPublic,
     required Uint8List signature,
     required Uint8List identityPublicKey,
+    Uint8List? signingPublicKey,
   }) async {
     try {
-      final signingPublicKey = await _ed25519.newKeyPairFromSeed(identityPublicKey);
-      final pubKey = await signingPublicKey.extractPublicKey();
+      if (signingPublicKey == null) {
+        // v1 bundles without signing key are rejected — insecure
+        return false;
+      }
+      final pubKey = SimplePublicKey(signingPublicKey, type: KeyPairType.ed25519);
       final sig = Signature(signature, publicKey: pubKey);
       return await _ed25519.verify(preKeyPublic, signature: sig);
     } catch (_) {
@@ -101,7 +155,11 @@ class PreKeyManager {
   }
 
   /// Build a PreKeyBundle for publishing to Firestore.
-  PreKeyBundle buildBundle(KryptaKeyPair identityKeyPair, Uint8List signedPreKeySignature) {
+  PreKeyBundle buildBundle(
+    KryptaKeyPair identityKeyPair,
+    Uint8List signedPreKeySignature, {
+    Uint8List? signingPublicKey,
+  }) {
     final opk = _oneTimePreKeys.isNotEmpty ? _oneTimePreKeys.first : null;
     return PreKeyBundle(
       identityPublicKey: identityKeyPair.publicKey,
@@ -110,6 +168,7 @@ class PreKeyManager {
       signedPreKeyId: _currentSignedPreKey!.id,
       oneTimePreKeyPublic: opk?.publicKey,
       oneTimePreKeyId: opk?.id,
+      signingPublicKey: signingPublicKey,
     );
   }
 
@@ -123,12 +182,29 @@ class PreKeyManager {
   /// Check if one-time prekey pool needs replenishment.
   bool needsReplenishment() => _oneTimePreKeys.length < 20;
 
-  /// Wipe all prekey material.
+  /// Wipe all prekey material, zeroing private key bytes.
   Future<void> wipeAll() async {
+    // Zero private key bytes before clearing references (best-effort in Dart/GC)
+    if (_currentSignedPreKey != null) {
+      _zeroBytes(_currentSignedPreKey!.privateKey);
+    }
+    for (final spk in _previousSignedPreKeys) {
+      _zeroBytes(spk.privateKey);
+    }
+    for (final opk in _oneTimePreKeys) {
+      _zeroBytes(opk.privateKey);
+    }
     _currentSignedPreKey = null;
+    _previousSignedPreKeys.clear();
     _oneTimePreKeys.clear();
     _nextPreKeyId = 0;
     // Store deletion handled by EncryptedLocalStore.wipeAll()
+  }
+
+  static void _zeroBytes(Uint8List bytes) {
+    for (var i = 0; i < bytes.length; i++) {
+      bytes[i] = 0;
+    }
   }
 
   // --- Persistence ---
@@ -137,6 +213,7 @@ class PreKeyManager {
     final data = {
       'nextId': _nextPreKeyId,
       'spk': _currentSignedPreKey?.toMap(),
+      'prevSpks': _previousSignedPreKeys.map((k) => k.toMap()).toList(),
       'opks': _oneTimePreKeys.map((k) => k.toMap()).toList(),
     };
     await _localStore.saveDecoyData('prekey_state', data);
@@ -152,13 +229,19 @@ class PreKeyManager {
         _currentSignedPreKey =
             SignedPreKey.fromMap(map['spk'] as Map<String, dynamic>);
       }
+      final prevSpksList = (map['prevSpks'] as List?) ?? [];
+      _previousSignedPreKeys
+        ..clear()
+        ..addAll(prevSpksList
+            .map((e) => SignedPreKey.fromMap(e as Map<String, dynamic>)));
+      _pruneExpiredPreviousKeys();
       final opksList = (map['opks'] as List?) ?? [];
       _oneTimePreKeys
         ..clear()
         ..addAll(opksList
             .map((e) => OneTimePreKey.fromMap(e as Map<String, dynamic>)));
     } catch (e) {
-      debugPrint('Load prekeys failed');
+      if (kDebugMode) debugPrint('Load prekeys failed');
     }
   }
 }

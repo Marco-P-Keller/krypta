@@ -44,6 +44,9 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
 
   @override
   void dispose() {
+    // Clear sensitive state from memory immediately on screen exit.
+    _messagePassword = null;
+    _controller.clear();
     final messenger = context.read<MessengerProvider>();
     messenger.setActiveChat(null);
     messenger.stopLocalTyping(widget.chat.recipientId);

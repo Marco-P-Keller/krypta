@@ -20,6 +20,10 @@ class RatchetState {
   /// Holds keys for out-of-order messages.
   final Map<String, Uint8List> skippedMessageKeys;
 
+  /// Creation timestamps (ms since epoch) for skipped keys.
+  /// Keys older than 30 days are pruned to preserve forward secrecy.
+  final Map<String, int> skippedKeyTimestamps;
+
   const RatchetState({
     required this.rootKey,
     this.sendingChainKey,
@@ -31,7 +35,9 @@ class RatchetState {
     this.receiveMessageNumber = 0,
     this.previousChainLength = 0,
     Map<String, Uint8List>? skippedMessageKeys,
-  }) : skippedMessageKeys = skippedMessageKeys ?? const {};
+    Map<String, int>? skippedKeyTimestamps,
+  }) : skippedMessageKeys = skippedMessageKeys ?? const {},
+       skippedKeyTimestamps = skippedKeyTimestamps ?? const {};
 
   RatchetState copyWith({
     Uint8List? rootKey,
@@ -44,6 +50,7 @@ class RatchetState {
     int? receiveMessageNumber,
     int? previousChainLength,
     Map<String, Uint8List>? skippedMessageKeys,
+    Map<String, int>? skippedKeyTimestamps,
   }) {
     return RatchetState(
       rootKey: rootKey ?? this.rootKey,
@@ -62,6 +69,7 @@ class RatchetState {
       receiveMessageNumber: receiveMessageNumber ?? this.receiveMessageNumber,
       previousChainLength: previousChainLength ?? this.previousChainLength,
       skippedMessageKeys: skippedMessageKeys ?? this.skippedMessageKeys,
+      skippedKeyTimestamps: skippedKeyTimestamps ?? this.skippedKeyTimestamps,
     );
   }
 
@@ -76,10 +84,13 @@ class RatchetState {
         'nr': receiveMessageNumber,
         'pn': previousChainLength,
         'skip': skippedMessageKeys.map((k, v) => MapEntry(k, base64Encode(v))),
+        if (skippedKeyTimestamps.isNotEmpty)
+          'skipTs': skippedKeyTimestamps,
       };
 
   factory RatchetState.fromMap(Map<String, dynamic> map) {
     final skipRaw = (map['skip'] as Map<String, dynamic>?) ?? {};
+    final skipTsRaw = (map['skipTs'] as Map<String, dynamic>?) ?? {};
     return RatchetState(
       rootKey: base64Decode(map['rk'] as String),
       sendingChainKey:
@@ -94,6 +105,7 @@ class RatchetState {
       receiveMessageNumber: (map['nr'] as int?) ?? 0,
       previousChainLength: (map['pn'] as int?) ?? 0,
       skippedMessageKeys: skipRaw.map((k, v) => MapEntry(k, base64Decode(v as String))),
+      skippedKeyTimestamps: skipTsRaw.map((k, v) => MapEntry(k, v as int)),
     );
   }
 }

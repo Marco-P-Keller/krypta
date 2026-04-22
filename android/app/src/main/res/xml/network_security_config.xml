@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Network security configuration for Krypta.
+     - Cleartext (HTTP) traffic is globally disabled.
+     - TLS 1.2+ enforced (Android 10+ default, but explicit for defense-in-depth).
+     - Certificate pinning for Firebase domains to prevent MITM via rogue CAs.
+     - Debug overrides ONLY in debug builds (allows Charles/mitmproxy for testing). -->
+<network-security-config>
+
+    <!-- Global: no cleartext traffic allowed -->
+    <base-config cleartextTrafficPermitted="false">
+        <trust-anchors>
+            <certificates src="system" />
+        </trust-anchors>
+    </base-config>
+
+    <!-- Pin Firebase/Google domains.
+         SHA-256 pins for Google Trust Services (GTS) root CA.
+         Includes a backup pin per best practice. -->
+    <domain-config>
+        <domain includeSubdomains="true">firebaseio.com</domain>
+        <domain includeSubdomains="true">googleapis.com</domain>
+        <domain includeSubdomains="true">firestore.googleapis.com</domain>
+        <domain includeSubdomains="true">firebase.googleapis.com</domain>
+        <domain includeSubdomains="true">fcm.googleapis.com</domain>
+        <pin-set expiration="2027-01-01">
+            <!-- GTS Root R1 (primary Google CA) -->
+            <pin digest="SHA-256">hxqRlPTu1bMS/0DITB1SSu0vd4u/8l8TjPgfaAp63Gc=</pin>
+            <!-- GTS Root R4 (backup pin) -->
+            <pin digest="SHA-256">mEflZT5enoR1FuXLgYYGqnVEoZvmf9c2bVBpiOjYQ0c=</pin>
+        </pin-set>
+        <trust-anchors>
+            <certificates src="system" />
+        </trust-anchors>
+    </domain-config>
+
+    <!-- Debug-only: allow user-installed CAs for proxy debugging -->
+    <debug-overrides>
+        <trust-anchors>
+            <certificates src="user" />
+        </trust-anchors>
+    </debug-overrides>
+
+</network-security-config>

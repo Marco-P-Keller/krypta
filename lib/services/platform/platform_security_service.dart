@@ -3,10 +3,17 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:local_auth/local_auth.dart';
 
-/// Platform security: biometric auth, screenshot protection, root/jailbreak detection.
+/// Platform security: biometric auth, screenshot protection,
+/// root/jailbreak/Frida/debugger detection.
+///
 /// All operations are no-ops on web.
 class PlatformSecurityService {
   final LocalAuthentication _localAuth;
+  static const _channel = MethodChannel('krypta/security');
+
+  /// Cached result of device compromise check.
+  /// Call [invalidateDeviceCache] on app resume to re-check periodically.
+  bool? _deviceCompromised;
 
   PlatformSecurityService({LocalAuthentication? localAuth})
       : _localAuth = localAuth ?? LocalAuthentication();
@@ -41,33 +48,75 @@ class PlatformSecurityService {
   Future<void> enableScreenshotProtection() async {
     if (kIsWeb) return;
     try {
-      await const MethodChannel('krypta/security')
-          .invokeMethod('enableSecureFlag');
+      await _channel.invokeMethod('enableSecureFlag');
     } catch (_) {}
   }
 
   Future<void> disableScreenshotProtection() async {
     if (kIsWeb) return;
     try {
-      await const MethodChannel('krypta/security')
-          .invokeMethod('disableSecureFlag');
+      await _channel.invokeMethod('disableSecureFlag');
     } catch (_) {}
   }
 
-  // --- Root / Jailbreak Detection ---
+  // --- Device Integrity Check ---
 
-  /// Checks for signs of a rooted/jailbroken device.
+  /// Comprehensive device compromise detection.
   ///
-  /// Not foolproof but raises the bar for casual exploitation.
+  /// Checks for:
+  /// - Root (Android) / Jailbreak (iOS) indicators
+  /// - Frida instrumentation framework
+  /// - Debugger attachment
+  /// - Tampered runtime environment
+  ///
   /// Returns true if the device appears compromised.
+  /// Result is cached after first check.
   Future<bool> isDeviceCompromised() async {
     if (kIsWeb) return false;
+    if (_deviceCompromised != null) return _deviceCompromised!;
+
     try {
-      if (Platform.isAndroid) return _checkAndroidRoot();
-      if (Platform.isIOS) return _checkIOSJailbreak();
-    } catch (_) {}
-    return false;
+      bool compromised = false;
+
+      if (Platform.isAndroid) {
+        compromised = _checkAndroidRoot() ||
+            _checkFridaAndroid() ||
+            _checkDebugger();
+      } else if (Platform.isIOS) {
+        compromised = _checkIOSJailbreak() ||
+            _checkFridaIOS() ||
+            _checkDebugger();
+      }
+
+      _deviceCompromised = compromised;
+      return compromised;
+    } catch (_) {
+      // Fail-closed: if we can't check, assume compromised
+      _deviceCompromised = true;
+      return true;
+    }
   }
+
+  /// Hard block: call on app start to prevent use on compromised devices.
+  /// Returns true if device is safe.
+  Future<bool> enforceDeviceIntegrity() async {
+    final compromised = await isDeviceCompromised();
+    if (compromised) {
+      if (kDebugMode) debugPrint('Device integrity check FAILED — app blocked');
+    }
+    return !compromised;
+  }
+
+  /// Invalidate the cached device integrity result.
+  ///
+  /// Call this on `AppLifecycleState.resumed` to re-check on each app resume.
+  /// Prevents bypassing integrity checks if the device is rooted while
+  /// the app is in the background.
+  void invalidateDeviceCache() {
+    _deviceCompromised = null;
+  }
+
+  // --- Root Detection (Android) ---
 
   bool _checkAndroidRoot() {
     const rootIndicators = [
@@ -80,9 +129,15 @@ class PlatformSecurityService {
       '/data/local/su',
       '/system/bin/failsafe/su',
       '/system/sd/xbin/su',
+      '/system/app/SuperSU.apk',
+      '/data/data/com.noshufou.android.su',
+      '/data/data/eu.chainfire.supersu',
+      '/data/data/com.topjohnwu.magisk',
     ];
     for (final path in rootIndicators) {
-      if (File(path).existsSync()) return true;
+      try {
+        if (File(path).existsSync()) return true;
+      } catch (_) {}
     }
     // Check for Magisk
     try {
@@ -90,6 +145,8 @@ class PlatformSecurityService {
     } catch (_) {}
     return false;
   }
+
+  // --- Jailbreak Detection (iOS) ---
 
   bool _checkIOSJailbreak() {
     const jailbreakIndicators = [
@@ -101,10 +158,90 @@ class PlatformSecurityService {
       '/private/var/lib/apt/',
       '/usr/bin/ssh',
       '/private/var/stash',
+      '/Applications/Sileo.app',
+      '/var/binpack',
+      '/Library/PreferenceBundles/LibertyPref.bundle',
+      '/Library/PreferenceBundles/ShadowPreferences.bundle',
+      '/usr/lib/libhooker.dylib',
+      '/usr/lib/libsubstitute.dylib',
     ];
     for (final path in jailbreakIndicators) {
-      if (File(path).existsSync()) return true;
+      try {
+        if (File(path).existsSync()) return true;
+      } catch (_) {}
     }
+
+    // Check if app can write to system paths (sandboxing broken)
+    try {
+      final testFile = File('/private/jailbreak_test');
+      testFile.writeAsStringSync('test');
+      testFile.deleteSync();
+      return true; // Should not be writable on non-jailbroken device
+    } catch (_) {
+      // Expected — cannot write to system paths
+    }
+
+    return false;
+  }
+
+  // --- Frida Detection ---
+
+  bool _checkFridaAndroid() {
+    // Check for Frida server process indicators
+    const fridaIndicators = [
+      '/data/local/tmp/frida-server',
+      '/data/local/tmp/re.frida.server',
+    ];
+    for (final path in fridaIndicators) {
+      try {
+        if (File(path).existsSync()) return true;
+      } catch (_) {}
+    }
+
+    // Check for Frida-related libraries loaded in memory
+    try {
+      final maps = File('/proc/self/maps').readAsStringSync();
+      if (maps.contains('frida') || maps.contains('gadget')) return true;
+    } catch (_) {}
+
+    return false;
+  }
+
+  bool _checkFridaIOS() {
+    // Check for Frida dylibs
+    const fridaLibs = [
+      '/usr/lib/frida',
+      '/usr/lib/FridaGadget.dylib',
+      '/Library/Frameworks/FridaGadget.framework',
+    ];
+    for (final path in fridaLibs) {
+      try {
+        if (File(path).existsSync()) return true;
+      } catch (_) {}
+    }
+    return false;
+  }
+
+  // --- Debugger Detection ---
+
+  bool _checkDebugger() {
+    // Check if running in debug/profile mode
+    if (kDebugMode || kProfileMode) return false; // Allow during development
+
+    // On release builds, check for debugger attachment
+    try {
+      if (Platform.isAndroid) {
+        // Check TracerPid in /proc/self/status
+        final status = File('/proc/self/status').readAsStringSync();
+        final tracerLine = status.split('\n').firstWhere(
+          (line) => line.startsWith('TracerPid:'),
+          orElse: () => 'TracerPid:\t0',
+        );
+        final pid = int.tryParse(tracerLine.split('\t').last.trim()) ?? 0;
+        if (pid != 0) return true; // Debugger attached
+      }
+    } catch (_) {}
+
     return false;
   }
 }

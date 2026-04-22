@@ -14,8 +14,10 @@ import 'features/messenger/presentation/chat_screen.dart';
 import 'features/messenger/presentation/new_chat_screen.dart';
 import 'features/messenger/presentation/qr_scanner_screen.dart';
 import 'features/settings/presentation/settings_screen.dart';
+import 'security/device/device_integrity_policy.dart';
 import 'services/emergency/emergency_wipe_service.dart';
 import 'services/platform/platform_security_service.dart';
+import 'services/storage/encrypted_local_store.dart';
 import 'services/storage/secure_storage_service.dart';
 import 'theme/app_theme.dart';
 
@@ -71,6 +73,7 @@ enum _AppScreen {
 class _KryptaShellState extends State<KryptaShell> with WidgetsBindingObserver {
   _AppScreen _currentScreen = _AppScreen.calculator;
   bool _isInitialized = false;
+  DeviceIntegrityAction _deviceAction = DeviceIntegrityAction.allow;
   Chat? _selectedChat;
 
   @override
@@ -88,28 +91,75 @@ class _KryptaShellState extends State<KryptaShell> with WidgetsBindingObserver {
 
   /// When app goes to background, always lock back to calculator.
   /// This ensures the messenger is never visible when returning to the app.
+  ///
+  /// Security: screenshot protection is kept ACTIVE until the calculator
+  /// view is fully rendered. This prevents the app-switcher from showing
+  /// sensitive content.
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.paused || state == AppLifecycleState.inactive) {
+      // Evict stale ratchet state entries (containing private keys) from memory.
+      // This reduces the window where sensitive cryptographic material is in RAM.
+      context.read<EncryptedLocalStore>().evictStaleCacheEntries();
+
       if (_currentScreen != _AppScreen.calculator &&
           _currentScreen != _AppScreen.setup &&
           _currentScreen != _AppScreen.tutorial) {
-        // Disable screenshot protection and return to calculator
-        final platform = context.read<PlatformSecurityService>();
-        platform.disableScreenshotProtection();
+        // Do NOT disable screenshot protection here — keep it active
+        // until the calculator screen is fully visible.
         if (mounted) {
           setState(() {
             _currentScreen = _AppScreen.calculator;
             _selectedChat = null;
           });
+          // Disable screenshot protection AFTER state change, so the
+          // calculator is rendered before the secure flag is removed.
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted) {
+              final platform = context.read<PlatformSecurityService>();
+              platform.disableScreenshotProtection();
+            }
+          });
         }
       }
+    }
+
+    // On resume, re-validate device integrity and evict stale cache entries.
+    if (state == AppLifecycleState.resumed) {
+      final integrity = context.read<DeviceIntegrityPolicyService>();
+      integrity.recheck().then((_) {
+        if (!mounted) return;
+        final action = integrity.enforce();
+        if (action != _deviceAction) {
+          setState(() => _deviceAction = action);
+        }
+      });
+      context.read<EncryptedLocalStore>().evictStaleCacheEntries();
     }
   }
 
   Future<void> _initialize() async {
+    // Capture context references before async gaps.
+    final integrity = context.read<DeviceIntegrityPolicyService>();
     final storage = context.read<SecureStorageService>();
     final decoy = context.read<DecoyProvider>();
+
+    // Device integrity check — enforce configured policy.
+    await integrity.checkIntegrity();
+    final action = integrity.enforce();
+    if (!mounted) return;
+
+    if (action == DeviceIntegrityAction.block) {
+      setState(() {
+        _deviceAction = action;
+        _isInitialized = true;
+      });
+      return;
+    }
+
+    // Store the action for UI (warning banners etc.)
+    _deviceAction = action;
+
     final isSetup = await storage.isSetupComplete();
 
     if (!isSetup) {
@@ -135,6 +185,9 @@ class _KryptaShellState extends State<KryptaShell> with WidgetsBindingObserver {
   }
 
   Future<void> _onSecretCode() async {
+    // Defense-in-depth: block messenger access on compromised devices.
+    if (_deviceAction == DeviceIntegrityAction.block) return;
+
     final storage = context.read<SecureStorageService>();
     final platform = context.read<PlatformSecurityService>();
 
@@ -161,8 +214,9 @@ class _KryptaShellState extends State<KryptaShell> with WidgetsBindingObserver {
     final platform = context.read<PlatformSecurityService>();
     final messenger = context.read<MessengerProvider>();
 
-    await messenger.initialize();
+    // Fail-closed: enable screenshot protection BEFORE showing messenger
     await platform.enableScreenshotProtection();
+    await messenger.initialize();
 
     if (mounted) setState(() => _currentScreen = _AppScreen.messenger);
   }
@@ -185,9 +239,14 @@ class _KryptaShellState extends State<KryptaShell> with WidgetsBindingObserver {
   }
 
   void _backToCalculator() {
-    final platform = context.read<PlatformSecurityService>();
-    platform.disableScreenshotProtection();
     setState(() => _currentScreen = _AppScreen.calculator);
+    // Disable screenshot protection AFTER calculator is rendered
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        final platform = context.read<PlatformSecurityService>();
+        platform.disableScreenshotProtection();
+      }
+    });
   }
 
   void _navigateTo(_AppScreen screen) => setState(() => _currentScreen = screen);
@@ -198,11 +257,62 @@ class _KryptaShellState extends State<KryptaShell> with WidgetsBindingObserver {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
 
+    // Hard block on compromised devices — shows blank calculator-like screen.
+    // Only triggered when policy is [DeviceIntegrityPolicy.block].
+    if (_deviceAction == DeviceIntegrityAction.block) {
+      return const Scaffold(
+        body: Center(
+          child: Text(
+            'Calculator',
+            style: TextStyle(fontSize: 20, color: Colors.grey),
+          ),
+        ),
+      );
+    }
+
+    final screen = _buildCurrentScreen();
+
+    // Wrap messenger screens with integrity warning if device is compromised.
+    final showWarning = _deviceAction == DeviceIntegrityAction.warnAndDegrade ||
+        _deviceAction == DeviceIntegrityAction.warnOnly;
+    final isMessengerScreen = _currentScreen == _AppScreen.messenger ||
+        _currentScreen == _AppScreen.chat ||
+        _currentScreen == _AppScreen.newChat ||
+        _currentScreen == _AppScreen.qrScanner ||
+        _currentScreen == _AppScreen.settings;
+
     return AnimatedSwitcher(
       duration: const Duration(milliseconds: 300),
       transitionBuilder: (child, animation) =>
           FadeTransition(opacity: animation, child: child),
-      child: _buildCurrentScreen(),
+      child: showWarning && isMessengerScreen
+          ? _wrapWithIntegrityWarning(screen)
+          : screen,
+    );
+  }
+
+  /// Wraps a screen with a persistent device integrity warning banner.
+  Widget _wrapWithIntegrityWarning(Widget screen) {
+    final degraded = _deviceAction == DeviceIntegrityAction.warnAndDegrade;
+    return Column(
+      key: ValueKey('integrity_warn_${screen.key}'),
+      children: [
+        MaterialBanner(
+          backgroundColor: Colors.orange.shade900,
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          content: Text(
+            degraded
+                ? 'Gerät möglicherweise kompromittiert. '
+                  'Hardware-Sicherheit deaktiviert.'
+                : 'Gerät möglicherweise kompromittiert.',
+            style: const TextStyle(color: Colors.white, fontSize: 12),
+          ),
+          leading: const Icon(Icons.warning_amber_rounded,
+              color: Colors.orange, size: 20),
+          actions: const [SizedBox.shrink()],
+        ),
+        Expanded(child: screen),
+      ],
     );
   }
 

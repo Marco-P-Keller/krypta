@@ -3,7 +3,12 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../core/constants/app_constants.dart';
+import '../../../core/constants/storage_keys.dart';
+import '../../messenger/logic/messenger_provider.dart';
+import '../../../security/device/device_integrity_policy.dart';
+import '../../../security/hardware/hardware_security_binding.dart';
 import '../../../services/platform/platform_security_service.dart';
+import '../../../services/storage/encrypted_local_store.dart';
 import '../../../services/storage/secure_storage_service.dart';
 import '../../../theme/app_colors.dart';
 import '../../../theme/app_spacing.dart';
@@ -29,6 +34,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
   bool _screenshotProtection = true;
   bool _biometricAvailable = false;
   bool _vaultPasswordEnabled = false;
+  bool _pushPrivacyEnabled = false;
+  bool _deliveryReceiptsEnabled = false;
+  bool _readReceiptsEnabled = false;
+  DeviceIntegrityLevel? _deviceIntegrityLevel;
+  HardwareSecurityLevel? _hardwareSecurityLevel;
+  bool _isHardwareWrapped = false;
 
   @override
   void initState() {
@@ -40,23 +51,138 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final storage = context.read<SecureStorageService>();
     final platform = context.read<PlatformSecurityService>();
 
+    final integrity = context.read<DeviceIntegrityPolicyService>();
+    final hardware = context.read<HardwareSecurityBinding>();
+    final localStore = context.read<EncryptedLocalStore>();
+
     final biometric = await storage.isBiometricEnabled();
     final available = await platform.isBiometricAvailable;
     final vaultPw = await storage.isVaultPasswordEnabled();
+    final pushPrivacy = await storage.isPushPrivacyEnabled();
+    final deliveryReceipts = await storage.isDeliveryReceiptsEnabled();
+    final readReceipts = await storage.isReadReceiptsEnabled();
 
     if (mounted) {
       setState(() {
         _biometricEnabled = biometric;
         _biometricAvailable = available;
         _vaultPasswordEnabled = vaultPw;
+        _pushPrivacyEnabled = pushPrivacy;
+        _deliveryReceiptsEnabled = deliveryReceipts;
+        _readReceiptsEnabled = readReceipts;
+        _deviceIntegrityLevel = integrity.lastResult?.level;
+        _hardwareSecurityLevel = hardware.level;
+        _isHardwareWrapped = localStore.isHardwareWrapped;
       });
     }
   }
 
+  /// Re-authenticate before critical security changes.
+  ///
+  /// If vault password is enabled, requires vault password.
+  /// Otherwise uses biometric if available.
+  /// Returns true if authentication succeeded.
+  Future<bool> _reAuthenticate() async {
+    final platform = context.read<PlatformSecurityService>();
+
+    // Vault password takes priority — it's the real security layer
+    if (_vaultPasswordEnabled) {
+      return await _showReAuthDialog();
+    }
+
+    // Fallback: biometric if available
+    if (_biometricAvailable && _biometricEnabled) {
+      return await platform.authenticate(
+        reason: 'Sicherheitseinstellungen ändern',
+      );
+    }
+
+    // No vault or biometric — allow (but user should set vault password)
+    return true;
+  }
+
+  Future<bool> _showReAuthDialog() async {
+    final storage = context.read<SecureStorageService>();
+    final controller = TextEditingController();
+    bool? result;
+
+    await showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Authentifizierung'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              'Tresor-Passwort eingeben um Sicherheitseinstellungen zu ändern.',
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: controller,
+              obscureText: true,
+              autofocus: true,
+              decoration: const InputDecoration(
+                hintText: '••••••••••',
+                prefixIcon: Icon(Icons.lock_outline, size: 20),
+              ),
+              onSubmitted: (_) async {
+                final ok = await storage.verifyVaultPassword(controller.text);
+                result = ok;
+                if (ctx.mounted) Navigator.of(ctx).pop();
+              },
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              result = false;
+              Navigator.of(ctx).pop();
+            },
+            child: const Text('Abbrechen'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              final ok = await storage.verifyVaultPassword(controller.text);
+              result = ok;
+              if (ctx.mounted) Navigator.of(ctx).pop();
+            },
+            child: const Text('Bestätigen'),
+          ),
+        ],
+      ),
+    );
+
+    return result ?? false;
+  }
+
   Future<void> _toggleBiometric(bool value) async {
     final storage = context.read<SecureStorageService>();
+    // Re-auth before changing security settings
+    if (!await _reAuthenticate()) return;
+
     await storage.setBiometricEnabled(value);
     if (mounted) setState(() => _biometricEnabled = value);
+  }
+
+  Future<void> _togglePushPrivacy(bool value) async {
+    final messenger = context.read<MessengerProvider>();
+    await messenger.setPushPrivacyEnabled(value);
+    if (mounted) setState(() => _pushPrivacyEnabled = value);
+  }
+
+  Future<void> _toggleDeliveryReceipts(bool value) async {
+    final messenger = context.read<MessengerProvider>();
+    await messenger.setDeliveryReceiptsEnabled(value);
+    if (mounted) setState(() => _deliveryReceiptsEnabled = value);
+  }
+
+  Future<void> _toggleReadReceipts(bool value) async {
+    final messenger = context.read<MessengerProvider>();
+    await messenger.setReadReceiptsEnabled(value);
+    if (mounted) setState(() => _readReceiptsEnabled = value);
   }
 
   Future<void> _toggleScreenshotProtection(bool value) async {
@@ -69,7 +195,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
     if (mounted) setState(() => _screenshotProtection = value);
   }
 
-  void _showChangeCodeDialog(String title, Future<void> Function(String) onSave) {
+  void _showChangeCodeDialog(
+    String title,
+    Future<void> Function(String) onSave, {
+    required String currentKey,
+  }) async {
+    // Re-auth before changing codes
+    if (!await _reAuthenticate()) return;
+
+    if (!mounted) return;
+    final storage = context.read<SecureStorageService>();
     final controller = TextEditingController();
     showDialog(
       context: context,
@@ -95,6 +230,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
             onPressed: () async {
               final code = controller.text;
               if (code.length >= AppConstants.minCodeLength) {
+                // Prevent collision with other codes
+                final collides = await storage.codeCollides(
+                    code, excludeKey: currentKey);
+                if (collides) {
+                  if (ctx.mounted) {
+                    ScaffoldMessenger.of(ctx).showSnackBar(
+                      const SnackBar(
+                        content: Text('Code already in use for another action.'),
+                      ),
+                    );
+                  }
+                  return;
+                }
                 await onSave(code);
                 if (ctx.mounted) Navigator.of(ctx).pop();
               }
@@ -115,9 +263,98 @@ class _SettingsScreenState extends State<SettingsScreen> {
     return true;
   }
 
-  void _showVaultPasswordDialog(BuildContext context) {
+  void _showPrivacyPolicy(BuildContext context, bool isDark) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: isDark ? AppColors.surfaceElevatedDark : AppColors.surfaceElevatedLight,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (_) => DraggableScrollableSheet(
+        initialChildSize: 0.85,
+        minChildSize: 0.5,
+        maxChildSize: 0.95,
+        expand: false,
+        builder: (context, scrollController) => Column(
+          children: [
+            const SizedBox(height: 12),
+            Container(
+              width: 36, height: 4,
+              decoration: BoxDecoration(
+                color: isDark ? Colors.white24 : Colors.black12,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.all(20),
+              child: Text(
+                AppLocalizations.of(context)!.privacyPolicy,
+                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                  color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
+                ),
+              ),
+            ),
+            Expanded(
+              child: SingleChildScrollView(
+                controller: scrollController,
+                padding: const EdgeInsets.fromLTRB(20, 0, 20, 40),
+                child: Text(
+                  'Krypta ECC — Datenschutzerklärung\n\n'
+                  'Stand: April 2026\n\n'
+                  '1. Verantwortlicher\n'
+                  'Connexa GmbH\n'
+                  'Kontakt: https://connexa-gmbh.ch\n\n'
+                  '2. Welche Daten werden erhoben?\n'
+                  'Krypta erhebt so wenig Daten wie technisch möglich:\n'
+                  '• Anonyme Firebase-ID (keine E-Mail, kein Name, keine Telefonnummer)\n'
+                  '• Öffentlicher Verschlüsselungsschlüssel (X25519)\n'
+                  '• FCM-Push-Token (für Benachrichtigungen)\n\n'
+                  '3. Verschlüsselung\n'
+                  'Alle Nachrichten sind Ende-zu-Ende-verschlüsselt (Signal-Protokoll: X3DH + Double Ratchet). '
+                  'Der Server hat zu keinem Zeitpunkt Zugriff auf den Klartext Ihrer Nachrichten. '
+                  'Verschlüsselung: XChaCha20-Poly1305. Passwort-Hashing: Argon2id.\n\n'
+                  '4. Datenspeicherung\n'
+                  '• Nachrichten werden nur auf Ihrem Gerät gespeichert (verschlüsselt)\n'
+                  '• Der Server fungiert nur als temporärer Relay — Nachrichten werden nach Zustellung gelöscht\n'
+                  '• Schlüssel werden im iOS Keychain / Android Keystore gespeichert\n\n'
+                  '5. Keine Tracker\n'
+                  'Krypta enthält keine Analyse-Tools, keine Werbung und keine Tracker (0 von 432 bekannten Trackern).\n\n'
+                  '6. Datenweitergabe\n'
+                  'Es werden keine personenbezogenen Daten an Dritte weitergegeben. '
+                  'Google Firebase wird als Infrastruktur-Anbieter verwendet (anonyme Authentifizierung und Push-Benachrichtigungen).\n\n'
+                  '7. Datenlöschung\n'
+                  'Sie können jederzeit alle Ihre Daten unwiderruflich löschen:\n'
+                  '• In den Einstellungen über "Alles löschen"\n'
+                  '• Durch Eingabe des Lösch-Codes im Taschenrechner\n'
+                  'Dabei werden alle lokalen Daten, Schlüssel und Server-Daten vernichtet.\n\n'
+                  '8. Ihre Rechte (DSGVO)\n'
+                  'Sie haben das Recht auf Auskunft, Berichtigung, Löschung und Datenübertragbarkeit. '
+                  'Kontaktieren Sie uns unter: https://connexa-gmbh.ch\n\n'
+                  '9. Änderungen\n'
+                  'Diese Datenschutzerklärung kann aktualisiert werden. '
+                  'Die aktuelle Version ist immer in der App einsehbar.',
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight,
+                    height: 1.6,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showVaultPasswordDialog() async {
     final l10n = AppLocalizations.of(context)!;
     final storage = context.read<SecureStorageService>();
+
+    // Re-auth before changing vault password
+    if (_vaultPasswordEnabled && !await _reAuthenticate()) return;
+
+    if (!mounted) return;
 
     if (_vaultPasswordEnabled) {
       showModalBottomSheet(
@@ -153,7 +390,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   title: Text(l10n.changeVaultPassword),
                   onTap: () {
                     Navigator.of(ctx).pop();
-                    _showSetVaultPassword(context);
+                    _showSetVaultPassword();
                   },
                 ),
                 ListTile(
@@ -179,11 +416,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
         },
       );
     } else {
-      _showSetVaultPassword(context);
+      _showSetVaultPassword();
     }
   }
 
-  void _showSetVaultPassword(BuildContext context) {
+  void _showSetVaultPassword() {
     final l10n = AppLocalizations.of(context)!;
     final storage = context.read<SecureStorageService>();
     final pwController = TextEditingController();
@@ -342,6 +579,76 @@ class _SettingsScreenState extends State<SettingsScreen> {
             const SizedBox(height: 28),
           ],
 
+          // Device Security Status
+          if (_deviceIntegrityLevel != null) ...[
+            _SectionHeader('Gerätesicherheit'),
+            _Card(isDark: isDark, children: [
+              _NavTile(
+                icon: _deviceIntegrityLevel == DeviceIntegrityLevel.clean
+                    ? Icons.verified_user_rounded
+                    : Icons.warning_amber_rounded,
+                iconColor: _deviceIntegrityLevel == DeviceIntegrityLevel.clean
+                    ? AppColors.success
+                    : Colors.orange,
+                title: switch (_deviceIntegrityLevel!) {
+                  DeviceIntegrityLevel.clean => 'Gerät sicher',
+                  DeviceIntegrityLevel.compromised =>
+                    'Kompromittierung erkannt',
+                  DeviceIntegrityLevel.unknown => 'Status unbekannt',
+                },
+                subtitle: switch (_deviceIntegrityLevel!) {
+                  DeviceIntegrityLevel.clean =>
+                    'Keine Root/Jailbreak/Frida-Indikatoren',
+                  DeviceIntegrityLevel.compromised =>
+                    'Root, Jailbreak oder Instrumentierung erkannt. '
+                        'Hardware-Sicherheit deaktiviert.',
+                  DeviceIntegrityLevel.unknown =>
+                    'Integritätsprüfung fehlgeschlagen — '
+                        'eingeschränkter Modus aktiv.',
+                },
+                trailing: const SizedBox.shrink(),
+                onTap: () {},
+              ),
+              if (_hardwareSecurityLevel != null) ...[
+                _Divider(isDark: isDark),
+                _NavTile(
+                  icon: _isHardwareWrapped
+                      ? Icons.hardware_rounded
+                      : Icons.memory_rounded,
+                  iconColor: _isHardwareWrapped
+                      ? AppColors.success
+                      : (isDark
+                          ? AppColors.textSecondaryDark
+                          : AppColors.textSecondaryLight),
+                  title: switch (_hardwareSecurityLevel!) {
+                    HardwareSecurityLevel.hardwareEnclave =>
+                      'Hardware-Enklave',
+                    HardwareSecurityLevel.trustedExecution =>
+                      'TEE-Schlüsselspeicher',
+                    HardwareSecurityLevel.softwareOnly =>
+                      'Software-Schlüsselspeicher',
+                  },
+                  subtitle: _isHardwareWrapped
+                      ? 'Datenbankschlüssel an Hardware gebunden'
+                      : switch (_hardwareSecurityLevel!) {
+                          HardwareSecurityLevel.hardwareEnclave =>
+                            'StrongBox/Secure Enclave verfügbar',
+                          HardwareSecurityLevel.trustedExecution =>
+                            'Schlüssel im Trusted Execution Environment',
+                          HardwareSecurityLevel.softwareOnly =>
+                            'Keine Hardware-Sicherheit verfügbar',
+                        },
+                  trailing: _isHardwareWrapped
+                      ? const Icon(Icons.check_circle_rounded,
+                          color: AppColors.success, size: 18)
+                      : const SizedBox.shrink(),
+                  onTap: () {},
+                ),
+              ],
+            ]),
+            const SizedBox(height: 28),
+          ],
+
           // Security Codes
           _SectionHeader(l10n.securitySettings),
           _Card(isDark: isDark, children: [
@@ -349,7 +656,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
               icon: Icons.lock_outline_rounded,
               title: l10n.changeSecretCode,
               onTap: () => _showChangeCodeDialog(
-                  l10n.changeSecretCode, storage.saveSecretCode),
+                  l10n.changeSecretCode, storage.saveSecretCode,
+                  currentKey: StorageKeys.secretCode),
             ),
             _Divider(isDark: isDark),
             _NavTile(
@@ -357,7 +665,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
               title: l10n.changeDeleteCode,
               iconColor: AppColors.destructive,
               onTap: () => _showChangeCodeDialog(
-                  l10n.changeDeleteCode, storage.saveDeleteCode),
+                  l10n.changeDeleteCode, storage.saveDeleteCode,
+                  currentKey: StorageKeys.deleteCode),
             ),
           ]),
           const SizedBox(height: 28),
@@ -395,7 +704,51 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   ? const Icon(Icons.check_circle_rounded,
                       color: AppColors.success, size: 18)
                   : null,
-              onTap: () => _showVaultPasswordDialog(context),
+              onTap: _showVaultPasswordDialog,
+            ),
+            _Divider(isDark: isDark),
+            _SwitchTile(
+              icon: Icons.wifi_off_rounded,
+              title: 'Push-Privatsphäre',
+              subtitle: _pushPrivacyEnabled
+                  ? 'Aktiv — Nachrichten werden per Polling abgerufen'
+                  : 'Deaktiviert — Push-Benachrichtigungen aktiv',
+              value: _pushPrivacyEnabled,
+              onChanged: _togglePushPrivacy,
+              isDark: isDark,
+            ),
+            _Divider(isDark: isDark),
+            _SwitchTile(
+              icon: Icons.mark_email_read_outlined,
+              title: 'Lesebestätigungen',
+              subtitle: _readReceiptsEnabled
+                  ? 'Aktiv — Absender sieht, wann du liest'
+                  : 'Deaktiviert — maximale Privatsphäre',
+              value: _readReceiptsEnabled,
+              onChanged: _toggleReadReceipts,
+              isDark: isDark,
+            ),
+            _Divider(isDark: isDark),
+            _SwitchTile(
+              icon: Icons.done_all_rounded,
+              title: 'Zustellbestätigungen',
+              subtitle: _deliveryReceiptsEnabled
+                  ? 'Aktiv — Absender sieht, wann zugestellt'
+                  : 'Deaktiviert — maximale Privatsphäre',
+              value: _deliveryReceiptsEnabled,
+              onChanged: _toggleDeliveryReceipts,
+              isDark: isDark,
+            ),
+          ]),
+          const SizedBox(height: 28),
+
+          // Legal
+          _SectionHeader(l10n.legalSection),
+          _Card(isDark: isDark, children: [
+            _NavTile(
+              icon: Icons.description_outlined,
+              title: l10n.privacyPolicy,
+              onTap: () => _showPrivacyPolicy(context, isDark),
             ),
           ]),
           const SizedBox(height: 28),

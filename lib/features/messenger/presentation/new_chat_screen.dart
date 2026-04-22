@@ -162,9 +162,16 @@ class _NewChatScreenState extends State<NewChatScreen> {
                     icon: Icons.qr_code_rounded,
                     label: l10n.myQrCode,
                     color: AppColors.primary,
-                    onTap: () {
+                    onTap: () async {
                       if (messenger.userId != null) {
-                        QrDisplaySheet.show(context, messenger.userId!);
+                        final pubKey = await messenger.getIdentityPublicKey();
+                        if (pubKey != null && context.mounted) {
+                          QrDisplaySheet.show(
+                            context,
+                            userId: messenger.userId!,
+                            publicKey: pubKey,
+                          );
+                        }
                       }
                     },
                   ),

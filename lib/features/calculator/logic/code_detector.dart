@@ -18,14 +18,28 @@ class CodeDetector {
   /// Check the current display value against stored (hashed) codes.
   /// Called when the user presses "=" on the calculator.
   /// Returns the matched CodeResult, or [CodeResult.none].
+  ///
+  /// Security: All three codes are ALWAYS verified regardless of matches.
+  /// This prevents timing side-channels — an observer cannot determine
+  /// which code position matched by measuring response time.
+  /// Priority is preserved: delete > secret > decoy.
   Future<CodeResult> checkCode(String displayValue) async {
     final cleaned = displayValue.replaceAll(RegExp(r'[^0-9]'), '');
     if (cleaned.isEmpty) return CodeResult.none;
 
-    // Delete code checked first — highest priority
-    if (await _storage.verifyDeleteCode(cleaned)) return CodeResult.delete;
-    if (await _storage.verifySecretCode(cleaned)) return CodeResult.secret;
-    if (await _storage.verifyDecoyCode(cleaned)) return CodeResult.decoy;
+    // Always run all three verifications to normalize timing.
+    // Each Argon2id hash takes ~200ms+ so timing differences would be
+    // observable without this constant-work approach.
+    final results = await Future.wait([
+      _storage.verifyDeleteCode(cleaned),
+      _storage.verifySecretCode(cleaned),
+      _storage.verifyDecoyCode(cleaned),
+    ]);
+
+    // Priority: delete > secret > decoy
+    if (results[0]) return CodeResult.delete;
+    if (results[1]) return CodeResult.secret;
+    if (results[2]) return CodeResult.decoy;
 
     return CodeResult.none;
   }

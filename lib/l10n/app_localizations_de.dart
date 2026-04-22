@@ -254,6 +254,13 @@ class AppLocalizationsDe extends AppLocalizations {
   String get deleteChat => 'Chat löschen';
 
   @override
+  String get clearChat => 'Chat leeren';
+
+  @override
+  String get clearChatConfirm =>
+      'Alle Nachrichten in diesem Chat löschen? Das kann nicht rückgängig gemacht werden.';
+
+  @override
   String get autoDeleteTimer => 'Auto-Lösch-Timer';
 
   @override
@@ -400,4 +407,29 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String get deleteForEveryoneConfirm =>
       'Diese Nachricht wird für dich und den Empfänger gelöscht.';
+
+  @override
+  String get qrInvalidFormat =>
+      'Ungültiges QR-Code-Format. Nur Krypta-QR-Codes werden akzeptiert.';
+
+  @override
+  String get qrUnsupportedVersion =>
+      'Nicht unterstützte QR-Code-Version. Bitte App aktualisieren.';
+
+  @override
+  String get qrFingerprintMismatch =>
+      'Sicherheitswarnung: Der Fingerprint im QR-Code ist manipuliert. Vorgang abgebrochen.';
+
+  @override
+  String get qrKeyMismatch =>
+      'SICHERHEITSWARNUNG: Der Schlüssel vom Server stimmt NICHT mit dem QR-Code überein. Möglicher Angriff erkannt. Kontakt wurde blockiert.';
+
+  @override
+  String get qrVerified => 'Schlüssel verifiziert';
+
+  @override
+  String get privacyPolicy => 'Datenschutzerklärung';
+
+  @override
+  String get legalSection => 'Rechtliches';
 }

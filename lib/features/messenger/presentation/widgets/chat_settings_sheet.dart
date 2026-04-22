@@ -6,6 +6,7 @@ import '../../../../l10n/app_localizations.dart';
 import '../../../../security/verification/safety_number.dart';
 import '../../../../theme/app_colors.dart';
 import '../../../../theme/app_spacing.dart';
+import '../../data/models/contact_model.dart';
 import '../../logic/messenger_provider.dart';
 
 class ChatSettingsSheet extends StatefulWidget {
@@ -324,7 +325,9 @@ class _ChatSettingsSheetState extends State<ChatSettingsSheet> {
                     ),
                     const SizedBox(height: 6),
                     Text(
-                      'The security key for this contact has changed. Verify their identity to ensure your conversation is secure.',
+                      'The security key for this contact has changed. '
+                      'Messages are blocked until you verify their identity. '
+                      'Scan their QR code or compare safety numbers to resume messaging.',
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
                             color: isDark
                                 ? AppColors.textSecondaryDark
@@ -334,28 +337,30 @@ class _ChatSettingsSheetState extends State<ChatSettingsSheet> {
                     const SizedBox(height: 10),
                     Row(
                       children: [
-                        OutlinedButton.icon(
-                          onPressed: () {
-                            messenger.acknowledgeKeyChange(chat.recipientId);
-                            setState(() {});
-                          },
-                          icon: const Icon(Icons.check, size: 16),
-                          label: const Text('Accept'),
-                          style: OutlinedButton.styleFrom(
-                            foregroundColor: AppColors.warning,
-                            side: const BorderSide(color: AppColors.warning),
-                            visualDensity: VisualDensity.compact,
+                        Expanded(
+                          child: OutlinedButton.icon(
+                            onPressed: () => _showSafetyNumber(
+                                context, messenger, chat.recipientId),
+                            icon: const Icon(Icons.qr_code_2_rounded, size: 16),
+                            label: const Text('Verify Identity'),
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: AppColors.accent,
+                              side: const BorderSide(color: AppColors.accent),
+                              visualDensity: VisualDensity.compact,
+                            ),
                           ),
                         ),
                         const SizedBox(width: 8),
                         OutlinedButton.icon(
-                          onPressed: () => _showSafetyNumber(
-                              context, messenger, chat.recipientId),
-                          icon: const Icon(Icons.qr_code_2_rounded, size: 16),
-                          label: const Text('Verify'),
+                          onPressed: () {
+                            messenger.blockContact(chat.recipientId);
+                            setState(() {});
+                          },
+                          icon: const Icon(Icons.block_rounded, size: 16),
+                          label: const Text('Block'),
                           style: OutlinedButton.styleFrom(
-                            foregroundColor: AppColors.accent,
-                            side: const BorderSide(color: AppColors.accent),
+                            foregroundColor: AppColors.destructive,
+                            side: const BorderSide(color: AppColors.destructive),
                             visualDensity: VisualDensity.compact,
                           ),
                         ),
@@ -495,7 +500,53 @@ class _ChatSettingsSheetState extends State<ChatSettingsSheet> {
               ),
             ),
           ],
+          const SizedBox(height: 16),
+
+          // ── Clear Chat ──
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              onPressed: () => _confirmClearChat(context, messenger),
+              icon: const Icon(Icons.delete_sweep_rounded, size: 18),
+              label: Text(l10n.clearChat),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: AppColors.destructive,
+                side: const BorderSide(color: AppColors.destructive),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
+                ),
+              ),
+            ),
+          ),
           const SizedBox(height: 8),
+        ],
+      ),
+    );
+  }
+
+  void _confirmClearChat(BuildContext context, MessengerProvider messenger) {
+    final l10n = AppLocalizations.of(context)!;
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(l10n.clearChat),
+        content: Text(l10n.clearChatConfirm),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: Text(l10n.cancel),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(
+              backgroundColor: AppColors.destructive,
+            ),
+            onPressed: () {
+              messenger.clearChat(widget.chatId);
+              Navigator.of(ctx).pop();
+              Navigator.of(context).pop();
+            },
+            child: Text(l10n.delete),
+          ),
         ],
       ),
     );
@@ -551,9 +602,7 @@ class _ChatSettingsSheetState extends State<ChatSettingsSheet> {
     final contact = messenger.contactForId(contactId);
     if (contact == null || messenger.userId == null) return;
 
-    final keyPair = await context
-        .read<MessengerProvider>()
-        .getIdentityPublicKey();
+    final keyPair = await messenger.getIdentityPublicKey();
     if (keyPair == null) return;
 
     final safetyNumber = await SafetyNumber.generate(
@@ -644,9 +693,24 @@ class _ChatSettingsSheetState extends State<ChatSettingsSheet> {
           ),
           if (!contact.isVerified)
             ElevatedButton.icon(
-              onPressed: () {
-                messenger.markContactVerified(contactId);
-                Navigator.of(ctx).pop();
+              onPressed: () async {
+                final ok = await messenger.markContactVerified(
+                  contactId,
+                  method: VerificationMethod.safetyNumber,
+                  verifiedPublicKey: contact.publicKey,
+                );
+                if (ctx.mounted) {
+                  if (ok) {
+                    Navigator.of(ctx).pop();
+                  } else {
+                    ScaffoldMessenger.of(ctx).showSnackBar(
+                      const SnackBar(
+                        content: Text('Verifikation fehlgeschlagen — Schlüssel stimmen nicht überein'),
+                        backgroundColor: AppColors.destructive,
+                      ),
+                    );
+                  }
+                }
               },
               icon: const Icon(Icons.verified_rounded, size: 16),
               label: const Text('Mark Verified'),

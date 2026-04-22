@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../logic/calculator_logic.dart';
 import '../logic/code_detector.dart';
 import '../../../services/emergency/emergency_wipe_service.dart';
+import '../../messenger/logic/messenger_provider.dart';
 import '../../../theme/app_colors.dart';
 import 'widgets/calculator_display.dart';
 import 'widgets/calculator_keypad.dart';
@@ -60,7 +61,10 @@ class _CalculatorScreenState extends State<CalculatorScreen> {
   }
 
   Future<void> _handleDeleteCode() async {
+    final messenger = context.read<MessengerProvider>();
     final wipeService = context.read<EmergencyWipeService>();
+    // Wipe in-memory messenger state first (ratchet keys, contacts, messages)
+    await messenger.wipeAll();
     await wipeService.wipeEverything();
     if (mounted) widget.onDeleteCode();
   }

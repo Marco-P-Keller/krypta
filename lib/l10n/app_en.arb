@@ -95,6 +95,8 @@
   "cancel": "Cancel",
   "skip": "Skip",
   "deleteChat": "Delete Chat",
+  "clearChat": "Clear Chat",
+  "clearChatConfirm": "Delete all messages in this chat? This cannot be undone.",
   "autoDeleteTimer": "Auto-Delete Timer",
   "autoDeleteHint": "New messages in this chat will automatically self-destruct after the selected time.",
   "chatDefault": "Chat default",
@@ -156,5 +158,13 @@
   "deleteMessageConfirm": "This message will be permanently deleted from this device.",
   "deleteForMe": "Delete for me",
   "deleteForEveryone": "Delete for everyone",
-  "deleteForEveryoneConfirm": "This message will be deleted for both you and the recipient."
+  "deleteForEveryoneConfirm": "This message will be deleted for both you and the recipient.",
+
+  "qrInvalidFormat": "Invalid QR code format. Only Krypta QR codes are accepted.",
+  "qrUnsupportedVersion": "Unsupported QR code version. Please update the app.",
+  "qrFingerprintMismatch": "Security warning: QR code fingerprint is tampered. Operation aborted.",
+  "qrKeyMismatch": "SECURITY WARNING: Server key does NOT match the QR code key. Possible attack detected. Contact has been blocked.",
+  "qrVerified": "Key verified",
+  "privacyPolicy": "Privacy Policy",
+  "legalSection": "Legal"
 }

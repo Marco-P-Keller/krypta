@@ -1,28 +1,70 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../../../theme/app_colors.dart';
+import '../../data/models/contact_model.dart';
 
-/// Bottom sheet that shows the user's ID as a scannable QR code.
+/// Bottom sheet that shows the user's identity QR code for contact verification.
+///
+/// The QR code contains a structured JSON payload with:
+/// - v: protocol version
+/// - uid: user ID
+/// - ik: identity public key (Base64)
+/// - fp: SHA-256 fingerprint of the public key (hex)
+///
+/// This eliminates first-key-trust: the scanner can verify the key
+/// independently from the server.
 class QrDisplaySheet extends StatelessWidget {
   final String userId;
+  final Uint8List identityPublicKey;
 
-  const QrDisplaySheet({super.key, required this.userId});
+  const QrDisplaySheet({
+    super.key,
+    required this.userId,
+    required this.identityPublicKey,
+  });
 
-  static void show(BuildContext context, String userId) {
+  static void show(
+    BuildContext context, {
+    required String userId,
+    required Uint8List publicKey,
+  }) {
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
-      builder: (_) => QrDisplaySheet(userId: userId),
+      builder: (_) => QrDisplaySheet(
+        userId: userId,
+        identityPublicKey: publicKey,
+      ),
     );
+  }
+
+  /// Build the cryptographic QR payload as JSON.
+  String _buildQrPayload() {
+    final ikBase64 = base64Encode(identityPublicKey);
+    final fp = Contact.computeFullFingerprint(identityPublicKey);
+    return jsonEncode({
+      'v': 1,
+      'uid': userId,
+      'ik': ikBase64,
+      'fp': fp,
+    });
   }
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final l10n = AppLocalizations.of(context)!;
+    final qrData = _buildQrPayload();
+    final fingerprint = Contact.computeFullFingerprint(identityPublicKey);
+    // Format fingerprint for display: groups of 8 with spaces
+    final fpDisplay = fingerprint
+        .toUpperCase()
+        .replaceAllMapped(RegExp('.{8}'), (m) => '${m.group(0)} ')
+        .trim();
 
     return Container(
       decoration: BoxDecoration(
@@ -70,7 +112,7 @@ class QrDisplaySheet extends StatelessWidget {
               borderRadius: BorderRadius.circular(20),
             ),
             child: QrImageView(
-              data: userId,
+              data: qrData,
               version: QrVersions.auto,
               size: 220,
               eyeStyle: const QrEyeStyle(
@@ -83,7 +125,59 @@ class QrDisplaySheet extends StatelessWidget {
               ),
             ),
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 16),
+
+          // Key fingerprint display
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: isDark
+                  ? AppColors.surfaceElevatedDark
+                  : AppColors.surfaceElevatedLight,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: AppColors.success.withValues(alpha: 0.3),
+                width: 0.5,
+              ),
+            ),
+            child: Column(
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.fingerprint_rounded,
+                        size: 14,
+                        color: isDark
+                            ? AppColors.textTertiaryDark
+                            : AppColors.textTertiaryLight),
+                    const SizedBox(width: 6),
+                    Text(
+                      'Key Fingerprint',
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: isDark
+                                ? AppColors.textTertiaryDark
+                                : AppColors.textTertiaryLight,
+                            fontSize: 10,
+                          ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  fpDisplay,
+                  textAlign: TextAlign.center,
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        fontFamily: 'monospace',
+                        fontSize: 10,
+                        letterSpacing: 0.5,
+                        height: 1.5,
+                      ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 12),
 
           // Copyable user ID
           GestureDetector(
@@ -94,7 +188,8 @@ class QrDisplaySheet extends StatelessWidget {
               );
             },
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
               decoration: BoxDecoration(
                 color: isDark
                     ? AppColors.surfaceElevatedDark

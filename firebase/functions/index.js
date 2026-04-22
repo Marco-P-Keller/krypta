@@ -41,6 +41,10 @@ exports.onNewMessage = functions.firestore
     if (!token) return;
 
     try {
+      // SECURITY: Do NOT include senderId or any message metadata in push.
+      // FCM payloads are logged by Google — including sender ID would leak
+      // who is communicating with whom (communication pattern metadata).
+      // The app retrieves sender info from its encrypted inbox on wake.
       await admin.messaging().send({
         token,
         notification: {
@@ -49,7 +53,6 @@ exports.onNewMessage = functions.firestore
         },
         data: {
           type: "new_message",
-          senderId: messageData.sid || "",
         },
         apns: {
           payload: {
@@ -91,6 +94,7 @@ exports.cleanupExpiredMessages = functions.pubsub
       const expiredMessages = await userDoc
         .collection("inbox")
         .where("ts", "<", cutoff)
+        .limit(500) // Firestore batch limit: max 500 operations
         .get();
 
       if (expiredMessages.empty) continue;

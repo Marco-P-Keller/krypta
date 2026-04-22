@@ -44,9 +44,19 @@ class ChatListScreen extends StatelessWidget {
         actions: [
           IconButton(
             icon: const Icon(Icons.qr_code_rounded, size: 22),
-            onPressed: () {
-              final uid = context.read<MessengerProvider>().userId;
-              if (uid != null) QrDisplaySheet.show(context, uid);
+            onPressed: () async {
+              final messenger = context.read<MessengerProvider>();
+              final uid = messenger.userId;
+              if (uid != null) {
+                final pubKey = await messenger.getIdentityPublicKey();
+                if (pubKey != null && context.mounted) {
+                  QrDisplaySheet.show(
+                    context,
+                    userId: uid,
+                    publicKey: pubKey,
+                  );
+                }
+              }
             },
           ),
           EmergencyButton(onWipe: onEmergencyWipe),

@@ -39,52 +39,73 @@ void main() {
 
   group('E2E Message Encryption', () {
     test('encrypt and decrypt roundtrip', () async {
-      await encryption.generateIdentityKeyPair(); // alice (unused)
+      final alice = await encryption.generateIdentityKeyPair();
       final bob = await encryption.generateIdentityKeyPair();
 
       final payload = await encryption.encryptMessage(
         plaintext: 'Hello Bob!',
         recipientPublicKey: bob.publicKey,
+        senderPublicKey: alice.publicKey,
       );
 
       final decrypted = await encryption.decryptMessage(
         payload: payload,
         privateKey: bob.privateKey,
+        senderPublicKey: alice.publicKey,
+        recipientPublicKey: bob.publicKey,
       );
 
       expect(decrypted, 'Hello Bob!');
     });
 
     test('each encryption produces different ciphertext (ephemeral keys)', () async {
+      final alice = await encryption.generateIdentityKeyPair();
       final bob = await encryption.generateIdentityKeyPair();
 
       final p1 = await encryption.encryptMessage(
-        plaintext: 'same', recipientPublicKey: bob.publicKey);
+        plaintext: 'same',
+        recipientPublicKey: bob.publicKey,
+        senderPublicKey: alice.publicKey,
+      );
       final p2 = await encryption.encryptMessage(
-        plaintext: 'same', recipientPublicKey: bob.publicKey);
+        plaintext: 'same',
+        recipientPublicKey: bob.publicKey,
+        senderPublicKey: alice.publicKey,
+      );
 
       expect(base64Encode(p1.ciphertext), isNot(equals(base64Encode(p2.ciphertext))));
     });
 
     test('wrong key fails decryption', () async {
+      final alice = await encryption.generateIdentityKeyPair();
       final bob = await encryption.generateIdentityKeyPair();
       final eve = await encryption.generateIdentityKeyPair();
 
       final payload = await encryption.encryptMessage(
         plaintext: 'For Bob only',
         recipientPublicKey: bob.publicKey,
+        senderPublicKey: alice.publicKey,
       );
 
       expect(
-        () => encryption.decryptMessage(payload: payload, privateKey: eve.privateKey),
+        () => encryption.decryptMessage(
+          payload: payload,
+          privateKey: eve.privateKey,
+          senderPublicKey: alice.publicKey,
+          recipientPublicKey: eve.publicKey,
+        ),
         throwsA(anything),
       );
     });
 
     test('tampered ciphertext fails', () async {
+      final alice = await encryption.generateIdentityKeyPair();
       final bob = await encryption.generateIdentityKeyPair();
       final payload = await encryption.encryptMessage(
-        plaintext: 'test', recipientPublicKey: bob.publicKey);
+        plaintext: 'test',
+        recipientPublicKey: bob.publicKey,
+        senderPublicKey: alice.publicKey,
+      );
 
       final tampered = Uint8List.fromList(payload.ciphertext);
       tampered[0] ^= 0xFF;
@@ -93,6 +114,8 @@ void main() {
         () => encryption.decryptMessage(
           payload: payload.copyWith(ciphertext: tampered),
           privateKey: bob.privateKey,
+          senderPublicKey: alice.publicKey,
+          recipientPublicKey: bob.publicKey,
         ),
         throwsA(anything),
       );
@@ -120,6 +143,75 @@ void main() {
       expect(
         () => encryption.decryptLocal(encrypted: encrypted, key: key2),
         throwsA(anything),
+      );
+    });
+  });
+
+  group('Message Padding (traffic analysis protection)', () {
+    test('pad and unpad roundtrip', () {
+      final original = Uint8List.fromList(utf8.encode('Hello World!'));
+      final padded = EncryptionService.padPlaintext(original);
+      final unpadded = EncryptionService.unpadPlaintext(padded);
+      expect(utf8.decode(unpadded), 'Hello World!');
+    });
+
+    test('padded size is at least 256 bytes', () {
+      final tiny = Uint8List.fromList(utf8.encode('hi'));
+      final padded = EncryptionService.padPlaintext(tiny);
+      expect(padded.length, 256);
+    });
+
+    test('padded size is power of 2', () {
+      // 300 bytes content + 4 header = 304 → next power of 2 = 512
+      final content = Uint8List(300);
+      final padded = EncryptionService.padPlaintext(content);
+      expect(padded.length, 512);
+    });
+
+    test('large message rounds up correctly', () {
+      final content = Uint8List(1000);
+      final padded = EncryptionService.padPlaintext(content);
+      expect(padded.length, 1024); // 1004 → next pow2 = 1024
+    });
+
+    test('empty message pads to 256', () {
+      final padded = EncryptionService.padPlaintext(Uint8List(0));
+      expect(padded.length, 256);
+      final unpadded = EncryptionService.unpadPlaintext(padded);
+      expect(unpadded.length, 0);
+    });
+
+    test('different messages of same length produce same padded size', () {
+      final a = EncryptionService.padPlaintext(
+          Uint8List.fromList(utf8.encode('Hello')));
+      final b = EncryptionService.padPlaintext(
+          Uint8List.fromList(utf8.encode('World')));
+      expect(a.length, equals(b.length));
+    });
+
+    test('padding bytes are random (not all zeros)', () {
+      final short = Uint8List.fromList([1, 2, 3]);
+      final padded = EncryptionService.padPlaintext(short);
+      // Check that at least some bytes after the content are non-zero
+      final tail = padded.sublist(7); // 4 header + 3 content = 7
+      final nonZero = tail.where((b) => b != 0).length;
+      expect(nonZero, greaterThan(0));
+    });
+
+    test('unpadPlaintext rejects too-short data', () {
+      expect(
+        () => EncryptionService.unpadPlaintext(Uint8List(3)),
+        throwsFormatException,
+      );
+    });
+
+    test('unpadPlaintext rejects invalid length prefix', () {
+      final bad = Uint8List(256);
+      // Write length = 999 (larger than remaining bytes)
+      bad[0] = 0; bad[1] = 0; bad[2] = 3; bad[3] = 0xE7; // 999
+      expect(
+        () => EncryptionService.unpadPlaintext(bad),
+        throwsFormatException,
       );
     });
   });

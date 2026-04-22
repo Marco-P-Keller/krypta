@@ -40,6 +40,20 @@ class EncryptedPayload {
     required this.ephemeralPublicKey,
   });
 
+  EncryptedPayload copyWith({
+    Uint8List? ciphertext,
+    Uint8List? nonce,
+    Uint8List? mac,
+    Uint8List? ephemeralPublicKey,
+  }) {
+    return EncryptedPayload(
+      ciphertext: ciphertext ?? this.ciphertext,
+      nonce: nonce ?? this.nonce,
+      mac: mac ?? this.mac,
+      ephemeralPublicKey: ephemeralPublicKey ?? this.ephemeralPublicKey,
+    );
+  }
+
   Map<String, String> toMap() => {
         'c': base64Encode(ciphertext),
         'n': base64Encode(nonce),

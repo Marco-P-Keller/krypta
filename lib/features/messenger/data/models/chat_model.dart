@@ -23,19 +23,22 @@ class Chat extends Equatable {
 
   Chat copyWith({
     String? recipientName,
-    String? lastMessagePreview,
-    DateTime? lastMessageTime,
+    Object? lastMessagePreview = _sentinel,
+    Object? lastMessageTime = _sentinel,
     int? unreadCount,
     bool? isTyping,
-    // Use _sentinel pattern: pass Duration.zero to clear, null to keep
     Object? defaultSelfDestruct = _sentinel,
   }) {
     return Chat(
       id: id,
       recipientId: recipientId,
       recipientName: recipientName ?? this.recipientName,
-      lastMessagePreview: lastMessagePreview ?? this.lastMessagePreview,
-      lastMessageTime: lastMessageTime ?? this.lastMessageTime,
+      lastMessagePreview: lastMessagePreview == _sentinel
+          ? this.lastMessagePreview
+          : lastMessagePreview as String?,
+      lastMessageTime: lastMessageTime == _sentinel
+          ? this.lastMessageTime
+          : lastMessageTime as DateTime?,
       unreadCount: unreadCount ?? this.unreadCount,
       isTyping: isTyping ?? this.isTyping,
       defaultSelfDestruct: defaultSelfDestruct == _sentinel

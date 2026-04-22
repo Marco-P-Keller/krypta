@@ -1,11 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../../../l10n/app_localizations.dart';
+import '../../../services/storage/secure_storage_service.dart';
 import '../../../theme/app_colors.dart';
 import '../../../theme/app_spacing.dart';
 
 /// Full-screen vault password gate.
 /// Shown after the calculator secret code, before the messenger.
-/// After 5 failed attempts, triggers emergency wipe.
+///
+/// Security features:
+/// - Persistent fail counter (survives app restart)
+/// - Exponential lockout delay (2^failCount seconds)
+/// - Emergency wipe after 5 total failed attempts
 class VaultPasswordScreen extends StatefulWidget {
   final Future<bool> Function(String password) onVerify;
   final VoidCallback onCancel;
@@ -27,13 +33,14 @@ class _VaultPasswordScreenState extends State<VaultPasswordScreen>
   final _controller = TextEditingController();
   late final AnimationController _shakeCtrl;
   late final Animation<double> _shakeAnim;
-  static const _maxAttempts = 5;
+  static const _maxAttempts = SecureStorageService.maxVaultAttempts;
   static const _warningAfter = 2;
 
   bool _isLoading = false;
   bool _obscure = true;
   String? _error;
   int _failedAttempts = 0;
+  bool _isLockedOut = false;
 
   @override
   void initState() {
@@ -43,6 +50,7 @@ class _VaultPasswordScreenState extends State<VaultPasswordScreen>
     _shakeAnim = Tween(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(parent: _shakeCtrl, curve: Curves.elasticOut),
     );
+    _loadPersistentState();
   }
 
   @override
@@ -52,33 +60,98 @@ class _VaultPasswordScreenState extends State<VaultPasswordScreen>
     super.dispose();
   }
 
+  Future<void> _loadPersistentState() async {
+    final storage = context.read<SecureStorageService>();
+    final failCount = await storage.getVaultFailCount();
+    final lockout = await storage.getVaultLockoutRemaining();
+
+    if (!mounted) return;
+    setState(() {
+      _failedAttempts = failCount;
+      if (lockout > Duration.zero) {
+        _isLockedOut = true;
+        // lockout tracked via _isLockedOut flag
+        _error = 'Gesperrt für ${lockout.inSeconds} Sekunden.';
+        // Auto-unlock after delay
+        Future.delayed(lockout, () {
+          if (mounted) {
+            setState(() {
+              _isLockedOut = false;
+              _error = null;
+            });
+          }
+        });
+      } else if (failCount >= _maxAttempts) {
+        // Max attempts already reached — wipe
+        widget.onEmergencyWipe();
+      }
+    });
+  }
+
   Future<void> _submit() async {
     final pw = _controller.text;
-    if (pw.isEmpty) return;
+    if (pw.isEmpty || _isLockedOut) return;
+
     setState(() {
       _isLoading = true;
       _error = null;
     });
 
+    final storage = context.read<SecureStorageService>();
+
+    // Check lockout before attempting
+    final lockout = await storage.getVaultLockoutRemaining();
+    if (lockout > Duration.zero) {
+      if (!mounted) return;
+      setState(() {
+        _isLoading = false;
+        _isLockedOut = true;
+        // lockout tracked via _isLockedOut flag
+        _error = 'Gesperrt für ${lockout.inSeconds} Sekunden.';
+      });
+      Future.delayed(lockout, () {
+        if (mounted) setState(() { _isLockedOut = false; _error = null; });
+      });
+      return;
+    }
+
     final ok = await widget.onVerify(pw);
     if (!mounted) return;
 
-    if (!ok) {
-      _failedAttempts++;
-      _controller.clear();
-      _shakeCtrl.forward(from: 0);
+    if (ok) {
+      // Success: reset persistent fail counter
+      await storage.resetVaultFailCount();
+      return;
+    }
 
-      if (_failedAttempts >= _maxAttempts) {
-        widget.onEmergencyWipe();
-        return;
+    // Failed: increment persistent counter
+    await storage.incrementVaultFailCount();
+    _failedAttempts = await storage.getVaultFailCount();
+    _controller.clear();
+    _shakeCtrl.forward(from: 0);
+
+    if (_failedAttempts >= _maxAttempts) {
+      widget.onEmergencyWipe();
+      return;
+    }
+
+    // Apply exponential lockout delay
+    final newLockout = await storage.getVaultLockoutRemaining();
+    final remaining = _maxAttempts - _failedAttempts;
+
+    setState(() {
+      _isLoading = false;
+      if (newLockout > Duration.zero) {
+        _isLockedOut = true;
       }
+      _error = _failedAttempts >= _warningAfter
+          ? 'Falsches Passwort. Noch $remaining Versuch${remaining == 1 ? '' : 'e'}, danach werden alle Daten gelöscht.'
+          : AppLocalizations.of(context)!.wrongPassword;
+    });
 
-      final remaining = _maxAttempts - _failedAttempts;
-      setState(() {
-        _isLoading = false;
-        _error = _failedAttempts >= _warningAfter
-            ? 'Falsches Passwort. Noch $remaining Versuch${remaining == 1 ? '' : 'e'}, danach werden alle Daten gelöscht.'
-            : AppLocalizations.of(context)!.wrongPassword;
+    if (newLockout > Duration.zero) {
+      Future.delayed(newLockout, () {
+        if (mounted) setState(() { _isLockedOut = false; });
       });
     }
   }
@@ -260,7 +333,7 @@ class _VaultPasswordScreenState extends State<VaultPasswordScreen>
                 width: double.infinity,
                 height: 52,
                 child: FilledButton(
-                  onPressed: _isLoading ? null : _submit,
+                  onPressed: (_isLoading || _isLockedOut) ? null : _submit,
                   style: FilledButton.styleFrom(
                     backgroundColor: AppColors.accent,
                     foregroundColor: Colors.white,

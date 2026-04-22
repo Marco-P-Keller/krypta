@@ -28,10 +28,27 @@ abstract final class StorageKeys {
 
   // ── Local database key (EncryptedLocalStore) ──────────────────────────────
   static const String databaseKey = 'krypta_db_key';
+  /// Hardware-wrapped version of the database key.
+  /// Present only when hardware binding (StrongBox/Secure Enclave) is active.
+  /// The wrapping key never leaves the secure hardware module.
+  static const String databaseKeyWrapped = 'krypta_db_key_hw';
 
   // ── Configuration / non-secret flags (SettingsStorage) ───────────────────
   static const String setupComplete       = 'krypta_cfg_setup';
   static const String biometricEnabled    = 'krypta_cfg_biometric';
   static const String screenshotProtection = 'krypta_cfg_screenshot';
   static const String userId              = 'krypta_cfg_userid';
+
+  // ── Privacy mode (push vs polling) ──────────────────────────────────────
+  static const String pushPrivacyMode = 'krypta_cfg_push_privacy';
+
+  // ── Receipt privacy (metadata minimization) ────────────────────────────
+  /// Whether delivery confirmations are sent. Default: false (disabled).
+  static const String deliveryReceiptsEnabled = 'krypta_cfg_delivery_receipts';
+  /// Whether read receipts are sent. Default: false (disabled).
+  static const String readReceiptsEnabled = 'krypta_cfg_read_receipts';
+
+  // ── Vault fail tracking (persistent brute-force protection) ─────────────
+  static const String vaultFailCount      = 'krypta_vault_fails';
+  static const String vaultLastFailTime   = 'krypta_vault_lastfail';
 }

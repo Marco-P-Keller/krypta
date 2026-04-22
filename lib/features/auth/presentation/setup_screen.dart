@@ -57,6 +57,18 @@ class _SetupScreenState extends State<SetupScreen>
 
   void _next() {
     if (_validateCode(_controllers[_step].text) != null) return;
+
+    // Prevent identical secret and delete codes — CodeDetector checks delete
+    // first, so a collision would make the secret code permanently unreachable.
+    if (_step == 1 && _controllers[1].text == _controllers[0].text) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Delete code must differ from your secret code.'),
+        ),
+      );
+      return;
+    }
+
     if (_step < 1) {
       setState(() => _step++);
       _progressCtrl.animateTo((_step + 1) / 2);
@@ -97,10 +109,10 @@ class _SetupScreenState extends State<SetupScreen>
       ]);
 
       if (mounted) widget.onSetupComplete();
-    } catch (e) {
+    } catch (_) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Setup failed: $e')),
+          const SnackBar(content: Text('Setup failed. Please try again.')),
         );
       }
     } finally {

@@ -54,5 +54,16 @@
 		<string>fetch</string>
 		<string>remote-notification</string>
 	</array>
+	<!-- Security: Enforce App Transport Security (HTTPS only, TLS 1.2+) -->
+	<key>NSAppTransportSecurity</key>
+	<dict>
+		<key>NSAllowsArbitraryLoads</key>
+		<false/>
+	</dict>
+	<!-- Encryption export compliance: app uses Signal Protocol (X3DH + Double Ratchet
+	     + XChaCha20-Poly1305). This is non-exempt encryption. Handle export compliance
+	     questionnaire in App Store Connect during submission. -->
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<true/>
 </dict>
 </plist>

@@ -111,12 +111,13 @@ class SecureStorageService {
     return _verifySecret(code, stored);
   }
 
-  /// Check if a proposed code collides with any of the other stored codes.
+  /// Check if a proposed code collides with any existing stored codes.
   ///
-  /// Returns true if the candidate matches an existing code (prefix attack prevention).
-  /// Used during setup and code change to prevent:
-  /// - Identical codes (secret == decoy would expose real messenger on decoy entry)
-  /// - One code being a prefix of another (e.g., "1234" and "12345")
+  /// Returns true if the candidate exactly matches an existing code.
+  /// Prevents identical codes (e.g., secret == decoy would always trigger the
+  /// wrong action). Note: prefix detection (e.g., "1234" vs "12345") is not
+  /// possible with Argon2id hashing — the CodeDetector must enforce minimum
+  /// code lengths to mitigate prefix overlap risk.
   Future<bool> codeCollides(String candidate, {String? excludeKey}) async {
     final keys = [StorageKeys.secretCode, StorageKeys.decoyCode, StorageKeys.deleteCode];
     for (final key in keys) {
@@ -153,17 +154,79 @@ class SecureStorageService {
     return value == 'true';
   }
 
-  // --- Vault Password (hashed) ---
+  // --- Push Privacy Mode ---
+
+  /// When enabled, FCM push notifications are disabled and the app
+  /// polls for messages with randomized intervals instead. This prevents
+  /// the push notification provider (Google/Apple) from learning when
+  /// messages are received or their frequency patterns.
+  Future<void> setPushPrivacyEnabled(bool enabled) async {
+    await _storage.write(
+      key: StorageKeys.pushPrivacyMode,
+      value: enabled.toString(),
+    );
+  }
+
+  Future<bool> isPushPrivacyEnabled() async {
+    final value = await _storage.read(key: StorageKeys.pushPrivacyMode);
+    return value == 'true';
+  }
+
+  // --- Receipt Privacy Settings ---
+
+  /// Delivery receipts: inform sender that message was received.
+  /// Default: disabled (maximum privacy — sender learns nothing about delivery).
+  Future<void> setDeliveryReceiptsEnabled(bool enabled) async {
+    await _storage.write(
+      key: StorageKeys.deliveryReceiptsEnabled,
+      value: enabled.toString(),
+    );
+  }
+
+  Future<bool> isDeliveryReceiptsEnabled() async {
+    final value = await _storage.read(key: StorageKeys.deliveryReceiptsEnabled);
+    return value == 'true'; // Default: false (disabled)
+  }
+
+  /// Read receipts: inform sender that message was read.
+  /// Default: disabled (maximum privacy — sender learns nothing about read state).
+  Future<void> setReadReceiptsEnabled(bool enabled) async {
+    await _storage.write(
+      key: StorageKeys.readReceiptsEnabled,
+      value: enabled.toString(),
+    );
+  }
+
+  Future<bool> isReadReceiptsEnabled() async {
+    final value = await _storage.read(key: StorageKeys.readReceiptsEnabled);
+    return value == 'true'; // Default: false (disabled)
+  }
+
+  // --- Vault Password (hashed, brute-force protected) ---
+
+  /// Maximum vault password attempts before emergency wipe.
+  static const int maxVaultAttempts = 5;
+
+  /// Exponential delay base: 2^failCount seconds.
+  /// 1→2s, 2→4s, 3→8s, 4→16s
+  static Duration getVaultDelay(int failCount) {
+    if (failCount <= 0) return Duration.zero;
+    final seconds = 1 << failCount; // 2^failCount
+    return Duration(seconds: seconds.clamp(0, 120));
+  }
 
   Future<void> setVaultPassword(String password) async {
     final hashed = await _hashSecret(password);
     await _storage.write(key: StorageKeys.vaultPassword, value: hashed);
     await _storage.write(key: StorageKeys.vaultPasswordEnabled, value: 'true');
+    // Reset fail counter on password change
+    await resetVaultFailCount();
   }
 
   Future<void> removeVaultPassword() async {
     await _storage.delete(key: StorageKeys.vaultPassword);
     await _storage.write(key: StorageKeys.vaultPasswordEnabled, value: 'false');
+    await resetVaultFailCount();
   }
 
   Future<bool> isVaultPasswordEnabled() async {
@@ -175,6 +238,48 @@ class SecureStorageService {
     final stored = await _storage.read(key: StorageKeys.vaultPassword);
     if (stored == null) return false;
     return _verifySecret(input, stored);
+  }
+
+  // --- Vault fail tracking (persistent) ---
+
+  Future<int> getVaultFailCount() async {
+    final value = await _storage.read(key: StorageKeys.vaultFailCount);
+    return int.tryParse(value ?? '') ?? 0;
+  }
+
+  Future<void> incrementVaultFailCount() async {
+    final current = await getVaultFailCount();
+    await _storage.write(
+      key: StorageKeys.vaultFailCount,
+      value: '${current + 1}',
+    );
+    await _storage.write(
+      key: StorageKeys.vaultLastFailTime,
+      value: '${DateTime.now().millisecondsSinceEpoch}',
+    );
+  }
+
+  Future<void> resetVaultFailCount() async {
+    await _storage.delete(key: StorageKeys.vaultFailCount);
+    await _storage.delete(key: StorageKeys.vaultLastFailTime);
+  }
+
+  /// Returns the remaining lockout duration, or Duration.zero if not locked.
+  Future<Duration> getVaultLockoutRemaining() async {
+    final failCount = await getVaultFailCount();
+    if (failCount <= 0) return Duration.zero;
+
+    final lastFailStr = await _storage.read(key: StorageKeys.vaultLastFailTime);
+    if (lastFailStr == null) return Duration.zero;
+
+    final lastFail = DateTime.fromMillisecondsSinceEpoch(
+      int.tryParse(lastFailStr) ?? 0,
+    );
+    final delay = getVaultDelay(failCount);
+    final unlockAt = lastFail.add(delay);
+    final remaining = unlockAt.difference(DateTime.now());
+
+    return remaining.isNegative ? Duration.zero : remaining;
   }
 
   // --- Wipe ---

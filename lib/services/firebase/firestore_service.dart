@@ -1,9 +1,13 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-/// Firestore service — ephemeral message relay, key exchange, typing, acks.
+/// Firestore service — ephemeral message relay, key exchange, acks.
 ///
-/// The server NEVER stores plaintext. All message payloads are E2E encrypted.
-/// Messages are deleted after delivery or after TTL (24h max).
+/// Privacy-by-design principles:
+/// - Server NEVER stores plaintext — all payloads are E2E encrypted
+/// - Messages are deleted immediately after delivery (ephemeral relay)
+/// - ACKs contain minimal fields (message ID + type only, no timestamps)
+/// - No typing indicators — zero interaction metadata leaked
+/// - FCM tokens are ephemeral and deletable on demand
 class FirestoreService {
   final FirebaseFirestore _db;
 
@@ -18,7 +22,6 @@ class FirestoreService {
   }) async {
     await _db.collection('publicKeys').doc(userId).set({
       'publicKey': publicKeyBase64,
-      'updatedAt': FieldValue.serverTimestamp(),
     });
   }
 
@@ -32,16 +35,70 @@ class FirestoreService {
     return doc.exists;
   }
 
+  // --- Key Transparency Commitments ---
+
+  /// Publish a key commitment to the transparency log.
+  ///
+  /// Commitments are stored by epoch, forming an append-only log.
+  /// The server cannot forge entries (Ed25519-signed by the key owner)
+  /// but could attempt to serve different entries to different clients,
+  /// which is detected by the ConsistencyChecker gossip protocol.
+  Future<void> publishKeyCommitment({
+    required String userId,
+    required Map<String, dynamic> commitment,
+    required int epoch,
+  }) async {
+    await _db
+        .collection('keyCommitments')
+        .doc(userId)
+        .collection('log')
+        .doc(epoch.toString())
+        .set(commitment);
+  }
+
+  /// Fetch all key commitments for a user, ordered by epoch.
+  Future<List<Map<String, dynamic>>> getKeyCommitments(String userId) async {
+    final snapshot = await _db
+        .collection('keyCommitments')
+        .doc(userId)
+        .collection('log')
+        .orderBy('e')
+        .get();
+    return snapshot.docs.map((d) => d.data()).toList();
+  }
+
+  /// Fetch key commitments since a specific epoch (for incremental sync).
+  Future<List<Map<String, dynamic>>> getKeyCommitmentsSince(
+      String userId, int sinceEpoch) async {
+    final snapshot = await _db
+        .collection('keyCommitments')
+        .doc(userId)
+        .collection('log')
+        .where('e', isGreaterThan: sinceEpoch)
+        .orderBy('e')
+        .get();
+    return snapshot.docs.map((d) => d.data()).toList();
+  }
+
+  /// Get the latest key commitment for a user.
+  Future<Map<String, dynamic>?> getLatestKeyCommitment(String userId) async {
+    final snapshot = await _db
+        .collection('keyCommitments')
+        .doc(userId)
+        .collection('log')
+        .orderBy('e', descending: true)
+        .limit(1)
+        .get();
+    return snapshot.docs.isEmpty ? null : snapshot.docs.first.data();
+  }
+
   // --- PreKey Bundle ---
 
   Future<void> publishPreKeyBundle({
     required String userId,
     required Map<String, dynamic> bundle,
   }) async {
-    await _db.collection('prekeys').doc(userId).set({
-      ...bundle,
-      'updatedAt': FieldValue.serverTimestamp(),
-    });
+    await _db.collection('prekeys').doc(userId).set(bundle);
   }
 
   Future<Map<String, dynamic>?> getPreKeyBundle(String userId) async {
@@ -49,33 +106,44 @@ class FirestoreService {
     return doc.data();
   }
 
-  /// Remove consumed one-time prekey from the bundle.
-  Future<void> consumeOneTimePreKey(String userId) async {
-    await _db.collection('prekeys').doc(userId).update({
-      'opk': FieldValue.delete(),
-      'opkId': FieldValue.delete(),
+  /// Atomically claim and remove a one-time prekey from the bundle.
+  ///
+  /// Uses a Firestore transaction to prevent race conditions where two
+  /// simultaneous session initiations both consume the same OTP, producing
+  /// overlapping session keys. Returns true if the OTP was successfully
+  /// claimed (i.e. it still existed at the time of the transaction).
+  Future<bool> consumeOneTimePreKey(String userId) async {
+    return _db.runTransaction((txn) async {
+      final ref = _db.collection('prekeys').doc(userId);
+      final snapshot = await txn.get(ref);
+      if (!snapshot.exists) return false;
+      final data = snapshot.data()!;
+      if (data['opk'] == null) return false; // Already consumed
+      txn.update(ref, {
+        'opk': FieldValue.delete(),
+        'opkId': FieldValue.delete(),
+      });
+      return true;
     });
   }
 
-  // --- Message Relay ---
+  // --- Message Relay (ephemeral — deleted after delivery) ---
 
   Future<String> sendEncryptedMessage({
     required String senderId,
     required String recipientId,
     required String messageId,
     required Map<String, String> encryptedPayload,
-    int? selfDestructMs,
-    bool burnAfterRead = false,
-    bool isPasswordProtected = false,
   }) async {
+    // Minimal metadata: sender ID, message ID, encrypted payload.
+    // Server timestamp only for ordering — deleted after delivery.
+    // Message flags (self-destruct, burn-after-read, password) are
+    // INSIDE the encrypted payload — invisible to the server.
     final data = <String, dynamic>{
       'sid': senderId,
       'mid': messageId,
       'p': encryptedPayload,
       'ts': FieldValue.serverTimestamp(),
-      'sd': selfDestructMs,
-      'bar': burnAfterRead,
-      'pw': isPasswordProtected,
     };
 
     final ref = await _db
@@ -104,24 +172,40 @@ class FirestoreService {
         .delete();
   }
 
-  // --- Delivery & Read Acknowledgments ---
+  // --- Legacy Plaintext ACKs (DEPRECATED) ─────────────────────────────────
+  //
+  // DEPRECATED: These methods send unencrypted ACKs through a separate
+  // Firestore collection. Control messages (ACKs, deletes, reads, unlocks)
+  // now travel through the encrypted message channel via ControlMessage.
+  // These methods are retained only for potential migration cleanup.
+  // DO NOT use in new code.
 
+  @Deprecated('Use ControlMessage through encrypted message channel instead')
   Future<void> sendAck({
+    required String senderId,
     required String recipientId,
     required String messageId,
     required String type,
   }) async {
+    final typeCode = switch (type) {
+      'delivered' => 'd',
+      'read' => 'r',
+      'unlock' => 'u',
+      'delete' => 'x',
+      _ => '?',
+    };
     await _db
         .collection('acks')
         .doc(recipientId)
         .collection('inbox')
         .add({
       'mid': messageId,
-      'type': type,
-      'ts': FieldValue.serverTimestamp(),
+      't': typeCode,
+      'sid': senderId,
     });
   }
 
+  @Deprecated('ACK listener removed — control messages arrive via inbox')
   Stream<QuerySnapshot<Map<String, dynamic>>> listenForAcks(String userId) {
     return _db
         .collection('acks')
@@ -130,6 +214,7 @@ class FirestoreService {
         .snapshots();
   }
 
+  @Deprecated('ACK cleanup — control messages deleted via inbox')
   Future<void> deleteAck(String userId, String ackDocId) async {
     await _db
         .collection('acks')
@@ -139,23 +224,31 @@ class FirestoreService {
         .delete();
   }
 
-  // --- Typing Indicators ---
+  // --- Delivery Tokens (Sealed Sender) ---
 
-  Future<void> setTyping({
-    required String recipientId,
-    required String senderId,
-    required bool isTyping,
+  /// Publish a delivery token for sealed sender routing.
+  /// Recipients publish tokens so senders can route messages anonymously.
+  Future<void> publishDeliveryToken({
+    required String userId,
+    required String token,
   }) async {
-    await _db.collection('typing').doc(recipientId).set({
-      senderId: isTyping ? FieldValue.serverTimestamp() : FieldValue.delete(),
-    }, SetOptions(merge: true));
+    await _db.collection('deliveryTokens').doc(userId).set({
+      'token': token,
+    });
   }
 
-  Stream<DocumentSnapshot<Map<String, dynamic>>> listenForTyping(String userId) {
-    return _db.collection('typing').doc(userId).snapshots();
+  /// Get a recipient's delivery token for sealed sender.
+  Future<String?> getDeliveryToken(String userId) async {
+    final doc = await _db.collection('deliveryTokens').doc(userId).get();
+    return doc.data()?['token'] as String?;
   }
 
-  // --- FCM Token ---
+  /// Delete the delivery token (on logout, wipe, or rotation).
+  Future<void> deleteDeliveryToken(String userId) async {
+    await _db.collection('deliveryTokens').doc(userId).delete();
+  }
+
+  // --- FCM Token (ephemeral) ---
 
   Future<void> registerFcmToken({
     required String userId,
@@ -163,8 +256,12 @@ class FirestoreService {
   }) async {
     await _db.collection('fcmTokens').doc(userId).set({
       'token': token,
-      'updatedAt': FieldValue.serverTimestamp(),
     });
+  }
+
+  /// Delete FCM token — called on logout, wipe, or token rotation.
+  Future<void> deleteFcmToken(String userId) async {
+    await _db.collection('fcmTokens').doc(userId).delete();
   }
 
   // --- Cleanup ---
@@ -184,10 +281,16 @@ class FirestoreService {
       batch.delete(doc.reference);
     }
 
+    final commitments = await _db
+        .collection('keyCommitments').doc(userId).collection('log').get();
+    for (final doc in commitments.docs) {
+      batch.delete(doc.reference);
+    }
+
     batch.delete(_db.collection('publicKeys').doc(userId));
     batch.delete(_db.collection('prekeys').doc(userId));
-    batch.delete(_db.collection('typing').doc(userId));
     batch.delete(_db.collection('fcmTokens').doc(userId));
+    batch.delete(_db.collection('deliveryTokens').doc(userId));
 
     await batch.commit();
   }

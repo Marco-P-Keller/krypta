@@ -572,6 +572,18 @@ abstract class AppLocalizations {
   /// **'Delete Chat'**
   String get deleteChat;
 
+  /// No description provided for @clearChat.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear Chat'**
+  String get clearChat;
+
+  /// No description provided for @clearChatConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete all messages in this chat? This cannot be undone.'**
+  String get clearChatConfirm;
+
   /// No description provided for @autoDeleteTimer.
   ///
   /// In en, this message translates to:
@@ -841,6 +853,48 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'This message will be deleted for both you and the recipient.'**
   String get deleteForEveryoneConfirm;
+
+  /// No description provided for @qrInvalidFormat.
+  ///
+  /// In en, this message translates to:
+  /// **'Invalid QR code format. Only Krypta QR codes are accepted.'**
+  String get qrInvalidFormat;
+
+  /// No description provided for @qrUnsupportedVersion.
+  ///
+  /// In en, this message translates to:
+  /// **'Unsupported QR code version. Please update the app.'**
+  String get qrUnsupportedVersion;
+
+  /// No description provided for @qrFingerprintMismatch.
+  ///
+  /// In en, this message translates to:
+  /// **'Security warning: QR code fingerprint is tampered. Operation aborted.'**
+  String get qrFingerprintMismatch;
+
+  /// No description provided for @qrKeyMismatch.
+  ///
+  /// In en, this message translates to:
+  /// **'SECURITY WARNING: Server key does NOT match the QR code key. Possible attack detected. Contact has been blocked.'**
+  String get qrKeyMismatch;
+
+  /// No description provided for @qrVerified.
+  ///
+  /// In en, this message translates to:
+  /// **'Key verified'**
+  String get qrVerified;
+
+  /// No description provided for @privacyPolicy.
+  ///
+  /// In en, this message translates to:
+  /// **'Privacy Policy'**
+  String get privacyPolicy;
+
+  /// No description provided for @legalSection.
+  ///
+  /// In en, this message translates to:
+  /// **'Legal'**
+  String get legalSection;
 }
 
 class _AppLocalizationsDelegate
