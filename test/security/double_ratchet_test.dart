@@ -226,6 +226,122 @@ void main() {
       expect(ciphertexts.toSet().length, 5);
     });
   });
+
+  group('DoubleRatchet — C1 regression (root key isolation)', () {
+    test('initAsReceiver must not alias sharedSecret into state.rootKey',
+        () async {
+      final secret = Uint8List.fromList(List.generate(32, (i) => i + 1));
+      final expected = Uint8List.fromList(secret);
+
+      final kp = await X25519().newKeyPair();
+      final pub = Uint8List.fromList((await kp.extractPublicKey()).bytes);
+      final priv = Uint8List.fromList(await kp.extractPrivateKeyBytes());
+
+      final state = DoubleRatchet.initAsReceiver(
+        sharedSecret: secret,
+        ratchetPublicKey: pub,
+        ratchetPrivateKey: priv,
+      );
+
+      // Caller zeros its sharedSecret buffer after handing ownership
+      // to the ratchet (mirrors session_handshake_service.dart flow).
+      for (var i = 0; i < secret.length; i++) {
+        secret[i] = 0;
+      }
+
+      expect(state.rootKey, orderedEquals(expected),
+          reason: 'state.rootKey must not be aliased to the caller\'s buffer');
+    });
+
+    test(
+        'first inbound message decrypts after caller zeros sharedSecret '
+        '(end-to-end regression)', () async {
+      final secret = Uint8List.fromList(List.generate(32, (i) => 42));
+      final aliceSecret = Uint8List.fromList(secret);
+
+      final kp = await X25519().newKeyPair();
+      final bobPub = Uint8List.fromList((await kp.extractPublicKey()).bytes);
+      final bobPriv = Uint8List.fromList(await kp.extractPrivateKeyBytes());
+
+      final alice = await DoubleRatchet.initAsSender(
+        sharedSecret: aliceSecret,
+        recipientRatchetPublicKey: bobPub,
+      );
+      final bob = DoubleRatchet.initAsReceiver(
+        sharedSecret: secret,
+        ratchetPublicKey: bobPub,
+        ratchetPrivateKey: bobPriv,
+      );
+
+      // Simulate the exact caller pattern in session_handshake_service.dart:
+      // zero the sharedSecret buffer after initAsReceiver returns.
+      for (var i = 0; i < secret.length; i++) {
+        secret[i] = 0;
+      }
+
+      final ad = Uint8List.fromList(utf8.encode('ad'));
+      final pt = Uint8List.fromList(utf8.encode('first message'));
+
+      final (_, msg) = await DoubleRatchet.encrypt(
+        state: alice,
+        plaintext: pt,
+        associatedData: ad,
+      );
+
+      final (_, decrypted) = await DoubleRatchet.decrypt(
+        state: bob,
+        message: msg,
+        associatedData: ad,
+      );
+
+      expect(utf8.decode(decrypted), 'first message');
+    });
+
+    test('initAsReceiver must not alias ratchetPrivateKey into state',
+        () async {
+      final secret = Uint8List.fromList(List.generate(32, (i) => i));
+      final kp = await X25519().newKeyPair();
+      final pub = Uint8List.fromList((await kp.extractPublicKey()).bytes);
+      final priv = Uint8List.fromList(await kp.extractPrivateKeyBytes());
+      final expectedPriv = Uint8List.fromList(priv);
+
+      final state = DoubleRatchet.initAsReceiver(
+        sharedSecret: secret,
+        ratchetPublicKey: pub,
+        ratchetPrivateKey: priv,
+      );
+
+      for (var i = 0; i < priv.length; i++) {
+        priv[i] = 0;
+      }
+
+      expect(state.dhSendingPrivate, orderedEquals(expectedPriv),
+          reason:
+              'state.dhSendingPrivate must not be aliased to the caller\'s buffer');
+    });
+
+    test('initAsSender must not alias recipientRatchetPublicKey into state',
+        () async {
+      final secret = Uint8List.fromList(List.generate(32, (i) => i));
+      final kp = await X25519().newKeyPair();
+      final recipientPub =
+          Uint8List.fromList((await kp.extractPublicKey()).bytes);
+      final expectedPub = Uint8List.fromList(recipientPub);
+
+      final state = await DoubleRatchet.initAsSender(
+        sharedSecret: secret,
+        recipientRatchetPublicKey: recipientPub,
+      );
+
+      for (var i = 0; i < recipientPub.length; i++) {
+        recipientPub[i] = 0;
+      }
+
+      expect(state.dhReceivingPublic, orderedEquals(expectedPub),
+          reason:
+              'state.dhReceivingPublic must not be aliased to the caller\'s buffer');
+    });
+  });
 }
 
 extension _TamperExt on RatchetMessage {

@@ -50,6 +50,14 @@ class EmergencyWipeService {
   Future<void> wipeEverything() async {
     final userId = _auth.currentUser?.uid;
 
+    // H3: set a wipe-in-progress marker BEFORE any destructive step so an
+    // interrupt (crash, kill, power loss) is detectable on next startup.
+    // The marker file lives outside the secure store / encrypted store and
+    // survives both wipes.
+    try {
+      await io.setWipeMarker();
+    } catch (_) {}
+
     // Phase 1: Local wipe (highest priority — no network needed)
     await _wipeLocal();
 
@@ -58,6 +66,18 @@ class EmergencyWipeService {
 
     // Phase 3: Auth cleanup
     await _wipeAuth();
+
+    // H3: only clear the marker if identity keys are really gone. If
+    // deleteAllKeys / secure_storage.deleteAll failed or were interrupted,
+    // leftover keys must NOT be reused — leaving the marker set forces fresh
+    // key generation on next startup.
+    try {
+      if (!await _keyManager.hasIdentityKeys()) {
+        await io.clearWipeMarker();
+      }
+    } catch (_) {
+      // Verification failed — leave marker set (fail-safe).
+    }
   }
 
   Future<void> _wipeLocal() async {

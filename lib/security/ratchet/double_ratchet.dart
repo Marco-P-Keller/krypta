@@ -51,7 +51,7 @@ class DoubleRatchet {
       sendingChainKey: sendingChainKey,
       dhSendingPublic: dhPublic,
       dhSendingPrivate: dhPrivate,
-      dhReceivingPublic: recipientRatchetPublicKey,
+      dhReceivingPublic: Uint8List.fromList(recipientRatchetPublicKey),
     );
   }
 
@@ -59,15 +59,20 @@ class DoubleRatchet {
   ///
   /// [sharedSecret] is the same value Alice used.
   /// Bob's ratchet key pair comes from the prekey or identity key.
+  ///
+  /// All caller-supplied byte buffers ([sharedSecret], [ratchetPublicKey],
+  /// [ratchetPrivateKey]) are copied into the state, so the caller may safely
+  /// zero or reuse its own buffers after this returns without corrupting the
+  /// session state.
   static RatchetState initAsReceiver({
     required Uint8List sharedSecret,
     required Uint8List ratchetPublicKey,
     required Uint8List ratchetPrivateKey,
   }) {
     return RatchetState(
-      rootKey: sharedSecret,
-      dhSendingPublic: ratchetPublicKey,
-      dhSendingPrivate: ratchetPrivateKey,
+      rootKey: Uint8List.fromList(sharedSecret),
+      dhSendingPublic: Uint8List.fromList(ratchetPublicKey),
+      dhSendingPrivate: Uint8List.fromList(ratchetPrivateKey),
     );
   }
 
@@ -90,8 +95,11 @@ class DoubleRatchet {
 
     final (newChainKey, messageKey) = await _kdfChainKey(s.sendingChainKey!);
 
+    // Copy dhSendingPublic so the outbound header does not alias the
+    // state's buffer — prevents caller mutation of either side from
+    // corrupting the other.
     final header = RatchetHeader(
-      dhPublicKey: s.dhSendingPublic,
+      dhPublicKey: Uint8List.fromList(s.dhSendingPublic),
       messageNumber: s.sendMessageNumber,
       previousChainLength: s.previousChainLength,
     );
@@ -205,7 +213,9 @@ class DoubleRatchet {
       sendingChainKey: cks,
       dhSendingPublic: newPub,
       dhSendingPrivate: newPriv,
-      dhReceivingPublic: remotePub,
+      // Copy remotePub — it came from a caller-owned RatchetMessage header
+      // and must not be aliased into session state.
+      dhReceivingPublic: Uint8List.fromList(remotePub),
       previousChainLength: s.sendMessageNumber,
       sendMessageNumber: 0,
       receiveMessageNumber: 0,
@@ -293,7 +303,11 @@ class DoubleRatchet {
       info: utf8.encode('KryptaDoubleRatchet-v1'),
     );
     final bytes = Uint8List.fromList(await derived.extractBytes());
-    return (bytes.sublist(0, 32), bytes.sublist(32, 64));
+    final newRk = Uint8List.fromList(bytes.sublist(0, 32));
+    final newCk = Uint8List.fromList(bytes.sublist(32, 64));
+    // Zero the 64-byte intermediate buffer — the two halves have been copied out.
+    SensitiveBuffer.zeroBytes(bytes);
+    return (newRk, newCk);
   }
 
   /// KDF_CK: HMAC-SHA256(ck, 0x01) → message key; HMAC-SHA256(ck, 0x02) → new chain key

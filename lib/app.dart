@@ -85,6 +85,10 @@ class _KryptaShellState extends State<KryptaShell> with WidgetsBindingObserver {
 
   @override
   void dispose() {
+    // C6: ensure periodic integrity polling doesn't outlive the shell.
+    try {
+      context.read<DeviceIntegrityPolicyService>().stopPeriodicChecks();
+    } catch (_) {}
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
   }
@@ -92,15 +96,22 @@ class _KryptaShellState extends State<KryptaShell> with WidgetsBindingObserver {
   /// When app goes to background, always lock back to calculator.
   /// This ensures the messenger is never visible when returning to the app.
   ///
-  /// Security: screenshot protection is kept ACTIVE until the calculator
-  /// view is fully rendered. This prevents the app-switcher from showing
-  /// sensitive content.
+  /// Only `paused` / `hidden` triggers the lock — `inactive` fires for
+  /// transient interruptions (screenshot, permission prompt, control-center
+  /// peek, incoming call overlay) which should NOT count as backgrounding.
+  /// Screenshot protection stays active throughout the messenger session,
+  /// so the app-switcher snapshot is already covered by the OS privacy mask.
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.paused || state == AppLifecycleState.inactive) {
+    final isBackgrounded = state == AppLifecycleState.paused ||
+        state == AppLifecycleState.hidden;
+    if (isBackgrounded) {
       // Evict stale ratchet state entries (containing private keys) from memory.
       // This reduces the window where sensitive cryptographic material is in RAM.
       context.read<EncryptedLocalStore>().evictStaleCacheEntries();
+      // C6: stop periodic integrity polling while backgrounded — the resume
+      // path re-runs a one-shot check and _unlockMessenger re-starts it.
+      context.read<DeviceIntegrityPolicyService>().stopPeriodicChecks();
 
       if (_currentScreen != _AppScreen.calculator &&
           _currentScreen != _AppScreen.setup &&
@@ -191,13 +202,35 @@ class _KryptaShellState extends State<KryptaShell> with WidgetsBindingObserver {
     final storage = context.read<SecureStorageService>();
     final platform = context.read<PlatformSecurityService>();
 
+    // H4: if the unified fail counter is already at wipe threshold, act now.
+    // This catches the case where an earlier biometric-only session
+    // accumulated enough fails to wipe.
+    if (await storage.getVaultFailCount() >=
+        SecureStorageService.maxVaultAttempts) {
+      await _handleEmergencyWipe();
+      return;
+    }
+
     final biometricEnabled = await storage.isBiometricEnabled();
 
     if (biometricEnabled) {
       final authenticated = await platform.authenticate(
         reason: 'Unlock Krypta Messenger',
       );
-      if (!authenticated || !mounted) return;
+      if (!mounted) return;
+      if (!authenticated) {
+        // H4: unify biometric fails into the vault counter so an attacker
+        // cannot burn through biometric attempts and then get a fresh
+        // 5-attempt vault budget.
+        await storage.incrementVaultFailCount();
+        final fails = await storage.getVaultFailCount();
+        if (fails >= SecureStorageService.maxVaultAttempts) {
+          await _handleEmergencyWipe();
+        }
+        return;
+      }
+      // Biometric success — reset counter so one bad taps don't linger.
+      await storage.resetVaultFailCount();
     }
 
     final vaultEnabled = await storage.isVaultPasswordEnabled();
@@ -213,10 +246,23 @@ class _KryptaShellState extends State<KryptaShell> with WidgetsBindingObserver {
   Future<void> _unlockMessenger() async {
     final platform = context.read<PlatformSecurityService>();
     final messenger = context.read<MessengerProvider>();
+    final integrity = context.read<DeviceIntegrityPolicyService>();
 
     // Fail-closed: enable screenshot protection BEFORE showing messenger
     await platform.enableScreenshotProtection();
     await messenger.initialize();
+
+    // C6: start periodic integrity monitoring while the messenger is unlocked
+    // — catches Frida / debugger attachment that happens after the initial
+    // start-time check. Stopped on background/logout/emergency wipe.
+    integrity.startPeriodicChecks(
+      onAction: (action) {
+        if (!mounted) return;
+        if (action != _deviceAction) {
+          setState(() => _deviceAction = action);
+        }
+      },
+    );
 
     if (mounted) setState(() => _currentScreen = _AppScreen.messenger);
   }
@@ -225,7 +271,9 @@ class _KryptaShellState extends State<KryptaShell> with WidgetsBindingObserver {
     final wipeService = context.read<EmergencyWipeService>();
     final messenger = context.read<MessengerProvider>();
     final platform = context.read<PlatformSecurityService>();
+    final integrity = context.read<DeviceIntegrityPolicyService>();
 
+    integrity.stopPeriodicChecks();
     await messenger.wipeAll();
     await wipeService.wipeEverything();
     await platform.disableScreenshotProtection();
@@ -239,6 +287,8 @@ class _KryptaShellState extends State<KryptaShell> with WidgetsBindingObserver {
   }
 
   void _backToCalculator() {
+    // C6: stop periodic integrity checks — messenger is no longer active.
+    context.read<DeviceIntegrityPolicyService>().stopPeriodicChecks();
     setState(() => _currentScreen = _AppScreen.calculator);
     // Disable screenshot protection AFTER calculator is rendered
     WidgetsBinding.instance.addPostFrameCallback((_) {

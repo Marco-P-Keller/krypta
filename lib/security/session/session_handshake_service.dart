@@ -98,6 +98,8 @@ class SessionHandshakeService {
       sharedSecret: sharedSecret,
       recipientRatchetPublicKey: bundle.signedPreKeyPublic,
     );
+    // Zero shared secret after ratchet init — consumed by KDF, no longer needed.
+    _zeroBytes(sharedSecret);
 
     return OutboundSession(
       ratchetState: ratchetState,
@@ -163,11 +165,14 @@ class SessionHandshakeService {
 
     // The ratchet key pair must match what the sender used as
     // recipientRatchetPublicKey — which is the signed prekey.
-    return DoubleRatchet.initAsReceiver(
+    final state = DoubleRatchet.initAsReceiver(
       sharedSecret: sharedSecret,
       ratchetPublicKey: signedPreKeyPublic,
       ratchetPrivateKey: signedPreKeyPrivate,
     );
+    // Zero shared secret after ratchet init.
+    _zeroBytes(sharedSecret);
+    return state;
   }
 
   /// Verify a signed prekey's Ed25519 signature.

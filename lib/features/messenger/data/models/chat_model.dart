@@ -67,10 +67,20 @@ class Chat extends Equatable {
           ? DateTime.fromMillisecondsSinceEpoch(map['lastMessageTime'] as int)
           : null,
       unreadCount: (map['unreadCount'] as int?) ?? 0,
-      defaultSelfDestruct: map['defaultSelfDestructMs'] != null
-          ? Duration(milliseconds: map['defaultSelfDestructMs'] as int)
-          : null,
+      // A2: clamp persisted self-destruct values so corrupted / migrated
+      // state cannot reintroduce negative or overlong durations.
+      defaultSelfDestruct: _decodeSelfDestruct(map['defaultSelfDestructMs']),
     );
+  }
+
+  /// A2: safe decode for stored self-destruct milliseconds.
+  /// Non-positive → null (treated as "no self-destruct").
+  /// Capped at 30 days to avoid integer overflow in downstream timers.
+  static Duration? _decodeSelfDestruct(Object? raw) {
+    if (raw is! int) return null;
+    if (raw <= 0) return null;
+    const maxMs = 30 * 24 * 60 * 60 * 1000;
+    return Duration(milliseconds: raw > maxMs ? maxMs : raw);
   }
 
   @override

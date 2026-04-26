@@ -5,6 +5,7 @@ import 'package:cryptography/cryptography.dart';
 import 'package:flutter/foundation.dart';
 import 'package:uuid/uuid.dart';
 import '../../../security/encryption/encryption_service.dart';
+import '../../../security/encryption/password_validator.dart';
 import '../../../security/key_management/key_manager.dart';
 import '../../../security/memory/sensitive_buffer.dart';
 import '../../../security/messaging/control_message.dart';
@@ -13,6 +14,7 @@ import '../../../security/prekey/prekey_manager.dart';
 import '../../../security/ratchet/double_ratchet.dart';
 import '../../../security/ratchet/ratchet_message.dart';
 import '../../../security/ratchet/ratchet_state.dart';
+import '../../../security/ratchet/replay_guard.dart';
 import '../../../security/session/session_errors.dart';
 import '../../../security/session/session_handshake_service.dart';
 import '../../../security/transparency/consistency_checker.dart';
@@ -70,7 +72,15 @@ class MessengerProvider extends ChangeNotifier {
   final Set<String> _processedMessageIds = {};
   /// Rate-limiting for password-protected message unlock attempts.
   /// Maps messageId → (failCount, lastAttemptTime).
+  /// Persisted across app restarts via [EncryptedLocalStore.saveUnlockAttempts].
   final Map<String, (int, DateTime)> _unlockAttempts = {};
+  /// Set of messageIds currently being unlocked — prevents concurrent attempts
+  /// on the same message from racing and undercounting failures.
+  final Set<String> _unlockInFlight = <String>{};
+  /// A3: chats currently mid-deletion. Send/receive paths must skip any
+  /// chat id in here so incoming messages cannot be appended to a chat
+  /// whose persistence is being torn down.
+  final Set<String> _deletingChats = <String>{};
   static const _maxUnlockAttempts = 5;
   static const _unlockCooldown = Duration(seconds: 30);
   String? _activeChatId;
@@ -95,6 +105,7 @@ class MessengerProvider extends ChangeNotifier {
   static final _x25519 = X25519();
 
   StreamSubscription? _inboxSub;
+  Timer? _inboxReconnectTimer;
   Timer? _selfDestructTimer;
   Timer? _memoryScrubTimer;
   bool _isSyncing = false;
@@ -187,6 +198,14 @@ class MessengerProvider extends ChangeNotifier {
     _chats = await _localStore.loadChats();
     _contacts = await _localStore.loadContacts();
 
+    // A3: drop any `msg_*` / `ratchet_*` files left behind by a crashed
+    // deleteChat — no chat to consume them, and loading a ratchet file
+    // whose chat id has been reused elsewhere would silently rebind old
+    // private-key material to the new chat.
+    try {
+      await _localStore.pruneOrphanChatFiles(_chats.map((c) => c.id).toSet());
+    } catch (_) {}
+
     // Load persisted replay-protection IDs (survives message deletion)
     _processedMessageIds.addAll(await _localStore.loadProcessedIds());
 
@@ -261,6 +280,15 @@ class MessengerProvider extends ChangeNotifier {
         _localStore.saveControlCounters(state);
       };
 
+      // C3: restore per-message unlock failure counts so the rate-limit
+      // on password-protected messages survives app restarts.
+      try {
+        final saved = await _localStore.loadUnlockAttempts();
+        if (saved != null) {
+          _unlockAttempts.addAll(saved);
+        }
+      } catch (_) {}
+
       if (_pushPrivacyEnabled) {
         // Push privacy mode: delete any existing FCM token from server
         // and do NOT register for push notifications. Messages will be
@@ -280,6 +308,7 @@ class MessengerProvider extends ChangeNotifier {
       // Sealed sender: publish a delivery token for anonymous routing.
       // Other users send to this token instead of our userId, so the
       // server cannot link sender → recipient without reading the token.
+      // Authentication is provided by the E2E ratchet, not the token.
       try {
         final token = SealedSender.generateDeliveryToken();
         await _firestore.publishDeliveryToken(
@@ -612,6 +641,12 @@ class MessengerProvider extends ChangeNotifier {
   ///
   /// Uses X25519 DH(ourIdentityPrivate, theirIdentityPublic) → HKDF.
   /// Cached per contact; invalidated on key change or wipe.
+  ///
+  /// A1: HKDF `info` is bound to the contact's own user ID. Without that
+  /// binding, two Firebase accounts that happen to publish the same public
+  /// key would derive the SAME HMAC key — a peer that controls multiple
+  /// accounts with a shared key could replay or forge control messages
+  /// across their chats with the same victim.
   Future<Uint8List> _deriveControlHmacKey(Contact contact) async {
     final cached = _hmacKeyCache[contact.id];
     if (cached != null) return Uint8List.fromList(cached);
@@ -628,11 +663,16 @@ class MessengerProvider extends ChangeNotifier {
       throw StateError('Control HMAC key derivation: zero shared secret');
     }
 
+    // Sort the two participant IDs so both peers derive the same HMAC key.
+    // Using `contact.id` alone is asymmetric: Alice would bind to Bob's ID
+    // while Bob binds to Alice's ID, producing different keys for the same
+    // chat and breaking control-message HMAC verification on every send.
+    final pairTag = ([userId!, contact.id]..sort()).join('|');
     final hkdf = Hkdf(hmac: Hmac.sha256(), outputLength: 32);
     final derived = await hkdf.deriveKey(
       secretKey: SecretKey(sharedBytes),
       nonce: Uint8List(32),
-      info: utf8.encode('KryptaControlHMAC-v1'),
+      info: utf8.encode('KryptaControlHMAC-v2|$pairTag'),
     );
     SensitiveBuffer.zeroBytes(sharedBytes);
 
@@ -1022,6 +1062,7 @@ class MessengerProvider extends ChangeNotifier {
     if (messages == null) return;
     messages.removeWhere((m) => m.id == messageId);
     await _localStore.saveMessages(chatId, messages);
+    await _pruneUnlockAttempts([messageId]);
     if (messages.isNotEmpty) {
       final last = messages.last;
       _updateChatPreview(chatId, last.decryptedContent ?? '', last.timestamp);
@@ -1060,6 +1101,7 @@ class MessengerProvider extends ChangeNotifier {
     // Delete locally
     messages.removeAt(msgIdx);
     await _localStore.saveMessages(chatId, messages);
+    await _pruneUnlockAttempts([messageId]);
     if (messages.isNotEmpty) {
       final last = messages.last;
       _updateChatPreview(chatId, last.decryptedContent ?? '', last.timestamp);
@@ -1069,8 +1111,11 @@ class MessengerProvider extends ChangeNotifier {
 
   /// Clear all messages in a chat but keep the chat itself.
   Future<void> clearChat(String chatId) async {
+    final removedIds =
+        (_messagesByChat[chatId] ?? const []).map((m) => m.id).toList();
     _messagesByChat[chatId]?.clear();
     await _localStore.saveMessages(chatId, []);
+    await _pruneUnlockAttempts(removedIds);
     final idx = _chats.indexWhere((c) => c.id == chatId);
     if (idx != -1) {
       _chats[idx] = _chats[idx].copyWith(
@@ -1084,26 +1129,49 @@ class MessengerProvider extends ChangeNotifier {
   }
 
   Future<void> deleteChat(String chatId) async {
-    _chats.removeWhere((c) => c.id == chatId);
-    _messagesByChat.remove(chatId);
-    // Zero ratchet private keys before removing from memory.
-    final ratchet = _ratchetStates.remove(chatId);
-    if (ratchet != null) {
-      for (var i = 0; i < ratchet.dhSendingPrivate.length; i++) {
-        ratchet.dhSendingPrivate[i] = 0;
-      }
-      if (ratchet.rootKey.isNotEmpty) {
-        for (var i = 0; i < ratchet.rootKey.length; i++) {
-          ratchet.rootKey[i] = 0;
+    // A3: mark the chat as deleting BEFORE any await. Concurrent send/receive
+    // paths test this set synchronously and drop work for a dying chat,
+    // closing the race where an inbound message could be appended between
+    // saveChats and the later file delete.
+    if (!_deletingChats.add(chatId)) return; // already deleting — no-op
+
+    try {
+      final removedMessageIds =
+          (_messagesByChat[chatId] ?? const []).map((m) => m.id).toList();
+
+      // saveChats FIRST: if it throws the rest is skipped; on-disk state is
+      // left untouched so retry is safe. Previously the memory clear and
+      // file deletion preceded this, so a failure would resurrect the chat
+      // on next boot with its ratchet state already gone.
+      final newChats = _chats.where((c) => c.id != chatId).toList();
+      await _localStore.saveChats(newChats);
+
+      _chats
+        ..clear()
+        ..addAll(newChats);
+      _messagesByChat.remove(chatId);
+
+      // Zero ratchet private keys before removing from memory.
+      final ratchet = _ratchetStates.remove(chatId);
+      if (ratchet != null) {
+        for (var i = 0; i < ratchet.dhSendingPrivate.length; i++) {
+          ratchet.dhSendingPrivate[i] = 0;
+        }
+        if (ratchet.rootKey.isNotEmpty) {
+          for (var i = 0; i < ratchet.rootKey.length; i++) {
+            ratchet.rootKey[i] = 0;
+          }
         }
       }
+      await Future.wait([
+        _localStore.deleteMessages(chatId),
+        _localStore.deleteRatchetState(chatId),
+      ]);
+      await _pruneUnlockAttempts(removedMessageIds);
+      notifyListeners();
+    } finally {
+      _deletingChats.remove(chatId);
     }
-    await Future.wait([
-      _localStore.deleteMessages(chatId),
-      _localStore.deleteRatchetState(chatId),
-    ]);
-    await _localStore.saveChats(_chats);
-    notifyListeners();
   }
 
   Future<void> renameChat(String chatId, String newName) async {
@@ -1138,6 +1206,11 @@ class MessengerProvider extends ChangeNotifier {
     bool burnAfterRead = false,
     String? password,
   }) async {
+    // A3: bail out if a deleteChat is already tearing this chat down. Without
+    // this, a send started during the delete window can still hit Firestore
+    // and re-save state the delete is about to wipe.
+    if (_deletingChats.contains(chatId)) return;
+
     final chatIdx = _chats.indexWhere((c) => c.id == chatId);
     if (chatIdx == -1) return;
     final chat = _chats[chatIdx];
@@ -1191,11 +1264,15 @@ class MessengerProvider extends ChangeNotifier {
     final now = DateTime.now();
     final hasPassword = password != null && password.isNotEmpty;
 
-    // If password-protected, encrypt the plaintext with the password first.
+    // If password-protected, validate password strength first, then encrypt.
     // The password-encrypted blob becomes the "content" that travels through E2E.
     // The sender sees the original text; the recipient sees a locked message.
     String contentForTransmission = text;
     if (hasPassword) {
+      final pwError = PasswordValidator.validate(password);
+      if (pwError != null) {
+        throw ArgumentError('Password too weak: $pwError');
+      }
       contentForTransmission = await _encryption.encryptWithPassword(
         plaintext: text,
         password: password,
@@ -1227,14 +1304,30 @@ class MessengerProvider extends ChangeNotifier {
         await _initRatchetAsSender(chatId, contact);
       }
 
+      // Note: an automatic 14-day session-rotation block used to live here
+      // (initiating a fresh X3DH whenever `createdAt` exceeded sessionMaxAge).
+      // It was removed because the receive path only runs `_initRatchetAsReceiver`
+      // when no state exists for the chat, so every aged conversation would
+      // lose the next outbound message until one peer manually reset the
+      // session. Forward secrecy is already provided per-message by Double
+      // Ratchet's chain-key rotation; reintroducing time-based rotation
+      // requires a coordinated receiver-side detection of new session headers,
+      // which is not yet implemented.
+
       // ── v3: ALL metadata inside encrypted payload ──
       // The server sees only ratchet protocol fields. Message type,
       // self-destruct, burn-after-read, password flag, sender identity,
       // KT gossip, and delivery token are all encrypted and invisible.
+      final state = _ratchetStates[chatId]!;
       final innerPayload = <String, dynamic>{
         '_t': contentForTransmission,
         '_sid': userId!,
+        '_seq': state.globalSendSeqNo, // Monotonic sequence for replay protection
       };
+      // Anti-rollback: include previous session ID in first message of new session
+      if (state.globalSendSeqNo == 0 && state.previousSessionId != null) {
+        innerPayload['_psid'] = state.previousSessionId;
+      }
       if (selfDestruct != null) innerPayload['_sd'] = selfDestruct.inMilliseconds;
       if (burnAfterRead) innerPayload['_bar'] = true;
       if (hasPassword) innerPayload['_pw'] = true;
@@ -1250,15 +1343,26 @@ class MessengerProvider extends ChangeNotifier {
         } catch (_) {}
       }
 
-      // Delivery token inside encrypted content
+      // Delivery token inside encrypted content. The token is a routing
+      // identifier only — sender/recipient authenticity comes from the E2E
+      // ratchet, not from the token itself.
       try {
         final recipientToken = await _firestore.getDeliveryToken(chat.recipientId);
-        if (recipientToken != null) innerPayload['_dt'] = recipientToken;
+        if (recipientToken != null) {
+          innerPayload['_dt'] = recipientToken;
+        }
       } catch (_) {}
 
       // Encrypt the entire inner payload (metadata + content)
       final payloadMap = await _encryptWithRatchet(chatId, jsonEncode(innerPayload));
       payloadMap['v'] = 3; // v3: server sees only ratchet fields
+
+      // Increment global send sequence number after successful encryption.
+      final updatedState = _ratchetStates[chatId]!.copyWith(
+        globalSendSeqNo: _ratchetStates[chatId]!.globalSendSeqNo + 1,
+      );
+      _ratchetStates[chatId] = updatedState;
+      await _localStore.saveRatchetState(chatId, updatedState.toMap());
 
       await _firestore.sendEncryptedMessage(
         senderId: userId!,
@@ -1302,6 +1406,31 @@ class MessengerProvider extends ChangeNotifier {
 
   // --- Password Message Unlock ---
 
+  /// Persist the current unlock-attempt state so rate-limit survives app
+  /// restarts. If persistence fails the rate-limit degrades to RAM-only for
+  /// this session; log in debug builds so silent regressions are visible.
+  Future<void> _persistUnlockAttempts() async {
+    try {
+      await _localStore.saveUnlockAttempts(_unlockAttempts);
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('unlockAttempts persistence failed: $e '
+            '— rate-limit is now RAM-only this session');
+      }
+    }
+  }
+
+  /// Remove unlock-attempt entries for the given message IDs and persist.
+  /// Called from message/chat deletion paths so the store does not grow
+  /// unboundedly with stale entries for messages that no longer exist.
+  Future<void> _pruneUnlockAttempts(Iterable<String> messageIds) async {
+    var changed = false;
+    for (final id in messageIds) {
+      if (_unlockAttempts.remove(id) != null) changed = true;
+    }
+    if (changed) await _persistUnlockAttempts();
+  }
+
   /// Returns remaining cooldown duration for a locked message, or zero.
   Duration unlockCooldownRemaining(String messageId) {
     final attempt = _unlockAttempts[messageId];
@@ -1325,59 +1454,73 @@ class MessengerProvider extends ChangeNotifier {
     final msg = messages[idx];
     if (!msg.isPasswordProtected || msg.passwordUnlocked) return true;
 
-    // Rate-limit brute-force attempts on password-protected messages.
-    final attempt = _unlockAttempts[messageId];
-    if (attempt != null) {
-      final (fails, lastTime) = attempt;
-      if (fails >= _maxUnlockAttempts &&
-          DateTime.now().difference(lastTime) < _unlockCooldown) {
-        return false; // Cooldown active
+    // Reject concurrent unlocks on the same message — without this two
+    // overlapping failures could both read the same prior counter, compute
+    // fails+1, and the later write would clobber the earlier one (undercount).
+    if (!_unlockInFlight.add(messageId)) return false;
+    try {
+      // Rate-limit brute-force attempts on password-protected messages.
+      // State persists across app restarts (C3 fix) — restart no longer
+      // bypasses the cooldown.
+      final attempt = _unlockAttempts[messageId];
+      if (attempt != null) {
+        final (fails, lastTime) = attempt;
+        if (fails >= _maxUnlockAttempts &&
+            DateTime.now().difference(lastTime) < _unlockCooldown) {
+          return false; // Cooldown active
+        }
+        // Reset counter after cooldown expires
+        if (fails >= _maxUnlockAttempts &&
+            DateTime.now().difference(lastTime) >= _unlockCooldown) {
+          _unlockAttempts[messageId] = (0, DateTime.now());
+          await _persistUnlockAttempts();
+        }
       }
-      // Reset counter after cooldown expires
-      if (fails >= _maxUnlockAttempts &&
-          DateTime.now().difference(lastTime) >= _unlockCooldown) {
-        _unlockAttempts[messageId] = (0, DateTime.now());
+
+      final plaintext = await _encryption.decryptWithPassword(
+        encryptedBase64: msg.decryptedContent ?? '',
+        password: password,
+      );
+
+      if (plaintext == null) {
+        final current = _unlockAttempts[messageId];
+        final fails = (current?.$1 ?? 0) + 1;
+        _unlockAttempts[messageId] = (fails, DateTime.now());
+        await _persistUnlockAttempts();
+        return false;
       }
-    }
+      // Success: clear attempt tracking
+      _unlockAttempts.remove(messageId);
+      await _persistUnlockAttempts();
 
-    final plaintext = await _encryption.decryptWithPassword(
-      encryptedBase64: msg.decryptedContent ?? '',
-      password: password,
-    );
+      messages[idx] = msg.copyWith(
+        decryptedContent: plaintext,
+        passwordUnlocked: true,
+      );
+      await _localStore.saveMessages(chatId, messages);
+      notifyListeners();
 
-    if (plaintext == null) {
-      final current = _unlockAttempts[messageId];
-      final fails = (current?.$1 ?? 0) + 1;
-      _unlockAttempts[messageId] = (fails, DateTime.now());
-      return false;
-    }
-    // Success: clear attempt tracking
-    _unlockAttempts.remove(messageId);
-
-    messages[idx] = msg.copyWith(
-      decryptedContent: plaintext,
-      passwordUnlocked: true,
-    );
-    await _localStore.saveMessages(chatId, messages);
-    notifyListeners();
-
-    // Notify the sender that we unlocked their message (with jitter).
-    // Only if delivery receipts are enabled — unlock is a form of delivery confirmation.
-    if (_deliveryReceiptsEnabled && msg.senderId != userId && userId != null) {
-      final contact = contactForId(msg.senderId);
-      if (contact != null) {
-        _pendingJitterTimers.add(
-          TimingProtection.sendDeliveryAckWithJitter(() => _sendControlMessage(
-            chatId: chatId,
-            contact: contact,
-            type: 'unlock',
-            messageId: messageId,
-          )),
-        );
+      // Notify the sender that we unlocked their message (with jitter).
+      // Only if delivery receipts are enabled — unlock is a form of delivery
+      // confirmation.
+      if (_deliveryReceiptsEnabled && msg.senderId != userId && userId != null) {
+        final contact = contactForId(msg.senderId);
+        if (contact != null) {
+          _pendingJitterTimers.add(
+            TimingProtection.sendDeliveryAckWithJitter(() => _sendControlMessage(
+              chatId: chatId,
+              contact: contact,
+              type: 'unlock',
+              messageId: messageId,
+            )),
+          );
+        }
       }
-    }
 
-    return true;
+      return true;
+    } finally {
+      _unlockInFlight.remove(messageId);
+    }
   }
 
   // --- Typing Indicators (local-only, no server metadata) ---
@@ -1504,11 +1647,47 @@ class MessengerProvider extends ChangeNotifier {
     } else {
       // Normal mode: Firestore real-time listeners (push-based).
       // Single inbox listener handles both content and control messages.
-      _inboxSub = _firestore.listenForMessages(userId!).listen(
-        _handleInbox,
-        onError: (e) { if (kDebugMode) debugPrint('Inbox error: $e'); },
-      );
+      _startInboxListenerWithReconnect();
     }
+  }
+
+  /// B2: start the inbox stream with automatic reconnect on stream error.
+  /// Previously the `onError` handler just logged in debug mode and left
+  /// the stream dead — a transient permission or network error would stop
+  /// message delivery for the rest of the session with no UI signal.
+  /// Exponential backoff prevents tight reconnect loops if the error
+  /// recurs (e.g., permissions revoked).
+  void _startInboxListenerWithReconnect({int attempt = 0}) {
+    if (userId == null) return;
+    _inboxSub?.cancel();
+    _inboxSub = _firestore.listenForMessages(userId!).listen(
+      _handleInbox,
+      onError: (e) {
+        if (kDebugMode) debugPrint('Inbox error (attempt $attempt): $e');
+        // Exponential backoff capped at 60s: 1, 2, 4, 8, 16, 32, 60, 60, ...
+        final delaySec = attempt >= 6 ? 60 : (1 << attempt);
+        _inboxReconnectTimer?.cancel();
+        _inboxReconnectTimer = Timer(Duration(seconds: delaySec), () {
+          // Also guard on _isSyncing — a teardown (wipe/logout) between the
+          // error and the timer firing must not resurrect the listener.
+          if (!_isSyncing || userId == null) return;
+          _startInboxListenerWithReconnect(attempt: attempt + 1);
+        });
+      },
+      // B2: reconnect on clean completion while sync is still active. A
+      // Firestore rebalance / server restart closes the stream without
+      // error; without this the listener stays silently dead for the rest
+      // of the session. `_isSyncing` distinguishes an intentional teardown
+      // in `_stopSync` from a remote close.
+      onDone: () {
+        _inboxReconnectTimer?.cancel();
+        if (!_isSyncing || userId == null) return;
+        _inboxReconnectTimer = Timer(const Duration(seconds: 1), () {
+          if (!_isSyncing || userId == null) return;
+          _startInboxListenerWithReconnect(attempt: 0);
+        });
+      },
+    );
   }
 
   Future<void> _handleInbox(QuerySnapshot<Map<String, dynamic>> snapshot) async {
@@ -1554,6 +1733,13 @@ class MessengerProvider extends ChangeNotifier {
         }
 
         final chat = getOrCreateChat(contact);
+
+        // A3: if this chat is being deleted right now, drop the message
+        // instead of appending it to a torn-down chat.
+        if (_deletingChats.contains(chat.id)) {
+          await _firestore.deleteRelayedMessage(userId!, change.doc.id);
+          continue;
+        }
 
         // Replay/duplicate prevention
         if (_processedMessageIds.contains(messageId)) {
@@ -1615,12 +1801,26 @@ class MessengerProvider extends ChangeNotifier {
           continue;
         }
 
+        // C4+C5: replay/rollback enforcement — advance globalRecvSeqNo and
+        // record _psid. Must happen *after* sealed-sender so a forged payload
+        // cannot desync our seq counter.
+        if (!await _enforceReplayAndRollback(chat.id, innerPayload, version)) {
+          await _firestore.deleteRelayedMessage(userId!, change.doc.id);
+          continue;
+        }
+
         // Process Key Transparency gossip from the encrypted payload
         await _processTransparencyGossip(senderId, innerPayload);
 
-        // Extract message metadata from the (now correctly encrypted) inner payload
-        final selfDestructMs = innerPayload['_sd'] as int? ??
+        // Extract message metadata from the (now correctly encrypted) inner payload.
+        // A2: clamp self-destruct to a sane non-negative range so a malicious
+        // sender cannot hide messages instantly (negative Duration = already
+        // expired) or overflow timers with int.max.
+        var selfDestructMs = innerPayload['_sd'] as int? ??
             (innerPayload['sd'] as int?); // v2 compat
+        if (selfDestructMs != null) {
+          selfDestructMs = _clampSelfDestructMs(selfDestructMs);
+        }
         final burnAfterRead = innerPayload['_bar'] == true ||
             innerPayload['_bar'] == 'true' ||
             innerPayload['bar'] == true ||
@@ -1639,9 +1839,8 @@ class MessengerProvider extends ChangeNotifier {
           decryptedContent: messageContent,
           timestamp: DateTime.now(),
           status: MessageStatus.delivered,
-          selfDestructDuration: selfDestructMs != null
-              ? Duration(milliseconds: int.tryParse(selfDestructMs.toString()) ?? 0)
-              : null,
+          selfDestructDuration:
+              selfDestructMs != null ? Duration(milliseconds: selfDestructMs) : null,
           burnAfterRead: burnAfterRead,
           isPasswordProtected: isPasswordProtected,
           passwordUnlocked: !isPasswordProtected,
@@ -1752,6 +1951,13 @@ class MessengerProvider extends ChangeNotifier {
 
       final chat = getOrCreateChat(contact);
 
+      // A3: mirror the _handleInbox guard — drop messages arriving while
+      // this chat is being deleted.
+      if (_deletingChats.contains(chat.id)) {
+        await _firestore.deleteRelayedMessage(userId!, doc.id);
+        return;
+      }
+
       if (_processedMessageIds.contains(messageId)) {
         await _firestore.deleteRelayedMessage(userId!, doc.id);
         return;
@@ -1798,12 +2004,22 @@ class MessengerProvider extends ChangeNotifier {
         return;
       }
 
+      // C4+C5: replay/rollback enforcement — same contract as _handleInbox.
+      if (!await _enforceReplayAndRollback(chat.id, innerPayload, version)) {
+        await _firestore.deleteRelayedMessage(userId!, doc.id);
+        return;
+      }
+
       // Process Key Transparency gossip from the encrypted payload
       await _processTransparencyGossip(senderId, innerPayload);
 
       // Extract metadata from inner payload (v3 keys with v2 compat)
-      final selfDestructMs = innerPayload['_sd'] as int? ??
+      // A2: see _handleInbox — sanitize attacker-controlled self-destruct.
+      var selfDestructMs = innerPayload['_sd'] as int? ??
           (innerPayload['sd'] as int?);
+      if (selfDestructMs != null) {
+        selfDestructMs = _clampSelfDestructMs(selfDestructMs);
+      }
       final burnAfterRead = innerPayload['_bar'] == true ||
           innerPayload['_bar'] == 'true' ||
           innerPayload['bar'] == true ||
@@ -1822,9 +2038,8 @@ class MessengerProvider extends ChangeNotifier {
         decryptedContent: messageContent,
         timestamp: DateTime.now(),
         status: MessageStatus.delivered,
-        selfDestructDuration: selfDestructMs != null
-            ? Duration(milliseconds: int.tryParse(selfDestructMs.toString()) ?? 0)
-            : null,
+        selfDestructDuration:
+            selfDestructMs != null ? Duration(milliseconds: selfDestructMs) : null,
         burnAfterRead: burnAfterRead,
         isPasswordProtected: isPasswordProtected,
         passwordUnlocked: !isPasswordProtected,
@@ -1975,8 +2190,19 @@ class MessengerProvider extends ChangeNotifier {
         bundle: bundle,
       );
 
-      _ratchetStates[chatId] = session.ratchetState;
-      await _localStore.saveRatchetState(chatId, session.ratchetState.toMap());
+      // Assign session ID for anti-rollback protection.
+      final oldState = _ratchetStates[chatId];
+      final oldSessionId = oldState?.sessionId;
+      // C5: carry forward the set of peer _psid values we've already seen,
+      // so a re-handshake doesn't reset our rollback memory.
+      final preservedSeenPsids = oldState?.peerSeenPsids ?? const <String>{};
+      final newState = session.ratchetState.copyWith(
+        sessionId: const Uuid().v4(),
+        previousSessionId: oldSessionId,
+        peerSeenPsids: preservedSeenPsids,
+      );
+      _ratchetStates[chatId] = newState;
+      await _localStore.saveRatchetState(chatId, newState.toMap());
 
       // Store ephemeral key so it's included in the first message payload.
       // The receiver needs this to perform the mirror X3DH.
@@ -2005,11 +2231,19 @@ class MessengerProvider extends ChangeNotifier {
       recipientIdentityPublic: contact.publicKey,
     );
 
-    final state = await DoubleRatchet.initAsSender(
+    final rawState = await DoubleRatchet.initAsSender(
       sharedSecret: sharedSecret,
       recipientRatchetPublicKey: contact.publicKey,
     );
 
+    final oldState = _ratchetStates[chatId];
+    final oldSessionId = oldState?.sessionId;
+    final preservedSeenPsids = oldState?.peerSeenPsids ?? const <String>{};
+    final state = rawState.copyWith(
+      sessionId: const Uuid().v4(),
+      previousSessionId: oldSessionId,
+      peerSeenPsids: preservedSeenPsids,
+    );
     _ratchetStates[chatId] = state;
     await _localStore.saveRatchetState(chatId, state.toMap());
 
@@ -2053,7 +2287,7 @@ class MessengerProvider extends ChangeNotifier {
       signedPreKeyPublic = _preKeyManager.currentSignedPreKey!.publicKey;
     }
 
-    final state = await SessionHandshakeService.createInboundSession(
+    final rawState = await SessionHandshakeService.createInboundSession(
       identityKeyPair: keyPair,
       signedPreKeyPrivate: signedPreKeyPrivate,
       signedPreKeyPublic: signedPreKeyPublic,
@@ -2062,6 +2296,16 @@ class MessengerProvider extends ChangeNotifier {
       senderEphemeral2Public: senderEphemeral2Public,
     );
 
+    final oldState = _ratchetStates[chatId];
+    final oldSessionId = oldState?.sessionId;
+    // C5: preserve peerSeenPsids across re-init so a forged first-message
+    // with a stale _psid cannot pass after the state gets rebuilt.
+    final preservedSeenPsids = oldState?.peerSeenPsids ?? const <String>{};
+    final state = rawState.copyWith(
+      sessionId: const Uuid().v4(),
+      previousSessionId: oldSessionId,
+      peerSeenPsids: preservedSeenPsids,
+    );
     _ratchetStates[chatId] = state;
     await _localStore.saveRatchetState(chatId, state.toMap());
   }
@@ -2106,8 +2350,22 @@ class MessengerProvider extends ChangeNotifier {
       String chatId, Contact contact, Map<String, dynamic> payloadMap) async {
     // Init receiver session if we don't have one yet.
     // Pass payloadMap so the receiver can extract the sender's ephemeral key.
+    //
+    // B4: on exception during init, scrub BOTH in-memory and on-disk
+    // ratchet state. _initRatchetAsReceiver may have persisted a partial
+    // state to the store before the exception bubbled up; leaving that
+    // behind would let the next startup reload stale state via
+    // loadRatchetState and keep re-failing on this peer.
     if (!_ratchetStates.containsKey(chatId)) {
-      await _initRatchetAsReceiver(chatId, contact, payloadMap);
+      try {
+        await _initRatchetAsReceiver(chatId, contact, payloadMap);
+      } catch (e) {
+        _ratchetStates.remove(chatId);
+        try {
+          await _localStore.deleteRatchetState(chatId);
+        } catch (_) {}
+        rethrow;
+      }
     }
 
     final state = _ratchetStates[chatId];
@@ -2129,7 +2387,61 @@ class MessengerProvider extends ChangeNotifier {
     // Remove padding — mandatory for all v2 messages.
     // No fallback to unpadded: all ratchet messages must be padded.
     final plaintext = EncryptionService.unpadPlaintext(paddedPlaintext);
-    return utf8.decode(plaintext);
+    final out = utf8.decode(plaintext);
+    // H6: best-effort zero of the padded + unpadded plaintext buffers.
+    // Ratchet inner payloads carry sender identity, seq, psid, and the
+    // decrypted message content — all worth wiping once consumed.
+    SensitiveBuffer.zeroBytes(plaintext);
+    SensitiveBuffer.zeroBytes(paddedPlaintext);
+    return out;
+  }
+
+  /// A2: sanitize self-destruct milliseconds from an untrusted inner payload.
+  /// - Returns null (no self-destruct) for non-positive values; a negative
+  ///   Duration would expire the message the moment it lands and hide it
+  ///   from the UI before the user sees it.
+  /// - Caps at 30 days so an adversarial sender cannot overflow timers.
+  static int? _clampSelfDestructMs(int raw) {
+    if (raw <= 0) return null;
+    const maxMs = 30 * 24 * 60 * 60 * 1000; // 30 days
+    return raw > maxMs ? maxMs : raw;
+  }
+
+  /// C4+C5: replay (_seq) + rollback (_psid) enforcement for v3 payloads.
+  ///
+  /// Called after successful ratchet decryption and sealed-sender validation.
+  /// Returns true if the message should be processed, false if it must be
+  /// discarded. On accept, the ratchet state is advanced (`globalRecvSeqNo`,
+  /// `peerSeenPsids`) and persisted.
+  ///
+  /// Intentionally placed *after* sealed-sender so an attacker-injected
+  /// ciphertext cannot advance our seq counter; only authenticated peer
+  /// messages reach here.
+  Future<bool> _enforceReplayAndRollback(
+    String chatId,
+    Map<String, dynamic> innerPayload,
+    int version,
+  ) async {
+    final state = _ratchetStates[chatId];
+    if (state == null) return true; // no state = session init path, nothing to check
+    final result = ReplayGuard.validate(
+      state: state,
+      innerPayload: innerPayload,
+      version: version,
+    );
+    if (result.rejectReason != null) {
+      if (kDebugMode) {
+        debugPrint('[replay-guard] rejected: ${result.rejectReason} '
+            '(chatId=$chatId, version=$version)');
+      }
+      return false;
+    }
+    // Passthrough returns the same state instance (v2). Only persist on change.
+    if (result.state != null && !identical(result.state, state)) {
+      _ratchetStates[chatId] = result.state!;
+      await _localStore.saveRatchetState(chatId, result.state!.toMap());
+    }
+    return true;
   }
 
   // --- Helpers ---
@@ -2196,6 +2508,14 @@ class MessengerProvider extends ChangeNotifier {
       SensitiveBuffer.zeroBytes(key);
     }
     _hmacKeyCache.clear();
+    // B5: disconnect the auto-persist callback BEFORE clear. clear() would
+    // otherwise fire onStateChanged → saveControlCounters, which could
+    // asynchronously write an empty counter file AFTER _localStore.wipeAll
+    // has already deleted the storage directory. On native platforms the
+    // save would create the dir again (leaking the fact that a wipe
+    // happened / who the user talked to). Nulling the callback keeps the
+    // clear purely in-memory; the disk copy is removed by wipeAll below.
+    _controlCounter.onStateChanged = null;
     _controlCounter.clear();
     _chats.clear();
     _contacts.clear();
@@ -2203,6 +2523,7 @@ class MessengerProvider extends ChangeNotifier {
     _ratchetStates.clear();
     _typingStates.clear();
     _processedMessageIds.clear();
+    _unlockAttempts.clear();
     _activeChatId = null;
     _deliveryToken = null;
     _isInitialized = false;
@@ -2218,6 +2539,7 @@ class MessengerProvider extends ChangeNotifier {
 
   void _stopSync() {
     _inboxSub?.cancel();
+    _inboxReconnectTimer?.cancel(); // B2: kill any pending reconnect
     _privacyPolling?.stop();
     _privacyPolling = null;
     _selfDestructTimer?.cancel();

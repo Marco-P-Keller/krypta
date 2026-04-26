@@ -8,6 +8,15 @@ abstract final class AppConstants {
   static const Duration messageRelayTTL = Duration(hours: 24);
   static const Duration typingTimeout = Duration(seconds: 5);
 
+  /// Maximum session age before forced re-handshake (forward secrecy renewal).
+  static const Duration sessionMaxAge = Duration(days: 14);
+
+  /// Maximum verification age before prompting re-verification.
+  static const Duration verificationMaxAge = Duration(days: 90);
+
+  /// Minimum password entropy bits for password-protected messages.
+  static const int minPasswordEntropyBits = 28;
+
   static const List<Duration> selfDestructOptions = [
     Duration(seconds: 30),
     Duration(minutes: 5),

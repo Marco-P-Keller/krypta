@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:typed_data';
 import 'package:crypto/crypto.dart' as crypto;
 import 'package:equatable/equatable.dart';
+import '../../../../core/constants/app_constants.dart';
 
 /// Trust state for a contact's identity key.
 ///
@@ -142,6 +143,14 @@ class Contact extends Equatable {
   bool get canSendMessages =>
       trustState != TrustState.keyChanged &&
       trustState != TrustState.blocked;
+
+  /// Whether this contact's verification is stale (>90 days old).
+  /// Returns false if never verified — only applies to verified contacts.
+  /// Used to prompt periodic re-verification for long-lived contacts.
+  bool get isVerificationStale =>
+      isVerified &&
+      verifiedAt != null &&
+      DateTime.now().difference(verifiedAt!) > AppConstants.verificationMaxAge;
 
   Contact copyWith({
     String? displayName,

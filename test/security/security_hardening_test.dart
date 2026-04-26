@@ -634,4 +634,32 @@ void main() {
       store.evictStaleCacheEntries();
     });
   });
+
+  group('C3 regression — unlock attempts persisted', () {
+    test(
+        'saveUnlockAttempts then loadUnlockAttempts roundtrips '
+        'per-message fail count and timestamp', () async {
+      final store = EncryptedLocalStore();
+      final t1 = DateTime.fromMillisecondsSinceEpoch(1700000000000);
+      final t2 = DateTime.fromMillisecondsSinceEpoch(1700000060000);
+
+      await store.saveUnlockAttempts(<String, (int, DateTime)>{
+        'msg-a': (3, t1),
+        'msg-b': (5, t2),
+      });
+
+      final loaded = await store.loadUnlockAttempts();
+      expect(loaded, isNotNull);
+      expect(loaded!.length, 2);
+      expect(loaded['msg-a'], equals((3, t1)));
+      expect(loaded['msg-b'], equals((5, t2)));
+    });
+
+    test('loadUnlockAttempts returns null when nothing has been saved',
+        () async {
+      final store = EncryptedLocalStore();
+      final loaded = await store.loadUnlockAttempts();
+      expect(loaded, isNull);
+    });
+  });
 }

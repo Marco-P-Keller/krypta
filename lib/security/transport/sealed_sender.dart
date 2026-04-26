@@ -13,16 +13,22 @@ import 'dart:typed_data';
 /// 4. Server routes the envelope using ONLY the delivery token
 ///    — it cannot see who sent it
 ///
-/// The sender's identity is bound inside the E2E encrypted content,
-/// so only the recipient can identify the sender after decryption.
+/// The token is a routing identifier only — sender authentication is
+/// guaranteed by the E2E ratchet (sender ID is inside the encrypted
+/// payload and authenticated by the AEAD tag). A previous version of this
+/// code attempted to HMAC-bind the token to the recipient's identity public
+/// key, but since that key is, by definition, public to the server, an
+/// attacker with server-write access could trivially mint forged tokens
+/// that passed verification — the binding provided no actual security.
 class SealedSender {
   static final _random = Random.secure();
 
-  /// Generate a delivery token for the recipient.
+  /// Generate a 32-byte random delivery token.
   ///
   /// The recipient publishes this to the server. Senders include it in
   /// their envelopes so the server can route without knowing the sender.
-  /// Tokens should be rotated periodically (e.g., every 24 hours).
+  /// Tokens should be rotated periodically (e.g., every 24 hours) to
+  /// limit linkability.
   static DeliveryToken generateDeliveryToken() {
     final tokenBytes = Uint8List.fromList(
       List.generate(32, (_) => _random.nextInt(256)),

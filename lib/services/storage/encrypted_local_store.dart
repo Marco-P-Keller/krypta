@@ -22,6 +22,11 @@ class EncryptedLocalStore {
   Uint8List? _storageKey;
   String? _basePath;
   final Map<String, String> _cache = {};
+  /// B5: generation counter incremented on every `wipeAll`. Writes snapshot
+  /// this at entry; if the generation changed before the write commits the
+  /// write is abandoned — no resurrection of data an in-flight save was
+  /// holding when the user wiped the vault.
+  int _generation = 0;
   /// Track last access time for cache entries to enable TTL-based eviction.
   /// Ratchet state entries containing private keys are evicted after [_cacheTtl].
   final Map<String, DateTime> _cacheAccessTime = {};
@@ -91,6 +96,11 @@ class EncryptedLocalStore {
     }
 
     _basePath = await io.getStorageBasePath();
+    // H5: recover from a crashed storage-key rotation before loading data.
+    // A marker file written during rotateStorageKey tells us whether the
+    // keychain had been updated at crash time; without this the load could
+    // use a half-rotated main directory.
+    await _recoverInterruptedRotation();
     await _loadAllFromDisk();
   }
 
@@ -213,6 +223,33 @@ class EncryptedLocalStore {
     }
   }
 
+  /// A3: sweep `msg_*` and `ratchet_*` files that belong to chats no longer
+  /// present in the chat list. A crashed `deleteChat` (or a migrated-in
+  /// store) can leave those behind with no owner, wasting disk and
+  /// accidentally resurrecting private key material on next load if the
+  /// chat id is ever reused.
+  Future<void> pruneOrphanChatFiles(Set<String> knownChatIds) async {
+    if (_basePath == null) return;
+    final enc = await io.listEncFiles(_basePath!);
+    for (final filePath in enc) {
+      final name = filePath.split(RegExp(r'[\\/]')).last;
+      if (!name.endsWith('.enc')) continue;
+      final base = name.substring(0, name.length - 4); // strip .enc
+      String? chatId;
+      if (base.startsWith('msg_')) {
+        chatId = base.substring(4);
+      } else if (base.startsWith('ratchet_')) {
+        chatId = base.substring(8);
+      }
+      if (chatId == null || knownChatIds.contains(chatId)) continue;
+      _cache.remove(base);
+      _cacheAccessTime.remove(base);
+      try {
+        await io.deleteFileAt(filePath);
+      } catch (_) {}
+    }
+  }
+
   // --- Decoy Data (separate namespace for fake messenger) ---
 
   Future<dynamic> loadDecoyData(String key) async {
@@ -257,6 +294,11 @@ class EncryptedLocalStore {
               key: _storageKey!,
             );
             final json = utf8.decode(decrypted);
+            // H6: best-effort zero of the plaintext byte buffer. The
+            // resulting String is still in memory but the raw bytes
+            // (which include base64 private keys for ratchet_* files)
+            // are cleared.
+            _zeroIfMutable(decrypted);
             _cache[key] = json;
             return jsonDecode(json) as Map<String, dynamic>;
           }
@@ -310,6 +352,45 @@ class EncryptedLocalStore {
       _cache.remove(key);
       _cacheAccessTime.remove(key);
     }
+  }
+
+  // --- Unlock Attempt Persistence (C3 fix: survive app restarts) ---
+
+  static const _unlockAttemptsKey = 'unlock_attempts';
+
+  /// Load per-message unlock failure counts + last-attempt timestamps so the
+  /// rate-limit on password-protected messages survives app restarts.
+  /// Returns null if nothing has been saved yet.
+  Future<Map<String, (int, DateTime)>?> loadUnlockAttempts() async {
+    final data = _cache[_unlockAttemptsKey];
+    if (data == null) return null;
+    try {
+      final raw = jsonDecode(data) as Map<String, dynamic>;
+      return raw.map((k, v) {
+        final entry = v as Map<String, dynamic>;
+        return MapEntry(
+          k,
+          (
+            entry['f'] as int,
+            DateTime.fromMillisecondsSinceEpoch(entry['t'] as int),
+          ),
+        );
+      });
+    } catch (_) {
+      return null;
+    }
+  }
+
+  /// Persist unlock failure state. Serialization uses short keys (`f` = fails,
+  /// `t` = timestamp ms) to keep payload tight.
+  Future<void> saveUnlockAttempts(Map<String, (int, DateTime)> attempts) async {
+    final raw = attempts.map((k, v) => MapEntry(k, {
+          'f': v.$1,
+          't': v.$2.millisecondsSinceEpoch,
+        }));
+    final json = jsonEncode(raw);
+    _cache[_unlockAttemptsKey] = json;
+    await _encryptAndWrite(_unlockAttemptsKey, json);
   }
 
   // --- Control Message Counter Persistence ---
@@ -396,13 +477,19 @@ class EncryptedLocalStore {
 
   /// Re-encrypt all local data with a new storage key.
   ///
-  /// Atomic flow:
-  /// 1. Generate new key
-  /// 2. Write all re-encrypted files to a temporary directory
-  /// 3. Only after ALL files succeed: swap temp → main and update keychain
-  /// 4. Clean up the old directory
+  /// Crash-safe flow (H5):
+  /// 0. Write marker with phase=0 (temp-writing). A crash here is benign —
+  ///    old keychain + old main dir are still consistent.
+  /// 1. Write all re-encrypted files to a temp directory.
+  /// 2. Update the marker to phase=1 (rollforward) and swap the keychain to
+  ///    the new key. From here on, the only consistent recovery is to
+  ///    complete the rollforward (phase=0 would lose data).
+  /// 3. Copy each temp file into the main directory.
+  /// 4. Delete the marker and the temp directory.
   ///
-  /// If interrupted at any point before step 3, the original data remains intact.
+  /// On next init `_recoverInterruptedRotation` reads the marker and either
+  /// discards the temp dir (phase=0) or finishes the rollforward (phase=1).
+  ///
   /// Call only when the app is in the foreground and has battery.
   Future<bool> rotateStorageKey() async {
     if (_storageKey == null || _basePath == null) return false;
@@ -410,11 +497,20 @@ class EncryptedLocalStore {
     final oldKey = _storageKey!;
     final newKey = _encryption.generateLocalStorageKey();
     final tempPath = '${_basePath!}_rotation_tmp';
+    final markerPath = '$_basePath/$_rotationMarkerFileName';
+
+    // Track which side of the keychain swap we crossed. The catch path uses
+    // this to decide whether rollback is safe (phase 0) or whether we MUST
+    // leave the marker + temp for the next init to roll forward (phase 1).
+    var reachedRollforward = false;
 
     try {
-      // Phase 1: Write re-encrypted files to temp directory
       await io.createDir(tempPath);
 
+      // Phase 0: mark rotation as started (temp-writing phase).
+      await io.writeFileBytes(markerPath, Uint8List.fromList([0]));
+
+      // Phase 1: Write re-encrypted files to temp directory
       for (final entry in _cache.entries) {
         final plaintext = Uint8List.fromList(utf8.encode(entry.value));
         final encrypted = await _encryption.encryptLocal(
@@ -424,19 +520,25 @@ class EncryptedLocalStore {
         await io.writeFileBytes('$tempPath/${entry.key}.enc', encrypted);
       }
 
-      // Phase 2: Atomic swap — delete old, rename temp to main
-      // Store the new key BEFORE removing old files (safer: if we crash here,
-      // we still have the temp dir with new-key-encrypted data)
+      // Phase 2: swap the keychain, then flip the marker to rollforward.
+      // With this order every phase=1 marker on disk guarantees that
+      // `_storeKey(newKey)` completed, so `_recoverInterruptedRotation` can
+      // safely roll forward without re-checking the keychain.
+      //
+      // Documented residual availability risk: a crash DURING `_storeKey`
+      // (between software-key write and hardware-wrapped write) leaves the
+      // marker at phase=0 so next init discards temp. If the keychain is
+      // already partially swapped, decryption of old main files may fail.
+      // Security invariants are preserved (no wrong-plaintext mis-decrypt);
+      // recovery is manual re-setup. Accepted tradeoff — making this fully
+      // atomic would require keychain transactions which FlutterSecureStorage
+      // does not expose.
       _storageKey = newKey;
       await _storeKey(newKey);
+      await io.writeFileBytes(markerPath, Uint8List.fromList([1]));
+      reachedRollforward = true;
 
-      // Remove old directory and rename temp to main
-      final oldBackupPath = '${_basePath!}_rotation_old';
-      try { await io.deleteDirRecursive(oldBackupPath); } catch (_) {}
-
-      // Rename current → backup, temp → current
-      // We copy temp files to main and then clean up (dart:io rename
-      // doesn't work across filesystems, and we're in app-private storage)
+      // Phase 3: copy temp → main.
       for (final entry in _cache.entries) {
         final tempFile = '$tempPath/${entry.key}.enc';
         final mainFile = '$_basePath/${entry.key}.enc';
@@ -446,12 +548,27 @@ class EncryptedLocalStore {
         }
       }
 
-      // Phase 3: Clean up temp directory
+      // Phase 4: cleanup marker + temp.
+      try { await io.deleteFileAt(markerPath); } catch (_) {}
       try { await io.deleteDirRecursive(tempPath); } catch (_) {}
 
       return true;
     } catch (e) {
-      // Rollback: restore old key, clean up temp
+      if (reachedRollforward) {
+        // Past the keychain swap — a partial copy may have already mixed
+        // new-key and old-key files in main. The ONLY safe recovery is to
+        // let the next init's _recoverInterruptedRotation finish the copy
+        // using the temp dir. Leave marker + temp in place; do NOT roll the
+        // keychain back (the hardware-wrapped path may already have the new
+        // wrapped key and discarding temp would leave unreadable files).
+        if (kDebugMode) {
+          debugPrint('Key rotation interrupted post-keychain swap — '
+              'deferring recovery to next init');
+        }
+        return false;
+      }
+      // Pre-keychain-swap failure: old key is still authoritative, temp
+      // files are new-key encrypted and useless. Safe to discard both.
       _storageKey = oldKey;
       try {
         await _secureStorage.write(
@@ -459,15 +576,66 @@ class EncryptedLocalStore {
           value: base64Encode(oldKey),
         );
       } catch (_) {}
+      try { await io.deleteFileAt(markerPath); } catch (_) {}
       try { await io.deleteDirRecursive(tempPath); } catch (_) {}
-      if (kDebugMode) debugPrint('Key rotation failed');
+      if (kDebugMode) debugPrint('Key rotation failed (pre-swap)');
       return false;
     }
+  }
+
+  /// Filename of the rotation-in-progress marker under [_basePath].
+  static const _rotationMarkerFileName = '.rotation_in_progress';
+
+  /// H5: resume or discard a rotation that crashed mid-way.
+  ///
+  /// - No marker: nothing to do.
+  /// - Marker with phase=0 (temp-writing): keychain still holds the OLD key
+  ///   and main files are OLD-key encrypted. Discard temp and marker; state
+  ///   is internally consistent.
+  /// - Marker with phase=1 (rollforward): keychain holds the NEW key. Any
+  ///   main-dir file that is still OLD-key encrypted must be replaced from
+  ///   its temp counterpart; we copy every available temp file into main to
+  ///   reach a consistent NEW-key state, then delete marker + temp.
+  Future<void> _recoverInterruptedRotation() async {
+    if (_basePath == null) return;
+    final markerPath = '$_basePath/$_rotationMarkerFileName';
+    final tempPath = '${_basePath!}_rotation_tmp';
+
+    final markerBytes = await io.readFileBytes(markerPath);
+    if (markerBytes == null) return;
+
+    final phase = markerBytes.isEmpty ? 0 : markerBytes[0];
+
+    if (phase == 1) {
+      // Rollforward: temp files are authoritative, keychain already swapped.
+      final tempFiles = await io.listEncFiles(tempPath);
+      for (final tempFile in tempFiles) {
+        final name = tempFile.split(RegExp(r'[\\/]')).last;
+        final mainFile = '$_basePath/$name';
+        final bytes = await io.readFileBytes(tempFile);
+        if (bytes != null) {
+          await io.writeFileBytes(mainFile, bytes);
+        }
+      }
+      if (kDebugMode) {
+        debugPrint('Recovered interrupted rotation: rolled forward '
+            '${tempFiles.length} files');
+      }
+    } else if (kDebugMode) {
+      debugPrint('Recovered interrupted rotation: discarded pre-keychain temp');
+    }
+
+    try { await io.deleteFileAt(markerPath); } catch (_) {}
+    try { await io.deleteDirRecursive(tempPath); } catch (_) {}
   }
 
   // --- Wipe ---
 
   Future<void> wipeAll() async {
+    // B5: bump the generation so any _encryptAndWrite currently mid-flight
+    // aborts when it tries to commit — prevents an async save from
+    // recreating the storage directory after wipe.
+    _generation++;
     _cache.clear();
     _storageKey = null;
     _isHardwareWrapped = false;
@@ -478,12 +646,38 @@ class EncryptedLocalStore {
     if (_hardwareBinding != null) {
       try { await _hardwareBinding!.deleteHardwareKey(); } catch (_) {}
     }
-    if (_basePath != null) {
-      try { await io.deleteDirRecursive(_basePath!); } catch (_) {}
+    // Resolve the storage directory even if init() never ran (the recovery
+    // path in main.dart calls wipeAll() before init to mop up after an
+    // interrupted emergency wipe).
+    String? basePath = _basePath;
+    if (basePath == null) {
+      try {
+        basePath = await io.getStorageBasePath();
+      } catch (_) {
+        basePath = null;
+      }
+    }
+    if (basePath != null) {
+      try { await io.deleteDirRecursive(basePath); } catch (_) {}
     }
   }
 
   // --- Encrypted I/O ---
+
+  /// H6: best-effort zero of a decrypted plaintext buffer. Called after the
+  /// bytes have been consumed by `utf8.decode`. A crypto library may return
+  /// a const/immutable `List<int>`, so failures are swallowed — this is a
+  /// defense-in-depth step, not a guarantee.
+  static void _zeroIfMutable(List<int> bytes) {
+    try {
+      if (bytes is Uint8List) {
+        for (var i = 0; i < bytes.length; i++) {
+          bytes[i] = 0;
+        }
+      }
+    } catch (_) {}
+  }
+
 
   /// Load all non-sensitive data from disk at init.
   ///
@@ -509,6 +703,8 @@ class EncryptedLocalStore {
             key: _storageKey!,
           );
           _cache[fileName] = utf8.decode(decrypted);
+          // H6: see loadRatchetState — best-effort wipe of raw plaintext.
+          _zeroIfMutable(decrypted);
         }
       } catch (e) {
         if (kDebugMode) debugPrint('Decrypt failed for local store entry');
@@ -518,6 +714,11 @@ class EncryptedLocalStore {
 
   Future<void> _encryptAndWrite(String name, String data) async {
     if (_basePath == null || _storageKey == null) return;
+    // B5: snapshot the generation at entry. If `wipeAll` (or a re-init)
+    // bumps it while we encrypt/write, abandon the write — otherwise an
+    // in-flight save started before the wipe could re-create the storage
+    // directory after the user cleared the vault.
+    final gen = _generation;
 
     try {
       final plaintext = Uint8List.fromList(utf8.encode(data));
@@ -525,6 +726,8 @@ class EncryptedLocalStore {
         plaintext: plaintext,
         key: _storageKey!,
       );
+      if (_generation != gen) return; // superseded by wipe/reinit
+      if (_basePath == null || _storageKey == null) return;
       await io.writeFileBytes('$_basePath/$name.enc', encrypted);
     } catch (e) {
       if (kDebugMode) debugPrint('Encrypt/write failed for local store entry');

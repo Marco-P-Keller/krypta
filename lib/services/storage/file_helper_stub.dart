@@ -8,4 +8,7 @@ Future<Uint8List?> readFileBytes(String path) async => null;
 Future<List<String>> listEncFiles(String dirPath) async => [];
 Future<void> deleteFileAt(String path) async {}
 Future<void> deleteDirRecursive(String path) async {}
+Future<void> setWipeMarker() async {}
+Future<bool> isWipeMarkerSet() async => false;
+Future<void> clearWipeMarker() async {}
 Future<void> wipeCacheAndTemp() async {}

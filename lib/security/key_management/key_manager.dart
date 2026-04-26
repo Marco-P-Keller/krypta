@@ -117,6 +117,15 @@ class KeyManager {
     await _storage.delete(key: StorageKeys.databaseKeyWrapped);
   }
 
+  /// Returns true when identity key material is currently persisted.
+  /// Used to verify the post-wipe state (H3): if this returns true after
+  /// `deleteAllKeys()` the wipe was interrupted and the marker must persist.
+  Future<bool> hasIdentityKeys() async {
+    final priv = await _storage.read(key: StorageKeys.identityPrivateKey);
+    final pub = await _storage.read(key: StorageKeys.identityPublicKey);
+    return priv != null || pub != null;
+  }
+
   bool get hasKeysInMemory => _cachedIdentityKeyPair != null;
 
   /// Whether the genesis commitment has been published for the current key.

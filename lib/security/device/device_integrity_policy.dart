@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/foundation.dart';
 import '../../services/platform/platform_security_service.dart';
 
@@ -81,6 +82,9 @@ class DeviceIntegrityPolicyService {
   final PlatformSecurityService _platform;
   final DeviceIntegrityPolicy _policy;
   DeviceIntegrityResult? _lastResult;
+  Timer? _periodicTimer;
+  Object? _activeSession;
+  DeviceIntegrityAction? _lastAction = DeviceIntegrityAction.allow;
 
   DeviceIntegrityPolicyService({
     required PlatformSecurityService platform,
@@ -146,6 +150,57 @@ class DeviceIntegrityPolicyService {
   Future<DeviceIntegrityResult> recheck() async {
     _platform.invalidateDeviceCache();
     return checkIntegrity();
+  }
+
+  // ─── Periodic Integrity Monitoring ──────────────────────────────────────
+
+  /// Start periodic background integrity checks.
+  ///
+  /// Checks every [interval] (default 5 minutes) for runtime tampering
+  /// (Frida injection, debugger attachment). Calls [onAction] when the
+  /// integrity action changes (e.g., from allow to warnAndDegrade).
+  ///
+  /// Call when the messenger is unlocked; stop when returning to calculator.
+  void startPeriodicChecks({
+    Duration interval = const Duration(minutes: 5),
+    required void Function(DeviceIntegrityAction) onAction,
+  }) {
+    stopPeriodicChecks();
+    // Reset the baseline so the first observation in this new session can
+    // fire `onAction`. Without this reset a previously-detected compromise
+    // (e.g. `block`) would suppress identical detections in later sessions
+    // because they would compare equal to the stale `_lastAction`.
+    _lastAction = null;
+    // Each periodic run gets a token. When stop or restart happens the token
+    // is invalidated, so any in-flight recheck that completes afterwards is
+    // swallowed and cannot fire onAction for a no-longer-active session.
+    final sessionToken = Object();
+    _activeSession = sessionToken;
+    var checkInFlight = false;
+    _periodicTimer = Timer.periodic(interval, (_) async {
+      if (_activeSession != sessionToken) return;
+      if (checkInFlight) return; // previous tick still running — skip
+      checkInFlight = true;
+      try {
+        await recheck();
+        if (_activeSession != sessionToken) return;
+        final action = enforce();
+        if (action != _lastAction) {
+          _lastAction = action;
+          onAction(action);
+        }
+      } finally {
+        checkInFlight = false;
+      }
+    });
+  }
+
+  /// Stop periodic integrity checks. Also invalidates the active session
+  /// token so any in-flight recheck callback becomes a no-op.
+  void stopPeriodicChecks() {
+    _periodicTimer?.cancel();
+    _periodicTimer = null;
+    _activeSession = null;
   }
 
   /// Whether hardware-backed features should be available.

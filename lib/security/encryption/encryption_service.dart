@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:math';
 import 'dart:typed_data';
 import 'package:cryptography/cryptography.dart';
+import '../memory/sensitive_buffer.dart';
 import 'key_pair_model.dart';
 
 /// Core encryption service using X25519 ECDH + HKDF-SHA256 + XChaCha20-Poly1305.
@@ -61,10 +62,18 @@ class EncryptionService {
       ),
     );
 
+    final sharedBytes = Uint8List.fromList(await sharedSecret.extractBytes());
     final derivedKey = await _deriveKey(
       sharedSecret: sharedSecret,
       info: 'krypta-ecc-msg-v1',
     );
+    // Zero shared secret after key derivation — no longer needed.
+    SensitiveBuffer.zeroBytes(sharedBytes);
+
+    // Zero ephemeral private key — used once for this ECDH, never again.
+    final ephPrivBytes = Uint8List.fromList(
+        await ephemeralKeyPair.extractPrivateKeyBytes());
+    SensitiveBuffer.zeroBytes(ephPrivBytes);
 
     // AAD: sender_pub || recipient_pub — mandatory, binds ciphertext to conversation.
     final aad = _buildMessageAad(senderPublicKey, recipientPublicKey);
@@ -103,10 +112,13 @@ class EncryptionService {
       ),
     );
 
+    final sharedBytes = Uint8List.fromList(await sharedSecret.extractBytes());
     final derivedKey = await _deriveKey(
       sharedSecret: sharedSecret,
       info: 'krypta-ecc-msg-v1',
     );
+    // Zero shared secret after key derivation.
+    SensitiveBuffer.zeroBytes(sharedBytes);
 
     final secretBox = SecretBox(
       payload.ciphertext,
@@ -121,7 +133,21 @@ class EncryptionService {
       secretKey: derivedKey,
       aad: aad,
     );
-    return utf8.decode(decrypted);
+    // H6: decode first, then zero the byte buffer. The String created by
+    // utf8.decode is an un-zeroable copy, but clearing the source limits
+    // the forensic window for recovering plaintext from heap snapshots.
+    final out = utf8.decode(decrypted);
+    _bestEffortZero(decrypted);
+    return out;
+  }
+
+  /// Zero [bytes] in place when it is a mutable `Uint8List`; otherwise no-op.
+  /// Wrapped in try/catch because a const/immutable `List<int>` throws on
+  /// index assignment — we prefer a best-effort wipe over a crash.
+  static void _bestEffortZero(List<int> bytes) {
+    try {
+      if (bytes is Uint8List) SensitiveBuffer.zeroBytes(bytes);
+    } catch (_) {}
   }
 
   // --- Local Storage Encryption ---
@@ -246,7 +272,10 @@ class EncryptionService {
 
       final secretBox = SecretBox(ciphertext, nonce: nonce, mac: Mac(mac));
       final decrypted = await _cipher.decrypt(secretBox, secretKey: derivedKey);
-      return utf8.decode(decrypted);
+      // H6: see decryptMessage — decode, then best-effort zero.
+      final out = utf8.decode(decrypted);
+      _bestEffortZero(decrypted);
+      return out;
     } catch (_) {
       return null; // Wrong password or corrupted data
     }

@@ -104,9 +104,9 @@ class Message extends Equatable {
       // Password-protected messages can be re-unlocked from encryptedContent.
       timestamp: DateTime.fromMillisecondsSinceEpoch(map['timestamp'] as int),
       status: MessageStatus.values[map['status'] as int],
-      selfDestructDuration: map['selfDestructMs'] != null
-          ? Duration(milliseconds: map['selfDestructMs'] as int)
-          : null,
+      // A2: clamp stored milliseconds — non-positive → no self-destruct,
+      // cap at 30 days to prevent Duration overflow in downstream timers.
+      selfDestructDuration: _decodeSelfDestruct(map['selfDestructMs']),
       readAt: map['readAt'] != null
           ? DateTime.fromMillisecondsSinceEpoch(map['readAt'] as int)
           : null,
@@ -118,6 +118,15 @@ class Message extends Equatable {
 
   @override
   List<Object?> get props => [id, chatId, senderId, timestamp, status];
+
+  /// A2: safe decode for stored self-destruct milliseconds.
+  /// Non-positive → null; capped at 30 days.
+  static Duration? _decodeSelfDestruct(Object? raw) {
+    if (raw is! int) return null;
+    if (raw <= 0) return null;
+    const maxMs = 30 * 24 * 60 * 60 * 1000;
+    return Duration(milliseconds: raw > maxMs ? maxMs : raw);
+  }
 }
 
 const _sentinel = Object();
