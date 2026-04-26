@@ -39,15 +39,6 @@ class MessageBubble extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Container(
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: isDark ? AppColors.dividerDark : AppColors.dividerLight,
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-            const SizedBox(height: 8),
             if (!message.isLocked && message.decryptedContent != null)
               ListTile(
                 leading: const Icon(Icons.copy_rounded),

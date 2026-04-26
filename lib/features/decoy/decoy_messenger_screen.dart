@@ -186,15 +186,6 @@ class _DecoyMessengerScreenState extends State<DecoyMessengerScreen> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Container(
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: isDark ? AppColors.dividerDark : AppColors.dividerLight,
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-            const SizedBox(height: 12),
             ListTile(
               leading: const Icon(Icons.edit_rounded),
               title: Text(l10n.renameChat),

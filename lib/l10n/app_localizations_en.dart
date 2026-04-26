@@ -426,6 +426,52 @@ class AppLocalizationsEn extends AppLocalizations {
   String get qrVerified => 'Key verified';
 
   @override
+  String get verificationStale => 'Verification is older than 90 days';
+
+  @override
+  String get verifyNow => 'Re-verify';
+
+  @override
+  String get showTutorial => 'Show tutorial again';
+
+  @override
+  String get showTutorialSubtitle => 'Replay the introduction';
+
+  @override
+  String get openSourceLicenses => 'Open-source licenses';
+
+  @override
+  String get openSourceLicensesSubtitle => 'Third-party libraries and notices';
+
+  @override
+  String get aboutClose => 'Close';
+
+  @override
+  String get confirm => 'Confirm';
+
+  @override
+  String lockedForSeconds(int seconds) {
+    return 'Locked for $seconds seconds.';
+  }
+
+  @override
+  String wrongPasswordWarning(int remaining) {
+    String _temp0 = intl.Intl.pluralLogic(
+      remaining,
+      locale: localeName,
+      other: '$remaining attempts left',
+      one: '1 attempt left',
+    );
+    return 'Wrong password. $_temp0 before all data is wiped.';
+  }
+
+  @override
+  String get screenshotAttemptBlocked => 'Screenshot attempt was blocked';
+
+  @override
+  String get screenshotTaken => 'A screenshot was taken';
+
+  @override
   String get privacyPolicy => 'Privacy Policy';
 
   @override

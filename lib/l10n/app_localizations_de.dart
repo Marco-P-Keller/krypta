@@ -428,6 +428,54 @@ class AppLocalizationsDe extends AppLocalizations {
   String get qrVerified => 'Schlüssel verifiziert';
 
   @override
+  String get verificationStale => 'Verifizierung älter als 90 Tage';
+
+  @override
+  String get verifyNow => 'Neu verifizieren';
+
+  @override
+  String get showTutorial => 'Tutorial erneut anzeigen';
+
+  @override
+  String get showTutorialSubtitle => 'Einführung wiederholen';
+
+  @override
+  String get openSourceLicenses => 'Open-Source-Lizenzen';
+
+  @override
+  String get openSourceLicensesSubtitle =>
+      'Verwendete Bibliotheken und Hinweise';
+
+  @override
+  String get aboutClose => 'Schließen';
+
+  @override
+  String get confirm => 'Bestätigen';
+
+  @override
+  String lockedForSeconds(int seconds) {
+    return 'Gesperrt für $seconds Sekunden.';
+  }
+
+  @override
+  String wrongPasswordWarning(int remaining) {
+    String _temp0 = intl.Intl.pluralLogic(
+      remaining,
+      locale: localeName,
+      other: '$remaining Versuche',
+      one: '1 Versuch',
+    );
+    return 'Falsches Passwort. Noch $_temp0, danach werden alle Daten gelöscht.';
+  }
+
+  @override
+  String get screenshotAttemptBlocked =>
+      'Es wurde versucht, einen Screenshot zu machen';
+
+  @override
+  String get screenshotTaken => 'Es wurde ein Screenshot gemacht';
+
+  @override
   String get privacyPolicy => 'Datenschutzerklärung';
 
   @override

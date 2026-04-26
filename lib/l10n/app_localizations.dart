@@ -884,6 +884,78 @@ abstract class AppLocalizations {
   /// **'Key verified'**
   String get qrVerified;
 
+  /// No description provided for @verificationStale.
+  ///
+  /// In en, this message translates to:
+  /// **'Verification is older than 90 days'**
+  String get verificationStale;
+
+  /// No description provided for @verifyNow.
+  ///
+  /// In en, this message translates to:
+  /// **'Re-verify'**
+  String get verifyNow;
+
+  /// No description provided for @showTutorial.
+  ///
+  /// In en, this message translates to:
+  /// **'Show tutorial again'**
+  String get showTutorial;
+
+  /// No description provided for @showTutorialSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Replay the introduction'**
+  String get showTutorialSubtitle;
+
+  /// No description provided for @openSourceLicenses.
+  ///
+  /// In en, this message translates to:
+  /// **'Open-source licenses'**
+  String get openSourceLicenses;
+
+  /// No description provided for @openSourceLicensesSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Third-party libraries and notices'**
+  String get openSourceLicensesSubtitle;
+
+  /// No description provided for @aboutClose.
+  ///
+  /// In en, this message translates to:
+  /// **'Close'**
+  String get aboutClose;
+
+  /// No description provided for @confirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm'**
+  String get confirm;
+
+  /// No description provided for @lockedForSeconds.
+  ///
+  /// In en, this message translates to:
+  /// **'Locked for {seconds} seconds.'**
+  String lockedForSeconds(int seconds);
+
+  /// No description provided for @wrongPasswordWarning.
+  ///
+  /// In en, this message translates to:
+  /// **'Wrong password. {remaining, plural, =1{1 attempt left} other{{remaining} attempts left}} before all data is wiped.'**
+  String wrongPasswordWarning(int remaining);
+
+  /// No description provided for @screenshotAttemptBlocked.
+  ///
+  /// In en, this message translates to:
+  /// **'Screenshot attempt was blocked'**
+  String get screenshotAttemptBlocked;
+
+  /// No description provided for @screenshotTaken.
+  ///
+  /// In en, this message translates to:
+  /// **'A screenshot was taken'**
+  String get screenshotTaken;
+
   /// No description provided for @privacyPolicy.
   ///
   /// In en, this message translates to:

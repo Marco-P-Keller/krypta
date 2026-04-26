@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../l10n/app_localizations.dart';
 import '../../../theme/app_colors.dart';
 import '../../../theme/app_spacing.dart';
 
@@ -67,7 +68,7 @@ class _TutorialScreenState extends State<TutorialScreen> {
                 child: TextButton(
                   onPressed: _skip,
                   child: Text(
-                    'Skip',
+                    AppLocalizations.of(context)!.skip,
                     style: TextStyle(
                       color: isDark
                           ? AppColors.textSecondaryDark

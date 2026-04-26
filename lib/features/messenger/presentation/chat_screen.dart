@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../l10n/app_localizations.dart';
+import '../../../security/encryption/password_validator.dart';
 import '../../../services/platform/platform_security_service.dart';
 import '../../../theme/app_colors.dart';
 import '../../../widgets/emergency_button.dart';
@@ -67,6 +68,7 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
     final platform = context.read<PlatformSecurityService>();
     _screenshotSub = platform.onScreenshotDetected.listen((blocked) {
       if (!mounted) return;
+      final l10n = AppLocalizations.of(context)!;
       final snackBar = SnackBar(
         content: Row(
           children: [
@@ -78,9 +80,7 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
             const SizedBox(width: 10),
             Expanded(
               child: Text(
-                blocked
-                    ? 'Es wurde versucht, einen Screenshot zu machen'
-                    : 'Es wurde ein Screenshot gemacht',
+                blocked ? l10n.screenshotAttemptBlocked : l10n.screenshotTaken,
                 style: const TextStyle(color: Colors.white),
               ),
             ),
@@ -115,6 +115,18 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
   void _sendMessage() {
     final text = _controller.text.trim();
     if (text.isEmpty) return;
+
+    // Pre-validate per-message password before fire-and-forget send.
+    // Without this, a weak password causes sendMessage() to throw an
+    // unhandled ArgumentError after the composer has already been cleared.
+    if (_messagePassword != null &&
+        PasswordValidator.validate(_messagePassword!) != null) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(AppLocalizations.of(context)!.passwordTooWeak),
+        backgroundColor: AppColors.warning,
+      ));
+      return;
+    }
 
     final messenger = context.read<MessengerProvider>();
     messenger.sendMessage(
@@ -210,11 +222,69 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
       appBar: _buildAppBar(context, l10n),
       body: Column(
         children: [
+          _buildVerificationStaleBanner(context, l10n),
           Expanded(child: _buildMessageList(context, l10n)),
           _buildStatusBars(context, l10n, isDark),
           _buildMessageInput(context, l10n, isDark),
         ],
       ),
+    );
+  }
+
+  Widget _buildVerificationStaleBanner(
+      BuildContext context, AppLocalizations l10n) {
+    return Consumer<MessengerProvider>(
+      builder: (context, messenger, _) {
+        final contact = messenger.contactForId(widget.chat.recipientId);
+        if (contact == null || !contact.isVerificationStale) {
+          return const SizedBox.shrink();
+        }
+        const color = AppColors.warning;
+        return InkWell(
+          onTap: () => ChatSettingsSheet.show(context, widget.chat.id),
+          child: Container(
+            margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            padding:
+                const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.08),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: color.withValues(alpha: 0.2),
+                width: 0.5,
+              ),
+            ),
+            child: Row(
+              children: [
+                const Icon(Icons.shield_outlined, size: 16, color: color),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    l10n.verificationStale,
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: color,
+                          fontWeight: FontWeight.w500,
+                          fontSize: 12,
+                        ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  l10n.verifyNow,
+                  style: const TextStyle(
+                    color: color,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 12,
+                  ),
+                ),
+                const SizedBox(width: 4),
+                const Icon(Icons.chevron_right_rounded,
+                    size: 16, color: color),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 

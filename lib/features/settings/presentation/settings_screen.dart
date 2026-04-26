@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../core/constants/storage_keys.dart';
+import '../../auth/presentation/tutorial_screen.dart';
 import '../../messenger/logic/messenger_provider.dart';
 import '../../../security/device/device_integrity_policy.dart';
 import '../../../security/hardware/hardware_security_binding.dart';
@@ -40,6 +41,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
   DeviceIntegrityLevel? _deviceIntegrityLevel;
   HardwareSecurityLevel? _hardwareSecurityLevel;
   bool _isHardwareWrapped = false;
+
+  /// B3 single-flight guard: prevents two near-simultaneous re-auth
+  /// submits (Enter key + tap on Confirm) from racing the read-modify-
+  /// write counter and consuming only one of two failed attempts.
+  bool _reAuthInFlight = false;
 
   @override
   void initState() {
@@ -84,10 +90,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
   /// Returns true if authentication succeeded.
   Future<bool> _reAuthenticate() async {
     final platform = context.read<PlatformSecurityService>();
+    final storage = context.read<SecureStorageService>();
 
     // Vault password takes priority — it's the real security layer
     if (_vaultPasswordEnabled) {
-      return await _showReAuthDialog();
+      final ok = await _showReAuthDialog();
+      // B3: if the dialog's fail counter has reached the wipe threshold
+      // trigger emergency wipe immediately, mirroring VaultPasswordScreen.
+      if (!ok &&
+          await storage.getVaultFailCount() >=
+              SecureStorageService.maxVaultAttempts) {
+        widget.onEmergencyWipe();
+      }
+      return ok;
     }
 
     // Fallback: biometric if available
@@ -129,9 +144,31 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   prefixIcon: Icon(Icons.lock_outline, size: 20),
                 ),
                 onSubmitted: (_) async {
-                  final ok = await storage.verifyVaultPassword(controller.text);
-                  result = ok;
-                  if (ctx.mounted) Navigator.of(ctx).pop();
+                  // B3: route re-auth through the same unified counter as
+                  // the main vault password screen. Single-flight guard
+                  // prevents Enter+tap from racing two fails into one
+                  // increment (read-modify-write on FlutterSecureStorage).
+                  if (_reAuthInFlight) return;
+                  _reAuthInFlight = true;
+                  try {
+                    if (await storage.getVaultFailCount() >=
+                        SecureStorageService.maxVaultAttempts) {
+                      result = false;
+                      if (ctx.mounted) Navigator.of(ctx).pop();
+                      return;
+                    }
+                    final ok =
+                        await storage.verifyVaultPassword(controller.text);
+                    if (ok) {
+                      await storage.resetVaultFailCount();
+                    } else {
+                      await storage.incrementVaultFailCount();
+                    }
+                    result = ok;
+                    if (ctx.mounted) Navigator.of(ctx).pop();
+                  } finally {
+                    _reAuthInFlight = false;
+                  }
                 },
               ),
             ],
@@ -142,15 +179,37 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 result = false;
                 Navigator.of(ctx).pop();
               },
-              child: const Text('Abbrechen'),
+              child: Text(AppLocalizations.of(ctx)!.cancel),
             ),
             ElevatedButton(
               onPressed: () async {
-                final ok = await storage.verifyVaultPassword(controller.text);
-                result = ok;
-                if (ctx.mounted) Navigator.of(ctx).pop();
+                // B3: same unified-counter + single-flight guard as the
+                // onSubmitted handler. Both entry points must share the
+                // lock so Enter-then-tap cannot produce two concurrent
+                // increments that lose one failed attempt.
+                if (_reAuthInFlight) return;
+                _reAuthInFlight = true;
+                try {
+                  if (await storage.getVaultFailCount() >=
+                      SecureStorageService.maxVaultAttempts) {
+                    result = false;
+                    if (ctx.mounted) Navigator.of(ctx).pop();
+                    return;
+                  }
+                  final ok =
+                      await storage.verifyVaultPassword(controller.text);
+                  if (ok) {
+                    await storage.resetVaultFailCount();
+                  } else {
+                    await storage.incrementVaultFailCount();
+                  }
+                  result = ok;
+                  if (ctx.mounted) Navigator.of(ctx).pop();
+                } finally {
+                  _reAuthInFlight = false;
+                }
               },
-              child: const Text('Bestätigen'),
+              child: Text(AppLocalizations.of(ctx)!.confirm),
             ),
           ],
         ),
@@ -282,14 +341,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
         expand: false,
         builder: (context, scrollController) => Column(
           children: [
-            const SizedBox(height: 12),
-            Container(
-              width: 36, height: 4,
-              decoration: BoxDecoration(
-                color: isDark ? Colors.white24 : Colors.black12,
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
             Padding(
               padding: const EdgeInsets.all(20),
               child: Text(
@@ -547,6 +598,78 @@ class _SettingsScreenState extends State<SettingsScreen> {
     });
   }
 
+  void _openTutorial(BuildContext context) {
+    Navigator.of(context, rootNavigator: true).push(
+      MaterialPageRoute(
+        fullscreenDialog: true,
+        builder: (routeContext) => TutorialScreen(
+          onComplete: () => Navigator.of(routeContext).pop(),
+        ),
+      ),
+    );
+  }
+
+  void _showAboutDialog(BuildContext context, AppLocalizations l10n) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
+        ),
+        contentPadding:
+            const EdgeInsets.fromLTRB(24, 24, 24, 16),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Container(
+              width: 56,
+              height: 56,
+              decoration: BoxDecoration(
+                color: AppColors.accent.withValues(alpha: 0.15),
+                borderRadius: BorderRadius.circular(14),
+              ),
+              child: const Icon(Icons.shield_rounded,
+                  color: AppColors.accent, size: 32),
+            ),
+            const SizedBox(height: 14),
+            Text(
+              'Krypta ECC',
+              style: Theme.of(ctx).textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              l10n.version(AppConstants.appVersion),
+              style: Theme.of(ctx).textTheme.bodySmall?.copyWith(
+                    color: isDark
+                        ? AppColors.textSecondaryDark
+                        : AppColors.textSecondaryLight,
+                  ),
+            ),
+            const SizedBox(height: 18),
+            Text(
+              'Curve25519 · XChaCha20-Poly1305 · Argon2id',
+              style: Theme.of(ctx).textTheme.bodySmall?.copyWith(
+                    color: AppColors.accent,
+                    fontWeight: FontWeight.w500,
+                  ),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: Text(l10n.aboutClose),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
@@ -757,6 +880,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
               title: l10n.privacyPolicy,
               onTap: () => _showPrivacyPolicy(context, isDark),
             ),
+            _Divider(isDark: isDark),
+            _NavTile(
+              icon: Icons.collections_bookmark_outlined,
+              title: l10n.openSourceLicenses,
+              subtitle: l10n.openSourceLicensesSubtitle,
+              onTap: () => showLicensePage(
+                context: context,
+                applicationName: 'Krypta ECC',
+                applicationVersion: AppConstants.appVersion,
+              ),
+            ),
           ]),
           const SizedBox(height: 28),
 
@@ -767,7 +901,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
               icon: Icons.info_outline_rounded,
               title: l10n.about,
               subtitle: l10n.version(AppConstants.appVersion),
-              onTap: () {},
+              onTap: () => _showAboutDialog(context, l10n),
+            ),
+            _Divider(isDark: isDark),
+            _NavTile(
+              icon: Icons.school_outlined,
+              title: l10n.showTutorial,
+              subtitle: l10n.showTutorialSubtitle,
+              onTap: () => _openTutorial(context),
             ),
           ]),
           const SizedBox(height: 40),
@@ -858,22 +999,21 @@ class _EmergencyButton extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 14),
-          SizedBox(
-            height: 44,
-            child: ElevatedButton(
-              onPressed: onPressed,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.destructive,
-                foregroundColor: Colors.white,
-                elevation: 0,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
-                ),
+          ElevatedButton(
+            onPressed: onPressed,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.destructive,
+              foregroundColor: Colors.white,
+              elevation: 0,
+              minimumSize: const Size.fromHeight(50),
+              padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
               ),
-              child: Text(
-                label,
-                style: const TextStyle(fontWeight: FontWeight.w600),
-              ),
+            ),
+            child: Text(
+              label,
+              style: const TextStyle(fontWeight: FontWeight.w600),
             ),
           ),
         ],
@@ -1063,7 +1203,8 @@ class _SwitchTile extends StatelessWidget {
       ),
       value: value,
       onChanged: onChanged,
-      activeThumbColor: AppColors.success,
+      thumbColor: const WidgetStatePropertyAll(Colors.white),
+      activeTrackColor: AppColors.success,
     );
   }
 }

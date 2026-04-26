@@ -80,15 +80,6 @@ class QrDisplaySheet extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Container(
-            width: 40,
-            height: 4,
-            decoration: BoxDecoration(
-              color: isDark ? AppColors.dividerDark : AppColors.dividerLight,
-              borderRadius: BorderRadius.circular(2),
-            ),
-          ),
-          const SizedBox(height: 24),
           Text(
             l10n.yourQrCode,
             style: Theme.of(context).textTheme.headlineSmall,

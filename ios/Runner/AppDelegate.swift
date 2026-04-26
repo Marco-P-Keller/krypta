@@ -204,26 +204,39 @@ import Security
     var item: CFTypeRef?
     let status = SecItemCopyMatching(query as CFDictionary, &item)
     guard status == errSecSuccess else { return nil }
-    return (item as! SecKey)
+    // B1: nil-safe cast. `errSecSuccess` does not guarantee `item` is
+    // non-nil on every iOS release, and the previous `as!` would crash
+    // the app in that rare path. Returning nil lets the caller fall back.
+    guard let key = item, CFGetTypeID(key) == SecKeyGetTypeID() else {
+      return nil
+    }
+    return (key as! SecKey)
   }
 
   // MARK: - Screenshot & Screen Recording Protection
 
   override func applicationDidBecomeActive(_ application: UIApplication) {
     super.applicationDidBecomeActive(application)
-    // Remove blur overlay when returning to foreground
-    window?.viewWithTag(9999)?.removeFromSuperview()
+    // Keep the black mask one runloop tick longer than strictly needed,
+    // so Flutter has time to render the Calculator frame after our
+    // background-lock logic in app.dart resets the route. This avoids a
+    // flash of the previous (now stale) screen content during resume.
+    DispatchQueue.main.async {
+      self.window?.viewWithTag(9999)?.removeFromSuperview()
+    }
   }
 
   override func applicationWillResignActive(_ application: UIApplication) {
     super.applicationWillResignActive(application)
-    // Add blur overlay to prevent task switcher screenshot
+    // Cover the screen with an opaque black view so the iOS app-switcher
+    // snapshot and any transient inactive-state frames render as solid
+    // black instead of leaking the messenger UI or showing a white flash.
     guard let window = window else { return }
-    let blurEffect = UIBlurEffect(style: .light)
-    let blurView = UIVisualEffectView(effect: blurEffect)
-    blurView.frame = window.bounds
-    blurView.tag = 9999
-    window.addSubview(blurView)
+    let blackView = UIView(frame: window.bounds)
+    blackView.backgroundColor = .black
+    blackView.autoresizingMask = [.flexibleWidth, .flexibleHeight]
+    blackView.tag = 9999
+    window.addSubview(blackView)
   }
 
   // MARK: - Screenshot Event Detection

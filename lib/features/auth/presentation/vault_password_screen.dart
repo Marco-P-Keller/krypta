@@ -71,7 +71,8 @@ class _VaultPasswordScreenState extends State<VaultPasswordScreen>
       if (lockout > Duration.zero) {
         _isLockedOut = true;
         // lockout tracked via _isLockedOut flag
-        _error = 'Gesperrt für ${lockout.inSeconds} Sekunden.';
+        _error = AppLocalizations.of(context)!
+            .lockedForSeconds(lockout.inSeconds);
         // Auto-unlock after delay
         Future.delayed(lockout, () {
           if (mounted) {
@@ -107,7 +108,8 @@ class _VaultPasswordScreenState extends State<VaultPasswordScreen>
         _isLoading = false;
         _isLockedOut = true;
         // lockout tracked via _isLockedOut flag
-        _error = 'Gesperrt für ${lockout.inSeconds} Sekunden.';
+        _error = AppLocalizations.of(context)!
+            .lockedForSeconds(lockout.inSeconds);
       });
       Future.delayed(lockout, () {
         if (mounted) setState(() { _isLockedOut = false; _error = null; });
@@ -145,7 +147,7 @@ class _VaultPasswordScreenState extends State<VaultPasswordScreen>
         _isLockedOut = true;
       }
       _error = _failedAttempts >= _warningAfter
-          ? 'Falsches Passwort. Noch $remaining Versuch${remaining == 1 ? '' : 'e'}, danach werden alle Daten gelöscht.'
+          ? AppLocalizations.of(context)!.wrongPasswordWarning(remaining)
           : AppLocalizations.of(context)!.wrongPassword;
     });
 
@@ -239,7 +241,8 @@ class _VaultPasswordScreenState extends State<VaultPasswordScreen>
                   obscureText: _obscure,
                   autofocus: true,
                   textInputAction: TextInputAction.done,
-                  onSubmitted: (_) => _submit(),
+                  onSubmitted: (_) =>
+                      FocusManager.instance.primaryFocus?.unfocus(),
                   style: const TextStyle(
                     color: AppColors.textPrimaryDark,
                     fontSize: 17,
