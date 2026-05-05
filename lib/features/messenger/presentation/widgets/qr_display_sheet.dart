@@ -1,8 +1,9 @@
 import 'dart:convert';
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import '../../../../l10n/app_localizations.dart';
+import '../../../../services/platform/clipboard_helper.dart';
 import '../../../../theme/app_colors.dart';
 import '../../data/models/contact_model.dart';
 
@@ -173,7 +174,8 @@ class QrDisplaySheet extends StatelessWidget {
           // Copyable user ID
           GestureDetector(
             onTap: () {
-              Clipboard.setData(ClipboardData(text: userId));
+              // M2-Client: ephemeral copy with auto-clear.
+              ClipboardHelper.copyEphemeral(userId);
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(content: Text(l10n.idCopied)),
               );

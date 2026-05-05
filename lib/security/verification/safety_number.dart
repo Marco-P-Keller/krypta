@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:typed_data';
 import 'package:cryptography/cryptography.dart';
+import '../memory/sensitive_buffer.dart';
 
 /// Generates and compares safety numbers for identity verification.
 ///
@@ -65,6 +66,12 @@ class SafetyNumber {
   }
 
   /// Compute SHA-512 fingerprint, iterated 5200 times.
+  ///
+  /// M1-Crypto (audit 2026-05): the previous implementation reassigned
+  /// `data` in each iteration without zeroing the prior buffer, leaving
+  /// 5199 plaintext-derived intermediate hashes lingering on the heap
+  /// until GC. We zero each predecessor before dropping the reference so
+  /// the visible window is one iteration deep at most.
   static Future<Uint8List> _fingerprint(String userId, Uint8List publicKey, int ver) async {
     final version = Uint8List.fromList([0x00, ver]); // version byte pair
     final userIdBytes = Uint8List.fromList(utf8.encode(userId));
@@ -79,7 +86,11 @@ class SafetyNumber {
     // Iterate SHA-512 5200 times (Signal uses the same approach)
     for (var i = 0; i < 5200; i++) {
       final hash = await _sha512.hash(data);
-      data = Uint8List.fromList(hash.bytes);
+      final next = Uint8List.fromList(hash.bytes);
+      // Best-effort wipe of the previous iteration's buffer before
+      // dropping the reference.
+      SensitiveBuffer.zeroBytes(data);
+      data = next;
     }
 
     return data;

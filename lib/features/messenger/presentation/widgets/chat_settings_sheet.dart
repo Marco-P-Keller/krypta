@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
+import '../../../../services/platform/clipboard_helper.dart';
 import 'package:provider/provider.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import '../../../../l10n/app_localizations.dart';
@@ -647,7 +647,8 @@ class _ChatSettingsSheetState extends State<ChatSettingsSheet> {
             const SizedBox(height: 16),
             GestureDetector(
               onTap: () {
-                Clipboard.setData(ClipboardData(text: safetyNumber));
+                // M2-Client: ephemeral copy with auto-clear (60s).
+                ClipboardHelper.copyEphemeral(safetyNumber);
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(content: Text('Safety number copied')),
                 );

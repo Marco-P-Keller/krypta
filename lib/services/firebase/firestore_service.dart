@@ -16,12 +16,18 @@ class FirestoreService {
 
   // --- Public Key Registry ---
 
+  /// H2-Network (audit 2026-05): Firestore rules require `updatedAt ==
+  /// request.time` for create/update on this collection — without it, the
+  /// rule evaluates `undefined == time` to false and the write is denied.
+  /// Use `FieldValue.serverTimestamp()` so the server stamps the time the
+  /// rule then compares against.
   Future<void> registerPublicKey({
     required String userId,
     required String publicKeyBase64,
   }) async {
     await _db.collection('publicKeys').doc(userId).set({
       'publicKey': publicKeyBase64,
+      'updatedAt': FieldValue.serverTimestamp(),
     });
   }
 
@@ -98,7 +104,9 @@ class FirestoreService {
     required String userId,
     required Map<String, dynamic> bundle,
   }) async {
-    await _db.collection('prekeys').doc(userId).set(bundle);
+    // H2-Network: rules require updatedAt == request.time — ensure it is set.
+    final payload = {...bundle, 'updatedAt': FieldValue.serverTimestamp()};
+    await _db.collection('prekeys').doc(userId).set(payload);
   }
 
   Future<Map<String, dynamic>?> getPreKeyBundle(String userId) async {
@@ -133,7 +141,10 @@ class FirestoreService {
     required String senderId,
     required String recipientId,
     required String messageId,
-    required Map<String, String> encryptedPayload,
+    // H2-Proto (audit 2026-05): widened from Map<String, String> so callers
+    // can pass native int/bool fields (`v`, `pv`, `ns`, `pn`) without
+    // toString() coercion. Firestore accepts the JSON-compatible types.
+    required Map<String, dynamic> encryptedPayload,
   }) async {
     // Minimal metadata: sender ID, message ID, encrypted payload.
     // Server timestamp only for ordering — deleted after delivery.
@@ -232,8 +243,10 @@ class FirestoreService {
     required String userId,
     required String token,
   }) async {
+    // H2-Network: matches the new deliveryTokens rule's optional updatedAt.
     await _db.collection('deliveryTokens').doc(userId).set({
       'token': token,
+      'updatedAt': FieldValue.serverTimestamp(),
     });
   }
 
@@ -254,8 +267,10 @@ class FirestoreService {
     required String userId,
     required String token,
   }) async {
+    // H2-Network: rules require updatedAt == request.time.
     await _db.collection('fcmTokens').doc(userId).set({
       'token': token,
+      'updatedAt': FieldValue.serverTimestamp(),
     });
   }
 

@@ -88,8 +88,12 @@ class DoubleRatchet {
   }) async {
     var s = state;
 
-    // If no sending chain key, perform DH ratchet step first
+    // If no sending chain key, perform DH ratchet step first.
+    // M2-Crypto / Codex audit-2026-05 final-round P2: capture the old
+    // dhSendingPrivate so we can zero it AFTER successful encryption.
+    Uint8List? oldSendPrivToZeroOnSuccess;
     if (s.sendingChainKey == null) {
+      oldSendPrivToZeroOnSuccess = state.dhSendingPrivate;
       s = await _dhRatchetSend(s);
     }
 
@@ -106,6 +110,10 @@ class DoubleRatchet {
 
     final ad = _concat(associatedData, header.toBytes());
     final encrypted = await _encryptWithKey(messageKey, plaintext, ad);
+    // Encryption succeeded — now safe to zero the superseded key.
+    if (oldSendPrivToZeroOnSuccess != null) {
+      SensitiveBuffer.zeroBytes(oldSendPrivToZeroOnSuccess);
+    }
     // Zero the message key — it's been used for encryption and is no longer needed.
     SensitiveBuffer.zeroBytes(messageKey);
 
@@ -144,11 +152,16 @@ class DoubleRatchet {
       return (s.copyWith(skippedMessageKeys: newSkipped), plaintext);
     }
 
-    // DH ratchet step if sender's key changed
+    // DH ratchet step if sender's key changed.
+    // Codex audit-2026-05 R(M+L) P1: stash the old send private so we can
+    // zero it AFTER successful authentication. Zeroing inside
+    // _dhRatchetReceive would corrupt live state on a forged header.
     final needsDhStep = s.dhReceivingPublic == null ||
         !_bytesEqual(header.dhPublicKey, s.dhReceivingPublic!);
+    Uint8List? oldSendPrivToZeroOnSuccess;
 
     if (needsDhStep) {
+      oldSendPrivToZeroOnSuccess = s.dhSendingPrivate;
       s = await _skipMessageKeys(s, header.previousChainLength);
       s = await _dhRatchetReceive(s, header.dhPublicKey);
     }
@@ -163,6 +176,12 @@ class DoubleRatchet {
 
     final ad = _concat(associatedData, header.toBytes());
     final plaintext = await _decryptWithKey(messageKey, message.ciphertext, ad);
+    // Authenticated successfully — now safe to zero the superseded send
+    // private (M2-Crypto). On any throw above, this line is skipped and
+    // the caller's original RatchetState remains intact.
+    if (oldSendPrivToZeroOnSuccess != null) {
+      SensitiveBuffer.zeroBytes(oldSendPrivToZeroOnSuccess);
+    }
     // Zero the message key after decryption — single-use.
     SensitiveBuffer.zeroBytes(messageKey);
     return (s, plaintext);
@@ -171,6 +190,14 @@ class DoubleRatchet {
   // ─── DH Ratchet Steps ─────────────────────────────────────────────────────
 
   /// Advance the sending ratchet: generate new DH key pair, derive new chain keys.
+  ///
+  /// M2-Crypto (audit 2026-05): the old `dhSendingPrivate` is forward-
+  /// secret material that should be zeroed once superseded. Per Codex
+  /// final-round P2 we do NOT zero in-place here — `s.dhSendingPrivate`
+  /// is shared by reference with the caller's state, so an in-place
+  /// wipe would brick the live session if anything later in [encrypt]
+  /// throws and the caller retries with the original state. Zeroing is
+  /// done in [encrypt] AFTER the new state and ciphertext are produced.
   static Future<RatchetState> _dhRatchetSend(RatchetState s) async {
     final kp = await _x25519.newKeyPair();
     final pub = Uint8List.fromList((await kp.extractPublicKey()).bytes);
@@ -191,6 +218,13 @@ class DoubleRatchet {
   }
 
   /// Advance receiving ratchet on new remote DH key.
+  ///
+  /// Codex audit-2026-05 R(M+L) P1: do NOT zero the old `dhSendingPrivate`
+  /// here. This runs before message authentication; an attacker can send
+  /// a forged ratchet header that triggers _dhRatchetReceive but fails
+  /// MAC validation in the subsequent _decryptWithKey, and zeroing here
+  /// would mutate the caller's live ratchet state in-place and brick the
+  /// session. The old key is zeroed in [decrypt] AFTER decrypt succeeds.
   static Future<RatchetState> _dhRatchetReceive(
       RatchetState s, Uint8List remotePub) async {
     // Derive receiving chain key from current sending key + new remote key

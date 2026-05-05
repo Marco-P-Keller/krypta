@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../../../l10n/app_localizations.dart';
+import '../../../services/platform/clipboard_helper.dart';
 import '../../../theme/app_colors.dart';
 import '../../../theme/app_spacing.dart';
 import '../../../widgets/emergency_button.dart';
@@ -126,8 +126,8 @@ class ChatListScreen extends StatelessWidget {
               const SizedBox(height: AppSpacing.xl),
               GestureDetector(
                 onTap: () {
-                  Clipboard.setData(
-                      ClipboardData(text: messenger.userId!));
+                  // M2-Client: ephemeral copy with auto-clear.
+                  ClipboardHelper.copyEphemeral(messenger.userId!);
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(content: Text(l10n.userIdCopied)),
                   );

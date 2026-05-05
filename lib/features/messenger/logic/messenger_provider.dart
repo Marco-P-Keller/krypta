@@ -65,6 +65,40 @@ class MessengerProvider extends ChangeNotifier {
   /// X3DH session header to include in the first encrypted message per chat.
   /// Contains the sender's ephemeral public key the receiver needs.
   final Map<String, Map<String, String>> _pendingSessionHeaders = {};
+
+  /// H1-Proto / H1-State (audit 2026-05): per-chat ratchet mutex covering
+  /// every code path that mutates ratchet state — sends AND decrypts AND
+  /// session re-init. Two concurrent receives on the same chat (e.g. one
+  /// from the realtime listener and one from a polled fetch) would each
+  /// read the ratchet at the same chain key, both decrypt, both write
+  /// divergent post-state — corrupting the chain. Serializing all ratchet
+  /// mutations per-chat closes both the send race (H1-Proto) and the
+  /// receive race (H1-State).
+  final Map<String, Future<void>> _ratchetMutexPerChat = {};
+
+  /// Run [body] under the per-chat ratchet mutex. Inner await chains queue
+  /// behind any in-flight operation for the same chat.
+  Future<T> _underSendMutex<T>(String chatId, Future<T> Function() body) =>
+      _underRatchetMutex(chatId, body);
+
+  Future<T> _underRatchetMutex<T>(
+      String chatId, Future<T> Function() body) {
+    final prior = _ratchetMutexPerChat[chatId] ?? Future<void>.value();
+    final completed = Completer<void>();
+    final ours = prior.then((_) => completed.future);
+    _ratchetMutexPerChat[chatId] = ours;
+    return prior.then((_) async {
+      try {
+        return await body();
+      } finally {
+        completed.complete();
+        // Best-effort cleanup if no one stacked behind us.
+        if (identical(_ratchetMutexPerChat[chatId], ours)) {
+          _ratchetMutexPerChat.remove(chatId);
+        }
+      }
+    });
+  }
   // Typing states kept local-only — no server metadata leak.
   final Map<String, bool> _typingStates = {};
   /// Tracks processed message IDs to prevent replay/duplicate attacks.
@@ -202,8 +236,21 @@ class MessengerProvider extends ChangeNotifier {
     // deleteChat — no chat to consume them, and loading a ratchet file
     // whose chat id has been reused elsewhere would silently rebind old
     // private-key material to the new chat.
+    //
+    // H1-Storage (audit 2026-05): only prune when we are *sure* the
+    // current `_chats` list reflects reality. Trustworthy ⇔
+    //   (a) the chats.enc file does not exist on disk (genuine first run), OR
+    //   (b) the chats.enc file exists AND we successfully loaded ≥1 chat.
+    // The risky case the flag rules out: chats.enc present on disk but
+    // loadChats returned [] because decryption failed transiently —
+    // pruning then would wipe all sessions.
+    final chatsBlobExists = await _localStore.hasPersistedChatsBlob();
+    final chatsTrustworthy = !chatsBlobExists || _chats.isNotEmpty;
     try {
-      await _localStore.pruneOrphanChatFiles(_chats.map((c) => c.id).toSet());
+      await _localStore.pruneOrphanChatFiles(
+        _chats.map((c) => c.id).toSet(),
+        chatsListIsTrustworthy: chatsTrustworthy,
+      );
     } catch (_) {}
 
     // Load persisted replay-protection IDs (survives message deletion)
@@ -701,6 +748,22 @@ class MessengerProvider extends ChangeNotifier {
     required String type,
     required String messageId,
   }) async {
+    // H1-Proto: serialize control messages with content sends so they
+    // share the per-chat ratchet ordering.
+    return _underSendMutex(chatId, () => _sendControlMessageLocked(
+          chatId: chatId,
+          contact: contact,
+          type: type,
+          messageId: messageId,
+        ));
+  }
+
+  Future<void> _sendControlMessageLocked({
+    required String chatId,
+    required Contact contact,
+    required String type,
+    required String messageId,
+  }) async {
     if (userId == null) return;
     // Trust gate: don't send control messages to compromised contacts
     if (_validateSendPermission(contact) != null) return;
@@ -726,11 +789,15 @@ class MessengerProvider extends ChangeNotifier {
       final payloadMap = await _encryptWithRatchet(chatId, jsonEncode(innerPayload));
       payloadMap['v'] = 3;
 
+      // H2-Proto (audit 2026-05): no longer toString() the payload values.
+      // Kept stringly-typed values caused cross-version int/string parsing
+      // ambiguity for `v`, `pv`, `ns`, `pn`, etc. Firestore accepts the
+      // JSON-compatible types Krypta uses; pass them through unchanged.
       await _firestore.sendEncryptedMessage(
         senderId: userId!,
         recipientId: contact.id,
         messageId: _uuid.v4(),
-        encryptedPayload: payloadMap.map((k, v) => MapEntry(k, v.toString())),
+        encryptedPayload: payloadMap,
       );
     } finally {
       SensitiveBuffer.zeroBytes(hmacKey);
@@ -1206,6 +1273,27 @@ class MessengerProvider extends ChangeNotifier {
     bool burnAfterRead = false,
     String? password,
   }) async {
+    // H1-Proto: serialize concurrent sendMessage calls per chat so the
+    // ratchet-encrypt + globalSendSeqNo update happens atomically. Without
+    // this, two parallel sends collide on the same chain key and
+    // sequence number, the ratchet drops one message and the recipient
+    // rejects the other as REPLAY_SEQ.
+    return _underSendMutex(chatId, () => _sendMessageLocked(
+          chatId: chatId,
+          text: text,
+          selfDestruct: selfDestruct,
+          burnAfterRead: burnAfterRead,
+          password: password,
+        ));
+  }
+
+  Future<void> _sendMessageLocked({
+    required String chatId,
+    required String text,
+    Duration? selfDestruct,
+    bool burnAfterRead = false,
+    String? password,
+  }) async {
     // A3: bail out if a deleteChat is already tearing this chat down. Without
     // this, a send started during the delete window can still hit Firestore
     // and re-save state the delete is about to wipe.
@@ -1273,9 +1361,17 @@ class MessengerProvider extends ChangeNotifier {
       if (pwError != null) {
         throw ArgumentError('Password too weak: $pwError');
       }
+      // H4-Crypto (audit 2026-05): bind the password-encrypted blob to its
+      // cross-device context. NOTE: `chatId` is a per-device local UUID
+      // and would not match between sender and recipient — Codex round 1
+      // P1. Use stable identifiers that both sides can reproduce:
+      // sender UID, recipient UID, message id (sender-generated, carried
+      // intact in the envelope). The "pwd-v1|" prefix keeps room for
+      // future context format changes.
       contentForTransmission = await _encryption.encryptWithPassword(
         plaintext: text,
         password: password,
+        aad: 'pwd-v1|${userId!}|${chat.recipientId}|$messageId',
       );
     }
 
@@ -1364,11 +1460,12 @@ class MessengerProvider extends ChangeNotifier {
       _ratchetStates[chatId] = updatedState;
       await _localStore.saveRatchetState(chatId, updatedState.toMap());
 
+      // H2-Proto: native types (no toString()).
       await _firestore.sendEncryptedMessage(
         senderId: userId!,
         recipientId: chat.recipientId,
         messageId: messageId,
-        encryptedPayload: payloadMap.map((k, v) => MapEntry(k, v.toString())),
+        encryptedPayload: payloadMap,
       );
 
       _updateMessageStatus(chatId, messageId, MessageStatus.sent);
@@ -1477,9 +1574,13 @@ class MessengerProvider extends ChangeNotifier {
         }
       }
 
+      // H4-Crypto: reconstruct the same cross-device AAD the sender used.
+      // sender UID + recipient UID + message id are all stable across
+      // devices; chatId is NOT (it is a per-device local UUID).
       final plaintext = await _encryption.decryptWithPassword(
         encryptedBase64: msg.decryptedContent ?? '',
         password: password,
+        aad: 'pwd-v1|${msg.senderId}|${msg.recipientId}|${msg.id}',
       );
 
       if (plaintext == null) {
@@ -2346,54 +2447,57 @@ class MessengerProvider extends ChangeNotifier {
   /// Decrypt using Double Ratchet. Returns plaintext string.
   ///
   /// Fail-closed: throws if session initialization fails.
+  ///
+  /// H1-State (audit 2026-05): runs under the per-chat ratchet mutex so
+  /// two concurrent receives (listener + polled) cannot both decrypt
+  /// against the same chain key and write divergent post-states.
   Future<String> _decryptWithRatchet(
-      String chatId, Contact contact, Map<String, dynamic> payloadMap) async {
-    // Init receiver session if we don't have one yet.
-    // Pass payloadMap so the receiver can extract the sender's ephemeral key.
-    //
-    // B4: on exception during init, scrub BOTH in-memory and on-disk
-    // ratchet state. _initRatchetAsReceiver may have persisted a partial
-    // state to the store before the exception bubbled up; leaving that
-    // behind would let the next startup reload stale state via
-    // loadRatchetState and keep re-failing on this peer.
-    if (!_ratchetStates.containsKey(chatId)) {
-      try {
-        await _initRatchetAsReceiver(chatId, contact, payloadMap);
-      } catch (e) {
-        _ratchetStates.remove(chatId);
+      String chatId, Contact contact, Map<String, dynamic> payloadMap) {
+    return _underRatchetMutex(chatId, () async {
+      // Init receiver session if we don't have one yet.
+      // Pass payloadMap so the receiver can extract the sender's ephemeral key.
+      //
+      // B4: on exception during init, scrub BOTH in-memory and on-disk
+      // ratchet state. _initRatchetAsReceiver may have persisted a partial
+      // state to the store before the exception bubbled up; leaving that
+      // behind would let the next startup reload stale state via
+      // loadRatchetState and keep re-failing on this peer.
+      if (!_ratchetStates.containsKey(chatId)) {
         try {
-          await _localStore.deleteRatchetState(chatId);
-        } catch (_) {}
-        rethrow;
+          await _initRatchetAsReceiver(chatId, contact, payloadMap);
+        } catch (e) {
+          _ratchetStates.remove(chatId);
+          try {
+            await _localStore.deleteRatchetState(chatId);
+          } catch (_) {}
+          rethrow;
+        }
       }
-    }
 
-    final state = _ratchetStates[chatId];
-    if (state == null) {
-      throw StateError('Failed to initialize ratchet for chat $chatId');
-    }
-    final ratchetMsg = RatchetMessage.fromPayloadMap(payloadMap);
-    final ad = Uint8List.fromList(utf8.encode(contact.id));
+      final state = _ratchetStates[chatId];
+      if (state == null) {
+        throw StateError('Failed to initialize ratchet for chat $chatId');
+      }
+      final ratchetMsg = RatchetMessage.fromPayloadMap(payloadMap);
+      final ad = Uint8List.fromList(utf8.encode(contact.id));
 
-    final (newState, paddedPlaintext) = await DoubleRatchet.decrypt(
-      state: state,
-      message: ratchetMsg,
-      associatedData: ad,
-    );
+      final (newState, paddedPlaintext) = await DoubleRatchet.decrypt(
+        state: state,
+        message: ratchetMsg,
+        associatedData: ad,
+      );
 
-    _ratchetStates[chatId] = newState;
-    await _localStore.saveRatchetState(chatId, newState.toMap());
+      _ratchetStates[chatId] = newState;
+      await _localStore.saveRatchetState(chatId, newState.toMap());
 
-    // Remove padding — mandatory for all v2 messages.
-    // No fallback to unpadded: all ratchet messages must be padded.
-    final plaintext = EncryptionService.unpadPlaintext(paddedPlaintext);
-    final out = utf8.decode(plaintext);
-    // H6: best-effort zero of the padded + unpadded plaintext buffers.
-    // Ratchet inner payloads carry sender identity, seq, psid, and the
-    // decrypted message content — all worth wiping once consumed.
-    SensitiveBuffer.zeroBytes(plaintext);
-    SensitiveBuffer.zeroBytes(paddedPlaintext);
-    return out;
+      // Remove padding — mandatory for all v2 messages.
+      final plaintext = EncryptionService.unpadPlaintext(paddedPlaintext);
+      final out = utf8.decode(plaintext);
+      // H6: best-effort zero of plaintext buffers.
+      SensitiveBuffer.zeroBytes(plaintext);
+      SensitiveBuffer.zeroBytes(paddedPlaintext);
+      return out;
+    });
   }
 
   /// A2: sanitize self-destruct milliseconds from an untrusted inner payload.

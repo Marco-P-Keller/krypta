@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import '../../../services/platform/clipboard_helper.dart';
 import 'package:provider/provider.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../core/constants/app_constants.dart';
@@ -699,7 +700,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 title: l10n.userIdLabel,
                 value: widget.userId!,
                 onCopy: () {
-                  Clipboard.setData(ClipboardData(text: widget.userId!));
+                  // M2-Client: ephemeral copy with auto-clear (60s).
+                  ClipboardHelper.copyEphemeral(widget.userId!);
                   ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(content: Text(l10n.userIdCopied)));
                 },

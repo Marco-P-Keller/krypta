@@ -106,8 +106,10 @@ void main() {
       // Server sees delivery token for routing
       expect(firestoreData['dt'], token.token);
       expect(firestoreData['mid'], 'msg-001');
-      // Payload is serialized — server sees stringified values
-      final p = firestoreData['p'] as Map<String, String>;
+      // Audit 2026-05 / M3-Crypto: payload values are no longer
+      // stringified; native types pass through (Firestore accepts the
+      // JSON-compatible types Krypta uses).
+      final p = firestoreData['p'] as Map<String, dynamic>;
       expect(p.containsKey('_sid'), isTrue);
       // But the server sees '_sid' as a string inside the payload map,
       // which in real use would be inside the E2E encrypted blob —

@@ -450,7 +450,12 @@ void main() {
   });
 
   group('KeyCommitment canonical bytes', () {
-    test('fixed length 81 bytes', () async {
+    test('fixed length 113 bytes (incl. signingPublicKey, post H1-Crypto fix)',
+        () async {
+      // Audit 2026-05 / H1-Crypto: signingPublicKey is bound into canonical
+      // bytes so a server-side swap of the Ed25519 pubkey invalidates the
+      // signature. Layout: 1 (version) + 8 (epoch) + 32 (idPub) + 32 (prev) +
+      // 8 (ts) + 32 (signingPub) = 113.
       final (pub, priv) = await generateTestKeyPair();
 
       final commitment = await createCommitment(
@@ -460,10 +465,13 @@ void main() {
         previousHash: KeyCommitment.genesisHash,
       );
 
-      expect(commitment.canonicalBytes.length, 81);
+      expect(commitment.canonicalBytes.length, 113);
     });
 
-    test('first byte is version 1', () async {
+    test('first byte is current version (post H1-Crypto: v2)', () async {
+      // Audit 2026-05 / H1-Crypto: new commitments are written as v2; the
+      // version byte is the first byte of canonical bytes. v1 commitments
+      // remain decodable for back-compat.
       final (pub, priv) = await generateTestKeyPair();
 
       final commitment = await createCommitment(
@@ -473,7 +481,8 @@ void main() {
         previousHash: KeyCommitment.genesisHash,
       );
 
-      expect(commitment.canonicalBytes[0], 1);
+      expect(commitment.canonicalBytes[0], KeyCommitment.currentVersion);
+      expect(commitment.canonicalBytes[0], 2);
     });
 
     test('epoch is big-endian at offset 1', () async {
@@ -682,8 +691,11 @@ void main() {
         CommitmentVerifyResult.epochViolation,
         CommitmentVerifyResult.keyMismatch,
         CommitmentVerifyResult.malformed,
+        // Audit 2026-05 / H1-Crypto.
+        CommitmentVerifyResult.signingKeyChanged,
+        CommitmentVerifyResult.legacyBootstrapRejected,
       ]));
-      expect(CommitmentVerifyResult.values.length, 6);
+      expect(CommitmentVerifyResult.values.length, 8);
     });
   });
 

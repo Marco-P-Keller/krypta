@@ -228,8 +228,32 @@ class EncryptedLocalStore {
   /// store) can leave those behind with no owner, wasting disk and
   /// accidentally resurrecting private key material on next load if the
   /// chat id is ever reused.
-  Future<void> pruneOrphanChatFiles(Set<String> knownChatIds) async {
+  /// Prune orphan chat files (msg_*, ratchet_*) whose chat id is not in
+  /// [knownChatIds].
+  ///
+  /// H1-Storage (audit 2026-05): the previous implementation would happily
+  /// delete every msg_/ratchet_ file when called with an empty
+  /// `knownChatIds` set. The boot path calls this with
+  /// `_chats.map((c) => c.id).toSet()`, and `loadChats()` returns `[]`
+  /// both when the user truly has no chats AND when `chats.enc`
+  /// decryption fails. A single transient decrypt failure (rotation
+  /// crash window, hardware-key transient unwrap failure, etc.) would
+  /// therefore wipe ALL sessions on disk. We require the caller to also
+  /// pass a `chatsListIsTrustworthy` flag — true only when loadChats was
+  /// known to have succeeded (or is verifiably empty due to first-run).
+  /// When the flag is false, we no-op rather than risk catastrophic data
+  /// loss; the orphan files stay around until a known-good prune pass.
+  Future<void> pruneOrphanChatFiles(
+    Set<String> knownChatIds, {
+    required bool chatsListIsTrustworthy,
+  }) async {
     if (_basePath == null) return;
+    if (!chatsListIsTrustworthy) {
+      if (kDebugMode) {
+        debugPrint('pruneOrphanChatFiles: skipped — caller flagged chats list as not trustworthy');
+      }
+      return;
+    }
     final enc = await io.listEncFiles(_basePath!);
     for (final filePath in enc) {
       final name = filePath.split(RegExp(r'[\\/]')).last;
@@ -247,6 +271,23 @@ class EncryptedLocalStore {
       try {
         await io.deleteFileAt(filePath);
       } catch (_) {}
+    }
+  }
+
+  /// Reports whether the persisted `chats.enc` blob exists on disk.
+  ///
+  /// Codex audit-2026-05 R(Run4) P1: this MUST check the filesystem, not
+  /// `_cache`. `_cache` is populated only on successful decrypt; a decrypt
+  /// failure leaves the cache empty even though the file is present, and
+  /// the boot path would then mistake "load failed" for "first run" and
+  /// prune all sessions.
+  Future<bool> hasPersistedChatsBlob() async {
+    if (_basePath == null) return false;
+    try {
+      final bytes = await io.readFileBytes('$_basePath/chats.enc');
+      return bytes != null;
+    } catch (_) {
+      return false;
     }
   }
 
@@ -289,9 +330,12 @@ class EncryptedLocalStore {
         try {
           final encrypted = await io.readFileBytes('$_basePath/$key.enc');
           if (encrypted != null) {
+            // H2-Crypto (audit 2026-05): bind ciphertext to its storage
+            // slot so a file swap on disk cannot mix chats.
             final decrypted = await _encryption.decryptLocal(
               encrypted: encrypted,
               key: _storageKey!,
+              aad: key,
             );
             final json = utf8.decode(decrypted);
             // H6: best-effort zero of the plaintext byte buffer. The
@@ -300,6 +344,21 @@ class EncryptedLocalStore {
             // are cleared.
             _zeroIfMutable(decrypted);
             _cache[key] = json;
+            // H2-Crypto Codex R10 P1: auto-migrate legacy v1 blobs to v2 so
+            // the AAD binding becomes effective immediately, not only after
+            // the next save / key rotation. Best-effort: failures are
+            // ignored — the read already succeeded and we'll retry on the
+            // next access.
+            if (!EncryptionService.isLocalV2Format(encrypted)) {
+              try {
+                final reEnc = await _encryption.encryptLocal(
+                  plaintext: Uint8List.fromList(utf8.encode(json)),
+                  key: _storageKey!,
+                  aad: key,
+                );
+                await io.writeFileBytes('$_basePath/$key.enc', reEnc);
+              } catch (_) {/* best-effort migration */}
+            }
             return jsonDecode(json) as Map<String, dynamic>;
           }
         } catch (_) {}
@@ -513,9 +572,12 @@ class EncryptedLocalStore {
       // Phase 1: Write re-encrypted files to temp directory
       for (final entry in _cache.entries) {
         final plaintext = Uint8List.fromList(utf8.encode(entry.value));
+        // H2-Crypto: bind to slot. Rotation re-encrypts under the new key
+        // and (if not yet) upgrades each blob to v2 with AAD.
         final encrypted = await _encryption.encryptLocal(
           plaintext: plaintext,
           key: newKey,
+          aad: entry.key,
         );
         await io.writeFileBytes('$tempPath/${entry.key}.enc', encrypted);
       }
@@ -689,7 +751,13 @@ class EncryptedLocalStore {
 
     final files = await io.listEncFiles(_basePath!);
     for (final filePath in files) {
-      final fileName = filePath.split('/').last.replaceAll('.enc', '');
+      // Codex audit-2026-05 P2: normalize path separators so Windows-style
+      // backslash paths produce the same slot name as Unix forward-slash
+      // paths. Previously the AAD bound at write time ("name") would not
+      // match the AAD derived at read time ("C:\path\to\name"), and
+      // _loadAllFromDisk would silently drop those entries.
+      final normalized = filePath.replaceAll('\\', '/');
+      final fileName = normalized.split('/').last.replaceAll('.enc', '');
 
       // Skip ratchet states — they contain private keys and are loaded
       // on-demand only when a chat session is active.
@@ -698,13 +766,26 @@ class EncryptedLocalStore {
       try {
         final encrypted = await io.readFileBytes(filePath);
         if (encrypted != null) {
+          // H2-Crypto: AAD = file/slot name.
           final decrypted = await _encryption.decryptLocal(
             encrypted: encrypted,
             key: _storageKey!,
+            aad: fileName,
           );
           _cache[fileName] = utf8.decode(decrypted);
           // H6: see loadRatchetState — best-effort wipe of raw plaintext.
           _zeroIfMutable(decrypted);
+          // H2-Crypto Codex R10 P1: opportunistic migration legacy → v2.
+          if (!EncryptionService.isLocalV2Format(encrypted)) {
+            try {
+              final reEnc = await _encryption.encryptLocal(
+                plaintext: Uint8List.fromList(utf8.encode(_cache[fileName]!)),
+                key: _storageKey!,
+                aad: fileName,
+              );
+              await io.writeFileBytes(filePath, reEnc);
+            } catch (_) {/* best-effort */}
+          }
         }
       } catch (e) {
         if (kDebugMode) debugPrint('Decrypt failed for local store entry');
@@ -722,9 +803,11 @@ class EncryptedLocalStore {
 
     try {
       final plaintext = Uint8List.fromList(utf8.encode(data));
+      // H2-Crypto: bind ciphertext to its storage slot via AAD.
       final encrypted = await _encryption.encryptLocal(
         plaintext: plaintext,
         key: _storageKey!,
+        aad: name,
       );
       if (_generation != gen) return; // superseded by wipe/reinit
       if (_basePath == null || _storageKey == null) return;

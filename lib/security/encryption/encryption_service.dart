@@ -159,14 +159,58 @@ class EncryptionService {
     );
   }
 
+  /// H2-Crypto (audit 2026-05): on-disk format version marker.
+  ///   v1 (legacy, no version byte): [24 nonce][16 mac][ct]
+  ///   v2: [0x02][24 nonce][16 mac][ct] with [aad] bound into the AEAD
+  /// The version byte lets us decode pre-upgrade blobs that were written
+  /// without AAD and accept new writes that bind to a storage slot.
+  static const int _localFormatV2 = 0x02;
+
+  /// Returns `true` if [encrypted] looks like a v2 (AAD-bound) blob.
+  /// A v1 blob can spuriously match with probability ~1/256 — callers
+  /// using this for migration should only need a best-effort hint, not
+  /// a security check (the AEAD MAC remains the source of truth).
+  static bool isLocalV2Format(Uint8List encrypted) =>
+      encrypted.isNotEmpty && encrypted[0] == _localFormatV2;
+
   Future<Uint8List> encryptLocal({
     required Uint8List plaintext,
     required Uint8List key,
+    String? aad,
   }) async {
     final secretKey = SecretKey(key);
-    final secretBox = await _cipher.encrypt(plaintext, secretKey: secretKey);
 
-    // Pack: [24-byte nonce][16-byte mac][ciphertext]
+    // H2-Crypto: when an AAD is provided (= caller is the encrypted store
+    // and wants slot binding), emit the v2 format. Without AAD, keep the
+    // legacy layout so older blobs and ad-hoc callers behave identically.
+    if (aad != null) {
+      final aadBytes = utf8.encode(aad);
+      final secretBox = await _cipher.encrypt(
+        plaintext,
+        secretKey: secretKey,
+        aad: aadBytes,
+      );
+      final result = Uint8List(
+        1 +
+            secretBox.nonce.length +
+            secretBox.mac.bytes.length +
+            secretBox.cipherText.length,
+      );
+      result[0] = _localFormatV2;
+      var offset = 1;
+      result.setRange(
+          offset, offset + secretBox.nonce.length, secretBox.nonce);
+      offset += secretBox.nonce.length;
+      result.setRange(
+          offset, offset + secretBox.mac.bytes.length, secretBox.mac.bytes);
+      offset += secretBox.mac.bytes.length;
+      result.setRange(offset, offset + secretBox.cipherText.length,
+          secretBox.cipherText);
+      return result;
+    }
+
+    // Legacy v1 layout (no AAD).
+    final secretBox = await _cipher.encrypt(plaintext, secretKey: secretKey);
     final result = Uint8List(
       secretBox.nonce.length + secretBox.mac.bytes.length + secretBox.cipherText.length,
     );
@@ -183,11 +227,51 @@ class EncryptionService {
   Future<Uint8List> decryptLocal({
     required Uint8List encrypted,
     required Uint8List key,
+    String? aad,
   }) async {
     const nonceLen = 24;
     const macLen = 16;
     const minLen = nonceLen + macLen; // 40 bytes minimum (nonce + mac, no ciphertext)
 
+    // H2-Crypto: format detection.
+    //   • v2 blobs start with 0x02. We try the v2 path with the caller's AAD.
+    //   • v1 blobs are 24-byte nonce + 16-byte mac + ciphertext. v1's first
+    //     byte is the first byte of a random nonce, so it can collide with
+    //     0x02 on roughly 1 in 256 of legacy blobs. To survive that without
+    //     losing security, on v2-decrypt failure (typically caused by
+    //     misclassified legacy data) we fall back to the legacy path. The
+    //     fallback is safe because both paths require an AEAD MAC match —
+    //     the only way both succeed is when the data really is what the
+    //     successful path interprets it as. An attacker stripping the v2
+    //     prefix produces data whose v1-MAC also fails.
+    //
+    // Codex R10 P2: when the caller did not provide AAD they have explicitly
+    // asked for the legacy semantics, so we do NOT inspect the v2 marker —
+    // about 1/256 random nonces would otherwise spuriously trip the v2 path
+    // and break the legacy decode for ad-hoc / pre-upgrade callers.
+    final bool hasV2Marker = aad != null &&
+        encrypted.isNotEmpty &&
+        encrypted[0] == _localFormatV2;
+    if (hasV2Marker) {
+      if (encrypted.length >= 1 + minLen) {
+        try {
+          final nonce = encrypted.sublist(1, 1 + nonceLen);
+          final mac = encrypted.sublist(1 + nonceLen, 1 + nonceLen + macLen);
+          final ciphertext = encrypted.sublist(1 + nonceLen + macLen);
+          final aadBytes = utf8.encode(aad);
+          final secretBox = SecretBox(ciphertext, nonce: nonce, mac: Mac(mac));
+          return Uint8List.fromList(
+            await _cipher.decrypt(secretBox,
+                secretKey: SecretKey(key), aad: aadBytes),
+          );
+        } catch (_) {
+          // Fall through to legacy attempt — could be legacy data whose
+          // nonce coincidentally starts with 0x02.
+        }
+      }
+    }
+
+    // Legacy v1 path.
     if (encrypted.length < minLen) {
       throw FormatException('Encrypted data too short: ${encrypted.length} < $minLen');
     }
@@ -219,9 +303,17 @@ class EncryptionService {
     hashLength: 32,
   );
 
+  /// Encrypt [plaintext] with a password-derived key.
+  ///
+  /// H4-Crypto (audit 2026-05): when [aad] is provided (recommended:
+  /// `chatId|messageId`), the resulting blob is bound to that context via
+  /// the AEAD AAD. The container becomes v3 (with `aad` flag). v2 (no
+  /// AAD) remains for back-compat reads, but new writes always emit v3
+  /// when an aad is supplied.
   Future<String> encryptWithPassword({
     required String plaintext,
     required String password,
+    String? aad,
   }) async {
     final salt = Uint8List.fromList(
       List.generate(16, (_) => Random.secure().nextInt(256)),
@@ -232,13 +324,15 @@ class EncryptionService {
       nonce: salt,
     );
 
+    final aadBytes = aad == null ? null : utf8.encode(aad);
     final secretBox = await _cipher.encrypt(
       utf8.encode(plaintext),
       secretKey: derivedKey,
+      aad: aadBytes ?? const <int>[],
     );
 
-    final payload = {
-      'v': 2,
+    final payload = <String, dynamic>{
+      'v': aad == null ? 2 : 3,
       's': base64Encode(salt),
       'n': base64Encode(Uint8List.fromList(secretBox.nonce)),
       'm': base64Encode(Uint8List.fromList(secretBox.mac.bytes)),
@@ -251,6 +345,7 @@ class EncryptionService {
   Future<String?> decryptWithPassword({
     required String encryptedBase64,
     required String password,
+    String? aad,
   }) async {
     try {
       final jsonStr = utf8.decode(base64Decode(encryptedBase64));
@@ -262,8 +357,15 @@ class EncryptionService {
       final mac = base64Decode(payload['m'] as String);
       final ciphertext = base64Decode(payload['c'] as String);
 
-      // Only Argon2id v2 is supported. v1 (PBKDF2) messages are rejected.
+      // Only Argon2id v2+ are supported. v1 (PBKDF2) messages are rejected.
       if (version < 2) return null;
+      // H4-Crypto: v3 requires AAD; refuse to silently decrypt without it.
+      if (version >= 3 && aad == null) return null;
+      // For v2 the AAD is ignored on decrypt (back-compat); new writes
+      // pass aad and so produce v3.
+      final aadBytes = (version >= 3 && aad != null)
+          ? utf8.encode(aad)
+          : const <int>[];
 
       final derivedKey = await _argon2.deriveKey(
         secretKey: SecretKey(utf8.encode(password)),
@@ -271,7 +373,11 @@ class EncryptionService {
       );
 
       final secretBox = SecretBox(ciphertext, nonce: nonce, mac: Mac(mac));
-      final decrypted = await _cipher.decrypt(secretBox, secretKey: derivedKey);
+      final decrypted = await _cipher.decrypt(
+        secretBox,
+        secretKey: derivedKey,
+        aad: aadBytes,
+      );
       // H6: see decryptMessage — decode, then best-effort zero.
       final out = utf8.decode(decrypted);
       _bestEffortZero(decrypted);

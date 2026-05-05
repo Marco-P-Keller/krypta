@@ -1,6 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/services.dart';
 import '../firebase/firestore_service.dart';
+import '../platform/clipboard_helper.dart';
 import '../storage/secure_storage_service.dart';
 import '../storage/encrypted_local_store.dart';
 import '../storage/file_helper.dart' as io;
@@ -96,8 +97,13 @@ class EmergencyWipeService {
     // 5. Clear ALL in-memory caches
     _keyManager.clearMemoryCache();
 
-    // 6. Clear system clipboard (may contain copied messages/keys)
-    try { await Clipboard.setData(const ClipboardData(text: '')); } catch (_) {}
+    // 6. Clear system clipboard (may contain copied messages/keys).
+    // M2-Client: also cancel any pending auto-clear so a stale "60 seconds
+    // from now" timer cannot wipe a value the user puts there post-wipe.
+    try {
+      ClipboardHelper.cancelPending();
+      await Clipboard.setData(const ClipboardData(text: ''));
+    } catch (_) {}
 
     // 7. Wipe cache/temp directories (image cache, HTTP cache, temp files)
     try { await io.wipeCacheAndTemp(); } catch (_) {}

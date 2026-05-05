@@ -106,10 +106,16 @@ class SealedEnvelope {
     required this.payload,
   });
 
+  /// M3-Crypto (audit 2026-05): no longer stringify payload values.
+  /// The previous `v.toString()` collapsed ints (e.g. `_seq`, `_ctr`,
+  /// `_sd`) into their decimal-string representations, forcing every
+  /// receive path to parse-with-fallback to recover the type. Firestore
+  /// natively accepts the JSON-compatible types Krypta uses (String, int,
+  /// double, bool, Map, List), so we pass them through unchanged.
   Map<String, dynamic> toFirestoreData(String messageId) => {
         'dt': deliveryToken,
         'mid': messageId,
-        'p': payload.map((k, v) => MapEntry(k, v.toString())),
+        'p': payload,
         'ts': DateTime.now().millisecondsSinceEpoch,
       };
 }

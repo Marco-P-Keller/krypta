@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../../../l10n/app_localizations.dart';
+import '../../../services/platform/clipboard_helper.dart';
 import '../../../theme/app_colors.dart';
 import '../data/models/chat_model.dart';
 import '../logic/messenger_provider.dart';
@@ -206,7 +206,8 @@ class _NewChatScreenState extends State<NewChatScreen> {
               const SizedBox(height: 6),
               GestureDetector(
                 onTap: () {
-                  Clipboard.setData(ClipboardData(text: messenger.userId!));
+                  // M2-Client: ephemeral copy with auto-clear.
+                  ClipboardHelper.copyEphemeral(messenger.userId!);
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(content: Text(l10n.userIdCopied)),
                   );

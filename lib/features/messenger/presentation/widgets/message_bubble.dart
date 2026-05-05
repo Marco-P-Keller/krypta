@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../../../../l10n/app_localizations.dart';
+import '../../../../services/platform/clipboard_helper.dart';
 import '../../../../theme/app_colors.dart';
 import '../../../../theme/app_spacing.dart';
 import '../../data/models/message_model.dart';
@@ -44,8 +45,8 @@ class MessageBubble extends StatelessWidget {
                 leading: const Icon(Icons.copy_rounded),
                 title: Text(l10n.copy),
                 onTap: () {
-                  Clipboard.setData(
-                      ClipboardData(text: message.decryptedContent!));
+                  // M2-Client: ephemeral copy with auto-clear.
+                  ClipboardHelper.copyEphemeral(message.decryptedContent!);
                   Navigator.of(ctx).pop();
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(content: Text(l10n.copied)),

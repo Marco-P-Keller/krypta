@@ -61,51 +61,58 @@ class SessionHandshakeService {
     final ephPrivate = Uint8List.fromList(
         await ephKeyPair.extractPrivateKeyBytes());
 
-    // Step 3: Perform X3DH key agreement
-    // DH1: identity_priv × signed_prekey_pub
-    final dh1 = await _dh(identityKeyPair.privateKey, bundle.signedPreKeyPublic);
-    // DH2: ephemeral_priv × identity_pub
-    final dh2 = await _dh(ephPrivate, bundle.identityPublicKey);
-    // DH3: ephemeral_priv × signed_prekey_pub
-    final dh3 = await _dh(ephPrivate, bundle.signedPreKeyPublic);
+    // L2-Crypto (audit 2026-05): wrap DH key material in try/finally so
+    // an exception between the DH calls and the explicit zeroing doesn't
+    // leave secret bytes lingering in memory. Previously DH4 specifically
+    // had no zero call at all and any throw between dh4 compute and the
+    // existing zeros block would leak DH1..DH3 too.
+    Uint8List? dh1, dh2, dh3, dh4, ikm, sharedSecret;
+    try {
+      // Step 3: Perform X3DH key agreement
+      // DH1: identity_priv × signed_prekey_pub
+      dh1 = await _dh(identityKeyPair.privateKey, bundle.signedPreKeyPublic);
+      // DH2: ephemeral_priv × identity_pub
+      dh2 = await _dh(ephPrivate, bundle.identityPublicKey);
+      // DH3: ephemeral_priv × signed_prekey_pub
+      dh3 = await _dh(ephPrivate, bundle.signedPreKeyPublic);
 
-    // Concatenate DH outputs as IKM
-    Uint8List ikm;
-    int? usedOneTimePreKeyId;
+      int? usedOneTimePreKeyId;
 
-    if (bundle.oneTimePreKeyPublic != null) {
-      // DH4: ephemeral_priv × one_time_prekey_pub (4-DH)
-      final dh4 = await _dh(ephPrivate, bundle.oneTimePreKeyPublic!);
-      ikm = _concat4(dh1, dh2, dh3, dh4);
-      usedOneTimePreKeyId = bundle.oneTimePreKeyId;
-    } else {
-      // 3-DH (no one-time prekey available)
-      ikm = _concat3(dh1, dh2, dh3);
+      if (bundle.oneTimePreKeyPublic != null) {
+        // DH4: ephemeral_priv × one_time_prekey_pub (4-DH)
+        dh4 = await _dh(ephPrivate, bundle.oneTimePreKeyPublic!);
+        ikm = _concat4(dh1, dh2, dh3, dh4);
+        usedOneTimePreKeyId = bundle.oneTimePreKeyId;
+      } else {
+        // 3-DH (no one-time prekey available)
+        ikm = _concat3(dh1, dh2, dh3);
+      }
+
+      // Step 4: Derive shared secret via HKDF
+      sharedSecret = await _deriveSharedSecret(ikm);
+
+      // Step 5: Initialize Double Ratchet as sender
+      final ratchetState = await DoubleRatchet.initAsSender(
+        sharedSecret: sharedSecret,
+        recipientRatchetPublicKey: bundle.signedPreKeyPublic,
+      );
+
+      return OutboundSession(
+        ratchetState: ratchetState,
+        ephemeralPublicKey: ephPublic,
+        usedOneTimePreKeyId: usedOneTimePreKeyId,
+      );
+    } finally {
+      // Zero in finally so even an early throw cleans up. Order doesn't
+      // matter; each is independent.
+      _zeroBytes(ephPrivate);
+      if (dh1 != null) _zeroBytes(dh1);
+      if (dh2 != null) _zeroBytes(dh2);
+      if (dh3 != null) _zeroBytes(dh3);
+      if (dh4 != null) _zeroBytes(dh4);
+      if (ikm != null) _zeroBytes(ikm);
+      if (sharedSecret != null) _zeroBytes(sharedSecret);
     }
-
-    // Step 4: Derive shared secret via HKDF
-    final sharedSecret = await _deriveSharedSecret(ikm);
-
-    // Zero intermediate key material per Signal spec (best-effort in Dart/GC)
-    _zeroBytes(ephPrivate);
-    _zeroBytes(dh1);
-    _zeroBytes(dh2);
-    _zeroBytes(dh3);
-    _zeroBytes(ikm);
-
-    // Step 5: Initialize Double Ratchet as sender
-    final ratchetState = await DoubleRatchet.initAsSender(
-      sharedSecret: sharedSecret,
-      recipientRatchetPublicKey: bundle.signedPreKeyPublic,
-    );
-    // Zero shared secret after ratchet init — consumed by KDF, no longer needed.
-    _zeroBytes(sharedSecret);
-
-    return OutboundSession(
-      ratchetState: ratchetState,
-      ephemeralPublicKey: ephPublic,
-      usedOneTimePreKeyId: usedOneTimePreKeyId,
-    );
   }
 
   /// Create an inbound session (we are receiving a first message).
@@ -133,46 +140,46 @@ class SessionHandshakeService {
     Uint8List? oneTimePreKeyPrivate,
     Uint8List? senderEphemeral2Public,
   }) async {
-    // DH1: signed_prekey_priv × sender_identity_pub
-    final dh1 = await _dh(signedPreKeyPrivate, senderIdentityPublic);
-    // DH2: identity_priv × sender_ephemeral_pub
-    final dh2 = await _dh(identityKeyPair.privateKey, senderEphemeralPublic);
-    // DH3: In fallback path with ek2, use the second ephemeral key for independence.
-    //       In normal X3DH, use signed_prekey_priv × sender_ephemeral_pub.
-    final Uint8List dh3;
-    if (senderEphemeral2Public != null) {
-      dh3 = await _dh(identityKeyPair.privateKey, senderEphemeral2Public);
-    } else {
-      dh3 = await _dh(signedPreKeyPrivate, senderEphemeralPublic);
+    // L2-Crypto: try/finally with explicit dh4 zeroing.
+    Uint8List? dh1, dh2, dh3, dh4, ikm, sharedSecret;
+    try {
+      // DH1: signed_prekey_priv × sender_identity_pub
+      dh1 = await _dh(signedPreKeyPrivate, senderIdentityPublic);
+      // DH2: identity_priv × sender_ephemeral_pub
+      dh2 = await _dh(identityKeyPair.privateKey, senderEphemeralPublic);
+      // DH3: In fallback path with ek2, use the second ephemeral key for independence.
+      //       In normal X3DH, use signed_prekey_priv × sender_ephemeral_pub.
+      if (senderEphemeral2Public != null) {
+        dh3 = await _dh(identityKeyPair.privateKey, senderEphemeral2Public);
+      } else {
+        dh3 = await _dh(signedPreKeyPrivate, senderEphemeralPublic);
+      }
+
+      if (oneTimePreKeyPrivate != null) {
+        // DH4: one_time_prekey_priv × sender_ephemeral_pub
+        dh4 = await _dh(oneTimePreKeyPrivate, senderEphemeralPublic);
+        ikm = _concat4(dh1, dh2, dh3, dh4);
+      } else {
+        ikm = _concat3(dh1, dh2, dh3);
+      }
+
+      sharedSecret = await _deriveSharedSecret(ikm);
+
+      // The ratchet key pair must match what the sender used as
+      // recipientRatchetPublicKey — which is the signed prekey.
+      return DoubleRatchet.initAsReceiver(
+        sharedSecret: sharedSecret,
+        ratchetPublicKey: signedPreKeyPublic,
+        ratchetPrivateKey: signedPreKeyPrivate,
+      );
+    } finally {
+      if (dh1 != null) _zeroBytes(dh1);
+      if (dh2 != null) _zeroBytes(dh2);
+      if (dh3 != null) _zeroBytes(dh3);
+      if (dh4 != null) _zeroBytes(dh4);
+      if (ikm != null) _zeroBytes(ikm);
+      if (sharedSecret != null) _zeroBytes(sharedSecret);
     }
-
-    Uint8List ikm;
-    if (oneTimePreKeyPrivate != null) {
-      // DH4: one_time_prekey_priv × sender_ephemeral_pub
-      final dh4 = await _dh(oneTimePreKeyPrivate, senderEphemeralPublic);
-      ikm = _concat4(dh1, dh2, dh3, dh4);
-    } else {
-      ikm = _concat3(dh1, dh2, dh3);
-    }
-
-    final sharedSecret = await _deriveSharedSecret(ikm);
-
-    // Zero intermediate key material per Signal spec
-    _zeroBytes(dh1);
-    _zeroBytes(dh2);
-    _zeroBytes(dh3);
-    _zeroBytes(ikm);
-
-    // The ratchet key pair must match what the sender used as
-    // recipientRatchetPublicKey — which is the signed prekey.
-    final state = DoubleRatchet.initAsReceiver(
-      sharedSecret: sharedSecret,
-      ratchetPublicKey: signedPreKeyPublic,
-      ratchetPrivateKey: signedPreKeyPrivate,
-    );
-    // Zero shared secret after ratchet init.
-    _zeroBytes(sharedSecret);
-    return state;
   }
 
   /// Verify a signed prekey's Ed25519 signature.
@@ -209,28 +216,31 @@ class SessionHandshakeService {
     required Uint8List ephemeralPrivate,
     required Uint8List recipientIdentityPublic,
   }) async {
-    final dh1 = await _dh(identityPrivate, recipientIdentityPublic);
-    final dh2 = await _dh(ephemeralPrivate, recipientIdentityPublic);
+    // L2-Crypto: try/finally for crash-safe zeroing.
+    Uint8List? dh1, dh2, dh3, ikm, eph2Private;
+    try {
+      dh1 = await _dh(identityPrivate, recipientIdentityPublic);
+      dh2 = await _dh(ephemeralPrivate, recipientIdentityPublic);
 
-    // Generate a second ephemeral key pair for DH3 — ensures 3 independent DH outputs
-    final eph2KeyPair = await _x25519.newKeyPair();
-    final eph2Public = Uint8List.fromList(
-        (await eph2KeyPair.extractPublicKey()).bytes);
-    final eph2Private = Uint8List.fromList(
-        await eph2KeyPair.extractPrivateKeyBytes());
+      // Generate a second ephemeral key pair for DH3 — ensures 3 independent DH outputs
+      final eph2KeyPair = await _x25519.newKeyPair();
+      final eph2Public = Uint8List.fromList(
+          (await eph2KeyPair.extractPublicKey()).bytes);
+      eph2Private = Uint8List.fromList(
+          await eph2KeyPair.extractPrivateKeyBytes());
 
-    final dh3 = await _dh(eph2Private, recipientIdentityPublic);
-    final ikm = _concat3(dh1, dh2, dh3);
-    final secret = await _deriveSharedSecret(ikm);
+      dh3 = await _dh(eph2Private, recipientIdentityPublic);
+      ikm = _concat3(dh1, dh2, dh3);
+      final secret = await _deriveSharedSecret(ikm);
 
-    // Zero intermediate key material per Signal spec
-    _zeroBytes(dh1);
-    _zeroBytes(dh2);
-    _zeroBytes(dh3);
-    _zeroBytes(eph2Private);
-    _zeroBytes(ikm);
-
-    return (secret, eph2Public);
+      return (secret, eph2Public);
+    } finally {
+      if (dh1 != null) _zeroBytes(dh1);
+      if (dh2 != null) _zeroBytes(dh2);
+      if (dh3 != null) _zeroBytes(dh3);
+      if (eph2Private != null) _zeroBytes(eph2Private);
+      if (ikm != null) _zeroBytes(ikm);
+    }
   }
 
   // ─── Crypto Helpers ─────────────────────────────────────────────────────────

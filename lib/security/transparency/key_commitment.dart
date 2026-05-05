@@ -37,8 +37,19 @@ class KeyCommitment {
   /// is established via out-of-band Safety Number verification.
   final Uint8List signingPublicKey;
 
-  /// Algorithm version for future-proofing. Must be 1 for current impl.
-  static const int currentVersion = 1;
+  /// Algorithm version.
+  ///   v1 — original 81-byte canonical layout (no signingPublicKey binding).
+  ///   v2 — H1-Crypto fix: signingPublicKey is part of canonical bytes
+  ///        (113 bytes total). New commitments are always v2.
+  /// Both versions are accepted for verification so existing v1 chains
+  /// continue to validate after upgrade; chain extensions may freely mix
+  /// versions but the TOFU rule on signing key still applies.
+  static const int currentVersion = 2;
+
+  /// Per-instance version. Defaults to [currentVersion] for newly-created
+  /// commitments; deserialized commitments retain whatever version was
+  /// persisted.
+  final int version;
 
   static final _ed25519 = Ed25519();
 
@@ -49,6 +60,7 @@ class KeyCommitment {
     required this.timestampMs,
     required this.signature,
     required this.signingPublicKey,
+    this.version = currentVersion,
   });
 
   /// Genesis hash: 32 zero bytes. Used as previousCommitHash for epoch 0.
@@ -57,16 +69,36 @@ class KeyCommitment {
 
   /// Canonical byte representation for hashing and signing.
   ///
-  /// Format: version(1) || epoch(8 BE) || identityPublicKey(32) ||
-  ///         previousCommitHash(32) || timestampMs(8 BE)
-  /// Total: 81 bytes (fixed-length, no ambiguity).
+  /// v1 layout (legacy, accepted only for verifying pre-existing chains):
+  ///   version(1) || epoch(8 BE) || identityPublicKey(32) ||
+  ///   previousCommitHash(32) || timestampMs(8 BE)              = 81 bytes
+  ///
+  /// v2 layout (current, used for new commitments — H1-Crypto fix):
+  ///   v1 layout || signingPublicKey(32)                        = 113 bytes
+  ///
+  /// H1-Crypto (audit 2026-05): in v2 the signingPublicKey is part of canonical
+  /// bytes so a server-side swap of the Ed25519 pub invalidates the signature.
+  /// v1 stays bit-exact compatible so existing persisted commitments still
+  /// verify post-upgrade; the TOFU enforcement at append time prevents an
+  /// attacker from extending an old v1 chain with malicious v1 entries.
   Uint8List get canonicalBytes {
-    final buf = Uint8List(1 + 8 + 32 + 32 + 8);
-    buf[0] = currentVersion;
+    if (version <= 1) {
+      final buf = Uint8List(1 + 8 + 32 + 32 + 8);
+      buf[0] = version;
+      _writeInt64BE(buf, 1, epoch);
+      buf.setRange(9, 41, identityPublicKey);
+      buf.setRange(41, 73, previousCommitHash);
+      _writeInt64BE(buf, 73, timestampMs);
+      return buf;
+    }
+    // v2+
+    final buf = Uint8List(1 + 8 + 32 + 32 + 8 + 32);
+    buf[0] = version;
     _writeInt64BE(buf, 1, epoch);
     buf.setRange(9, 41, identityPublicKey);
     buf.setRange(41, 73, previousCommitHash);
     _writeInt64BE(buf, 73, timestampMs);
+    buf.setRange(81, 113, signingPublicKey);
     return buf;
   }
 
@@ -163,6 +195,8 @@ class KeyCommitment {
   }
 
   Map<String, dynamic> toMap() => {
+        // 'v' missing on legacy persisted commitments → defaults to 1 in fromMap.
+        'v': version,
         'e': epoch,
         'k': base64Encode(identityPublicKey),
         'p': base64Encode(previousCommitHash),
@@ -173,6 +207,9 @@ class KeyCommitment {
 
   factory KeyCommitment.fromMap(Map<String, dynamic> map) {
     return KeyCommitment(
+      // Back-compat: maps written before the H1-Crypto fix have no 'v' key
+      // and were always v1. Default keeps existing chains valid.
+      version: (map['v'] as int?) ?? 1,
       epoch: map['e'] as int,
       identityPublicKey: base64Decode(map['k'] as String),
       previousCommitHash: base64Decode(map['p'] as String),

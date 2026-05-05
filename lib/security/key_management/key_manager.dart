@@ -29,6 +29,16 @@ class KeyManager {
   /// Track when cache was last accessed to enable automatic clearing.
   DateTime? _cacheAccessTime;
 
+  /// H3-Crypto (audit 2026-05): single-flight guard for
+  /// [getOrCreateIdentityKeyPair]. Without this, two concurrent callers
+  /// (e.g. setup_screen + messenger_provider both calling on app boot)
+  /// can interleave: A reads (null), B reads (null), A generates, B
+  /// generates, A writes, B writes — last-write wins on disk while
+  /// A's cached pair (vs. disk's B pair) silently diverges. The pending
+  /// future is shared across concurrent callers so they all observe the
+  /// same key pair and storage write.
+  Future<KryptaKeyPair>? _pendingGetOrCreate;
+
   /// Auto-clear cache after this duration of inactivity.
   /// 3 minutes balances performance (avoid re-reads from keychain)
   /// with minimizing RAM exposure of private key material.
@@ -59,20 +69,40 @@ class KeyManager {
   }
 
   Future<KryptaKeyPair> getOrCreateIdentityKeyPair() async {
-    // Check cache timeout
+    // Check cache timeout (synchronous, no yield).
     if (_cachedIdentityKeyPair != null && _cacheAccessTime != null) {
       if (DateTime.now().difference(_cacheAccessTime!) > _cacheTimeout) {
         clearMemoryCache();
       }
     }
 
+    // Fast path — fully cached.
     if (_cachedIdentityKeyPair != null) {
       _cacheAccessTime = DateTime.now();
       return _cachedIdentityKeyPair!;
     }
 
-    final existingPriv = await _storage.read(key: StorageKeys.identityPrivateKey);
-    final existingPub = await _storage.read(key: StorageKeys.identityPublicKey);
+    // H3-Crypto: single-flight. If another caller is already mid-flight
+    // (between storage read and write), join their future instead of
+    // starting an independent generate-and-write that would race.
+    if (_pendingGetOrCreate != null) {
+      return _pendingGetOrCreate!;
+    }
+
+    final future = _runGetOrCreate();
+    _pendingGetOrCreate = future;
+    try {
+      return await future;
+    } finally {
+      _pendingGetOrCreate = null;
+    }
+  }
+
+  Future<KryptaKeyPair> _runGetOrCreate() async {
+    final existingPriv =
+        await _storage.read(key: StorageKeys.identityPrivateKey);
+    final existingPub =
+        await _storage.read(key: StorageKeys.identityPublicKey);
 
     if (existingPriv != null && existingPub != null) {
       _cachedIdentityKeyPair = KryptaKeyPair.fromBase64(

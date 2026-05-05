@@ -174,6 +174,13 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
             TextField(
               controller: pwController,
               autofocus: true,
+              // M1-Client (audit 2026-05): obscure the message password as
+              // the user types it. Without this, the password sits in
+              // plaintext on the visible UI — defeating the point of
+              // password-protecting a single message.
+              obscureText: true,
+              enableSuggestions: false,
+              autocorrect: false,
               decoration: InputDecoration(
                 hintText: l10n.enterPassword,
                 prefixIcon: const Icon(Icons.key_rounded, size: 20),
