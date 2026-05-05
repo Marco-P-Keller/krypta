@@ -156,6 +156,9 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
 
     final pwController = TextEditingController();
     final l10n = AppLocalizations.of(context)!;
+    // M1-Client follow-up (2026-05 Codex review): clear and dispose the
+    // controller once the dialog is gone so the password text is not
+    // held by a long-lived widget reference.
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -205,7 +208,10 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
           ),
         ],
       ),
-    );
+    ).whenComplete(() {
+      pwController.clear();
+      pwController.dispose();
+    });
   }
 
   void _scrollToBottom() {

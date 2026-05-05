@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:provider/provider.dart';
@@ -16,6 +18,7 @@ import 'features/messenger/presentation/qr_scanner_screen.dart';
 import 'features/settings/presentation/settings_screen.dart';
 import 'security/device/device_integrity_policy.dart';
 import 'services/emergency/emergency_wipe_service.dart';
+import 'services/platform/clipboard_helper.dart';
 import 'services/platform/platform_security_service.dart';
 import 'services/storage/encrypted_local_store.dart';
 import 'services/storage/secure_storage_service.dart';
@@ -112,6 +115,11 @@ class _KryptaShellState extends State<KryptaShell> with WidgetsBindingObserver {
       // C6: stop periodic integrity polling while backgrounded — the resume
       // path re-runs a one-shot check and _unlockMessenger re-starts it.
       context.read<DeviceIntegrityPolicyService>().stopPeriodicChecks();
+      // M2-Client (audit 2026-05 follow-up): the 60s clipboard auto-clear
+      // timer dies if the OS kills the backgrounded app, so wipe now while
+      // we still hold the process. No-op if the user has since copied
+      // something else themselves.
+      unawaited(ClipboardHelper.clearEphemeralNow());
 
       if (_currentScreen != _AppScreen.calculator &&
           _currentScreen != _AppScreen.setup &&

@@ -79,6 +79,11 @@ exports.onNewMessage = functions.firestore
  * Messages older than 24 hours are purged regardless of delivery status.
  *
  * Uses the 'ts' field (server timestamp) set by FirestoreService.
+ *
+ * Pagination: drains each user's expired-message set in 500-doc batches
+ * until empty. Without the loop, a user with > 500 stale messages would
+ * only get 500 cleared per hour-tick, weakening the 24h TTL guarantee
+ * under flood / abuse.
  */
 exports.cleanupExpiredMessages = functions.pubsub
   .schedule("every 1 hours")
@@ -91,18 +96,26 @@ exports.cleanupExpiredMessages = functions.pubsub
     let totalDeleted = 0;
 
     for (const userDoc of usersSnapshot) {
-      const expiredMessages = await userDoc
-        .collection("inbox")
-        .where("ts", "<", cutoff)
-        .limit(500) // Firestore batch limit: max 500 operations
-        .get();
+      // Drain this user's expired messages until none remain. The cutoff
+      // is fixed at function start so no new doc can re-enter the query
+      // mid-drain (new messages have ts == request.time > cutoff).
+      // eslint-disable-next-line no-constant-condition
+      while (true) {
+        const expiredMessages = await userDoc
+          .collection("inbox")
+          .where("ts", "<", cutoff)
+          .limit(500) // Firestore batch limit: max 500 operations
+          .get();
 
-      if (expiredMessages.empty) continue;
+        if (expiredMessages.empty) break;
 
-      const batch = db.batch();
-      expiredMessages.docs.forEach((doc) => batch.delete(doc.ref));
-      await batch.commit();
-      totalDeleted += expiredMessages.size;
+        const batch = db.batch();
+        expiredMessages.docs.forEach((doc) => batch.delete(doc.ref));
+        await batch.commit();
+        totalDeleted += expiredMessages.size;
+
+        if (expiredMessages.size < 500) break;
+      }
     }
 
     console.log(`Expired message cleanup: deleted ${totalDeleted} messages`);
