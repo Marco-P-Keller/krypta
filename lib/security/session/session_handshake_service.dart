@@ -30,9 +30,14 @@ class SessionHandshakeService {
   /// - DH1 = DH(identity_priv, signed_prekey_pub)
   /// - DH2 = DH(ephemeral_priv, identity_pub)
   /// - DH3 = DH(ephemeral_priv, signed_prekey_pub)
-  /// - DH4 = DH(ephemeral_priv, one_time_prekey_pub) [optional]
   ///
-  /// Returns: (RatchetState, ephemeralPublicKey, usedOneTimePreKeyId)
+  /// Always 3-DH. A bundle's one-time prekey is deliberately IGNORED:
+  /// the session header only transmits our ephemeral key (no opkId), and
+  /// no receiver-side OTP lookup/consumption exists — a 4-DH secret would
+  /// be underivable for the receiver and every first message of the
+  /// session would fail its MAC check (Build-61 delivery bug, 2026-06).
+  /// Full OTP support needs opkId on the wire plus receiver consumption,
+  /// on BOTH sides, before DH4 may come back.
   ///
   /// Throws [HandshakeException] if signature verification fails.
   static Future<OutboundSession> createOutboundSession({
@@ -63,12 +68,11 @@ class SessionHandshakeService {
 
     // L2-Crypto (audit 2026-05): wrap DH key material in try/finally so
     // an exception between the DH calls and the explicit zeroing doesn't
-    // leave secret bytes lingering in memory. Previously DH4 specifically
-    // had no zero call at all and any throw between dh4 compute and the
-    // existing zeros block would leak DH1..DH3 too.
-    Uint8List? dh1, dh2, dh3, dh4, ikm, sharedSecret;
+    // leave secret bytes lingering in memory.
+    Uint8List? dh1, dh2, dh3, ikm, sharedSecret;
     try {
-      // Step 3: Perform X3DH key agreement
+      // Step 3: Perform X3DH key agreement (3-DH — see class comment on
+      // why the bundle's one-time prekey must not enter the derivation)
       // DH1: identity_priv × signed_prekey_pub
       dh1 = await _dh(identityKeyPair.privateKey, bundle.signedPreKeyPublic);
       // DH2: ephemeral_priv × identity_pub
@@ -76,17 +80,7 @@ class SessionHandshakeService {
       // DH3: ephemeral_priv × signed_prekey_pub
       dh3 = await _dh(ephPrivate, bundle.signedPreKeyPublic);
 
-      int? usedOneTimePreKeyId;
-
-      if (bundle.oneTimePreKeyPublic != null) {
-        // DH4: ephemeral_priv × one_time_prekey_pub (4-DH)
-        dh4 = await _dh(ephPrivate, bundle.oneTimePreKeyPublic!);
-        ikm = _concat4(dh1, dh2, dh3, dh4);
-        usedOneTimePreKeyId = bundle.oneTimePreKeyId;
-      } else {
-        // 3-DH (no one-time prekey available)
-        ikm = _concat3(dh1, dh2, dh3);
-      }
+      ikm = _concat3(dh1, dh2, dh3);
 
       // Step 4: Derive shared secret via HKDF
       sharedSecret = await _deriveSharedSecret(ikm);
@@ -100,7 +94,7 @@ class SessionHandshakeService {
       return OutboundSession(
         ratchetState: ratchetState,
         ephemeralPublicKey: ephPublic,
-        usedOneTimePreKeyId: usedOneTimePreKeyId,
+        signedPreKeyId: bundle.signedPreKeyId,
       );
     } finally {
       // Zero in finally so even an early throw cleans up. Order doesn't
@@ -109,7 +103,6 @@ class SessionHandshakeService {
       if (dh1 != null) _zeroBytes(dh1);
       if (dh2 != null) _zeroBytes(dh2);
       if (dh3 != null) _zeroBytes(dh3);
-      if (dh4 != null) _zeroBytes(dh4);
       if (ikm != null) _zeroBytes(ikm);
       if (sharedSecret != null) _zeroBytes(sharedSecret);
     }
@@ -117,17 +110,18 @@ class SessionHandshakeService {
 
   /// Create an inbound session (we are receiving a first message).
   ///
-  /// Performs the receiver side of X3DH:
+  /// Performs the receiver side of X3DH (3-DH, mirroring
+  /// [createOutboundSession] / [deriveFallbackSecret]):
   /// - DH1 = DH(signed_prekey_priv, sender_identity_pub)
   /// - DH2 = DH(identity_priv, sender_ephemeral_pub)
   /// - DH3 = DH(signed_prekey_priv, sender_ephemeral_pub)
   ///         OR DH(identity_priv, sender_ephemeral2_pub) in fallback path
-  /// - DH4 = DH(one_time_prekey_priv, sender_ephemeral_pub) [optional]
   ///
   /// The receiver's initial ratchet key pair MUST be the signed prekey
   /// (matching what the sender used as recipientRatchetPublicKey).
   /// Pass the signed prekey via [signedPreKeyPublic]/[signedPreKeyPrivate].
-  /// In the fallback (no prekeys), these should be the identity key pair.
+  /// In the fallback (message carries ek2), these MUST be the identity
+  /// key pair — use [resolveInboundHandshakeKeys] to pick correctly.
   ///
   /// [senderEphemeral2Public]: If present (fallback path), DH3 uses this
   /// separate ephemeral key to ensure 3 independent DH outputs.
@@ -137,11 +131,10 @@ class SessionHandshakeService {
     required Uint8List signedPreKeyPublic,
     required Uint8List senderIdentityPublic,
     required Uint8List senderEphemeralPublic,
-    Uint8List? oneTimePreKeyPrivate,
     Uint8List? senderEphemeral2Public,
   }) async {
-    // L2-Crypto: try/finally with explicit dh4 zeroing.
-    Uint8List? dh1, dh2, dh3, dh4, ikm, sharedSecret;
+    // L2-Crypto: try/finally with explicit zeroing.
+    Uint8List? dh1, dh2, dh3, ikm, sharedSecret;
     try {
       // DH1: signed_prekey_priv × sender_identity_pub
       dh1 = await _dh(signedPreKeyPrivate, senderIdentityPublic);
@@ -155,13 +148,7 @@ class SessionHandshakeService {
         dh3 = await _dh(signedPreKeyPrivate, senderEphemeralPublic);
       }
 
-      if (oneTimePreKeyPrivate != null) {
-        // DH4: one_time_prekey_priv × sender_ephemeral_pub
-        dh4 = await _dh(oneTimePreKeyPrivate, senderEphemeralPublic);
-        ikm = _concat4(dh1, dh2, dh3, dh4);
-      } else {
-        ikm = _concat3(dh1, dh2, dh3);
-      }
+      ikm = _concat3(dh1, dh2, dh3);
 
       sharedSecret = await _deriveSharedSecret(ikm);
 
@@ -176,10 +163,45 @@ class SessionHandshakeService {
       if (dh1 != null) _zeroBytes(dh1);
       if (dh2 != null) _zeroBytes(dh2);
       if (dh3 != null) _zeroBytes(dh3);
-      if (dh4 != null) _zeroBytes(dh4);
       if (ikm != null) _zeroBytes(ikm);
       if (sharedSecret != null) _zeroBytes(sharedSecret);
     }
+  }
+
+  /// Select which local key pair mirrors an inbound X3DH handshake.
+  ///
+  /// The sender's derivation dictates the answer (Build-61 delivery bug:
+  /// picking the wrong pair makes every first message undecryptable):
+  /// - Fallback handshake (message carries `ek2`): the sender derived all
+  ///   DH outputs against our IDENTITY key and initialized its ratchet
+  ///   against it → mirror with the identity pair. Never the signed prekey.
+  /// - Bundle handshake: the sender used the signed prekey from our
+  ///   published bundle. Resolve it by the transmitted [signedPreKeyId]
+  ///   (covers rotation: the matching key may be a previous one still
+  ///   inside the 48h overlap window). Without an id or a match, use the
+  ///   current signed prekey; without any prekeys, the identity pair.
+  ///
+  /// Returns (privateKey, publicKey).
+  static (Uint8List, Uint8List) resolveInboundHandshakeKeys({
+    required bool isFallback,
+    required int? signedPreKeyId,
+    required KryptaKeyPair identityKeyPair,
+    required SignedPreKey? currentSignedPreKey,
+    required SignedPreKey? Function(int id) findSignedPreKeyById,
+  }) {
+    if (isFallback) {
+      return (identityKeyPair.privateKey, identityKeyPair.publicKey);
+    }
+    if (signedPreKeyId != null) {
+      final match = findSignedPreKeyById(signedPreKeyId);
+      if (match != null) {
+        return (match.privateKey, match.publicKey);
+      }
+    }
+    if (currentSignedPreKey != null) {
+      return (currentSignedPreKey.privateKey, currentSignedPreKey.publicKey);
+    }
+    return (identityKeyPair.privateKey, identityKeyPair.publicKey);
   }
 
   /// Verify a signed prekey's Ed25519 signature.
@@ -290,16 +312,6 @@ class SessionHandshakeService {
     return r;
   }
 
-  static Uint8List _concat4(
-      Uint8List a, Uint8List b, Uint8List c, Uint8List d) {
-    final r = Uint8List(a.length + b.length + c.length + d.length);
-    r.setRange(0, a.length, a);
-    r.setRange(a.length, a.length + b.length, b);
-    r.setRange(a.length + b.length, a.length + b.length + c.length, c);
-    r.setRange(a.length + b.length + c.length, r.length, d);
-    return r;
-  }
-
   /// Best-effort zero of byte array (Dart GC may retain copies).
   static void _zeroBytes(Uint8List bytes) {
     for (var i = 0; i < bytes.length; i++) {
@@ -312,12 +324,16 @@ class SessionHandshakeService {
 class OutboundSession {
   final RatchetState ratchetState;
   final Uint8List ephemeralPublicKey;
-  final int? usedOneTimePreKeyId;
+
+  /// Id of the bundle's signed prekey used in the derivation. Travels in
+  /// the session header (`spkId`) so the receiver can resolve the same
+  /// key even after a rotation.
+  final int signedPreKeyId;
 
   const OutboundSession({
     required this.ratchetState,
     required this.ephemeralPublicKey,
-    this.usedOneTimePreKeyId,
+    required this.signedPreKeyId,
   });
 }
 

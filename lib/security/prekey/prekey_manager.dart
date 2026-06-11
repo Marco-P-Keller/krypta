@@ -155,19 +155,23 @@ class PreKeyManager {
   }
 
   /// Build a PreKeyBundle for publishing to Firestore.
+  ///
+  /// Deliberately publishes NO one-time prekey: senders would fold it into
+  /// a 4-DH derivation the receive path cannot mirror (no opkId travels in
+  /// the session header, and nothing consumes the matching private key),
+  /// which made every first message of a new session undecryptable
+  /// (Build-61 delivery bug, 2026-06). The local OTP pool stays in place
+  /// for a future end-to-end implementation.
   PreKeyBundle buildBundle(
     KryptaKeyPair identityKeyPair,
     Uint8List signedPreKeySignature, {
     Uint8List? signingPublicKey,
   }) {
-    final opk = _oneTimePreKeys.isNotEmpty ? _oneTimePreKeys.first : null;
     return PreKeyBundle(
       identityPublicKey: identityKeyPair.publicKey,
       signedPreKeyPublic: _currentSignedPreKey!.publicKey,
       signedPreKeySignature: signedPreKeySignature,
       signedPreKeyId: _currentSignedPreKey!.id,
-      oneTimePreKeyPublic: opk?.publicKey,
-      oneTimePreKeyId: opk?.id,
       signingPublicKey: signingPublicKey,
     );
   }

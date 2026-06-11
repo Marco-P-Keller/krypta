@@ -64,7 +64,31 @@ class MessengerProvider extends ChangeNotifier {
   final Map<String, RatchetState> _ratchetStates = {};
   /// X3DH session header to include in the first encrypted message per chat.
   /// Contains the sender's ephemeral public key the receiver needs.
-  final Map<String, Map<String, String>> _pendingSessionHeaders = {};
+  final Map<String, Map<String, dynamic>> _pendingSessionHeaders = {};
+
+  /// Handshake ephemerals (`ek`, base64) whose first message we have already
+  /// accepted, per chat. Guards the session-heal path: a relayed COPY of an
+  /// old first message (the server controls `mid` and `ek` is not covered by
+  /// the message MAC) must not be able to re-derive a stale session over the
+  /// live one. Persisted so the guard survives restarts; FIFO-capped.
+  final Map<String, List<String>> _acceptedHandshakeEks = {};
+  static const int _maxAcceptedEksPerChat = 100;
+  static const String _acceptedEksStoreKey = 'hs_accepted_eks';
+
+  /// Healed sessions awaiting commit (Codex review 2026-06, P1): a session
+  /// re-derived by [_tryHealSession] must not replace the live one until the
+  /// message that produced it passes ALL acceptance checks (sealed sender,
+  /// C4/C5 replay/rollback gate, control-message HMAC+counter).
+  ///
+  /// Keyed by `'$chatId|$messageId'` (round 3): listener and polling can
+  /// process different messages of the SAME chat concurrently — a per-chat
+  /// slot would let message B overwrite or discard message A's pending
+  /// session. Every read/advance/commit/discard targets exactly one
+  /// (chat, message) pair; ids are UUIDs, so '|' cannot collide.
+  final Map<String, RatchetState> _pendingHealCommits = {};
+
+  static String _healKey(String chatId, String messageId) =>
+      '$chatId|$messageId';
 
   /// H1-Proto / H1-State (audit 2026-05): per-chat ratchet mutex covering
   /// every code path that mutates ratchet state — sends AND decrypts AND
@@ -255,6 +279,18 @@ class MessengerProvider extends ChangeNotifier {
 
     // Load persisted replay-protection IDs (survives message deletion)
     _processedMessageIds.addAll(await _localStore.loadProcessedIds());
+
+    // Load accepted handshake ephemerals (session-heal replay guard)
+    try {
+      final eks = await _localStore.loadData(_acceptedEksStoreKey);
+      if (eks is Map) {
+        eks.forEach((key, value) {
+          if (key is String && value is List) {
+            _acceptedHandshakeEks[key] = value.whereType<String>().toList();
+          }
+        });
+      }
+    } catch (_) {}
 
     for (final chat in _chats) {
       _messagesByChat[chat.id] = await _localStore.loadMessages(chat.id);
@@ -808,18 +844,29 @@ class MessengerProvider extends ChangeNotifier {
   ///
   /// Verifies HMAC signature, validates counter (replay prevention),
   /// checks sender binding, then applies the control action.
-  Future<void> _processControlMessage(
+  ///
+  /// Returns true iff the control message was authenticated and fresh —
+  /// callers use this as the acceptance signal for committing a pending
+  /// healed session (an unknown-but-authentic type still counts).
+  Future<bool> _processControlMessage(
     String chatId,
     Contact contact,
     Map<String, dynamic> innerPayload,
   ) async {
-    final ctrlMap = innerPayload['_ctrl'] as Map<String, dynamic>;
+    // Type-safe extraction: _ctrl comes from a decrypted but otherwise
+    // untrusted payload — a wrong type is a rejection, not a crash.
+    final ctrlRaw = innerPayload['_ctrl'];
+    if (ctrlRaw is! Map) {
+      if (kDebugMode) debugPrint('Malformed control message — rejected');
+      return false;
+    }
+    final ctrlMap = Map<String, dynamic>.from(ctrlRaw);
     final ControlMessage ctrl;
     try {
       ctrl = ControlMessage.fromMap(ctrlMap);
     } on FormatException {
       if (kDebugMode) debugPrint('Malformed control message — rejected');
-      return; // Fail-closed: reject malformed control messages
+      return false; // Fail-closed: reject malformed control messages
     }
 
     // Verify HMAC signature
@@ -828,7 +875,7 @@ class MessengerProvider extends ChangeNotifier {
       final verified = await ctrl.verify(hmacKey);
       if (!verified) {
         if (kDebugMode) debugPrint('Control message HMAC verification failed');
-        return; // Fail-closed: reject unsigned control messages
+        return false; // Fail-closed: reject unsigned control messages
       }
     } finally {
       SensitiveBuffer.zeroBytes(hmacKey);
@@ -841,13 +888,13 @@ class MessengerProvider extends ChangeNotifier {
     );
     if (error != null) {
       if (kDebugMode) debugPrint('Control message validation failed: $error');
-      return; // Fail-closed: reject invalid control messages
+      return false; // Fail-closed: reject invalid control messages
     }
 
     // Record counter for replay prevention
     if (!_controlCounter.recordReceived(chatId, ctrl.counter)) {
       if (kDebugMode) debugPrint('Control message replay detected');
-      return;
+      return false;
     }
 
     // Apply the control action
@@ -863,6 +910,7 @@ class MessengerProvider extends ChangeNotifier {
       default:
         if (kDebugMode) debugPrint('Unknown control message type: ${ctrl.type}');
     }
+    return true;
   }
 
   /// Apply delivered status from a verified control message.
@@ -1235,6 +1283,13 @@ class MessengerProvider extends ChangeNotifier {
         _localStore.deleteRatchetState(chatId),
       ]);
       await _pruneUnlockAttempts(removedMessageIds);
+      _pendingHealCommits.removeWhere((key, _) => key.startsWith('$chatId|'));
+      if (_acceptedHandshakeEks.remove(chatId) != null) {
+        try {
+          await _localStore.saveData(
+              _acceptedEksStoreKey, _acceptedHandshakeEks);
+        } catch (_) {}
+      }
       notifyListeners();
     } finally {
       _deletingChats.remove(chatId);
@@ -1797,6 +1852,13 @@ class MessengerProvider extends ChangeNotifier {
       final data = change.doc.data();
       if (data == null) continue;
 
+      // Codex review (2026-06, round 2): if processing dies AFTER a heal
+      // parked a pending session (e.g. jsonDecode throws on the inner
+      // payload), the catch blocks below must drop that pending — `mid`
+      // is server-mutable, so a leftover entry could otherwise be
+      // committed by a later message carrying the same mid.
+      String? pendingHealKey;
+
       try {
         final senderId = data['sid'] as String;
         final messageId = data['mid'] as String;
@@ -1861,7 +1923,9 @@ class MessengerProvider extends ChangeNotifier {
         }
 
         // Decrypt with Double Ratchet
-        final plaintext = await _decryptWithRatchet(chat.id, contact, payloadMap);
+        pendingHealKey = _healKey(chat.id, messageId);
+        final plaintext = await _decryptWithRatchet(
+            chat.id, contact, payloadMap, messageId: messageId);
 
         // Parse inner payload based on version
         Map<String, dynamic> innerPayload;
@@ -1883,7 +1947,13 @@ class MessengerProvider extends ChangeNotifier {
         // innerPayload IS the server-visible payloadMap — a malicious
         // server could inject a _ctrl field to forge control messages.
         if (version >= 3 && innerPayload.containsKey('_ctrl')) {
-          await _processControlMessage(chat.id, contact, innerPayload);
+          final ctrlAccepted =
+              await _processControlMessage(chat.id, contact, innerPayload);
+          if (ctrlAccepted) {
+            await _finalizeAcceptedMessage(chat.id, messageId, payloadMap);
+          } else {
+            _discardPendingHeal(chat.id, messageId);
+          }
           await _firestore.deleteRelayedMessage(userId!, change.doc.id);
           continue;
         }
@@ -1893,11 +1963,13 @@ class MessengerProvider extends ChangeNotifier {
         final sealedSenderId = innerPayload['_sid'] as String?;
         if (sealedSenderId == null) {
           if (kDebugMode) debugPrint('Rejected message without sealed sender identity');
+          _discardPendingHeal(chat.id, messageId);
           await _firestore.deleteRelayedMessage(userId!, change.doc.id);
           continue;
         }
         if (sealedSenderId != senderId) {
           if (kDebugMode) debugPrint('Sealed sender mismatch: routing=$senderId, sealed=$sealedSenderId');
+          _discardPendingHeal(chat.id, messageId);
           await _firestore.deleteRelayedMessage(userId!, change.doc.id);
           continue;
         }
@@ -1905,7 +1977,18 @@ class MessengerProvider extends ChangeNotifier {
         // C4+C5: replay/rollback enforcement — advance globalRecvSeqNo and
         // record _psid. Must happen *after* sealed-sender so a forged payload
         // cannot desync our seq counter.
-        if (!await _enforceReplayAndRollback(chat.id, innerPayload, version)) {
+        if (!await _enforceReplayAndRollback(chat.id, innerPayload, version,
+            messageId: messageId)) {
+          _discardPendingHeal(chat.id, messageId);
+          await _firestore.deleteRelayedMessage(userId!, change.doc.id);
+          continue;
+        }
+
+        // Message accepted — commit a pending healed session (if this
+        // message produced one) and pin its handshake ephemeral. A false
+        // return means this was a concurrent duplicate of an already
+        // committed re-handshake — reject it.
+        if (!await _finalizeAcceptedMessage(chat.id, messageId, payloadMap)) {
           await _firestore.deleteRelayedMessage(userId!, change.doc.id);
           continue;
         }
@@ -1970,6 +2053,7 @@ class MessengerProvider extends ChangeNotifier {
         await _firestore.deleteRelayedMessage(userId!, change.doc.id);
         notifyListeners();
       } on SessionError catch (e) {
+        if (pendingHealKey != null) _pendingHealCommits.remove(pendingHealKey);
         switch (e.policy) {
           case SessionErrorPolicy.destroySession:
             final contact = contactForId(data['sid'] as String);
@@ -1991,9 +2075,11 @@ class MessengerProvider extends ChangeNotifier {
         }
         try { await _firestore.deleteRelayedMessage(userId!, change.doc.id); } catch (_) {}
       } on HandshakeException catch (e) {
+        if (pendingHealKey != null) _pendingHealCommits.remove(pendingHealKey);
         if (kDebugMode) debugPrint('Handshake failed on receive: $e');
         try { await _firestore.deleteRelayedMessage(userId!, change.doc.id); } catch (_) {}
       } catch (e) {
+        if (pendingHealKey != null) _pendingHealCommits.remove(pendingHealKey);
         if (kDebugMode) debugPrint('Process incoming message failed: $e');
         try { await _firestore.deleteRelayedMessage(userId!, change.doc.id); } catch (_) {}
       }
@@ -2018,6 +2104,9 @@ class MessengerProvider extends ChangeNotifier {
   Future<void> _processPolledMessage(
       QueryDocumentSnapshot<Map<String, dynamic>> doc) async {
     final data = doc.data();
+    // See _handleInbox: drop a parked healed session if processing dies
+    // after the decrypt — `mid` is server-mutable.
+    String? pendingHealKey;
     try {
       final senderId = data['sid'] as String;
       final messageId = data['mid'] as String;
@@ -2074,7 +2163,9 @@ class MessengerProvider extends ChangeNotifier {
         return;
       }
 
-      final plaintext = await _decryptWithRatchet(chat.id, contact, payloadMap);
+      pendingHealKey = _healKey(chat.id, messageId);
+      final plaintext = await _decryptWithRatchet(
+          chat.id, contact, payloadMap, messageId: messageId);
 
       // Parse inner payload based on version
       Map<String, dynamic> innerPayload;
@@ -2089,7 +2180,13 @@ class MessengerProvider extends ChangeNotifier {
 
       // Control message detection (v3+ only — v2 payloadMap is server-visible)
       if (version >= 3 && innerPayload.containsKey('_ctrl')) {
-        await _processControlMessage(chat.id, contact, innerPayload);
+        final ctrlAccepted =
+            await _processControlMessage(chat.id, contact, innerPayload);
+        if (ctrlAccepted) {
+          await _finalizeAcceptedMessage(chat.id, messageId, payloadMap);
+        } else {
+          _discardPendingHeal(chat.id, messageId);
+        }
         await _firestore.deleteRelayedMessage(userId!, doc.id);
         return;
       }
@@ -2097,16 +2194,27 @@ class MessengerProvider extends ChangeNotifier {
       // Sealed sender validation
       final sealedSenderId = innerPayload['_sid'] as String?;
       if (sealedSenderId == null) {
+        _discardPendingHeal(chat.id, messageId);
         await _firestore.deleteRelayedMessage(userId!, doc.id);
         return;
       }
       if (sealedSenderId != senderId) {
+        _discardPendingHeal(chat.id, messageId);
         await _firestore.deleteRelayedMessage(userId!, doc.id);
         return;
       }
 
       // C4+C5: replay/rollback enforcement — same contract as _handleInbox.
-      if (!await _enforceReplayAndRollback(chat.id, innerPayload, version)) {
+      if (!await _enforceReplayAndRollback(chat.id, innerPayload, version,
+          messageId: messageId)) {
+        _discardPendingHeal(chat.id, messageId);
+        await _firestore.deleteRelayedMessage(userId!, doc.id);
+        return;
+      }
+
+      // Message accepted — commit pending healed session + pin its ek.
+      // False = concurrent duplicate of a committed re-handshake → reject.
+      if (!await _finalizeAcceptedMessage(chat.id, messageId, payloadMap)) {
         await _firestore.deleteRelayedMessage(userId!, doc.id);
         return;
       }
@@ -2168,6 +2276,7 @@ class MessengerProvider extends ChangeNotifier {
       await _firestore.deleteRelayedMessage(userId!, doc.id);
       notifyListeners();
     } on SessionError catch (e) {
+      if (pendingHealKey != null) _pendingHealCommits.remove(pendingHealKey);
       switch (e.policy) {
         case SessionErrorPolicy.destroySession:
           final contact = contactForId(data['sid'] as String);
@@ -2186,9 +2295,11 @@ class MessengerProvider extends ChangeNotifier {
       }
       try { await _firestore.deleteRelayedMessage(userId!, doc.id); } catch (_) {}
     } on HandshakeException catch (e) {
+      if (pendingHealKey != null) _pendingHealCommits.remove(pendingHealKey);
       if (kDebugMode) debugPrint('Handshake failed on polled receive: $e');
       try { await _firestore.deleteRelayedMessage(userId!, doc.id); } catch (_) {}
     } catch (e) {
+      if (pendingHealKey != null) _pendingHealCommits.remove(pendingHealKey);
       if (kDebugMode) debugPrint('Polled message processing failed: $e');
       try { await _firestore.deleteRelayedMessage(userId!, doc.id); } catch (_) {}
     }
@@ -2305,18 +2416,14 @@ class MessengerProvider extends ChangeNotifier {
       _ratchetStates[chatId] = newState;
       await _localStore.saveRatchetState(chatId, newState.toMap());
 
-      // Store ephemeral key so it's included in the first message payload.
-      // The receiver needs this to perform the mirror X3DH.
+      // Store the session header for the first message payload. The
+      // receiver needs `ek` to perform the mirror X3DH and `spkId` to
+      // resolve which signed prekey we derived against (it may already
+      // have rotated on their side — previous keys stay valid for 48h).
       _pendingSessionHeaders[chatId] = {
         'ek': base64Encode(session.ephemeralPublicKey),
+        'spkId': session.signedPreKeyId,
       };
-
-      // Consume one-time prekey on server if used
-      if (session.usedOneTimePreKeyId != null) {
-        try {
-          await _firestore.consumeOneTimePreKey(contact.id);
-        } catch (_) {}
-      }
       return;
     }
 
@@ -2356,20 +2463,38 @@ class MessengerProvider extends ChangeNotifier {
     };
   }
 
-  /// Initialize a ratchet session as receiver (first message from them).
-  ///
-  /// Extracts the sender's ephemeral public key from [payloadMap] (field `ek`).
-  /// Uses our signed prekey if available, otherwise falls back to identity key.
+  /// Initialize a ratchet session as receiver (first message from them):
+  /// derive and commit to memory + disk. The handshake ephemeral is
+  /// recorded later by [_finalizeAcceptedMessage] — only messages that
+  /// pass all acceptance checks pin their `ek` (Codex review 2026-06).
   Future<void> _initRatchetAsReceiver(
+      String chatId, Contact contact, Map<String, dynamic> payloadMap) async {
+    final state = await _deriveInboundSessionState(chatId, contact, payloadMap);
+    _ratchetStates[chatId] = state;
+    await _localStore.saveRatchetState(chatId, state.toMap());
+  }
+
+  /// Derive (but do NOT persist) the inbound session state for a first
+  /// message. Pure with respect to provider state — used by both the
+  /// normal receiver init and the session-heal path, which must only
+  /// commit a state that actually decrypts the message.
+  Future<RatchetState> _deriveInboundSessionState(
       String chatId, Contact contact, Map<String, dynamic> payloadMap) async {
     final keyPair = await _keyManager.getOrCreateIdentityKeyPair();
 
     // Extract sender's X3DH ephemeral public key from the first message.
     // Without this, the receiver cannot derive the same shared secret.
+    //
+    // Headerless legacy (`ek` missing): deliberately NOT treated as an
+    // identity-key fallback. It keeps the historical behavior — sender
+    // ephemeral substituted with the contact's identity key, mirrored on
+    // the bundle/SPK path below. Build 61+ senders always include `ek`
+    // on first messages; only the `ek2` marker selects the fallback
+    // mirror (sender derived against our identity key).
     final ephKeyB64 = payloadMap['ek'] as String?;
     final senderEphemeralPublic = ephKeyB64 != null
         ? Uint8List.fromList(base64Decode(ephKeyB64))
-        : contact.publicKey; // Legacy messages without ek field
+        : contact.publicKey;
 
     // Extract second ephemeral key (ek2) for fallback path with 3 independent DH outputs
     final eph2KeyB64 = payloadMap['ek2'] as String?;
@@ -2377,16 +2502,21 @@ class MessengerProvider extends ChangeNotifier {
         ? Uint8List.fromList(base64Decode(eph2KeyB64))
         : null;
 
-    // Use signed prekey if available for proper X3DH receiver side.
-    // Both private and public are needed — the ratchet key pair must match
-    // what the sender used as recipientRatchetPublicKey.
-    Uint8List signedPreKeyPrivate = keyPair.privateKey;
-    Uint8List signedPreKeyPublic = keyPair.publicKey;
-
-    if (_preKeyManager.currentSignedPreKey != null) {
-      signedPreKeyPrivate = _preKeyManager.currentSignedPreKey!.privateKey;
-      signedPreKeyPublic = _preKeyManager.currentSignedPreKey!.publicKey;
-    }
+    // Mirror the sender's derivation. ek2 marks a fallback handshake
+    // (sender derived against our IDENTITY key); otherwise the sender used
+    // the signed prekey from our published bundle, resolvable via the
+    // transmitted spkId even across a rotation. Tolerate junk in spkId —
+    // it is untrusted input; an unknown id falls back to the current key.
+    final spkIdRaw = payloadMap['spkId'];
+    final spkId = spkIdRaw is int ? spkIdRaw : int.tryParse('$spkIdRaw');
+    final (signedPreKeyPrivate, signedPreKeyPublic) =
+        SessionHandshakeService.resolveInboundHandshakeKeys(
+      isFallback: senderEphemeral2Public != null,
+      signedPreKeyId: spkId,
+      identityKeyPair: keyPair,
+      currentSignedPreKey: _preKeyManager.currentSignedPreKey,
+      findSignedPreKeyById: _preKeyManager.findSignedPreKey,
+    );
 
     final rawState = await SessionHandshakeService.createInboundSession(
       identityKeyPair: keyPair,
@@ -2402,13 +2532,34 @@ class MessengerProvider extends ChangeNotifier {
     // C5: preserve peerSeenPsids across re-init so a forged first-message
     // with a stale _psid cannot pass after the state gets rebuilt.
     final preservedSeenPsids = oldState?.peerSeenPsids ?? const <String>{};
-    final state = rawState.copyWith(
+    return rawState.copyWith(
       sessionId: const Uuid().v4(),
       previousSessionId: oldSessionId,
       peerSeenPsids: preservedSeenPsids,
     );
-    _ratchetStates[chatId] = state;
-    await _localStore.saveRatchetState(chatId, state.toMap());
+  }
+
+  /// Mark an accepted handshake ephemeral in memory (FIFO-capped).
+  ///
+  /// Deliberately synchronous: the mark must land in the same event-loop
+  /// turn as the session commit that justifies it, so a concurrently
+  /// processed duplicate cannot pass its own freshness re-check in
+  /// between (Codex review 2026-06, round 4).
+  void _markAcceptedHandshakeEk(String chatId, String ekB64) {
+    final list = _acceptedHandshakeEks.putIfAbsent(chatId, () => []);
+    if (list.contains(ekB64)) return;
+    list.add(ekB64);
+    if (list.length > _maxAcceptedEksPerChat) {
+      list.removeAt(0);
+    }
+  }
+
+  Future<void> _persistAcceptedEks() async {
+    try {
+      await _localStore.saveData(_acceptedEksStoreKey, _acceptedHandshakeEks);
+    } catch (_) {
+      // Guard degrades to RAM-only for this session if persistence fails.
+    }
   }
 
   /// Encrypt using Double Ratchet. Returns the Firestore payload map.
@@ -2452,7 +2603,8 @@ class MessengerProvider extends ChangeNotifier {
   /// two concurrent receives (listener + polled) cannot both decrypt
   /// against the same chain key and write divergent post-states.
   Future<String> _decryptWithRatchet(
-      String chatId, Contact contact, Map<String, dynamic> payloadMap) {
+      String chatId, Contact contact, Map<String, dynamic> payloadMap,
+      {required String messageId}) {
     return _underRatchetMutex(chatId, () async {
       // Init receiver session if we don't have one yet.
       // Pass payloadMap so the receiver can extract the sender's ephemeral key.
@@ -2481,14 +2633,41 @@ class MessengerProvider extends ChangeNotifier {
       final ratchetMsg = RatchetMessage.fromPayloadMap(payloadMap);
       final ad = Uint8List.fromList(utf8.encode(contact.id));
 
-      final (newState, paddedPlaintext) = await DoubleRatchet.decrypt(
-        state: state,
-        message: ratchetMsg,
-        associatedData: ad,
-      );
+      RatchetState newState;
+      Uint8List paddedPlaintext;
+      var healed = false;
+      try {
+        (newState, paddedPlaintext) = await DoubleRatchet.decrypt(
+          state: state,
+          message: ratchetMsg,
+          associatedData: ad,
+        );
+      } catch (_) {
+        // Session heal: the peer may have re-handshaked (state lost on
+        // their side — reinstall, key-change reset, one-sided chat
+        // delete) while we still hold the old session. Historically the
+        // `ek` header was ignored whenever local state existed, so such
+        // chats stayed broken forever (every message MAC-failed and was
+        // dropped). If this message carries a session header, try it
+        // under a freshly derived inbound session.
+        final healResult =
+            await _tryHealSession(chatId, contact, payloadMap, ratchetMsg, ad);
+        if (healResult == null) rethrow;
+        (newState, paddedPlaintext) = healResult;
+        healed = true;
+      }
 
-      _ratchetStates[chatId] = newState;
-      await _localStore.saveRatchetState(chatId, newState.toMap());
+      if (healed) {
+        // Codex review (2026-06, P1): do NOT swap the live session here.
+        // The healed state stays pending until this exact message passes
+        // sealed-sender + C4/C5 (or control HMAC+counter) acceptance —
+        // _finalizeAcceptedMessage commits it, every reject path discards
+        // it and the previous session stays live.
+        _pendingHealCommits[_healKey(chatId, messageId)] = newState;
+      } else {
+        _ratchetStates[chatId] = newState;
+        await _localStore.saveRatchetState(chatId, newState.toMap());
+      }
 
       // Remove padding — mandatory for all v2 messages.
       final plaintext = EncryptionService.unpadPlaintext(paddedPlaintext);
@@ -2498,6 +2677,101 @@ class MessengerProvider extends ChangeNotifier {
       SensitiveBuffer.zeroBytes(paddedPlaintext);
       return out;
     });
+  }
+
+  /// Try to decrypt a message under a session re-derived from its X3DH
+  /// header after the existing session failed. Returns the advanced state
+  /// and padded plaintext on success, null if the message has no header,
+  /// the header was already accepted once (replay of an old first message
+  /// — the server controls `mid` and `ek` is outside the message MAC, so
+  /// this guard helps stop a stale-session swap), or the derived session
+  /// cannot decrypt it either.
+  ///
+  /// Security: a successful decrypt requires the X3DH mirror over the
+  /// contact's pinned identity key — only the genuine contact can produce
+  /// a message that passes. NOTHING is committed here: the caller parks
+  /// the result in [_pendingHealCommits]; the live session is only
+  /// replaced by [_finalizeAcceptedMessage] after the message passes all
+  /// acceptance checks, and the accepted `ek` is recorded there too.
+  ///
+  /// Known residual: if the first and second message of a re-handshake
+  /// arrive out of order, the second (header-less) one is dropped before
+  /// the heal can run — same loss as before the heal existed.
+  Future<(RatchetState, Uint8List)?> _tryHealSession(
+    String chatId,
+    Contact contact,
+    Map<String, dynamic> payloadMap,
+    RatchetMessage ratchetMsg,
+    Uint8List ad,
+  ) async {
+    final ekB64 = payloadMap['ek'] as String?;
+    if (ekB64 == null) return null;
+    final accepted = _acceptedHandshakeEks[chatId];
+    if (accepted != null && accepted.contains(ekB64)) return null;
+
+    final RatchetState fresh;
+    try {
+      fresh = await _deriveInboundSessionState(chatId, contact, payloadMap);
+    } catch (_) {
+      return null; // Malformed header — keep the old session.
+    }
+    try {
+      return await DoubleRatchet.decrypt(
+        state: fresh,
+        message: ratchetMsg,
+        associatedData: ad,
+      );
+    } catch (_) {
+      return null; // Not decryptable under the new header either.
+    }
+  }
+
+  /// Commit point for an ACCEPTED inbound message: swaps in the pending
+  /// healed session (only the one belonging to exactly this message) and
+  /// records the message's handshake ephemeral so a replayed copy can
+  /// never re-derive a session later.
+  ///
+  /// Returns false when a pending heal turned out to be a duplicate of an
+  /// already-committed re-handshake (Codex review 2026-06, round 4: the
+  /// server can deliver the same first message twice under different
+  /// `mid`s; both copies heal and validate against their own pre-accept
+  /// snapshots). The freshness re-check + in-memory commit + ek mark all
+  /// happen before the first await, so no concurrent task can interleave
+  /// between check and commit. On false the caller must reject the
+  /// message; the live session stays untouched.
+  Future<bool> _finalizeAcceptedMessage(
+      String chatId, String messageId, Map<String, dynamic> payloadMap) async {
+    final ekRaw = payloadMap['ek'];
+    final ekB64 = ekRaw is String ? ekRaw : null;
+    final pendingState =
+        _pendingHealCommits.remove(_healKey(chatId, messageId));
+    if (pendingState != null) {
+      if (ekB64 != null &&
+          (_acceptedHandshakeEks[chatId]?.contains(ekB64) ?? false)) {
+        // A concurrent copy of this re-handshake already committed.
+        return false;
+      }
+      _ratchetStates[chatId] = pendingState;
+      if (ekB64 != null) _markAcceptedHandshakeEk(chatId, ekB64);
+      await _localStore.saveRatchetState(chatId, pendingState.toMap());
+      await _persistAcceptedEks();
+      if (kDebugMode) {
+        debugPrint('Session healed from re-handshake header (chat $chatId)');
+      }
+      return true;
+    }
+    if (ekB64 != null) {
+      _markAcceptedHandshakeEk(chatId, ekB64);
+      await _persistAcceptedEks();
+    }
+    return true;
+  }
+
+  /// Drop the pending healed session of exactly this message — it was
+  /// rejected. The previous (live) session remains untouched; pendings of
+  /// other in-flight messages on the same chat are unaffected.
+  void _discardPendingHeal(String chatId, String messageId) {
+    _pendingHealCommits.remove(_healKey(chatId, messageId));
   }
 
   /// A2: sanitize self-destruct milliseconds from an untrusted inner payload.
@@ -2524,9 +2798,19 @@ class MessengerProvider extends ChangeNotifier {
   Future<bool> _enforceReplayAndRollback(
     String chatId,
     Map<String, dynamic> innerPayload,
-    int version,
-  ) async {
-    final state = _ratchetStates[chatId];
+    int version, {
+    String? messageId,
+  }) async {
+    // If this exact message produced a pending healed session, validate
+    // against THAT state: the live state belongs to the dead old session
+    // (its peerSeenPsids lineage was carried over during derivation), and
+    // the seq/psid bookkeeping must advance the pending state so nothing
+    // is lost when _finalizeAcceptedMessage commits it.
+    final healKey = messageId != null ? _healKey(chatId, messageId) : null;
+    final pendingState =
+        healKey != null ? _pendingHealCommits[healKey] : null;
+
+    final state = pendingState ?? _ratchetStates[chatId];
     if (state == null) return true; // no state = session init path, nothing to check
     final result = ReplayGuard.validate(
       state: state,
@@ -2542,8 +2826,13 @@ class MessengerProvider extends ChangeNotifier {
     }
     // Passthrough returns the same state instance (v2). Only persist on change.
     if (result.state != null && !identical(result.state, state)) {
-      _ratchetStates[chatId] = result.state!;
-      await _localStore.saveRatchetState(chatId, result.state!.toMap());
+      if (pendingState != null) {
+        // Keep the advance pending — committed only on final acceptance.
+        _pendingHealCommits[healKey!] = result.state!;
+      } else {
+        _ratchetStates[chatId] = result.state!;
+        await _localStore.saveRatchetState(chatId, result.state!.toMap());
+      }
     }
     return true;
   }
@@ -2625,6 +2914,8 @@ class MessengerProvider extends ChangeNotifier {
     _contacts.clear();
     _messagesByChat.clear();
     _ratchetStates.clear();
+    _pendingHealCommits.clear();
+    _acceptedHandshakeEks.clear();
     _typingStates.clear();
     _processedMessageIds.clear();
     _unlockAttempts.clear();

@@ -114,26 +114,13 @@ class FirestoreService {
     return doc.data();
   }
 
-  /// Atomically claim and remove a one-time prekey from the bundle.
-  ///
-  /// Uses a Firestore transaction to prevent race conditions where two
-  /// simultaneous session initiations both consume the same OTP, producing
-  /// overlapping session keys. Returns true if the OTP was successfully
-  /// claimed (i.e. it still existed at the time of the transaction).
-  Future<bool> consumeOneTimePreKey(String userId) async {
-    return _db.runTransaction((txn) async {
-      final ref = _db.collection('prekeys').doc(userId);
-      final snapshot = await txn.get(ref);
-      if (!snapshot.exists) return false;
-      final data = snapshot.data()!;
-      if (data['opk'] == null) return false; // Already consumed
-      txn.update(ref, {
-        'opk': FieldValue.delete(),
-        'opkId': FieldValue.delete(),
-      });
-      return true;
-    });
-  }
+  // NOTE: consumeOneTimePreKey was removed with the Build-61 delivery fix.
+  // It could never work: the caller is the SENDER, but the prekeys rule is
+  // owner-only and the transactional update never set updatedAt — every
+  // invocation was permission-denied (and swallowed). Bundles no longer
+  // carry a one-time prekey, so there is nothing to consume server-side.
+  // A real OTP flow needs an owner-side (or Cloud Function) consumption
+  // path plus opkId in the session header.
 
   // --- Message Relay (ephemeral — deleted after delivery) ---
 
