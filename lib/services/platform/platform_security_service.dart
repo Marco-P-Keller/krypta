@@ -57,12 +57,25 @@ class PlatformSecurityService {
 
   // --- Screenshot Protection ---
 
-  Future<void> enableScreenshotProtection() async {
-    _screenshotProtectionActive = true;
-    if (kIsWeb) return;
+  /// Enable screenshot/recording protection.
+  ///
+  /// Returns whether protection is VERIFIED active. On Android FLAG_SECURE
+  /// always succeeds; on iOS this reflects whether the OS-level content mask
+  /// was actually installed (the platform cannot block the screenshot itself,
+  /// only blank its content). Reflects the honest state instead of optimism
+  /// so callers/telemetry can react if the mask ever fails to install.
+  Future<bool> enableScreenshotProtection() async {
+    if (kIsWeb) {
+      _screenshotProtectionActive = false;
+      return false;
+    }
     try {
-      await _channel.invokeMethod('enableSecureFlag');
-    } catch (_) {}
+      final active = await _channel.invokeMethod<bool>('enableSecureFlag');
+      _screenshotProtectionActive = active ?? false;
+    } catch (_) {
+      _screenshotProtectionActive = false;
+    }
+    return _screenshotProtectionActive;
   }
 
   Future<void> disableScreenshotProtection() async {

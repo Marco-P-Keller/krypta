@@ -251,12 +251,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   Future<void> _toggleScreenshotProtection(bool value) async {
     final platform = context.read<PlatformSecurityService>();
+    // Reflect the VERIFIED state, not the requested one: on iOS the OS-level
+    // content mask can fail to install, in which case enable returns false
+    // and the switch must snap back instead of falsely showing "on".
+    bool effective = value;
     if (value) {
-      await platform.enableScreenshotProtection();
+      effective = await platform.enableScreenshotProtection();
     } else {
       await platform.disableScreenshotProtection();
+      effective = false;
     }
-    if (mounted) setState(() => _screenshotProtection = value);
+    if (mounted) setState(() => _screenshotProtection = effective);
   }
 
   void _showChangeCodeDialog(

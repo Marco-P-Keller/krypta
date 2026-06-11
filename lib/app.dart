@@ -256,7 +256,11 @@ class _KryptaShellState extends State<KryptaShell> with WidgetsBindingObserver {
     final messenger = context.read<MessengerProvider>();
     final integrity = context.read<DeviceIntegrityPolicyService>();
 
-    // Fail-closed: enable screenshot protection BEFORE showing messenger
+    // Enable screenshot/recording protection BEFORE rendering the messenger.
+    // Awaited so the native content mask is installed first. If the OS mask
+    // is unavailable (returns false), we continue in a degraded mode rather
+    // than blocking the messenger — E2E encryption is the core guarantee and
+    // the post-capture warning stays honest about the unprotected state.
     await platform.enableScreenshotProtection();
     await messenger.initialize();
 

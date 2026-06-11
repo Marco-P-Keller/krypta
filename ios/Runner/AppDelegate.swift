@@ -9,6 +9,27 @@ import Security
   private var screenshotEventSink: FlutterEventSink?
   private var isSecureFlagEnabled = false
 
+  /// Hidden secure text field used to mask app content in screenshots and
+  /// screen recordings. iOS provides NO API to block a screenshot itself,
+  /// but content drawn inside a `isSecureTextEntry` field's render layer is
+  /// excluded by the OS from screenshots, screen recordings and AirPlay
+  /// mirroring. We reparent the window's layer under that protected canvas
+  /// once, then just toggle `isSecureTextEntry` to turn masking on/off.
+  private let secureMaskField = UITextField()
+  private var secureMaskInstalled = false
+  /// The secure-canvas layer that masks captures, and the window layer's
+  /// original parent — cached so a toggle can re-verify the reparenting is
+  /// still intact and rebuild it if UIKit ever swapped the field's sublayers.
+  private var secureCanvasLayer: CALayer?
+  private var savedOriginalSuperlayer: CALayer?
+
+  /// VERIFIED runtime state: true only once the secure canvas was actually
+  /// installed AND masking is currently on. Distinct from "Dart requested
+  /// protection" — the screenshot warning reports THIS, so a future iOS
+  /// release that breaks the private-canvas behavior cannot make the app
+  /// claim content was protected when it wasn't.
+  private var isScreenshotMaskActive = false
+
   override func application(
     _ application: UIApplication,
     didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?
@@ -41,11 +62,17 @@ import Security
   private func handleMethodCall(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
     switch call.method {
     case "enableSecureFlag":
-      isSecureFlagEnabled = true
-      result(true)
+      // Resolve only AFTER masking is actually installed on the main
+      // thread, so Dart never renders the messenger before the mask is up.
+      setScreenshotMask(true) { active in
+        self.isSecureFlagEnabled = active
+        result(active)
+      }
     case "disableSecureFlag":
-      isSecureFlagEnabled = false
-      result(true)
+      setScreenshotMask(false) { _ in
+        self.isSecureFlagEnabled = false
+        result(true)
+      }
     case "isStrongBoxAvailable":
       // iOS equivalent: Secure Enclave
       result(isSecureEnclaveAvailable())
@@ -213,7 +240,106 @@ import Security
     return (key as! SecKey)
   }
 
-  // MARK: - Screenshot & Screen Recording Protection
+  // MARK: - Screenshot & Screen Recording Content Masking
+
+  /// Install the secure-canvas mask once (lazily, when protection is first
+  /// requested and the window exists), then drive it via `isSecureTextEntry`.
+  ///
+  /// The reparenting only affects what the OS *captures* — the content keeps
+  /// rendering normally on the physical display. Returns whether the mask is
+  /// installed and verified. If a future iOS release ever stops honoring
+  /// this, install fails CLOSED here (we report no protection) and the
+  /// post-hoc screenshot detection still warns the user honestly.
+  @discardableResult
+  private func installSecureMaskIfNeeded() -> Bool {
+    if secureMaskInstalled { return true }
+    guard let window = window else { return false }
+    // Reuse the cached original parent on reinstall so we never treat a
+    // broken secure canvas as the "original" superlayer.
+    guard let originalSuperlayer = savedOriginalSuperlayer ?? window.layer.superlayer
+    else { return false }
+    savedOriginalSuperlayer = originalSuperlayer
+
+    secureMaskField.isUserInteractionEnabled = false
+    if secureMaskField.superview == nil {
+      secureMaskField.translatesAutoresizingMaskIntoConstraints = false
+      window.addSubview(secureMaskField)
+      NSLayoutConstraint.activate([
+        secureMaskField.centerXAnchor.constraint(equalTo: window.centerXAnchor),
+        secureMaskField.centerYAnchor.constraint(equalTo: window.centerYAnchor),
+      ])
+    }
+
+    // The secure render canvas only exists once isSecureTextEntry is on, so
+    // force it on and lay out BEFORE looking the canvas layer up.
+    secureMaskField.isSecureTextEntry = true
+    secureMaskField.layoutIfNeeded()
+
+    guard let canvas = secureMaskField.layer.sublayers?.last else {
+      return false // canvas not created on this iOS version — fail closed
+    }
+
+    // Reparent: put the field's layer where the window layer was, then nest
+    // the window layer inside the secure canvas. addSublayer detaches the
+    // window layer from any previous (possibly stale) parent automatically.
+    originalSuperlayer.addSublayer(secureMaskField.layer)
+    canvas.addSublayer(window.layer)
+
+    // Verify the move actually took; otherwise restore and report failure.
+    guard window.layer.superlayer === canvas else {
+      originalSuperlayer.addSublayer(window.layer)
+      return false
+    }
+
+    secureCanvasLayer = canvas
+    secureMaskInstalled = true
+    return true
+  }
+
+  /// True iff the reparenting is still structurally intact: the window layer
+  /// sits under the secure canvas, which sits under the field's layer. UIKit
+  /// can rebuild a secure field's sublayers across toggles, so we re-check.
+  private func isSecureMaskStructureIntact() -> Bool {
+    guard let canvas = secureCanvasLayer, let window = window else { return false }
+    return window.layer.superlayer === canvas
+        && canvas.superlayer === secureMaskField.layer
+  }
+
+  /// Toggle masking on/off, resolving [completion] on the main thread with
+  /// the VERIFIED active state (true = canvas installed, intact, masking on).
+  private func setScreenshotMask(_ on: Bool, completion: @escaping (Bool) -> Void) {
+    let work = {
+      // Nothing to tear down if we never installed — don't build the private
+      // layer structure just to immediately disable it.
+      if !on && !self.secureMaskInstalled {
+        self.isScreenshotMaskActive = false
+        completion(false)
+        return
+      }
+
+      var ok = self.installSecureMaskIfNeeded()
+      // If a prior install's structure was torn down by UIKit, rebuild once.
+      if ok && !self.isSecureMaskStructureIntact() {
+        self.secureMaskInstalled = false
+        ok = self.installSecureMaskIfNeeded()
+      }
+      if ok {
+        self.secureMaskField.isSecureTextEntry = on
+        // A toggle can rebuild sublayers — confirm it survived.
+        ok = self.isSecureMaskStructureIntact()
+      }
+
+      self.isScreenshotMaskActive = on && ok
+      completion(self.isScreenshotMaskActive)
+    }
+    if Thread.isMainThread {
+      work()
+    } else {
+      DispatchQueue.main.async(execute: work)
+    }
+  }
+
+  // MARK: - App-switcher snapshot masking
 
   override func applicationDidBecomeActive(_ application: UIApplication) {
     super.applicationDidBecomeActive(application)
@@ -259,9 +385,13 @@ import Security
   }
 
   @objc private func screenshotTaken() {
-    // isSecureFlagEnabled = true means protection was active (blocked attempt)
-    // isSecureFlagEnabled = false means screenshot was actually taken
-    screenshotEventSink?(isSecureFlagEnabled)
+    // iOS cannot block the screenshot itself; it fires this notification
+    // only AFTER the capture. Report the VERIFIED mask state, not what Dart
+    // requested:
+    //   true  -> mask installed & on, so the captured image is blank/masked
+    //   false -> no active mask, the screenshot shows real content
+    // The Dart layer turns this into an honest, non-misleading warning.
+    screenshotEventSink?(isScreenshotMaskActive)
   }
 }
 

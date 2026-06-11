@@ -161,8 +161,8 @@
   "@lockedForSeconds": {"placeholders": {"seconds": {"type": "int"}}},
   "wrongPasswordWarning": "Falsches Passwort. Noch {remaining, plural, =1{1 Versuch} other{{remaining} Versuche}}, danach werden alle Daten gelöscht.",
   "@wrongPasswordWarning": {"placeholders": {"remaining": {"type": "int"}}},
-  "screenshotAttemptBlocked": "Es wurde versucht, einen Screenshot zu machen",
-  "screenshotTaken": "Es wurde ein Screenshot gemacht",
+  "screenshotAttemptBlocked": "Screenshot erkannt – der Chat-Inhalt wurde dabei geschützt und nicht aufgenommen",
+  "screenshotTaken": "Achtung: Screenshot gemacht – der Inhalt war nicht geschützt",
   "privacyPolicy": "Datenschutzerklärung",
   "legalSection": "Rechtliches"
 }

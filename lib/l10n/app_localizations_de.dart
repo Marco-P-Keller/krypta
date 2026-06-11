@@ -470,10 +470,11 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get screenshotAttemptBlocked =>
-      'Es wurde versucht, einen Screenshot zu machen';
+      'Screenshot erkannt – der Chat-Inhalt wurde dabei geschützt und nicht aufgenommen';
 
   @override
-  String get screenshotTaken => 'Es wurde ein Screenshot gemacht';
+  String get screenshotTaken =>
+      'Achtung: Screenshot gemacht – der Inhalt war nicht geschützt';
 
   @override
   String get privacyPolicy => 'Datenschutzerklärung';

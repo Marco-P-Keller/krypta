@@ -947,13 +947,13 @@ abstract class AppLocalizations {
   /// No description provided for @screenshotAttemptBlocked.
   ///
   /// In en, this message translates to:
-  /// **'Screenshot attempt was blocked'**
+  /// **'Screenshot detected – the chat content was protected and not captured'**
   String get screenshotAttemptBlocked;
 
   /// No description provided for @screenshotTaken.
   ///
   /// In en, this message translates to:
-  /// **'A screenshot was taken'**
+  /// **'Warning: screenshot taken – the content was not protected'**
   String get screenshotTaken;
 
   /// No description provided for @privacyPolicy.

@@ -177,8 +177,8 @@
   "@lockedForSeconds": {"placeholders": {"seconds": {"type": "int"}}},
   "wrongPasswordWarning": "Wrong password. {remaining, plural, =1{1 attempt left} other{{remaining} attempts left}} before all data is wiped.",
   "@wrongPasswordWarning": {"placeholders": {"remaining": {"type": "int"}}},
-  "screenshotAttemptBlocked": "Screenshot attempt was blocked",
-  "screenshotTaken": "A screenshot was taken",
+  "screenshotAttemptBlocked": "Screenshot detected – the chat content was protected and not captured",
+  "screenshotTaken": "Warning: screenshot taken – the content was not protected",
   "privacyPolicy": "Privacy Policy",
   "legalSection": "Legal"
 }

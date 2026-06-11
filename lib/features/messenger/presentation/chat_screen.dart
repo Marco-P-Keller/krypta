@@ -90,9 +90,13 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
         behavior: SnackBarBehavior.floating,
         margin: const EdgeInsets.fromLTRB(16, 0, 16, 16),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        duration: const Duration(seconds: 3),
+        // Security warning — keep it on screen long enough to read fully.
+        duration: const Duration(seconds: 6),
       );
-      ScaffoldMessenger.of(context).showSnackBar(snackBar);
+      // Replace any in-flight screenshot snackbar instead of queueing, so
+      // rapid repeated captures don't stack up a backlog of toasts.
+      final sm = ScaffoldMessenger.of(context)..removeCurrentSnackBar();
+      sm.showSnackBar(snackBar);
     });
   }
 

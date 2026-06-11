@@ -466,10 +466,12 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get screenshotAttemptBlocked => 'Screenshot attempt was blocked';
+  String get screenshotAttemptBlocked =>
+      'Screenshot detected – the chat content was protected and not captured';
 
   @override
-  String get screenshotTaken => 'A screenshot was taken';
+  String get screenshotTaken =>
+      'Warning: screenshot taken – the content was not protected';
 
   @override
   String get privacyPolicy => 'Privacy Policy';
