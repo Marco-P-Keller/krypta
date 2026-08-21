@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../../../l10n/app_localizations.dart';
+import '../../../services/platform/clipboard_helper.dart';
 import '../../../theme/app_colors.dart';
 import '../data/models/chat_model.dart';
 import '../logic/messenger_provider.dart';
@@ -82,10 +82,11 @@ class _NewChatScreenState extends State<NewChatScreen> {
     }
   }
 
-  Future<String?> _showNameDialog(BuildContext context, String shortId) {
+  Future<String?> _showNameDialog(BuildContext context, String shortId) async {
     final l10n = AppLocalizations.of(context)!;
     final controller = TextEditingController();
-    return showDialog<String>(
+    try {
+      return await showDialog<String>(
       context: context,
       barrierDismissible: false,
       builder: (ctx) => AlertDialog(
@@ -132,7 +133,10 @@ class _NewChatScreenState extends State<NewChatScreen> {
           ),
         ],
       ),
-    );
+      );
+    } finally {
+      controller.dispose();
+    }
   }
 
   @override
@@ -162,9 +166,16 @@ class _NewChatScreenState extends State<NewChatScreen> {
                     icon: Icons.qr_code_rounded,
                     label: l10n.myQrCode,
                     color: AppColors.primary,
-                    onTap: () {
+                    onTap: () async {
                       if (messenger.userId != null) {
-                        QrDisplaySheet.show(context, messenger.userId!);
+                        final pubKey = await messenger.getIdentityPublicKey();
+                        if (pubKey != null && context.mounted) {
+                          QrDisplaySheet.show(
+                            context,
+                            userId: messenger.userId!,
+                            publicKey: pubKey,
+                          );
+                        }
                       }
                     },
                   ),
@@ -195,7 +206,8 @@ class _NewChatScreenState extends State<NewChatScreen> {
               const SizedBox(height: 6),
               GestureDetector(
                 onTap: () {
-                  Clipboard.setData(ClipboardData(text: messenger.userId!));
+                  // M2-Client: ephemeral copy with auto-clear.
+                  ClipboardHelper.copyEphemeral(messenger.userId!);
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(content: Text(l10n.userIdCopied)),
                   );

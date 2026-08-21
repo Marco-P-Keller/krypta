@@ -23,19 +23,22 @@ class Chat extends Equatable {
 
   Chat copyWith({
     String? recipientName,
-    String? lastMessagePreview,
-    DateTime? lastMessageTime,
+    Object? lastMessagePreview = _sentinel,
+    Object? lastMessageTime = _sentinel,
     int? unreadCount,
     bool? isTyping,
-    // Use _sentinel pattern: pass Duration.zero to clear, null to keep
     Object? defaultSelfDestruct = _sentinel,
   }) {
     return Chat(
       id: id,
       recipientId: recipientId,
       recipientName: recipientName ?? this.recipientName,
-      lastMessagePreview: lastMessagePreview ?? this.lastMessagePreview,
-      lastMessageTime: lastMessageTime ?? this.lastMessageTime,
+      lastMessagePreview: lastMessagePreview == _sentinel
+          ? this.lastMessagePreview
+          : lastMessagePreview as String?,
+      lastMessageTime: lastMessageTime == _sentinel
+          ? this.lastMessageTime
+          : lastMessageTime as DateTime?,
       unreadCount: unreadCount ?? this.unreadCount,
       isTyping: isTyping ?? this.isTyping,
       defaultSelfDestruct: defaultSelfDestruct == _sentinel
@@ -64,10 +67,20 @@ class Chat extends Equatable {
           ? DateTime.fromMillisecondsSinceEpoch(map['lastMessageTime'] as int)
           : null,
       unreadCount: (map['unreadCount'] as int?) ?? 0,
-      defaultSelfDestruct: map['defaultSelfDestructMs'] != null
-          ? Duration(milliseconds: map['defaultSelfDestructMs'] as int)
-          : null,
+      // A2: clamp persisted self-destruct values so corrupted / migrated
+      // state cannot reintroduce negative or overlong durations.
+      defaultSelfDestruct: _decodeSelfDestruct(map['defaultSelfDestructMs']),
     );
+  }
+
+  /// A2: safe decode for stored self-destruct milliseconds.
+  /// Non-positive → null (treated as "no self-destruct").
+  /// Capped at 30 days to avoid integer overflow in downstream timers.
+  static Duration? _decodeSelfDestruct(Object? raw) {
+    if (raw is! int) return null;
+    if (raw <= 0) return null;
+    const maxMs = 30 * 24 * 60 * 60 * 1000;
+    return Duration(milliseconds: raw > maxMs ? maxMs : raw);
   }
 
   @override

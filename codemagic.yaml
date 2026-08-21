@@ -1,0 +1,70 @@
+workflows:
+  ios-testflight:
+    name: iOS TestFlight Build
+    max_build_duration: 30
+    instance_type: mac_mini_m2
+    integrations:
+      app_store_connect: Krypta ASC
+    environment:
+      ios_signing:
+        distribution_type: app_store
+        bundle_identifier: com.calcchat.ww
+      flutter: stable
+      cocoapods: default
+    scripts:
+      - name: Install dependencies
+        script: flutter packages pub get
+      - name: Install CocoaPods
+        script: |
+          cd ios && pod install
+      - name: Flutter analyze
+        script: flutter analyze --no-fatal-infos
+      - name: Flutter test
+        script: flutter test
+      - name: Build iOS IPA
+        script: flutter build ipa --release --export-options-plist=/Users/builder/export_options.plist
+    artifacts:
+      - build/ios/ipa/*.ipa
+    publishing:
+      app_store_connect:
+        auth: integration
+        submit_to_testflight: true
+        expire_build_submitted_for_review: true
+      email:
+        recipients:
+          - pdjjzkxtgk@privaterelay.appleid.com
+        notify:
+          success: true
+          failure: true
+
+  ios-debug:
+    name: iOS Debug Build (Quick Test)
+    max_build_duration: 20
+    instance_type: mac_mini_m2
+    environment:
+      ios_signing:
+        distribution_type: development
+        bundle_identifier: com.calcchat.ww
+      flutter: stable
+      cocoapods: default
+    scripts:
+      - name: Install dependencies
+        script: flutter packages pub get
+      - name: Install CocoaPods
+        script: |
+          cd ios && pod install
+      - name: Flutter analyze
+        script: flutter analyze --no-fatal-infos
+      - name: Flutter test
+        script: flutter test
+      - name: Build iOS debug
+        script: flutter build ios --debug --no-codesign
+    artifacts:
+      - build/ios/**/*.app
+    publishing:
+      email:
+        recipients:
+          - pdjjzkxtgk@privaterelay.appleid.com
+        notify:
+          success: true
+          failure: true

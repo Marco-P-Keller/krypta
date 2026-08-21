@@ -1,7 +1,7 @@
-name: kryptaapp
+﻿name: kryptaapp
 description: "Krypta ECC – Secure encrypted messenger"
 publish_to: 'none'
-version: 1.0.0+1
+version: 1.0.0+69
 
 environment:
   sdk: ^3.10.7
@@ -23,6 +23,8 @@ dependencies:
 
   # Encryption (Curve25519, XChaCha20-Poly1305)
   cryptography:
+  # Native crypto backends (BoringSSL/CryptoKit) — constant-time, hardware-accelerated
+  cryptography_flutter:
 
   # Secure key/secret storage (Keychain / Keystore)
   flutter_secure_storage:
@@ -46,6 +48,7 @@ dependencies:
   intl:
   uuid:
   equatable:
+  crypto:
 
 dev_dependencies:
   flutter_test:

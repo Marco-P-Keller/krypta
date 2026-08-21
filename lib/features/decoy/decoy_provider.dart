@@ -38,8 +38,26 @@ class DecoyProvider extends ChangeNotifier {
     for (final chat in _chats) {
       _messagesByChat[chat.id] = await _loadDecoyMessages(chat.id);
     }
+    // Always persist decoy data so the encrypted files exist on disk.
+    // Prevents forensic distinguishing: "decoy files exist only when
+    // real messenger is also set up" would leak information.
+    await _saveDecoyChats();
     _isInitialized = true;
     notifyListeners();
+  }
+
+  /// Ensure decoy files exist on disk (call during app init, before any code entry).
+  /// This makes the file system indistinguishable whether or not the real messenger
+  /// has been used.
+  Future<void> ensureDecoyFilesExist() async {
+    final existing = await _store.loadDecoyData('decoy_chats');
+    if (existing == null) {
+      final defaults = _defaultChats();
+      await _store.saveDecoyData(
+        'decoy_chats',
+        defaults.map((c) => c.toMap()).toList(),
+      );
+    }
   }
 
   Chat createChat(String contactName) {

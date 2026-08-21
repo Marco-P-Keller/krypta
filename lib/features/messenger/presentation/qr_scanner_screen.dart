@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
@@ -5,9 +6,19 @@ import 'package:provider/provider.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../theme/app_colors.dart';
 import '../data/models/chat_model.dart';
+import '../data/models/contact_model.dart';
 import '../logic/messenger_provider.dart';
 
-/// Full-screen QR scanner that reads another user's ID and opens a chat.
+/// Full-screen QR scanner that reads a contact's cryptographic identity payload.
+///
+/// The QR payload must be a JSON object with:
+/// - v: version (must be 1)
+/// - uid: user ID
+/// - ik: identity public key (Base64)
+/// - fp: SHA-256 fingerprint of the public key (hex)
+///
+/// Fail-closed: invalid format, missing fields, fingerprint mismatch,
+/// or key mismatch with the server all abort the operation.
 class QrScannerScreen extends StatefulWidget {
   final void Function(Chat chat) onChatCreated;
   final VoidCallback onBack;
@@ -26,6 +37,7 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
   late final MobileScannerController _controller;
   bool _isProcessing = false;
   String? _error;
+  bool _isCriticalError = false;
 
   @override
   void initState() {
@@ -42,59 +54,144 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
     super.dispose();
   }
 
+  /// Parse and validate the QR payload. Returns null on failure (sets _error).
+  _QrPayload? _parseQrPayload(String raw) {
+    // Strict JSON parse — fail-closed on any non-JSON content
+    final Map<String, dynamic> json;
+    try {
+      json = jsonDecode(raw) as Map<String, dynamic>;
+    } catch (_) {
+      _error = AppLocalizations.of(context)!.qrInvalidFormat;
+      return null;
+    }
+
+    // Version check
+    final version = json['v'];
+    if (version is! int || version != 1) {
+      _error = AppLocalizations.of(context)!.qrUnsupportedVersion;
+      return null;
+    }
+
+    // Required field validation
+    final uid = json['uid'];
+    final ik = json['ik'];
+    final fp = json['fp'];
+
+    if (uid is! String || uid.isEmpty ||
+        ik is! String || ik.isEmpty ||
+        fp is! String || fp.isEmpty) {
+      _error = AppLocalizations.of(context)!.qrInvalidFormat;
+      return null;
+    }
+
+    // Decode and validate the public key
+    final Uint8List publicKey;
+    try {
+      publicKey = base64Decode(ik);
+      if (publicKey.isEmpty) {
+        _error = AppLocalizations.of(context)!.qrInvalidFormat;
+        return null;
+      }
+    } catch (_) {
+      _error = AppLocalizations.of(context)!.qrInvalidFormat;
+      return null;
+    }
+
+    // Recompute fingerprint and verify against the QR's fp field
+    final recomputedFp = Contact.computeFullFingerprint(publicKey);
+    if (recomputedFp != fp) {
+      _error = AppLocalizations.of(context)!.qrFingerprintMismatch;
+      _isCriticalError = true;
+      return null;
+    }
+
+    return _QrPayload(uid: uid, publicKey: publicKey, fingerprint: fp);
+  }
+
   Future<void> _handleBarcode(BarcodeCapture capture) async {
     if (_isProcessing) return;
     final barcode = capture.barcodes.firstOrNull;
     if (barcode == null || barcode.rawValue == null) return;
 
-    final scannedId = barcode.rawValue!.trim();
-    if (scannedId.isEmpty) return;
+    final raw = barcode.rawValue!.trim();
+    if (raw.isEmpty) return;
 
     setState(() {
       _isProcessing = true;
       _error = null;
+      _isCriticalError = false;
     });
 
     await _controller.stop();
 
     if (!mounted) return;
+    final l10n = AppLocalizations.of(context)!;
     final messenger = context.read<MessengerProvider>();
 
-    if (scannedId == messenger.userId) {
-      if (!mounted) return;
-      setState(() {
-        _isProcessing = false;
-        _error = AppLocalizations.of(context)!.thatsYourOwnId;
-      });
-      await _controller.start();
+    // Parse and validate QR payload
+    final payload = _parseQrPayload(raw);
+    if (payload == null) {
+      if (mounted) {
+        setState(() => _isProcessing = false);
+        if (!_isCriticalError) await _controller.start();
+      }
       return;
     }
 
-    final contact = await messenger.addContact(scannedId);
-    if (contact == null) {
+    // Self-scan prevention
+    if (payload.uid == messenger.userId) {
       if (mounted) {
         setState(() {
           _isProcessing = false;
-          _error = AppLocalizations.of(context)!.userNotFound;
+          _error = l10n.thatsYourOwnId;
         });
         await _controller.start();
       }
       return;
     }
 
-    if (!mounted) return;
-    final name = await _showNameDialog(context, contact.shortId);
-    if (!mounted) return;
-
-    if (name != null && name.isNotEmpty) {
-      await messenger.renameContact(contact.id, name);
-    }
-
-    final chat = messenger.getOrCreateChat(
-      messenger.contactForId(contact.id) ?? contact,
+    // Add contact with cryptographic verification
+    final (contact, result) = await messenger.addContactFromQr(
+      contactId: payload.uid,
+      qrPublicKey: payload.publicKey,
+      qrFingerprint: payload.fingerprint,
     );
-    if (mounted) {
-      widget.onChatCreated(chat);
+
+    if (!mounted) return;
+
+    switch (result) {
+      case QrContactResult.verified:
+        // Key match — contact is now verified. Show name dialog.
+        final name = await _showNameDialog(context, contact!.shortId);
+        if (!mounted) return;
+
+        if (name != null && name.isNotEmpty) {
+          await messenger.renameContact(contact.id, name);
+        }
+
+        final chat = messenger.getOrCreateChat(
+          messenger.contactForId(contact.id) ?? contact,
+        );
+        if (mounted) {
+          widget.onChatCreated(chat);
+        }
+
+      case QrContactResult.keyMismatch:
+        // CRITICAL: Server key differs from QR key — possible MITM.
+        // Fail-closed: no chat created, no communication allowed.
+        setState(() {
+          _isProcessing = false;
+          _error = l10n.qrKeyMismatch;
+          _isCriticalError = true;
+        });
+        // Do NOT resume scanning — this is a security incident.
+
+      case QrContactResult.userNotFound:
+        setState(() {
+          _isProcessing = false;
+          _error = l10n.userNotFound;
+        });
+        await _controller.start();
     }
   }
 
@@ -123,6 +220,34 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
                     fontFamily: 'monospace',
                     color: AppColors.textTertiaryDark,
                   ),
+            ),
+            const SizedBox(height: 12),
+            // Verification badge
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              decoration: BoxDecoration(
+                color: AppColors.success.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(
+                  color: AppColors.success.withValues(alpha: 0.3),
+                ),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.verified_rounded,
+                      size: 14, color: AppColors.success),
+                  const SizedBox(width: 6),
+                  Text(
+                    l10n.qrVerified,
+                    style: const TextStyle(
+                      color: AppColors.success,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
             ),
             const SizedBox(height: 16),
             TextField(
@@ -187,7 +312,10 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
           ),
 
           // Overlay with viewfinder cutout
-          _ScannerOverlay(error: _error),
+          _ScannerOverlay(
+            error: _error,
+            isCritical: _isCriticalError,
+          ),
 
           // Top bar
           Positioned(
@@ -196,7 +324,8 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
             right: 0,
             child: SafeArea(
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
                 child: Row(
                   children: [
                     IconButton(
@@ -246,10 +375,24 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
   }
 }
 
+/// Parsed and validated QR payload.
+class _QrPayload {
+  final String uid;
+  final Uint8List publicKey;
+  final String fingerprint;
+
+  const _QrPayload({
+    required this.uid,
+    required this.publicKey,
+    required this.fingerprint,
+  });
+}
+
 class _ScannerOverlay extends StatelessWidget {
   final String? error;
+  final bool isCritical;
 
-  const _ScannerOverlay({this.error});
+  const _ScannerOverlay({this.error, this.isCritical = false});
 
   @override
   Widget build(BuildContext context) {
@@ -307,15 +450,31 @@ class _ScannerOverlay extends StatelessWidget {
               if (error != null)
                 Container(
                   padding: const EdgeInsets.symmetric(
-                      horizontal: 16, vertical: 10),
+                      horizontal: 16, vertical: 12),
                   decoration: BoxDecoration(
-                    color: AppColors.destructive.withValues(alpha: 0.9),
+                    color: isCritical
+                        ? AppColors.destructive.withValues(alpha: 0.95)
+                        : AppColors.destructive.withValues(alpha: 0.9),
                     borderRadius: BorderRadius.circular(12),
+                    border: isCritical
+                        ? Border.all(color: Colors.white24, width: 1)
+                        : null,
                   ),
-                  child: Text(
-                    error!,
-                    style: const TextStyle(color: Colors.white, fontSize: 14),
-                    textAlign: TextAlign.center,
+                  child: Column(
+                    children: [
+                      if (isCritical)
+                        const Padding(
+                          padding: EdgeInsets.only(bottom: 6),
+                          child: Icon(Icons.shield_rounded,
+                              color: Colors.white, size: 20),
+                        ),
+                      Text(
+                        error!,
+                        style: const TextStyle(
+                            color: Colors.white, fontSize: 14),
+                        textAlign: TextAlign.center,
+                      ),
+                    ],
                   ),
                 ),
               if (error == null)
@@ -381,8 +540,8 @@ class _CornerPainter extends CustomPainter {
     );
     canvas.drawLine(
         Offset(0, size.height - r), Offset(0, size.height - cornerLen), paint);
-    canvas.drawLine(Offset(r, size.height),
-        Offset(cornerLen, size.height), paint);
+    canvas.drawLine(
+        Offset(r, size.height), Offset(cornerLen, size.height), paint);
 
     // Bottom-right
     canvas.drawArc(

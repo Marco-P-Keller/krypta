@@ -252,6 +252,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get deleteChat => 'Delete Chat';
 
   @override
+  String get clearChat => 'Clear Chat';
+
+  @override
+  String get clearChatConfirm =>
+      'Delete all messages in this chat? This cannot be undone.';
+
+  @override
   String get autoDeleteTimer => 'Auto-Delete Timer';
 
   @override
@@ -372,4 +379,103 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get passwordTooWeak => 'Password does not meet the requirements';
+
+  @override
+  String get copy => 'Copy';
+
+  @override
+  String get copied => 'Copied';
+
+  @override
+  String get delete => 'Delete';
+
+  @override
+  String get deleteMessage => 'Delete Message';
+
+  @override
+  String get deleteMessageConfirm =>
+      'This message will be permanently deleted from this device.';
+
+  @override
+  String get deleteForMe => 'Delete for me';
+
+  @override
+  String get deleteForEveryone => 'Delete for everyone';
+
+  @override
+  String get deleteForEveryoneConfirm =>
+      'This message will be deleted for both you and the recipient.';
+
+  @override
+  String get qrInvalidFormat =>
+      'Invalid QR code format. Only Krypta QR codes are accepted.';
+
+  @override
+  String get qrUnsupportedVersion =>
+      'Unsupported QR code version. Please update the app.';
+
+  @override
+  String get qrFingerprintMismatch =>
+      'Security warning: QR code fingerprint is tampered. Operation aborted.';
+
+  @override
+  String get qrKeyMismatch =>
+      'SECURITY WARNING: Server key does NOT match the QR code key. Possible attack detected. Contact has been blocked.';
+
+  @override
+  String get qrVerified => 'Key verified';
+
+  @override
+  String get verificationStale => 'Verification is older than 90 days';
+
+  @override
+  String get verifyNow => 'Re-verify';
+
+  @override
+  String get showTutorial => 'Show tutorial again';
+
+  @override
+  String get showTutorialSubtitle => 'Replay the introduction';
+
+  @override
+  String get openSourceLicenses => 'Open-source licenses';
+
+  @override
+  String get openSourceLicensesSubtitle => 'Third-party libraries and notices';
+
+  @override
+  String get aboutClose => 'Close';
+
+  @override
+  String get confirm => 'Confirm';
+
+  @override
+  String lockedForSeconds(int seconds) {
+    return 'Locked for $seconds seconds.';
+  }
+
+  @override
+  String wrongPasswordWarning(int remaining) {
+    String _temp0 = intl.Intl.pluralLogic(
+      remaining,
+      locale: localeName,
+      other: '$remaining attempts left',
+      one: '1 attempt left',
+    );
+    return 'Wrong password. $_temp0 before all data is wiped.';
+  }
+
+  @override
+  String get screenshotAttemptBlocked =>
+      'Screenshot detected – the chat content was protected and not captured';
+
+  @override
+  String get screenshotTaken =>
+      'Warning: screenshot taken – the content was not protected';
+
+  @override
+  String get privacyPolicy => 'Privacy Policy';
+
+  @override
+  String get legalSection => 'Legal';
 }

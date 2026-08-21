@@ -4,48 +4,43 @@ enum CodeResult { none, secret, decoy, delete }
 
 /// Detects if the user has entered a special code on the calculator.
 ///
-/// Checks the current display value against stored codes.
-/// Uses a buffer that tracks the sequence of digits entered via "=".
+/// Security: codes are stored as Argon2id hashes — this class never
+/// sees plaintext codes in memory after setup. Each check runs the
+/// Argon2id KDF against the stored hash.
+///
+/// Delete code is verified FIRST to prevent an attacker from cancelling
+/// a wipe by guessing the secret code at the same moment.
 class CodeDetector {
   final SecureStorageService _storage;
 
-  String? _cachedSecretCode;
-  String? _cachedDecoyCode;
-  String? _cachedDeleteCode;
-
   CodeDetector({required SecureStorageService storage}) : _storage = storage;
 
-  Future<void> loadCodes() async {
-    _cachedSecretCode = await _storage.getSecretCode();
-    _cachedDecoyCode = await _storage.getDecoyCode();
-    _cachedDeleteCode = await _storage.getDeleteCode();
-  }
-
-  /// Check the current display value against known codes.
+  /// Check the current display value against stored (hashed) codes.
   /// Called when the user presses "=" on the calculator.
-  CodeResult checkCode(String displayValue) {
+  /// Returns the matched CodeResult, or [CodeResult.none].
+  ///
+  /// Security: All three codes are ALWAYS verified regardless of matches.
+  /// This prevents timing side-channels — an observer cannot determine
+  /// which code position matched by measuring response time.
+  /// Priority is preserved: delete > secret > decoy.
+  Future<CodeResult> checkCode(String displayValue) async {
     final cleaned = displayValue.replaceAll(RegExp(r'[^0-9]'), '');
-
     if (cleaned.isEmpty) return CodeResult.none;
 
-    if (_cachedDeleteCode != null && cleaned == _cachedDeleteCode) {
-      return CodeResult.delete;
-    }
+    // Always run all three verifications to normalize timing.
+    // Each Argon2id hash takes ~200ms+ so timing differences would be
+    // observable without this constant-work approach.
+    final results = await Future.wait([
+      _storage.verifyDeleteCode(cleaned),
+      _storage.verifySecretCode(cleaned),
+      _storage.verifyDecoyCode(cleaned),
+    ]);
 
-    if (_cachedSecretCode != null && cleaned == _cachedSecretCode) {
-      return CodeResult.secret;
-    }
-
-    if (_cachedDecoyCode != null && cleaned == _cachedDecoyCode) {
-      return CodeResult.decoy;
-    }
+    // Priority: delete > secret > decoy
+    if (results[0]) return CodeResult.delete;
+    if (results[1]) return CodeResult.secret;
+    if (results[2]) return CodeResult.decoy;
 
     return CodeResult.none;
-  }
-
-  void clearCache() {
-    _cachedSecretCode = null;
-    _cachedDecoyCode = null;
-    _cachedDeleteCode = null;
   }
 }

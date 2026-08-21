@@ -1,0 +1,175 @@
+name: Security Gate
+
+on:
+  push:
+    branches: [main, security/*, release/*]
+  pull_request:
+    branches: [main]
+
+jobs:
+  security-gate:
+    name: Security Gate
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      # ── Gate 1: Static Analysis ──────────────────────────────────────
+
+      - name: "Gate 1: Static Analysis"
+        run: |
+          echo "Running dart analyze..."
+          dart analyze lib/
+          echo "Static analysis passed."
+
+      # ── Gate 2: Secret Scanning ──────────────────────────────────────
+
+      - name: "Gate 2: Secret Scanning"
+        # Codex R8 P3 + R9 P3: pipefail so that an empty result from the
+        # filter pipeline does not trigger the warning. Without it, the
+        # final `head` returned 0 even when nothing matched.
+        shell: bash
+        run: |
+          set -o pipefail
+          echo "Checking for print() calls..."
+          if grep -rn --include="*.dart" "^\s*print(" lib/ 2>/dev/null; then
+            echo "::error::print() calls found in lib/ — remove before release"
+            exit 1
+          fi
+          echo "No print() calls found."
+
+          echo "Checking for hardcoded secrets..."
+          # Same pattern as the v1 gate — capture, then check, so the
+          # condition is unaffected by SIGPIPE on early-closing pipes.
+          secret_hits=$(grep -rn --include="*.dart" -E "(password|secret|apikey)[[:space:]]*=[[:space:]]*['\"][A-Za-z0-9+/=]{20,}" lib/ 2>/dev/null | grep -v "StorageKeys\.\|krypta_\|test\|mock\|factory\|fromMap\|toMap" || true)
+          if [ -n "$secret_hits" ]; then
+            echo "$secret_hits" | head -5
+            echo "::warning::Potential hardcoded secrets detected — review manually"
+          fi
+          echo "Secret scanning complete."
+
+      # ── Gate 3: Crypto Protocol Enforcement ──────────────────────────
+
+      - name: "Gate 3: Crypto Protocol Enforcement"
+        # Codex audit-2026-05 R4 P1: pipefail so the conditionals depend on
+        # the actual grep result, not on `head` (which always exits 0 on an
+        # empty stream — without pipefail every check fired unconditionally).
+        shell: bash
+        run: |
+          set -o pipefail
+          echo "Verifying v1 message format is not created..."
+          # Codex audit-2026-05 R(Run4) P1: scope to the messenger flow
+          # only. `'v': 1` legitimately appears in unrelated payload
+          # versions (e.g. QR display). Restrict to the encrypted-
+          # message paths and exclude legitimate v1 *deserializers* that
+          # accept legacy reads but never produce v1 writes.
+          v1_hits=$(grep -rn --include="*.dart" "'v':[[:space:]]*1" \
+            lib/features/messenger lib/security 2>/dev/null \
+            | grep -v "test\|mock\|//" \
+            | grep -v "version >= 2\|version < 2\|legacy\|fromMap\|v1\b" \
+            || true)
+          if [ -n "$v1_hits" ]; then
+            echo "$v1_hits" | head -5
+            echo "::error::v1 message format found — all writes must be v2+"
+            exit 1
+          fi
+
+          echo "Verifying constant-time comparison exists..."
+          # Codex R7 P2: with pipefail, `grep | head` triggers SIGPIPE on
+          # the upstream grep when head exits after the first match. Use
+          # `grep -m1` so the single-process exit code is the source of truth.
+          if ! grep -rn -m1 --include="*.dart" "diff |= " lib/ 2>/dev/null > /dev/null; then
+            echo "::error::No constant-time comparison found"
+            exit 1
+          fi
+
+          echo "Verifying SensitiveBuffer zeroing in Double Ratchet..."
+          if ! grep -rn -m1 --include="*.dart" "SensitiveBuffer.zeroBytes" lib/security/ratchet/double_ratchet.dart 2>/dev/null > /dev/null; then
+            echo "::error::Missing SensitiveBuffer.zeroBytes in Double Ratchet"
+            exit 1
+          fi
+
+          echo "Crypto protocol enforcement passed."
+
+      # ── Gate 4: Security Module Presence ─────────────────────────────
+
+      - name: "Gate 4: Security Module Presence"
+        run: |
+          MISSING=0
+          for module in \
+            "lib/security/transparency/key_commitment.dart" \
+            "lib/security/transparency/key_transparency_log.dart" \
+            "lib/security/transparency/consistency_checker.dart" \
+            "lib/security/device/device_integrity_policy.dart" \
+            "lib/security/hardware/hardware_security_binding.dart" \
+            "lib/security/memory/sensitive_buffer.dart" \
+            "lib/security/verification/safety_number.dart" \
+            "lib/security/ratchet/double_ratchet.dart" \
+            "lib/security/session/session_handshake_service.dart" \
+            "lib/security/transport/sealed_sender.dart" \
+            "lib/security/messaging/control_message.dart"; do
+            if [ ! -f "$module" ]; then
+              echo "::error::Missing security module: $module"
+              MISSING=$((MISSING + 1))
+            fi
+          done
+
+          if [ "$MISSING" -gt 0 ]; then
+            echo "$MISSING security module(s) missing"
+            exit 1
+          fi
+          echo "All security modules present."
+
+      # ── Gate 5: Security Tests ───────────────────────────────────────
+
+      - name: "Gate 5: Security Tests"
+        # Codex audit-2026-05 R4 P2: include the audit regression tests so
+        # findings the audit closed cannot silently regress in CI.
+        run: |
+          echo "Running full security test suite..."
+          flutter test test/security/ test/audit/ 2>&1 | tee test_output.txt
+
+          if tail -1 test_output.txt | grep -q "All tests passed"; then
+            TEST_COUNT=$(tail -1 test_output.txt | sed -n 's/.*+\([0-9]*\).*/\1/p')
+            TEST_COUNT=${TEST_COUNT:-0}
+            echo "All $TEST_COUNT security tests passed."
+
+            if [ "${TEST_COUNT:-0}" -lt 200 ]; then
+              echo "::warning::Test count ($TEST_COUNT) below expected threshold (200)"
+            fi
+          else
+            echo "::error::Security tests failed"
+            grep -E "\-[0-9]+:" test_output.txt | head -20
+            exit 1
+          fi
+
+      # ── Gate 6: Documentation ────────────────────────────────────────
+
+      - name: "Gate 6: Security Documentation"
+        run: |
+          for doc in THREAT_MODEL.md SECURITY_ARCHITECTURE.md SECURITY_INVENTORY.md SECURITY_RELEASE_CHECKLIST.md; do
+            if [ ! -f "$doc" ]; then
+              echo "::error::Missing security document: $doc"
+              exit 1
+            fi
+          done
+          echo "All security documents present."
+
+      # ── Summary ──────────────────────────────────────────────────────
+
+      - name: Security Gate Summary
+        if: always()
+        run: |
+          echo "══════════════════════════════════════════"
+          echo "  Security Gate Complete"
+          echo "══════════════════════════════════════════"

@@ -24,8 +24,7 @@ class KryptaKeyPair {
   }
 
   @override
-  String toString() =>
-      'KryptaKeyPair(pub: ${publicKeyBase64.substring(0, 8)}...)';
+  String toString() => 'KryptaKeyPair(${publicKey.length}B)';
 }
 
 class EncryptedPayload {
@@ -40,6 +39,20 @@ class EncryptedPayload {
     required this.mac,
     required this.ephemeralPublicKey,
   });
+
+  EncryptedPayload copyWith({
+    Uint8List? ciphertext,
+    Uint8List? nonce,
+    Uint8List? mac,
+    Uint8List? ephemeralPublicKey,
+  }) {
+    return EncryptedPayload(
+      ciphertext: ciphertext ?? this.ciphertext,
+      nonce: nonce ?? this.nonce,
+      mac: mac ?? this.mac,
+      ephemeralPublicKey: ephemeralPublicKey ?? this.ephemeralPublicKey,
+    );
+  }
 
   Map<String, String> toMap() => {
         'c': base64Encode(ciphertext),

@@ -1,7 +1,12 @@
 import 'package:flutter/material.dart';
+import '../../../../services/platform/clipboard_helper.dart';
 import 'package:provider/provider.dart';
+import 'package:qr_flutter/qr_flutter.dart';
 import '../../../../l10n/app_localizations.dart';
+import '../../../../security/verification/safety_number.dart';
 import '../../../../theme/app_colors.dart';
+import '../../../../theme/app_spacing.dart';
+import '../../data/models/contact_model.dart';
 import '../../logic/messenger_provider.dart';
 
 class ChatSettingsSheet extends StatefulWidget {
@@ -284,6 +289,186 @@ class _ChatSettingsSheetState extends State<ChatSettingsSheet> {
             ),
           ),
 
+          // ── Key Change Warning ──
+          Builder(builder: (_) {
+            final contact = messenger.contactForId(chat.recipientId);
+            if (contact == null || !contact.hasKeyChanged) {
+              return const SizedBox.shrink();
+            }
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: Container(
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: AppColors.warning.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
+                  border: Border.all(
+                    color: AppColors.warning.withValues(alpha: 0.4),
+                  ),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        const Icon(Icons.warning_amber_rounded,
+                            size: 18, color: AppColors.warning),
+                        const SizedBox(width: 8),
+                        Text(
+                          l10n.securitySettings,
+                          style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                                fontWeight: FontWeight.w600,
+                                color: AppColors.warning,
+                              ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      'The security key for this contact has changed. '
+                      'Messages are blocked until you verify their identity. '
+                      'Scan their QR code or compare safety numbers to resume messaging.',
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: isDark
+                                ? AppColors.textSecondaryDark
+                                : AppColors.textSecondaryLight,
+                          ),
+                    ),
+                    const SizedBox(height: 10),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: OutlinedButton.icon(
+                            onPressed: () => _showSafetyNumber(
+                                context, messenger, chat.recipientId),
+                            icon: const Icon(Icons.qr_code_2_rounded, size: 16),
+                            label: const Text('Verify Identity'),
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: AppColors.accent,
+                              side: const BorderSide(color: AppColors.accent),
+                              visualDensity: VisualDensity.compact,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        OutlinedButton.icon(
+                          onPressed: () {
+                            messenger.blockContact(chat.recipientId);
+                            setState(() {});
+                          },
+                          icon: const Icon(Icons.block_rounded, size: 16),
+                          label: const Text('Block'),
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: AppColors.destructive,
+                            side: const BorderSide(color: AppColors.destructive),
+                            visualDensity: VisualDensity.compact,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            );
+          }),
+
+          // ── Safety Number / Verification ──
+          Builder(builder: (_) {
+            final contact = messenger.contactForId(chat.recipientId);
+            if (contact == null) return const SizedBox.shrink();
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(18),
+                decoration: BoxDecoration(
+                  color: isDark
+                      ? AppColors.surfaceElevatedDark
+                      : AppColors.surfaceElevatedLight,
+                  borderRadius: BorderRadius.circular(18),
+                  border: Border.all(
+                    color: isDark
+                        ? AppColors.dividerDark.withValues(alpha: 0.3)
+                        : AppColors.dividerLight.withValues(alpha: 0.5),
+                    width: 0.5,
+                  ),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(
+                          contact.isVerified
+                              ? Icons.verified_rounded
+                              : Icons.shield_outlined,
+                          size: 16,
+                          color: contact.isVerified
+                              ? AppColors.success
+                              : AppColors.primary,
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          contact.isVerified ? 'Verified' : 'Identity',
+                          style:
+                              Theme.of(context).textTheme.titleSmall?.copyWith(
+                                    fontWeight: FontWeight.w600,
+                                    letterSpacing: -0.1,
+                                  ),
+                        ),
+                        const Spacer(),
+                        if (contact.isVerified)
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 8, vertical: 3),
+                            decoration: BoxDecoration(
+                              color: AppColors.success.withValues(alpha: 0.12),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: const Text(
+                              'Secure',
+                              style: TextStyle(
+                                  color: AppColors.success,
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w600),
+                            ),
+                          ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Compare safety numbers or scan QR codes to verify end-to-end encryption.',
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: isDark
+                                ? AppColors.textSecondaryDark
+                                : AppColors.textSecondaryLight,
+                            height: 1.4,
+                          ),
+                    ),
+                    const SizedBox(height: 12),
+                    SizedBox(
+                      width: double.infinity,
+                      child: OutlinedButton.icon(
+                        onPressed: () => _showSafetyNumber(
+                            context, messenger, chat.recipientId),
+                        icon: const Icon(Icons.qr_code_2_rounded, size: 18),
+                        label: const Text('View Safety Number'),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: AppColors.primary,
+                          side: const BorderSide(color: AppColors.accent),
+                          shape: RoundedRectangleBorder(
+                            borderRadius:
+                                BorderRadius.circular(AppSpacing.radiusMd),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          }),
+
           if (chat.defaultSelfDestruct != null) ...[
             const SizedBox(height: 12),
             Container(
@@ -315,7 +500,53 @@ class _ChatSettingsSheetState extends State<ChatSettingsSheet> {
               ),
             ),
           ],
+          const SizedBox(height: 16),
+
+          // ── Clear Chat ──
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              onPressed: () => _confirmClearChat(context, messenger),
+              icon: const Icon(Icons.delete_sweep_rounded, size: 18),
+              label: Text(l10n.clearChat),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: AppColors.destructive,
+                side: const BorderSide(color: AppColors.destructive),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
+                ),
+              ),
+            ),
+          ),
           const SizedBox(height: 8),
+        ],
+      ),
+    );
+  }
+
+  void _confirmClearChat(BuildContext context, MessengerProvider messenger) {
+    final l10n = AppLocalizations.of(context)!;
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(l10n.clearChat),
+        content: Text(l10n.clearChatConfirm),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: Text(l10n.cancel),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(
+              backgroundColor: AppColors.destructive,
+            ),
+            onPressed: () {
+              messenger.clearChat(widget.chatId);
+              Navigator.of(ctx).pop();
+              Navigator.of(context).pop();
+            },
+            child: Text(l10n.delete),
+          ),
         ],
       ),
     );
@@ -361,6 +592,134 @@ class _ChatSettingsSheetState extends State<ChatSettingsSheet> {
             },
             child: Text(l10n.save),
           ),
+        ],
+      ),
+    ).then((_) => controller.dispose());
+  }
+
+  Future<void> _showSafetyNumber(
+      BuildContext context, MessengerProvider messenger, String contactId) async {
+    final contact = messenger.contactForId(contactId);
+    if (contact == null || messenger.userId == null) return;
+
+    final keyPair = await messenger.getIdentityPublicKey();
+    if (keyPair == null) return;
+
+    final safetyNumber = await SafetyNumber.generate(
+      localUserId: messenger.userId!,
+      localIdentityPublic: keyPair,
+      remoteUserId: contact.id,
+      remoteIdentityPublic: contact.publicKey,
+    );
+
+    final formatted = SafetyNumber.formatForDisplay(safetyNumber);
+
+    if (!context.mounted) return;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Row(
+          children: [
+            const Icon(Icons.shield_rounded, size: 20),
+            const SizedBox(width: 8),
+            Text('Safety Number',
+                style: Theme.of(ctx).textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w600,
+                    )),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: QrImageView(
+                data: safetyNumber,
+                size: 180,
+              ),
+            ),
+            const SizedBox(height: 16),
+            GestureDetector(
+              onTap: () {
+                // M2-Client: ephemeral copy with auto-clear (60s).
+                ClipboardHelper.copyEphemeral(safetyNumber);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Safety number copied')),
+                );
+              },
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: isDark
+                      ? AppColors.surfaceElevatedDark
+                      : AppColors.backgroundLight,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  formatted,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    fontFamily: 'monospace',
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: 1.5,
+                    height: 1.6,
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Compare this number with your contact. If they match, your conversation is secure.',
+              textAlign: TextAlign.center,
+              style: Theme.of(ctx).textTheme.bodySmall?.copyWith(
+                    color: isDark
+                        ? AppColors.textSecondaryDark
+                        : AppColors.textSecondaryLight,
+                  ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('Close'),
+          ),
+          if (!contact.isVerified)
+            ElevatedButton.icon(
+              onPressed: () async {
+                final ok = await messenger.markContactVerified(
+                  contactId,
+                  method: VerificationMethod.safetyNumber,
+                  verifiedPublicKey: contact.publicKey,
+                );
+                if (ctx.mounted) {
+                  if (ok) {
+                    Navigator.of(ctx).pop();
+                  } else {
+                    ScaffoldMessenger.of(ctx).showSnackBar(
+                      const SnackBar(
+                        content: Text('Verifikation fehlgeschlagen — Schlüssel stimmen nicht überein'),
+                        backgroundColor: AppColors.destructive,
+                      ),
+                    );
+                  }
+                }
+              },
+              icon: const Icon(Icons.verified_rounded, size: 16),
+              label: const Text('Mark Verified'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.success,
+                foregroundColor: Colors.white,
+              ),
+            ),
         ],
       ),
     );

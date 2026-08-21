@@ -1,6 +1,9 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../l10n/app_localizations.dart';
+import '../../../security/encryption/password_validator.dart';
+import '../../../services/platform/platform_security_service.dart';
 import '../../../theme/app_colors.dart';
 import '../../../widgets/emergency_button.dart';
 import '../data/models/chat_model.dart';
@@ -32,6 +35,7 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
   bool _hasPerMessageOverride = false;
   bool _burnAfterRead = false;
   String? _messagePassword;
+  StreamSubscription<bool>? _screenshotSub;
 
   @override
   void initState() {
@@ -40,10 +44,15 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
     final messenger = context.read<MessengerProvider>();
     messenger.setActiveChat(widget.chat.id);
     _markVisibleMessagesAsRead(messenger);
+    _listenForScreenshots();
   }
 
   @override
   void dispose() {
+    _screenshotSub?.cancel();
+    // Clear sensitive state from memory immediately on screen exit.
+    _messagePassword = null;
+    _controller.clear();
     final messenger = context.read<MessengerProvider>();
     messenger.setActiveChat(null);
     messenger.stopLocalTyping(widget.chat.recipientId);
@@ -53,6 +62,42 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
     _focusNode.dispose();
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
+  }
+
+  void _listenForScreenshots() {
+    final platform = context.read<PlatformSecurityService>();
+    _screenshotSub = platform.onScreenshotDetected.listen((blocked) {
+      if (!mounted) return;
+      final l10n = AppLocalizations.of(context)!;
+      final snackBar = SnackBar(
+        content: Row(
+          children: [
+            Icon(
+              blocked ? Icons.shield_rounded : Icons.screenshot_rounded,
+              color: Colors.white,
+              size: 20,
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                blocked ? l10n.screenshotAttemptBlocked : l10n.screenshotTaken,
+                style: const TextStyle(color: Colors.white),
+              ),
+            ),
+          ],
+        ),
+        backgroundColor: blocked ? AppColors.warning : AppColors.destructive,
+        behavior: SnackBarBehavior.floating,
+        margin: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        // Security warning — keep it on screen long enough to read fully.
+        duration: const Duration(seconds: 6),
+      );
+      // Replace any in-flight screenshot snackbar instead of queueing, so
+      // rapid repeated captures don't stack up a backlog of toasts.
+      final sm = ScaffoldMessenger.of(context)..removeCurrentSnackBar();
+      sm.showSnackBar(snackBar);
+    });
   }
 
   Duration? get _effectiveTimer {
@@ -74,6 +119,18 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
   void _sendMessage() {
     final text = _controller.text.trim();
     if (text.isEmpty) return;
+
+    // Pre-validate per-message password before fire-and-forget send.
+    // Without this, a weak password causes sendMessage() to throw an
+    // unhandled ArgumentError after the composer has already been cleared.
+    if (_messagePassword != null &&
+        PasswordValidator.validate(_messagePassword!) != null) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(AppLocalizations.of(context)!.passwordTooWeak),
+        backgroundColor: AppColors.warning,
+      ));
+      return;
+    }
 
     final messenger = context.read<MessengerProvider>();
     messenger.sendMessage(
@@ -103,6 +160,9 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
 
     final pwController = TextEditingController();
     final l10n = AppLocalizations.of(context)!;
+    // M1-Client follow-up (2026-05 Codex review): clear and dispose the
+    // controller once the dialog is gone so the password text is not
+    // held by a long-lived widget reference.
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -121,6 +181,13 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
             TextField(
               controller: pwController,
               autofocus: true,
+              // M1-Client (audit 2026-05): obscure the message password as
+              // the user types it. Without this, the password sits in
+              // plaintext on the visible UI — defeating the point of
+              // password-protecting a single message.
+              obscureText: true,
+              enableSuggestions: false,
+              autocorrect: false,
               decoration: InputDecoration(
                 hintText: l10n.enterPassword,
                 prefixIcon: const Icon(Icons.key_rounded, size: 20),
@@ -145,7 +212,10 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
           ),
         ],
       ),
-    );
+    ).whenComplete(() {
+      pwController.clear();
+      pwController.dispose();
+    });
   }
 
   void _scrollToBottom() {
@@ -169,6 +239,7 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
       appBar: _buildAppBar(context, l10n),
       body: Column(
         children: [
+          _buildVerificationStaleBanner(context, l10n),
           Expanded(child: _buildMessageList(context, l10n)),
           _buildStatusBars(context, l10n, isDark),
           _buildMessageInput(context, l10n, isDark),
@@ -177,12 +248,67 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
     );
   }
 
-  PreferredSizeWidget _buildAppBar(BuildContext context, AppLocalizations l10n) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+  Widget _buildVerificationStaleBanner(
+      BuildContext context, AppLocalizations l10n) {
+    return Consumer<MessengerProvider>(
+      builder: (context, messenger, _) {
+        final contact = messenger.contactForId(widget.chat.recipientId);
+        if (contact == null || !contact.isVerificationStale) {
+          return const SizedBox.shrink();
+        }
+        const color = AppColors.warning;
+        return InkWell(
+          onTap: () => ChatSettingsSheet.show(context, widget.chat.id),
+          child: Container(
+            margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            padding:
+                const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.08),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: color.withValues(alpha: 0.2),
+                width: 0.5,
+              ),
+            ),
+            child: Row(
+              children: [
+                const Icon(Icons.shield_outlined, size: 16, color: color),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    l10n.verificationStale,
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: color,
+                          fontWeight: FontWeight.w500,
+                          fontSize: 12,
+                        ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  l10n.verifyNow,
+                  style: const TextStyle(
+                    color: color,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 12,
+                  ),
+                ),
+                const SizedBox(width: 4),
+                const Icon(Icons.chevron_right_rounded,
+                    size: 16, color: color),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
 
+  PreferredSizeWidget _buildAppBar(BuildContext context, AppLocalizations l10n) {
     return AppBar(
       leading: IconButton(
-        icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 20),
+        icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 18),
         onPressed: widget.onBack,
       ),
       titleSpacing: 0,
@@ -191,22 +317,22 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
           final chat = messenger.chatById(widget.chat.id);
           final name = chat?.recipientName ?? widget.chat.recipientName;
           final isTyping = messenger.isTyping(widget.chat.recipientId);
-          final hasTimer = chat?.defaultSelfDestruct != null;
           final colors = _avatarGradient(name);
+
           return GestureDetector(
             onTap: () => ChatSettingsSheet.show(context, widget.chat.id),
             child: Row(
               children: [
                 Container(
-                  width: 36,
-                  height: 36,
+                  width: 38,
+                  height: 38,
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
                       colors: colors,
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                     ),
-                    borderRadius: BorderRadius.circular(12),
+                    shape: BoxShape.circle,
                   ),
                   child: Center(
                     child: Text(
@@ -214,7 +340,7 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
                       style: const TextStyle(
                         color: Colors.white,
                         fontSize: 15,
-                        fontWeight: FontWeight.w700,
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
                   ),
@@ -224,52 +350,21 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Flexible(
-                            child: Text(
-                              name,
-                              overflow: TextOverflow.ellipsis,
-                              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                    fontWeight: FontWeight.w600,
-                                    letterSpacing: -0.2,
-                                  ),
+                      Text(
+                        name,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                              fontWeight: FontWeight.w600,
                             ),
-                          ),
-                          if (hasTimer) ...[
-                            const SizedBox(width: 5),
-                            Container(
-                              padding: const EdgeInsets.all(2),
-                              decoration: BoxDecoration(
-                                color: AppColors.primary.withValues(alpha: 0.12),
-                                borderRadius: BorderRadius.circular(5),
-                              ),
-                              child: const Icon(Icons.timer_outlined,
-                                  size: 12, color: AppColors.primary),
-                            ),
-                          ],
-                        ],
                       ),
                       if (isTyping)
                         Text(
                           l10n.typing,
-                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                color: AppColors.primary,
-                                fontSize: 11,
-                              ),
-                        )
-                      else
-                        Text(
-                          l10n.encryptionInfo,
-                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                color: isDark
-                                    ? AppColors.textTertiaryDark
-                                    : AppColors.textTertiaryLight,
-                                fontSize: 11,
-                              ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            color: AppColors.accent,
+                            fontSize: 12,
+                          ),
                         ),
                     ],
                   ),
@@ -492,119 +587,129 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
   }
 
   Widget _buildMessageInput(BuildContext context, AppLocalizations l10n, bool isDark) {
-    final secondaryIcon = isDark
+    final dimColor = isDark
         ? AppColors.textTertiaryDark
         : AppColors.textTertiaryLight;
 
     return Container(
       padding: EdgeInsets.only(
-        left: 6,
+        left: 8,
         right: 8,
-        top: 10,
-        bottom: MediaQuery.of(context).padding.bottom + 10,
+        top: 8,
+        bottom: MediaQuery.of(context).padding.bottom + 8,
       ),
       decoration: BoxDecoration(
         color: isDark ? AppColors.backgroundDark : AppColors.backgroundLight,
+        border: Border(
+          top: BorderSide(
+            color: isDark ? AppColors.dividerDark : AppColors.dividerLight,
+            width: 0.33,
+          ),
+        ),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.end,
         children: [
+          // Lock icon
           Padding(
-            padding: const EdgeInsets.only(bottom: 4),
-            child: IconButton(
-              icon: Icon(
-                _messagePassword != null
-                    ? Icons.lock_rounded
-                    : Icons.lock_outline_rounded,
-                color: _messagePassword != null ? AppColors.warning : secondaryIcon,
-                size: 20,
+            padding: const EdgeInsets.only(bottom: 6),
+            child: SizedBox(
+              width: 36,
+              height: 36,
+              child: IconButton(
+                icon: Icon(
+                  _messagePassword != null
+                      ? Icons.lock_rounded
+                      : Icons.lock_outline_rounded,
+                  color: _messagePassword != null ? AppColors.warning : dimColor,
+                  size: 22,
+                ),
+                onPressed: _showPasswordSetDialog,
+                padding: EdgeInsets.zero,
               ),
-              onPressed: _showPasswordSetDialog,
-              visualDensity: VisualDensity.compact,
-              padding: EdgeInsets.zero,
-              constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
             ),
           ),
+          // Timer icon
           Padding(
-            padding: const EdgeInsets.only(bottom: 4),
-            child: PopupMenuButton<String>(
-              icon: Icon(
-                _perMessageTimer != null || _burnAfterRead
-                    ? Icons.timer_rounded
-                    : Icons.timer_outlined,
-                color: _perMessageTimer != null || _burnAfterRead
-                    ? AppColors.primary
-                    : secondaryIcon,
-                size: 20,
-              ),
-              padding: EdgeInsets.zero,
-              onSelected: (value) {
-                setState(() {
-                  _hasPerMessageOverride = true;
-                  if (value == 'burn') {
-                    _burnAfterRead = true;
-                    _perMessageTimer = null;
-                  } else if (value == 'off') {
-                    _burnAfterRead = false;
-                    _perMessageTimer = null;
-                  } else if (value == 'default') {
-                    _hasPerMessageOverride = false;
-                    _burnAfterRead = false;
-                    _perMessageTimer = null;
-                  } else {
-                    _burnAfterRead = false;
-                    _perMessageTimer = Duration(seconds: int.parse(value));
-                  }
-                });
-              },
-              itemBuilder: (context) {
-                final chat = context
-                    .read<MessengerProvider>()
-                    .chatById(widget.chat.id);
-                final hasDefault = chat?.defaultSelfDestruct != null;
-                return [
-                  if (hasDefault)
+            padding: const EdgeInsets.only(bottom: 6),
+            child: SizedBox(
+              width: 36,
+              height: 36,
+              child: PopupMenuButton<String>(
+                icon: Icon(
+                  _perMessageTimer != null || _burnAfterRead
+                      ? Icons.timer_rounded
+                      : Icons.timer_outlined,
+                  color: _perMessageTimer != null || _burnAfterRead
+                      ? AppColors.accent
+                      : dimColor,
+                  size: 22,
+                ),
+                padding: EdgeInsets.zero,
+                onSelected: (value) {
+                  setState(() {
+                    _hasPerMessageOverride = true;
+                    if (value == 'burn') {
+                      _burnAfterRead = true;
+                      _perMessageTimer = null;
+                    } else if (value == 'off') {
+                      _burnAfterRead = false;
+                      _perMessageTimer = null;
+                    } else if (value == 'default') {
+                      _hasPerMessageOverride = false;
+                      _burnAfterRead = false;
+                      _perMessageTimer = null;
+                    } else {
+                      _burnAfterRead = false;
+                      _perMessageTimer = Duration(seconds: int.parse(value));
+                    }
+                  });
+                },
+                itemBuilder: (context) {
+                  final chat = context
+                      .read<MessengerProvider>()
+                      .chatById(widget.chat.id);
+                  final hasDefault = chat?.defaultSelfDestruct != null;
+                  return [
+                    if (hasDefault)
+                      PopupMenuItem(
+                        value: 'default',
+                        child: Text(l10n.chatDefaultWithTimer(
+                            _durationLabel(chat!.defaultSelfDestruct))),
+                      ),
+                    PopupMenuItem(value: 'off', child: Text(l10n.off)),
+                    PopupMenuItem(value: '30', child: Text(l10n.seconds30)),
+                    PopupMenuItem(value: '300', child: Text(l10n.minutes5)),
+                    PopupMenuItem(value: '3600', child: Text(l10n.hour1)),
+                    PopupMenuItem(value: '86400', child: Text(l10n.day1)),
+                    PopupMenuItem(value: '604800', child: Text(l10n.week1)),
+                    const PopupMenuDivider(),
                     PopupMenuItem(
-                      value: 'default',
-                      child: Text(l10n.chatDefaultWithTimer(
-                          _durationLabel(chat!.defaultSelfDestruct))),
+                      value: 'burn',
+                      child: Row(
+                        children: [
+                          const Icon(Icons.local_fire_department_rounded,
+                              color: AppColors.destructive, size: 18),
+                          const SizedBox(width: 8),
+                          Text(l10n.burnAfterRead),
+                        ],
+                      ),
                     ),
-                  PopupMenuItem(value: 'off', child: Text(l10n.off)),
-                  PopupMenuItem(value: '30', child: Text(l10n.seconds30)),
-                  PopupMenuItem(value: '300', child: Text(l10n.minutes5)),
-                  PopupMenuItem(value: '3600', child: Text(l10n.hour1)),
-                  PopupMenuItem(value: '86400', child: Text(l10n.day1)),
-                  PopupMenuItem(value: '604800', child: Text(l10n.week1)),
-                  const PopupMenuDivider(),
-                  PopupMenuItem(
-                    value: 'burn',
-                    child: Row(
-                      children: [
-                        const Icon(Icons.local_fire_department_rounded,
-                            color: AppColors.destructive, size: 18),
-                        const SizedBox(width: 8),
-                        Text(l10n.burnAfterRead),
-                      ],
-                    ),
-                  ),
-                ];
-              },
+                  ];
+                },
+              ),
             ),
           ),
           const SizedBox(width: 4),
+          // Text field
           Expanded(
             child: Container(
+              constraints: const BoxConstraints(maxHeight: 120),
               decoration: BoxDecoration(
                 color: isDark
                     ? AppColors.surfaceElevatedDark
                     : AppColors.surfaceElevatedLight,
-                borderRadius: BorderRadius.circular(24),
-                border: Border.all(
-                  color: isDark
-                      ? AppColors.dividerDark.withValues(alpha: 0.5)
-                      : AppColors.dividerLight.withValues(alpha: 0.5),
-                  width: 0.5,
-                ),
+                borderRadius: BorderRadius.circular(22),
               ),
               child: TextField(
                 controller: _controller,
@@ -613,12 +718,24 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
                 maxLines: 5,
                 minLines: 1,
                 onChanged: _onTextChanged,
-                style: const TextStyle(fontSize: 15),
+                style: TextStyle(
+                  fontSize: 17,
+                  color: isDark
+                      ? AppColors.textPrimaryDark
+                      : AppColors.textPrimaryLight,
+                  height: 1.35,
+                ),
                 decoration: InputDecoration(
                   hintText: l10n.typeMessage,
+                  hintStyle: TextStyle(
+                    color: isDark
+                        ? AppColors.textTertiaryDark
+                        : AppColors.textTertiaryLight,
+                    fontSize: 17,
+                  ),
                   border: InputBorder.none,
                   contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 18,
+                    horizontal: 16,
                     vertical: 10,
                   ),
                 ),
@@ -627,30 +744,23 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
             ),
           ),
           const SizedBox(width: 8),
+          // Send button — circular, no shadow
           Padding(
             padding: const EdgeInsets.only(bottom: 2),
-            child: Container(
-              width: 40,
-              height: 40,
-              decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  colors: [AppColors.messageSentStart, AppColors.messageSentEnd],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
+            child: GestureDetector(
+              onTap: _sendMessage,
+              child: Container(
+                width: 36,
+                height: 36,
+                decoration: const BoxDecoration(
+                  color: AppColors.accent,
+                  shape: BoxShape.circle,
                 ),
-                borderRadius: BorderRadius.circular(14),
-                boxShadow: [
-                  BoxShadow(
-                    color: AppColors.primary.withValues(alpha: 0.3),
-                    blurRadius: 8,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
-              ),
-              child: IconButton(
-                icon: const Icon(Icons.arrow_upward_rounded, color: Colors.white, size: 20),
-                onPressed: _sendMessage,
-                padding: EdgeInsets.zero,
+                child: const Icon(
+                  Icons.arrow_upward_rounded,
+                  color: Colors.white,
+                  size: 20,
+                ),
               ),
             ),
           ),

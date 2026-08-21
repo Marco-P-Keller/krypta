@@ -2,37 +2,140 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Public key registry
+    // ── Public Key Registry ──────────────────────────────────────────────────
+    // Only owner can write their own public key. Anyone authenticated can read.
     match /publicKeys/{userId} {
       allow read: if request.auth != null;
-      allow write: if request.auth != null && request.auth.uid == userId;
+      allow create: if request.auth != null
+                    && request.auth.uid == userId
+                    && request.resource.data.keys().hasOnly(['publicKey', 'updatedAt'])
+                    && request.resource.data.publicKey is string
+                    && request.resource.data.publicKey.size() > 0
+                    && request.resource.data.publicKey.size() < 256
+                    && request.resource.data.updatedAt == request.time;
+      allow update: if request.auth != null
+                    && request.auth.uid == userId
+                    && request.resource.data.keys().hasOnly(['publicKey', 'updatedAt'])
+                    && request.resource.data.publicKey is string
+                    && request.resource.data.publicKey.size() > 0
+                    && request.resource.data.publicKey.size() < 256
+                    && request.resource.data.updatedAt == request.time;
+      allow delete: if request.auth != null && request.auth.uid == userId;
     }
 
-    // Encrypted message relay — sender creates, recipient reads/deletes
+    // ── PreKey Bundles ───────────────────────────────────────────────────────
+    // Only owner can write. Anyone authenticated can read (for session init).
+    match /prekeys/{userId} {
+      allow read: if request.auth != null;
+      allow create, update: if request.auth != null
+                            && request.auth.uid == userId
+                            && request.resource.data.updatedAt == request.time
+                            // Limit bundle size to prevent abuse
+                            && request.resource.data.keys().size() <= 20;
+      allow delete: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // ── Encrypted Message Relay ──────────────────────────────────────────────
+    // Sender creates (authenticated). Only recipient reads/deletes.
+    // Server timestamps enforced. Required fields validated.
+    // Max payload size ~64 KiB to prevent abuse.
     match /messages/{recipientId}/inbox/{messageId} {
-      allow create: if request.auth != null;
+      allow create: if request.auth != null
+                    && request.resource.data.keys().hasOnly(['sid', 'mid', 'p', 'ts', 'sd', 'bar', 'pw'])
+                    && request.resource.data.sid is string
+                    && request.resource.data.sid == request.auth.uid
+                    // Validate UID format (Firebase UIDs are 28 chars, but allow range)
+                    && request.resource.data.sid.size() >= 10
+                    && request.resource.data.sid.size() <= 128
+                    && request.resource.data.mid is string
+                    && request.resource.data.mid.size() >= 8
+                    && request.resource.data.mid.size() <= 64
+                    && request.resource.data.p is map
+                    && request.resource.data.p.keys().size() >= 1
+                    && request.resource.data.p.keys().size() <= 10
+                    && request.resource.data.ts == request.time
+                    // Prevent sending messages to yourself
+                    && request.auth.uid != recipientId
+                    // Validate recipientId format (must be a real UID)
+                    && recipientId.size() >= 10
+                    && recipientId.size() <= 128
+                    // Optional field type enforcement (prevents type-confusion attacks)
+                    && (!('sd' in request.resource.data) || (request.resource.data.sd is int && request.resource.data.sd > 0 && request.resource.data.sd <= 604800000))
+                    && (!('bar' in request.resource.data) || request.resource.data.bar is bool)
+                    && (!('pw' in request.resource.data) || request.resource.data.pw is bool);
       allow read, delete: if request.auth != null
                           && request.auth.uid == recipientId;
     }
 
-    // Delivery / read acknowledgments
+    // ── Delivery / Read Acknowledgments ──────────────────────────────────────
+    // Sender-authenticated ACKs. Only recipient reads/deletes.
+    // Type restricted to known values. UID format validated.
     match /acks/{recipientId}/inbox/{ackId} {
-      allow create: if request.auth != null;
+      allow create: if request.auth != null
+                    && request.resource.data.keys().hasOnly(['mid', 'type', 'sid'])
+                    && request.resource.data.mid is string
+                    && request.resource.data.mid.size() >= 8
+                    && request.resource.data.mid.size() <= 64
+                    && request.resource.data.type is string
+                    && request.resource.data.type in ['delivered', 'read', 'delete', 'unlock']
+                    // Sender must identify themselves — prevents ACK spoofing
+                    && request.resource.data.sid == request.auth.uid
+                    && request.resource.data.sid.size() >= 10
+                    // Prevent sending ACKs to yourself
+                    && request.auth.uid != recipientId;
       allow read, delete: if request.auth != null
                           && request.auth.uid == recipientId;
     }
 
-    // Typing indicators
-    match /typing/{userId} {
-      allow read: if request.auth != null && request.auth.uid == userId;
-      allow write: if request.auth != null;
+    // ── Delivery Tokens (sealed-sender routing) ─────────────────────────────
+    // H1-Network (audit 2026-05): rule was missing → catch-all denied
+    // every read/write, breaking sealed-sender entirely. Only owner can
+    // write their token; any authenticated user can read (sender needs to
+    // fetch the recipient's token to route a sealed envelope to them).
+    match /deliveryTokens/{userId} {
+      allow read: if request.auth != null;
+      allow create, update: if request.auth != null
+                            && request.auth.uid == userId
+                            && request.resource.data.keys().hasOnly(['token', 'updatedAt'])
+                            && request.resource.data.token is string
+                            && request.resource.data.token.size() >= 16
+                            && request.resource.data.token.size() <= 256
+                            && (!('updatedAt' in request.resource.data) || request.resource.data.updatedAt == request.time);
+      allow delete: if request.auth != null && request.auth.uid == userId;
     }
 
-    // FCM tokens
+    // ── Key Transparency Commitments (append-only log) ──────────────────────
+    // H1-Network (audit 2026-05): rule was missing → catch-all denied
+    // every publish/fetch, breaking the entire transparency layer
+    // (publishKeyCommitment, getKeyCommitments, ConsistencyChecker
+    // gossip). Only owner appends; anyone authenticated can read for
+    // gossip / split-view detection. No updates (append-only). Deletes
+    // only by owner (e.g. on emergency wipe).
+    match /keyCommitments/{userId}/log/{epochId} {
+      allow read: if request.auth != null;
+      allow create: if request.auth != null
+                    && request.auth.uid == userId
+                    && request.resource.data.keys().hasAll(['e', 'k', 'p', 'ts', 's', 'sp'])
+                    && request.resource.data.keys().hasOnly(['e', 'k', 'p', 'ts', 's', 'sp', 'v']);
+      allow delete: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // ── FCM Tokens ───────────────────────────────────────────────────────────
+    // Only owner can read/write their own FCM token.
+    // Field allowlisting prevents abuse (e.g. storing arbitrary data).
     match /fcmTokens/{userId} {
-      allow read, write: if request.auth != null && request.auth.uid == userId;
+      allow read: if request.auth != null && request.auth.uid == userId;
+      allow create, update: if request.auth != null
+                            && request.auth.uid == userId
+                            && request.resource.data.keys().hasOnly(['token', 'updatedAt'])
+                            && request.resource.data.token is string
+                            && request.resource.data.token.size() > 0
+                            && request.resource.data.token.size() < 512
+                            && request.resource.data.updatedAt == request.time;
+      allow delete: if request.auth != null && request.auth.uid == userId;
     }
 
+    // ── Catch-all: deny everything else ──────────────────────────────────────
     match /{document=**} {
       allow read, write: if false;
     }

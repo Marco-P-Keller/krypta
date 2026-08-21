@@ -572,6 +572,18 @@ abstract class AppLocalizations {
   /// **'Delete Chat'**
   String get deleteChat;
 
+  /// No description provided for @clearChat.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear Chat'**
+  String get clearChat;
+
+  /// No description provided for @clearChatConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete all messages in this chat? This cannot be undone.'**
+  String get clearChatConfirm;
+
   /// No description provided for @autoDeleteTimer.
   ///
   /// In en, this message translates to:
@@ -793,6 +805,168 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Password does not meet the requirements'**
   String get passwordTooWeak;
+
+  /// No description provided for @copy.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy'**
+  String get copy;
+
+  /// No description provided for @copied.
+  ///
+  /// In en, this message translates to:
+  /// **'Copied'**
+  String get copied;
+
+  /// No description provided for @delete.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete'**
+  String get delete;
+
+  /// No description provided for @deleteMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete Message'**
+  String get deleteMessage;
+
+  /// No description provided for @deleteMessageConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'This message will be permanently deleted from this device.'**
+  String get deleteMessageConfirm;
+
+  /// No description provided for @deleteForMe.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete for me'**
+  String get deleteForMe;
+
+  /// No description provided for @deleteForEveryone.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete for everyone'**
+  String get deleteForEveryone;
+
+  /// No description provided for @deleteForEveryoneConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'This message will be deleted for both you and the recipient.'**
+  String get deleteForEveryoneConfirm;
+
+  /// No description provided for @qrInvalidFormat.
+  ///
+  /// In en, this message translates to:
+  /// **'Invalid QR code format. Only Krypta QR codes are accepted.'**
+  String get qrInvalidFormat;
+
+  /// No description provided for @qrUnsupportedVersion.
+  ///
+  /// In en, this message translates to:
+  /// **'Unsupported QR code version. Please update the app.'**
+  String get qrUnsupportedVersion;
+
+  /// No description provided for @qrFingerprintMismatch.
+  ///
+  /// In en, this message translates to:
+  /// **'Security warning: QR code fingerprint is tampered. Operation aborted.'**
+  String get qrFingerprintMismatch;
+
+  /// No description provided for @qrKeyMismatch.
+  ///
+  /// In en, this message translates to:
+  /// **'SECURITY WARNING: Server key does NOT match the QR code key. Possible attack detected. Contact has been blocked.'**
+  String get qrKeyMismatch;
+
+  /// No description provided for @qrVerified.
+  ///
+  /// In en, this message translates to:
+  /// **'Key verified'**
+  String get qrVerified;
+
+  /// No description provided for @verificationStale.
+  ///
+  /// In en, this message translates to:
+  /// **'Verification is older than 90 days'**
+  String get verificationStale;
+
+  /// No description provided for @verifyNow.
+  ///
+  /// In en, this message translates to:
+  /// **'Re-verify'**
+  String get verifyNow;
+
+  /// No description provided for @showTutorial.
+  ///
+  /// In en, this message translates to:
+  /// **'Show tutorial again'**
+  String get showTutorial;
+
+  /// No description provided for @showTutorialSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Replay the introduction'**
+  String get showTutorialSubtitle;
+
+  /// No description provided for @openSourceLicenses.
+  ///
+  /// In en, this message translates to:
+  /// **'Open-source licenses'**
+  String get openSourceLicenses;
+
+  /// No description provided for @openSourceLicensesSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Third-party libraries and notices'**
+  String get openSourceLicensesSubtitle;
+
+  /// No description provided for @aboutClose.
+  ///
+  /// In en, this message translates to:
+  /// **'Close'**
+  String get aboutClose;
+
+  /// No description provided for @confirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm'**
+  String get confirm;
+
+  /// No description provided for @lockedForSeconds.
+  ///
+  /// In en, this message translates to:
+  /// **'Locked for {seconds} seconds.'**
+  String lockedForSeconds(int seconds);
+
+  /// No description provided for @wrongPasswordWarning.
+  ///
+  /// In en, this message translates to:
+  /// **'Wrong password. {remaining, plural, =1{1 attempt left} other{{remaining} attempts left}} before all data is wiped.'**
+  String wrongPasswordWarning(int remaining);
+
+  /// No description provided for @screenshotAttemptBlocked.
+  ///
+  /// In en, this message translates to:
+  /// **'Screenshot detected – the chat content was protected and not captured'**
+  String get screenshotAttemptBlocked;
+
+  /// No description provided for @screenshotTaken.
+  ///
+  /// In en, this message translates to:
+  /// **'Warning: screenshot taken – the content was not protected'**
+  String get screenshotTaken;
+
+  /// No description provided for @privacyPolicy.
+  ///
+  /// In en, this message translates to:
+  /// **'Privacy Policy'**
+  String get privacyPolicy;
+
+  /// No description provided for @legalSection.
+  ///
+  /// In en, this message translates to:
+  /// **'Legal'**
+  String get legalSection;
 }
 
 class _AppLocalizationsDelegate
