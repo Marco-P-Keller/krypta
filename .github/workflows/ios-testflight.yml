@@ -66,6 +66,18 @@ jobs:
       - name: Flutter-Version
         run: flutter --version
 
+      # Muss vor `pub get` und `pod install` laufen, sonst erzeugt CocoaPods
+      # die Firebase-Pods gar nicht erst.
+      - name: Swift Package Manager deaktivieren
+        # Flutter 3.47 zieht Firebase sonst über SPM statt CocoaPods. Der
+        # dabei aufgelöste firebase-ios-sdk passt nicht zu cloud_firestore:
+        #   "No visible @interface for 'FIRCollectionSourceStageBridge'
+        #    declares the selector 'initWithRef:firestore:'"
+        # ios/Podfile.lock pinnt die erprobte Kombination
+        # (cloud_firestore 6.1.3 → Firebase/Firestore = 12.9.0), dieser Pin
+        # greift aber ausschließlich auf dem CocoaPods-Pfad.
+        run: flutter config --no-enable-swift-package-manager
+
       - name: Dart-Abhängigkeiten
         run: flutter pub get
 
