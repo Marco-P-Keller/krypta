@@ -143,22 +143,34 @@ jobs:
       - name: "Gate 5: Security Tests"
         # Codex audit-2026-05 R4 P2: include the audit regression tests so
         # findings the audit closed cannot silently regress in CI.
+        #
+        # Erfolg wird am Exit-Code von `flutter test` festgemacht, nicht am
+        # Text der Schlusszeile. Die alte Prüfung suchte "All tests passed";
+        # sobald ein Test übersprungen wird (H1 Fall G ist ein dokumentierter
+        # intentional skip), endet der Lauf mit "N tests passed, M skipped."
+        # und der Gate meldete Fehlschlag, obwohl alle Tests grün waren. Der
+        # Exit-Code ist zudem die belastbarere Quelle: er kann nicht durch
+        # eine Formatänderung des Reporters falsch werden.
+        shell: bash
         run: |
           echo "Running full security test suite..."
-          flutter test test/security/ test/audit/ 2>&1 | tee test_output.txt
-
-          if tail -1 test_output.txt | grep -q "All tests passed"; then
-            TEST_COUNT=$(tail -1 test_output.txt | sed -n 's/.*+\([0-9]*\).*/\1/p')
-            TEST_COUNT=${TEST_COUNT:-0}
-            echo "All $TEST_COUNT security tests passed."
-
-            if [ "${TEST_COUNT:-0}" -lt 200 ]; then
-              echo "::warning::Test count ($TEST_COUNT) below expected threshold (200)"
-            fi
-          else
+          if ! flutter test test/security/ test/audit/ 2>&1 | tee test_output.txt; then
             echo "::error::Security tests failed"
-            grep -E "\-[0-9]+:" test_output.txt | head -20
+            grep -E "\[E\]|^\s*-[0-9]+:" test_output.txt | head -20 || true
             exit 1
+          fi
+
+          # Zählung aus dem aktuellen Reporter ("N tests passed"), mit
+          # Rückfall auf das alte Kompaktformat ("+N -0: All tests passed!").
+          TEST_COUNT=$(grep -oE '[0-9]+ tests? passed' test_output.txt | tail -1 | grep -oE '^[0-9]+' || true)
+          if [ -z "$TEST_COUNT" ]; then
+            TEST_COUNT=$(tail -1 test_output.txt | sed -n 's/.*+\([0-9]*\).*/\1/p')
+          fi
+          TEST_COUNT=${TEST_COUNT:-0}
+          echo "All $TEST_COUNT security tests passed."
+
+          if [ "$TEST_COUNT" -lt 200 ]; then
+            echo "::warning::Test count ($TEST_COUNT) below expected threshold (200)"
           fi
 
       # ── Gate 6: Documentation ────────────────────────────────────────
