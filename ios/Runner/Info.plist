@@ -4,8 +4,17 @@
 <dict>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
+	<key>CFBundleLocalizations</key>
+	<array>
+		<string>en</string>
+		<string>de</string>
+	</array>
+	<!-- Cover identity: the springboard, app switcher, Settings.app and the
+	     share sheet all read these. They must match the calculator the app
+	     presents before unlock, never the product name. Localized in
+	     Runner/en.lproj + Runner/de.lproj InfoPlist.strings. -->
 	<key>CFBundleDisplayName</key>
-	<string>Krypta ECC</string>
+	<string>Calc</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
@@ -13,7 +22,7 @@
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
 	<key>CFBundleName</key>
-	<string>Krypta ECC</string>
+	<string>Calc</string>
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>
@@ -46,14 +55,16 @@
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
 	<key>NSFaceIDUsageDescription</key>
-	<string>Authenticate to unlock the app</string>
+	<string>Face ID unlocks the app without typing your passcode.</string>
 	<key>NSCameraUsageDescription</key>
-	<string>Camera access is needed to scan QR codes</string>
+	<string>The camera is used to scan a QR code for pairing.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
-	<string>Access to your photo library is needed to import QR codes</string>
+	<string>Photo access is used to import a pairing QR code you already saved.</string>
+	<!-- Only modes the app actually implements may be declared (2.5.4).
+	     Message wake-up runs over silent pushes; there is no background fetch
+	     handler, so `fetch` is not declared. -->
 	<key>UIBackgroundModes</key>
 	<array>
-		<string>fetch</string>
 		<string>remote-notification</string>
 	</array>
 	<!-- Security: Enforce ATS (HTTPS only, TLS 1.2+) + certificate pinning.

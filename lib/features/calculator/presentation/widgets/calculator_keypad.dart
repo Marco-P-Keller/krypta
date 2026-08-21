@@ -186,9 +186,16 @@ class _BtnState extends State<_Btn> with SingleTickerProviderStateMixin {
             ),
             alignment: widget.wide ? Alignment.centerLeft : Alignment.center,
             padding: widget.wide ? const EdgeInsets.only(left: 32) : EdgeInsets.zero,
-            child: Text(
-              widget.label,
-              style: AppTypography.calculatorButton.copyWith(color: _fg),
+            // Fixed circular/pill bounds (AspectRatio above) can't grow with
+            // the label the way a normal button can, so at the largest iOS
+            // accessibility text sizes an unscaled glyph would clip against
+            // them — scale the label down to fit, same as the display above.
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Text(
+                widget.label,
+                style: AppTypography.calculatorButton.copyWith(color: _fg),
+              ),
             ),
           ),
         ),

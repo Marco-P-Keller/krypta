@@ -43,3 +43,17 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# OneDrive sync duplicates. The repo lives in a OneDrive-synced folder, and
+# OneDrive resolves collisions by writing "<name> 2.<ext>" next to the original.
+# The originals below are generated and already ignored by name; their numbered
+# copies slipped past those exact-name rules and got committed once (see
+# docs/audit/2026-08-ios-apple-conformance.md).
+ios/Flutter/Generated [0-9]*.xcconfig
+ios/Flutter/flutter_export_environment [0-9]*.sh
+ios/Flutter/Flutter [0-9]*.podspec
+ios/Podfile [0-9]*.lock
+.flutter-plugins-dependencies [0-9]*
+
+# Superpowers skill scratch directory (brainstorm servers, prototypes).
+.superpowers/

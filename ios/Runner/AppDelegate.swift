@@ -135,6 +135,10 @@ import Security
     ]
     var error: Unmanaged<CFError>?
     let key = SecKeyCreateRandomKey(attributes as CFDictionary, &error)
+    // Balance the +1 retain the Security framework hands us. Deliberately not
+    // logged: a "Krypta"/"Secure Enclave" line in the device log would give
+    // away what the calculator really is.
+    error?.release()
     if key != nil {
       // Key created successfully — Secure Enclave is available.
       // We don't store it; this is just a probe.
@@ -163,12 +167,18 @@ import Security
   private func createHardwareBoundKey() -> Bool {
     if isHardwareKeyReady() { return true }
 
-    let access = SecAccessControlCreateWithFlags(
+    // Returns nil on devices/configurations that reject the flag combination.
+    // This runs off a Flutter method channel, so a force unwrap here would
+    // crash the app instead of falling back to software key wrapping, which
+    // the Bool return value already models.
+    guard let access = SecAccessControlCreateWithFlags(
       nil,
       kSecAttrAccessibleWhenUnlockedThisDeviceOnly,
       .privateKeyUsage,
       nil
-    )!
+    ) else {
+      return false
+    }
 
     let attributes: [String: Any] = [
       kSecAttrKeyType as String: kSecAttrKeyTypeEC,
@@ -183,6 +193,7 @@ import Security
 
     var error: Unmanaged<CFError>?
     let privateKey = SecKeyCreateRandomKey(attributes as CFDictionary, &error)
+    error?.release()
     return privateKey != nil
   }
 
@@ -194,12 +205,14 @@ import Security
     }
 
     var error: Unmanaged<CFError>?
-    guard let encrypted = SecKeyCreateEncryptedData(
+    let encryptedData = SecKeyCreateEncryptedData(
       publicKey,
       .eciesEncryptionCofactorVariableIVX963SHA256AESGCM,
       plainKey as CFData,
       &error
-    ) else {
+    )
+    error?.release()
+    guard let encrypted = encryptedData else {
       return nil
     }
 
@@ -211,12 +224,14 @@ import Security
     guard let privateKey = loadHardwareKey() else { return nil }
 
     var error: Unmanaged<CFError>?
-    guard let decrypted = SecKeyCreateDecryptedData(
+    let decryptedData = SecKeyCreateDecryptedData(
       privateKey,
       .eciesEncryptionCofactorVariableIVX963SHA256AESGCM,
       wrapped as CFData,
       &error
-    ) else {
+    )
+    error?.release()
+    guard let decrypted = decryptedData else {
       return nil
     }
 
@@ -530,6 +545,24 @@ import Security
 
   // MARK: - App-switcher snapshot masking
 
+  /// Tag of the opaque cover used for app-switcher snapshots.
+  private static let snapshotMaskTag = 9999
+
+  /// Take every snapshot mask off the window.
+  ///
+  /// `viewWithTag` returns only the first match, so removing one view per
+  /// resume is not enough: iOS can deliver `willResignActive` more than once
+  /// before the next `didBecomeActive` (Siri over the app, a call banner, a
+  /// notification-centre pull followed by the switcher). Each of those added
+  /// another cover, one resume removed one, and the leftovers stayed on top —
+  /// a permanently black app with no way back. Idempotent by construction.
+  private func removeSnapshotMasks() {
+    guard let window = window else { return }
+    for view in window.subviews where view.tag == AppDelegate.snapshotMaskTag {
+      view.removeFromSuperview()
+    }
+  }
+
   override func applicationDidBecomeActive(_ application: UIApplication) {
     super.applicationDidBecomeActive(application)
     // Keep the black mask one runloop tick longer than strictly needed,
@@ -537,7 +570,7 @@ import Security
     // background-lock logic in app.dart resets the route. This avoids a
     // flash of the previous (now stale) screen content during resume.
     DispatchQueue.main.async {
-      self.window?.viewWithTag(9999)?.removeFromSuperview()
+      self.removeSnapshotMasks()
       // A backgrounded app can come back with a rebuilt layer tree or a
       // resized scene — re-assert the mask geometry, or drop the mask if it
       // cannot be repaired, so the UI is never left shifted.
@@ -551,10 +584,13 @@ import Security
     // snapshot and any transient inactive-state frames render as solid
     // black instead of leaking the messenger UI or showing a white flash.
     guard let window = window else { return }
+    // Clear any cover left over from an unbalanced resign/become pair before
+    // adding this one, so at most one is ever on the window.
+    removeSnapshotMasks()
     let blackView = UIView(frame: window.bounds)
     blackView.backgroundColor = .black
     blackView.autoresizingMask = [.flexibleWidth, .flexibleHeight]
-    blackView.tag = 9999
+    blackView.tag = AppDelegate.snapshotMaskTag
     window.addSubview(blackView)
   }
 

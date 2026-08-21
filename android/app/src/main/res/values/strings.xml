@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Launcher / recents / app info name. Must stay the cover identity —
+         the product name is only shown inside the app after unlock. -->
+    <string name="app_name">Calc</string>
+</resources>

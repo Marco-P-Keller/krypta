@@ -145,7 +145,10 @@ class _ChatSettingsSheetState extends State<ChatSettingsSheet> {
                 child: IconButton(
                   icon: const Icon(Icons.edit_rounded, size: 18),
                   color: AppColors.primary,
-                  visualDensity: VisualDensity.compact,
+                  // No VisualDensity.compact: it shrinks IconButton's default
+                  // 48x48pt minimum tap target to 40x40pt, under the 44x44pt
+                  // HIG floor, for the sake of a slightly tighter row — not
+                  // worth it for a rename control.
                   onPressed: () => _showRenameDialog(context, chat.recipientName),
                 ),
               ),

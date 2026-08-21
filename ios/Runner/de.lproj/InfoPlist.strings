@@ -1,0 +1,9 @@
+/* Springboard / App-Switcher / Einstellungen. Muss die Tarnung halten —
+   der Produktname erscheint nur in der App nach dem Entsperren. */
+"CFBundleDisplayName" = "Rechner";
+"CFBundleName" = "Rechner";
+
+/* Zweck-Texte, lokalisiert, damit iOS nie auf die Basis-plist zurueckfaellt. */
+"NSFaceIDUsageDescription" = "Face ID entsperrt die App, ohne dass du den Code eingeben musst.";
+"NSCameraUsageDescription" = "Die Kamera wird genutzt, um einen QR-Code zum Koppeln zu scannen.";
+"NSPhotoLibraryUsageDescription" = "Der Fotozugriff dient dem Import eines bereits gespeicherten Kopplungs-QR-Codes.";

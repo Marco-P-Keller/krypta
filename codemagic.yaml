@@ -1,3 +1,15 @@
+# Krypta iOS builds.
+#
+# Reproducibility: the toolchain is pinned, not floating. `flutter: stable` and
+# an unpinned Xcode mean two runs of the same commit can produce different
+# binaries — which is exactly how build 68 shipped a layout the repo could not
+# explain. Bump these deliberately, in a commit.
+#
+# Build numbers come from pubspec.yaml (`version: 1.0.0+NN`) and are NOT
+# auto-incremented here on purpose: the whole team refers to releases by that
+# number ("build 68 came back broken"), so it has to stay a reviewed value in
+# git. App Store Connect rejects a build number it has already accepted — bump
+# pubspec.yaml before re-running this workflow.
 workflows:
   ios-testflight:
     name: iOS TestFlight Build
@@ -9,9 +21,34 @@ workflows:
       ios_signing:
         distribution_type: app_store
         bundle_identifier: com.calcchat.ww
-      flutter: stable
+      # Pinned deliberately - see header. Bump in a commit, never float.
+      flutter: 3.41.4
+      xcode: latest
       cocoapods: default
     scripts:
+      - name: Preflight (App Store blockers)
+        script: |
+          set -e
+          # OneDrive writes "<name> 2.<ext>" collision copies next to generated
+          # files; six of them were committed once. .gitignore now covers them,
+          # this catches any that slip past a new pattern.
+          DUPES=$(git ls-files | grep -E ' [0-9]+\.[A-Za-z0-9]+$' || true)
+          if [ -n "$DUPES" ]; then
+            echo "Committed OneDrive duplicate files:"; echo "$DUPES"; exit 1
+          fi
+          # ITMS-90717: an app icon carrying an alpha channel is rejected at
+          # upload, after the whole build has already run. PNG colour type is
+          # byte 25; 6 = RGBA, 4 = grey+alpha.
+          for f in ios/Runner/Assets.xcassets/AppIcon.appiconset/*.png; do
+            CT=$(od -An -tu1 -j25 -N1 "$f" | tr -d ' ')
+            if [ "$CT" = "6" ] || [ "$CT" = "4" ]; then
+              echo "$f has an alpha channel (PNG colour type $CT) - ITMS-90717"; exit 1
+            fi
+          done
+          # The privacy manifest has to be in the bundle, not just on disk.
+          grep -q 'PrivacyInfo.xcprivacy in Resources' ios/Runner.xcodeproj/project.pbxproj ||
+            { echo 'PrivacyInfo.xcprivacy is not in the Runner Resources build phase'; exit 1; }
+          echo "Preflight OK - building $(sed -n 's/^version: //p' pubspec.yaml)"
       - name: Install dependencies
         script: flutter packages pub get
       - name: Install CocoaPods
@@ -45,9 +82,34 @@ workflows:
       ios_signing:
         distribution_type: development
         bundle_identifier: com.calcchat.ww
-      flutter: stable
+      # Pinned deliberately - see header. Bump in a commit, never float.
+      flutter: 3.41.4
+      xcode: latest
       cocoapods: default
     scripts:
+      - name: Preflight (App Store blockers)
+        script: |
+          set -e
+          # OneDrive writes "<name> 2.<ext>" collision copies next to generated
+          # files; six of them were committed once. .gitignore now covers them,
+          # this catches any that slip past a new pattern.
+          DUPES=$(git ls-files | grep -E ' [0-9]+\.[A-Za-z0-9]+$' || true)
+          if [ -n "$DUPES" ]; then
+            echo "Committed OneDrive duplicate files:"; echo "$DUPES"; exit 1
+          fi
+          # ITMS-90717: an app icon carrying an alpha channel is rejected at
+          # upload, after the whole build has already run. PNG colour type is
+          # byte 25; 6 = RGBA, 4 = grey+alpha.
+          for f in ios/Runner/Assets.xcassets/AppIcon.appiconset/*.png; do
+            CT=$(od -An -tu1 -j25 -N1 "$f" | tr -d ' ')
+            if [ "$CT" = "6" ] || [ "$CT" = "4" ]; then
+              echo "$f has an alpha channel (PNG colour type $CT) - ITMS-90717"; exit 1
+            fi
+          done
+          # The privacy manifest has to be in the bundle, not just on disk.
+          grep -q 'PrivacyInfo.xcprivacy in Resources' ios/Runner.xcodeproj/project.pbxproj ||
+            { echo 'PrivacyInfo.xcprivacy is not in the Runner Resources build phase'; exit 1; }
+          echo "Preflight OK - building $(sed -n 's/^version: //p' pubspec.yaml)"
       - name: Install dependencies
         script: flutter packages pub get
       - name: Install CocoaPods

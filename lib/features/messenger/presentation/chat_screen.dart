@@ -552,10 +552,16 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
                   ),
             ),
           ),
+          // Tap target widened from the visual icon's own ~18pt box toward the
+          // 44pt HIG minimum (kept at 32pt, not the full 44pt: this badge sits
+          // in a stack of info bars only 6pt apart, and a full-size invisible
+          // tap area risks overlapping the next bar's own button — unverified
+          // without a device, so a smaller, safe increase was chosen instead).
           GestureDetector(
             onTap: onClear,
+            behavior: HitTestBehavior.opaque,
             child: Container(
-              padding: const EdgeInsets.all(2),
+              padding: const EdgeInsets.all(9),
               decoration: BoxDecoration(
                 color: color.withValues(alpha: 0.12),
                 shape: BoxShape.circle,
@@ -744,22 +750,30 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
             ),
           ),
           const SizedBox(width: 8),
-          // Send button — circular, no shadow
+          // Send button — 36pt visible circle, 44pt tap target (HIG minimum;
+          // this is the highest-frequency control in the whole screen).
           Padding(
             padding: const EdgeInsets.only(bottom: 2),
             child: GestureDetector(
               onTap: _sendMessage,
-              child: Container(
-                width: 36,
-                height: 36,
-                decoration: const BoxDecoration(
-                  color: AppColors.accent,
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(
-                  Icons.arrow_upward_rounded,
-                  color: Colors.white,
-                  size: 20,
+              behavior: HitTestBehavior.opaque,
+              child: SizedBox(
+                width: 44,
+                height: 44,
+                child: Center(
+                  child: Container(
+                    width: 36,
+                    height: 36,
+                    decoration: const BoxDecoration(
+                      color: AppColors.accent,
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.arrow_upward_rounded,
+                      color: Colors.white,
+                      size: 20,
+                    ),
+                  ),
                 ),
               ),
             ),

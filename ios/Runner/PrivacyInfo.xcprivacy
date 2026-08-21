@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!--
+	  Privacy manifest for the Runner (app) target.
+
+	  Scope: this file describes ONLY what the app's own code does. Every
+	  bundled SDK (the Flutter engine, the Firebase pods, path_provider,
+	  flutter_secure_storage, local_auth, mobile_scanner, ...) ships its own
+	  PrivacyInfo.xcprivacy inside its framework; Xcode aggregates them into
+	  the privacy report at archive time.
+
+	  MUST STAY IN SYNC with the App Store Connect "App Privacy" answers.
+	  Apple compares the two; a mismatch is a review finding.
+	-->
+
+	<!-- No tracking. Nothing is shared with data brokers, no ad SDK is
+	     linked, and no identifier is joined with third-party data. -->
+	<key>NSPrivacyTracking</key>
+	<false/>
+	<key>NSPrivacyTrackingDomains</key>
+	<array/>
+
+	<!--
+	  Required-reason APIs used by first-party code in this target: none.
+	  Verified by inspection of ios/Runner/*.swift and lib/**: no UserDefaults,
+	  no file timestamp APIs, no disk-space APIs, no system boot time, no
+	  active keyboard list. The Flutter engine and the plugins declare their
+	  own usage in their own manifests.
+	  If app code later reads e.g. UserDefaults, add NSPrivacyAccessedAPICategoryUserDefaults
+	  with reason CA92.1 here — otherwise the upload triggers ITMS-91053.
+	-->
+	<key>NSPrivacyAccessedAPITypes</key>
+	<array/>
+
+	<key>NSPrivacyCollectedDataTypes</key>
+	<array>
+		<!-- Firebase anonymous auth UID. No email, no name, no phone number
+		     is ever collected: sign-in is signInAnonymously(). The UID is
+		     needed to address a mailbox, so it is linked to the account. -->
+		<dict>
+			<key>NSPrivacyCollectedDataType</key>
+			<string>NSPrivacyCollectedDataTypeUserID</string>
+			<key>NSPrivacyCollectedDataTypeLinked</key>
+			<true/>
+			<key>NSPrivacyCollectedDataTypeTracking</key>
+			<false/>
+			<key>NSPrivacyCollectedDataTypePurposes</key>
+			<array>
+				<string>NSPrivacyCollectedDataTypePurposeAppFunctionality</string>
+			</array>
+		</dict>
+		<!-- FCM registration token, stored under fcmTokens/{uid} so a push
+		     can wake the device for a new message. Deleted on sign-out and
+		     on account deletion. -->
+		<dict>
+			<key>NSPrivacyCollectedDataType</key>
+			<string>NSPrivacyCollectedDataTypeDeviceID</string>
+			<key>NSPrivacyCollectedDataTypeLinked</key>
+			<true/>
+			<key>NSPrivacyCollectedDataTypeTracking</key>
+			<false/>
+			<key>NSPrivacyCollectedDataTypePurposes</key>
+			<array>
+				<string>NSPrivacyCollectedDataTypePurposeAppFunctionality</string>
+			</array>
+		</dict>
+		<!-- Message payloads relayed through Firestore. They leave the device
+		     end-to-end encrypted (X3DH + Double Ratchet, XChaCha20-Poly1305)
+		     and the operator cannot read them, but they are still transmitted
+		     off device, so they are declared. -->
+		<dict>
+			<key>NSPrivacyCollectedDataType</key>
+			<string>NSPrivacyCollectedDataTypeEmailsOrTextMessages</string>
+			<key>NSPrivacyCollectedDataTypeLinked</key>
+			<true/>
+			<key>NSPrivacyCollectedDataTypeTracking</key>
+			<false/>
+			<key>NSPrivacyCollectedDataTypePurposes</key>
+			<array>
+				<string>NSPrivacyCollectedDataTypePurposeAppFunctionality</string>
+			</array>
+		</dict>
+	</array>
+</dict>
+</plist>

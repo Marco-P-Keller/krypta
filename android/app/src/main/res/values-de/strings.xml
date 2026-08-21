@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Launcher / Zuletzt verwendet / App-Info. Muss die Tarnung halten —
+         der Produktname erscheint nur in der App nach dem Entsperren. -->
+    <string name="app_name">Rechner</string>
+</resources>
