@@ -73,8 +73,16 @@ jobs:
           # versions (e.g. QR display). Restrict to the encrypted-
           # message paths and exclude legitimate v1 *deserializers* that
           # accept legacy reads but never produce v1 writes.
+          #
+          # Nachtrag: `lib/features/messenger` enthielt auch
+          # presentation/, wodurch der oben genannte QR-Ausschluss nie
+          # griff — qr_display_sheet.dart löste den Gate dauerhaft aus.
+          # Der UI-Layer definiert keine Wire-Formate, deshalb nur noch
+          # data/ und logic/. Der Ratchet-Umschlag in lib/security und
+          # die Datenmodelle bleiben voll abgedeckt.
           v1_hits=$(grep -rn --include="*.dart" "'v':[[:space:]]*1" \
-            lib/features/messenger lib/security 2>/dev/null \
+            lib/features/messenger/data lib/features/messenger/logic \
+            lib/security 2>/dev/null \
             | grep -v "test\|mock\|//" \
             | grep -v "version >= 2\|version < 2\|legacy\|fromMap\|v1\b" \
             || true)
