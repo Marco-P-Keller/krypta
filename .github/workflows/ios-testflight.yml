@@ -1,0 +1,342 @@
+name: iOS TestFlight
+
+# Baut die App auf einem macOS-Runner und lädt sie nach TestFlight hoch.
+# Es wird kein eigener Mac benötigt — die Signatur passiert über einen
+# App-Store-Connect-API-Key (Cloud-Signing) oder optional über ein
+# hinterlegtes Distribution-Zertifikat.
+#
+# Setup-Anleitung: docs/TESTFLIGHT_GITHUB_ACTIONS.md
+
+on:
+  workflow_dispatch:
+    inputs:
+      build_number:
+        description: "Build-Nummer (leer = Offset + Run-Nummer)"
+        required: false
+        type: string
+      run_tests:
+        description: "flutter analyze + flutter test vor dem Build"
+        required: false
+        default: true
+        type: boolean
+      upload:
+        description: "IPA zu TestFlight hochladen (aus = nur bauen)"
+        required: false
+        default: true
+        type: boolean
+  push:
+    tags:
+      - "v*"
+
+concurrency:
+  group: ios-testflight-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  testflight:
+    name: Build & TestFlight
+    runs-on: macos-latest
+    timeout-minutes: 90
+
+    env:
+      APPLE_TEAM_ID: ${{ vars.APPLE_TEAM_ID || 'B97SQSQBMR' }}
+      BUNDLE_ID: ${{ vars.IOS_BUNDLE_ID || 'com.calcchat.ww' }}
+      ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+      ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+      # codesign verweigert Extended Attributes (siehe docs/IOS_ARCHIVE_CODESIGN.md)
+      COPYFILE_DISABLE: "1"
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Toolchain-Info
+        run: |
+          sw_vers
+          xcodebuild -version
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Flutter-Version
+        run: flutter --version
+
+      - name: Dart-Abhängigkeiten
+        run: flutter pub get
+
+      - name: CocoaPods
+        working-directory: ios
+        run: pod install --repo-update
+
+      - name: Static Analysis
+        if: ${{ github.event_name != 'workflow_dispatch' || inputs.run_tests }}
+        run: flutter analyze --no-fatal-infos
+
+      - name: Tests
+        if: ${{ github.event_name != 'workflow_dispatch' || inputs.run_tests }}
+        run: flutter test
+
+      # ── Version & Build-Nummer ───────────────────────────────────────
+      # TestFlight lehnt eine Build-Nummer ab, die für diese Version schon
+      # existiert. Default: fester Offset + laufende Run-Nummer, dadurch
+      # monoton steigend ohne manuelles Nachpflegen.
+
+      - name: Version bestimmen
+        id: version
+        env:
+          INPUT_BUILD_NUMBER: ${{ inputs.build_number }}
+          OFFSET: ${{ vars.IOS_BUILD_NUMBER_OFFSET || '69' }}
+        run: |
+          set -euo pipefail
+          BUILD_NAME=$(grep -m1 '^version:' pubspec.yaml \
+            | sed 's/^version:[[:space:]]*//' | cut -d'+' -f1 | tr -d '[:space:]')
+          if [ -n "${INPUT_BUILD_NUMBER}" ]; then
+            BUILD_NUMBER="${INPUT_BUILD_NUMBER}"
+          else
+            BUILD_NUMBER=$(( OFFSET + GITHUB_RUN_NUMBER ))
+          fi
+          echo "build_name=${BUILD_NAME}"     >> "$GITHUB_OUTPUT"
+          echo "build_number=${BUILD_NUMBER}" >> "$GITHUB_OUTPUT"
+          echo "Version ${BUILD_NAME} (${BUILD_NUMBER})"
+          {
+            echo "### iOS TestFlight"
+            echo ""
+            echo "| | |"
+            echo "|---|---|"
+            echo "| Version | \`${BUILD_NAME}\` |"
+            echo "| Build | \`${BUILD_NUMBER}\` |"
+            echo "| Bundle ID | \`${BUNDLE_ID}\` |"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      # ── Signatur vorbereiten ─────────────────────────────────────────
+      # Modus "manual"    : IOS_DIST_CERT_P12 + IOS_PROVISIONING_PROFILE gesetzt
+      # Modus "automatic" : sonst — Xcode zieht Zertifikat/Profil per API-Key
+
+      - name: Signatur vorbereiten
+        id: signing
+        env:
+          ASC_KEY_P8: ${{ secrets.ASC_KEY_P8 }}
+          IOS_DIST_CERT_P12: ${{ secrets.IOS_DIST_CERT_P12 }}
+          IOS_DIST_CERT_PASSWORD: ${{ secrets.IOS_DIST_CERT_PASSWORD }}
+          IOS_PROVISIONING_PROFILE: ${{ secrets.IOS_PROVISIONING_PROFILE }}
+          KEYCHAIN_PASSWORD: ${{ github.run_id }}-${{ github.run_attempt }}
+        run: |
+          set -euo pipefail
+
+          if [ -z "${ASC_KEY_ID}" ] || [ -z "${ASC_ISSUER_ID}" ] || [ -z "${ASC_KEY_P8}" ]; then
+            echo "::error::Secrets ASC_KEY_ID, ASC_ISSUER_ID und ASC_KEY_P8 fehlen — siehe docs/TESTFLIGHT_GITHUB_ACTIONS.md"
+            exit 1
+          fi
+
+          # App-Store-Connect-Key ablegen (Pfad, den altool selbst durchsucht)
+          KEY_DIR="${HOME}/.appstoreconnect/private_keys"
+          mkdir -p "${KEY_DIR}"
+          KEY_PATH="${KEY_DIR}/AuthKey_${ASC_KEY_ID}.p8"
+          # Kein Pipe zu grep: mit `pipefail` könnte ein SIGPIPE beim
+          # Schreiber den Zweig verfälschen.
+          if [[ "${ASC_KEY_P8}" == *"BEGIN PRIVATE KEY"* ]]; then
+            printf '%s\n' "${ASC_KEY_P8}" > "${KEY_PATH}"
+          else
+            printf '%s' "${ASC_KEY_P8}" | tr -d '[:space:]' \
+              | openssl base64 -d -A -out "${KEY_PATH}"
+          fi
+          chmod 600 "${KEY_PATH}"
+          if ! openssl pkey -in "${KEY_PATH}" -noout 2>/dev/null; then
+            echo "::error::ASC_KEY_P8 ist kein gültiger .p8-Key (weder PEM noch Base64 davon)"
+            exit 1
+          fi
+          echo "key_path=${KEY_PATH}" >> "$GITHUB_OUTPUT"
+
+          if [ -z "${IOS_DIST_CERT_P12}" ] || [ -z "${IOS_PROVISIONING_PROFILE}" ]; then
+            echo "mode=automatic" >> "$GITHUB_OUTPUT"
+            echo "Signatur-Modus: automatic (Xcode Cloud-Signing über API-Key)"
+            exit 0
+          fi
+
+          echo "Signatur-Modus: manual (hinterlegtes Zertifikat + Profil)"
+
+          CERT="${RUNNER_TEMP}/dist.p12"
+          printf '%s' "${IOS_DIST_CERT_P12}" | tr -d '[:space:]' \
+            | openssl base64 -d -A -out "${CERT}"
+
+          KEYCHAIN="${RUNNER_TEMP}/app-signing.keychain-db"
+          security create-keychain -p "${KEYCHAIN_PASSWORD}" "${KEYCHAIN}"
+          security set-keychain-settings -lut 21600 "${KEYCHAIN}"
+          security unlock-keychain -p "${KEYCHAIN_PASSWORD}" "${KEYCHAIN}"
+          security import "${CERT}" -P "${IOS_DIST_CERT_PASSWORD}" \
+            -A -t cert -f pkcs12 -k "${KEYCHAIN}"
+          security set-key-partition-list -S apple-tool:,apple:,codesign: \
+            -k "${KEYCHAIN_PASSWORD}" "${KEYCHAIN}" > /dev/null
+          security list-keychain -d user -s "${KEYCHAIN}" login.keychain-db
+          rm -f "${CERT}"
+
+          PROFILE="${RUNNER_TEMP}/profile.mobileprovision"
+          printf '%s' "${IOS_PROVISIONING_PROFILE}" | tr -d '[:space:]' \
+            | openssl base64 -d -A -out "${PROFILE}"
+          security cms -D -i "${PROFILE}" > "${RUNNER_TEMP}/profile.plist"
+          PROFILE_UUID=$(/usr/libexec/PlistBuddy -c 'Print :UUID' "${RUNNER_TEMP}/profile.plist")
+          PROFILE_NAME=$(/usr/libexec/PlistBuddy -c 'Print :Name' "${RUNNER_TEMP}/profile.plist")
+          PROFILE_DIR="${HOME}/Library/MobileDevice/Provisioning Profiles"
+          mkdir -p "${PROFILE_DIR}"
+          cp "${PROFILE}" "${PROFILE_DIR}/${PROFILE_UUID}.mobileprovision"
+          echo "Profil installiert: ${PROFILE_NAME} (${PROFILE_UUID})"
+
+          echo "mode=manual" >> "$GITHUB_OUTPUT"
+          echo "profile_name=${PROFILE_NAME}" >> "$GITHUB_OUTPUT"
+
+      - name: ExportOptions.plist erzeugen
+        id: export_options
+        env:
+          MODE: ${{ steps.signing.outputs.mode }}
+          PROFILE_NAME: ${{ steps.signing.outputs.profile_name }}
+        run: |
+          set -euo pipefail
+          PLIST="${RUNNER_TEMP}/ExportOptions.plist"
+          {
+            echo '<?xml version="1.0" encoding="UTF-8"?>'
+            echo '<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">'
+            echo '<plist version="1.0">'
+            echo '<dict>'
+            echo '  <key>method</key><string>app-store-connect</string>'
+            echo "  <key>teamID</key><string>${APPLE_TEAM_ID}</string>"
+            echo '  <key>destination</key><string>export</string>'
+            echo '  <key>uploadSymbols</key><true/>'
+            echo '  <key>stripSwiftSymbols</key><true/>'
+            # Build-Nummer kommt aus dem Flutter-Build und darf nicht von
+            # Xcode überschrieben werden.
+            echo '  <key>manageAppVersionAndBuildNumber</key><false/>'
+            if [ "${MODE}" = "manual" ]; then
+              echo '  <key>signingStyle</key><string>manual</string>'
+              echo '  <key>provisioningProfiles</key>'
+              echo '  <dict>'
+              echo "    <key>${BUNDLE_ID}</key><string>${PROFILE_NAME}</string>"
+              echo '  </dict>'
+            else
+              echo '  <key>signingStyle</key><string>automatic</string>'
+            fi
+            echo '</dict>'
+            echo '</plist>'
+          } > "${PLIST}"
+          plutil -lint "${PLIST}"
+          echo "path=${PLIST}" >> "$GITHUB_OUTPUT"
+
+      # ── Build ────────────────────────────────────────────────────────
+
+      - name: Flutter Release bauen (unsigniert)
+        run: |
+          set -euo pipefail
+          flutter build ios --release --no-codesign \
+            --build-name="${{ steps.version.outputs.build_name }}" \
+            --build-number="${{ steps.version.outputs.build_number }}"
+
+      - name: Extended Attributes entfernen
+        run: ./scripts/strip_xattrs_ios.sh
+
+      - name: Archiv erstellen
+        env:
+          MODE: ${{ steps.signing.outputs.mode }}
+          KEY_PATH: ${{ steps.signing.outputs.key_path }}
+          PROFILE_NAME: ${{ steps.signing.outputs.profile_name }}
+        run: |
+          set -euo pipefail
+          ARGS=(
+            -workspace ios/Runner.xcworkspace
+            -scheme Runner
+            -configuration Release
+            -destination 'generic/platform=iOS'
+            -archivePath "${RUNNER_TEMP}/Runner.xcarchive"
+            archive
+            DEVELOPMENT_TEAM="${APPLE_TEAM_ID}"
+          )
+          if [ "${MODE}" = "manual" ]; then
+            ARGS+=(
+              CODE_SIGN_STYLE=Manual
+              PROVISIONING_PROFILE_SPECIFIER="${PROFILE_NAME}"
+              CODE_SIGN_IDENTITY="Apple Distribution"
+            )
+          else
+            ARGS+=(
+              -allowProvisioningUpdates
+              -authenticationKeyPath "${KEY_PATH}"
+              -authenticationKeyID "${ASC_KEY_ID}"
+              -authenticationKeyIssuerID "${ASC_ISSUER_ID}"
+            )
+          fi
+          xcodebuild "${ARGS[@]}"
+
+      - name: IPA exportieren
+        env:
+          MODE: ${{ steps.signing.outputs.mode }}
+          KEY_PATH: ${{ steps.signing.outputs.key_path }}
+        run: |
+          set -euo pipefail
+          ARGS=(
+            -exportArchive
+            -archivePath "${RUNNER_TEMP}/Runner.xcarchive"
+            -exportOptionsPlist "${{ steps.export_options.outputs.path }}"
+            -exportPath "${RUNNER_TEMP}/ipa"
+          )
+          if [ "${MODE}" != "manual" ]; then
+            ARGS+=(
+              -allowProvisioningUpdates
+              -authenticationKeyPath "${KEY_PATH}"
+              -authenticationKeyID "${ASC_KEY_ID}"
+              -authenticationKeyIssuerID "${ASC_ISSUER_ID}"
+            )
+          fi
+          xcodebuild "${ARGS[@]}"
+          ls -lh "${RUNNER_TEMP}/ipa"
+
+      # ── Upload ───────────────────────────────────────────────────────
+
+      - name: Zu TestFlight hochladen
+        if: ${{ github.event_name != 'workflow_dispatch' || inputs.upload }}
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+          IPAS=("${RUNNER_TEMP}"/ipa/*.ipa)
+          if [ ${#IPAS[@]} -eq 0 ]; then
+            echo "::error::Keine .ipa gefunden"
+            exit 1
+          fi
+          IPA="${IPAS[0]}"
+          echo "Validiere ${IPA} ..."
+          xcrun altool --validate-app -f "${IPA}" -t ios \
+            --apiKey "${ASC_KEY_ID}" --apiIssuer "${ASC_ISSUER_ID}"
+          echo "Lade hoch ..."
+          xcrun altool --upload-app -f "${IPA}" -t ios \
+            --apiKey "${ASC_KEY_ID}" --apiIssuer "${ASC_ISSUER_ID}"
+          echo "Upload abgeschlossen — die Verarbeitung in TestFlight dauert i. d. R. 5–30 Minuten." \
+            >> "$GITHUB_STEP_SUMMARY"
+
+      - name: dSYMs sichern
+        if: always()
+        run: |
+          mkdir -p "${RUNNER_TEMP}/dsyms"
+          cp -R "${RUNNER_TEMP}/Runner.xcarchive/dSYMs/." "${RUNNER_TEMP}/dsyms/" 2>/dev/null || true
+
+      - name: Artefakte hochladen
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-build-${{ steps.version.outputs.build_number }}
+          path: |
+            ${{ runner.temp }}/ipa/*.ipa
+            ${{ runner.temp }}/dsyms
+          if-no-files-found: ignore
+          retention-days: 14
+
+      # ── Aufräumen ────────────────────────────────────────────────────
+
+      - name: Schlüsselmaterial vom Runner entfernen
+        if: always()
+        run: |
+          security delete-keychain "${RUNNER_TEMP}/app-signing.keychain-db" 2>/dev/null || true
+          rm -rf "${HOME}/.appstoreconnect/private_keys"
+          rm -f "${RUNNER_TEMP}/profile.mobileprovision" "${RUNNER_TEMP}/profile.plist"
+          rm -rf "${HOME}/Library/MobileDevice/Provisioning Profiles"
