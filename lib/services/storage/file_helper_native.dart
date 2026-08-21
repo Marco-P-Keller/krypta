@@ -70,7 +70,7 @@ Future<void> setWipeMarker() async {
 Future<bool> isWipeMarkerSet() async {
   try {
     final file = await _wipeMarkerFile();
-    return file.exists();
+    return await file.exists();
   } catch (_) {
     return false;
   }

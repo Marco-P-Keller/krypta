@@ -2,7 +2,6 @@ import 'dart:convert';
 import 'dart:typed_data';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kryptaapp/security/encryption/encryption_service.dart';
-import 'package:kryptaapp/security/encryption/key_pair_model.dart';
 
 void main() {
   late EncryptionService encryption;
@@ -253,15 +252,4 @@ void main() {
       expect(map['v'], 2);
     });
   });
-}
-
-extension _TamperPayload on EncryptedPayload {
-  EncryptedPayload copyWith({Uint8List? ciphertext}) {
-    return EncryptedPayload(
-      ciphertext: ciphertext ?? this.ciphertext,
-      nonce: nonce,
-      mac: mac,
-      ephemeralPublicKey: ephemeralPublicKey,
-    );
-  }
 }
