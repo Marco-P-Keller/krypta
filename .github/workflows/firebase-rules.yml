@@ -1,0 +1,98 @@
+name: Firebase Rules
+
+# Veröffentlicht firebase/firestore.rules im Firebase-Projekt.
+# Läuft ohne lokalen Rechner — die Authentifizierung erfolgt über ein
+# Dienstkonto, das komplett im Browser angelegt werden kann.
+#
+# Setup-Anleitung: docs/FIREBASE_RULES_DEPLOY.md
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'firebase/firestore.rules'
+      - '.github/workflows/firebase-rules.yml'
+
+concurrency:
+  group: firebase-rules
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    name: Firestore Rules deployen
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    env:
+      FIREBASE_PROJECT: ${{ vars.FIREBASE_PROJECT_ID || 'kryptaecc' }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Vorhaben anzeigen
+        run: |
+          set -euo pipefail
+          echo "Projekt: ${FIREBASE_PROJECT}"
+          echo "Datei:   firebase/firestore.rules ($(wc -l < firebase/firestore.rules) Zeilen)"
+          {
+            echo "### Firestore Rules Deploy"
+            echo ""
+            echo "| | |"
+            echo "|---|---|"
+            echo "| Projekt | \`${FIREBASE_PROJECT}\` |"
+            echo "| Commit | \`${GITHUB_SHA:0:7}\` |"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Dienstkonto vorbereiten
+        id: auth
+        env:
+          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+        run: |
+          set -euo pipefail
+          if [ -z "${FIREBASE_SERVICE_ACCOUNT}" ]; then
+            echo "::error::Secret FIREBASE_SERVICE_ACCOUNT fehlt — siehe docs/FIREBASE_RULES_DEPLOY.md"
+            exit 1
+          fi
+
+          CRED="${RUNNER_TEMP}/firebase-sa.json"
+          # Rohes JSON und Base64-kodiertes JSON werden beide akzeptiert.
+          if [ "${FIREBASE_SERVICE_ACCOUNT:0:1}" = "{" ]; then
+            printf '%s' "${FIREBASE_SERVICE_ACCOUNT}" > "${CRED}"
+          else
+            printf '%s' "${FIREBASE_SERVICE_ACCOUNT}" | tr -d '[:space:]' | base64 -d > "${CRED}"
+          fi
+          chmod 600 "${CRED}"
+
+          node -e 'var sa=JSON.parse(require("fs").readFileSync(process.argv[1],"utf8"));["client_email","private_key","project_id"].forEach(function(k){if(!sa[k]){console.error("::error::Dienstkonto-JSON ohne Feld "+k);process.exit(1);}});console.log("Dienstkonto: "+sa.client_email+" (Projekt "+sa.project_id+")");' "${CRED}"
+
+          echo "cred=${CRED}" >> "$GITHUB_OUTPUT"
+
+      - name: Rules deployen
+        env:
+          GOOGLE_APPLICATION_CREDENTIALS: ${{ steps.auth.outputs.cred }}
+          FIREBASE_TOOLS_VERSION: ${{ vars.FIREBASE_TOOLS_VERSION || 'latest' }}
+        run: |
+          set -euo pipefail
+          # Bewusst nur firestore:rules. Ein pauschales `firebase deploy`
+          # würde auch firebase/functions mitnehmen, die in firebase.json
+          # auf der abgekündigten Runtime nodejs18 stehen. firestore:indexes
+          # bleibt außen vor, weil firestore.indexes.json leer ist — das
+          # spart dem Dienstkonto die Rolle "Cloud Datastore Index Admin".
+          npx --yes firebase-tools@"${FIREBASE_TOOLS_VERSION}" deploy \
+            --only firestore:rules \
+            --project "${FIREBASE_PROJECT}" \
+            --non-interactive
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "Rules veröffentlicht — ab sofort in \`${FIREBASE_PROJECT}\` aktiv." >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Zugangsdaten vom Runner entfernen
+        if: always()
+        run: rm -f "${RUNNER_TEMP}/firebase-sa.json"
