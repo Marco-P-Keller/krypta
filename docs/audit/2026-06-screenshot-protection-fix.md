@@ -100,3 +100,103 @@ Verhalten. Apple lehnt das nicht ab (viele Apps nutzen es), aber ein künftiges 
 könnte es brechen → dann **fail-open** (Screenshot wieder sichtbar), aber die
 Post-Capture-Warnung bleibt ehrlich („nicht geschützt"). Android unberührt (echtes
 FLAG_SECURE-Blocken).
+
+---
+
+## Regression in Build 68 (gemeldet 2026-08-21) — UI verschoben
+
+**Symptom (TestFlight Build 68, echtes iPhone):** Die gesamte Oberflaeche ist nach
+unten und nach rechts verschoben. Titel „Chats" und Zurueck-Pfeil stehen auf
+Bildschirmmitte statt in der Navigationsleiste, darueber eine grosse schwarze
+Flaeche; der FAB unten rechts wird am Bildschirmrand abgeschnitten.
+
+**Root Cause:** Das Secure-Textfeld wurde per `centerXAnchor`/`centerYAnchor`
+**zentriert** ins Window gehaengt, und `window.layer` wurde unter dessen Canvas
+genestet. Ein Sublayer erbt das Koordinatensystem seiner Vorfahren — also wurde die
+komplette App um den Ursprung des zentrierten Feldes verschoben (rund eine halbe
+Bildschirmhoehe nach unten, eine halbe Breite nach rechts). Die schwarze Flaeche
+oben ist der freigewordene Root-Layer.
+
+Die alte Verifikation prueft nur `window.layer.superlayer === canvas`, also die
+**Struktur**. Die **Geometrie** wurde nirgends geprueft — deshalb meldete der Code
+„verifiziert, Schutz aktiv", waehrend die UI zerschossen war.
+
+Zweiter, latenter Fehler derselben Methode: der Canvas wurde ueber
+`sublayers?.last` gesucht. Ab **iOS 17** ist der Secure-Canvas der **erste**
+Sublayer; `.last` greift dort einen anderen Layer ab (eigener Text-Inset-Ursprung,
+kein OS-Schutz) — zusaetzlicher Versatz **und** keine wirksame Schwaerzung.
+
+**Fix:**
+
+1. Feld wird an **top-left** des Windows gepinnt, auf **volle Window-Groesse**
+   (statt zentriert) — Ursprung (0,0), und Auto Layout haelt das ueber Rotation und
+   iPad-Resize hinweg.
+2. Canvas-Lookup probiert **`first` und `last`** und behaelt den Kandidaten, der die
+   vollstaendige Verifikation besteht (kein hartkodierter Versionscheck).
+3. Neue `applySecureMaskGeometry()`: rechnet den Ziel-Frame ueber
+   `convert(_:to:)` in Canvas-Koordinaten um, damit das Window absolut auf
+   denselben Pixeln landet wie ohne Maske. `window.bounds` als Groessenquelle,
+   damit Rotation korrekt bleibt.
+4. Neue `isWindowGeometryIntact()`: vergleicht die **absolute** Position/Groesse
+   des Window-Layers gegen die Referenz vor dem Umhaengen (Toleranz 0,5 pt). Genau
+   der Check, der in Build 68 fehlte. Install gilt nur als erfolgreich, wenn
+   Struktur **und** Geometrie stimmen.
+5. Neue `restoreOriginalParenting()` + Watchdog auf
+   `orientationDidChangeNotification` und `applicationDidBecomeActive`: bei
+   kaputter Struktur oder Geometrie wird die Maske **abgebaut** und das Window
+   zurueckgehaengt. **Fail-visible statt fail-black** — lieber korrekte UI ohne
+   Maskierung als eine verschobene/schwarze UI, die Schutz behauptet.
+6. `isSecureMaskStructureIntact()` prueft jetzt zusaetzlich, dass der Feld-Layer
+   noch unter dem urspruenglichen Superlayer haengt.
+7. Der Geometrie-Check konvertiert das **komplette Rect** (`convert(_:from:)`) statt
+   nur des Ursprungs — damit schlaegt er auch bei Scale/Rotation/Translation an, die
+   irgendein Layer zwischen Window und Original-Parent setzt.
+8. `scheduleSecureMaskRecheck()`: Nachkontrolle im naechsten Runloop **und** nach
+   0,75 s. Die Verifikation direkt nach dem Install beweist nur den Zustand in
+   diesem Moment; UIKit legt danach weitere Layout-Passes nach (Safe Area, Keyboard,
+   Flutter-View-Setup).
+9. **Genau ein Kandidat, kein Fallback:** iOS 17+ nimmt `first`, aeltere Releases
+   `last` — und wenn der nicht verifiziert, wird abgebrochen. Grund (Codex R1+R2,
+   P1): die Verifikation prueft Ancestry, Platzierung und Sichtbarkeit; das sind
+   Eigenschaften, die ein beliebiger Layer erfuellt. Ein Fallback auf den anderen
+   Sublayer haette aus einem ehrlichen "kein Schutz" ein falsches "geschuetzt"
+   gemacht (`isScreenshotMaskActive = true` ohne echte Capture-Ausnahme) — genau
+   in dem Moment, in dem der erwartete Canvas kurzzeitig durchfaellt. Fail closed
+   ist hier richtig: UI korrekt, Maskierung aus, Warnung ehrlich.
+10. `isAncestorChainRenderable()`: kein Layer zwischen Window und Original-Parent
+    darf `isHidden`, teiltransparent sein oder per `masksToBounds` das Window
+    beschneiden. Geometrie allein reicht nicht — ein falscher Layer kann das Rect
+    korrekt abbilden und den Inhalt trotzdem wegclippen.
+11. **Jeder Install startet aus einem sichtbaren Zustand** (Codex R1, P1): haengt
+    `window.layer` nicht an seinem Original-Parent, wird es zuerst
+    zurueckgehaengt. Und ein Reinstall nach kaputter Struktur ruft vorher
+    `restoreOriginalParenting()` — sonst konnte ein frueher Return (keine
+    Kandidaten, Canvas weg) das Window unter einem abgehaengten Canvas
+    stranden lassen: schwarzer Screen.
+12. **Scene-Resize-Hook statt Orientierungs-Notification** (Codex R1, P1):
+    `orientationDidChangeNotification` feuert bei iPad Split View und Stage
+    Manager nicht. Stattdessen `SecureMaskField.layoutSubviews` — das Feld ist
+    ans Window gepinnt, also meldet UIKit dort jede Groessenaenderung der Scene.
+    Repair laeuft coalesced im naechsten Runloop (`isRepairingMask`).
+13. **Delete-Code ueberlebt Dispose** (Codex R1, P2): der pauschale
+    `mounted`-Guard haette einen bereits eingegebenen Notfall-Wipe verschluckt,
+    wenn die Argon2id-Pruefung nach dem Dispose fertig wird. Jetzt werden
+    `MessengerProvider` und `EmergencyWipeService` **vor** dem `await` gegriffen,
+    der Wipe laeuft unabhaengig vom Mounted-State, und nur die UI-Teile
+    (`_logic.clear()`, `widget.onDeleteCode()`) sind gegated. `delete` steht
+    im Switch bewusst vor `secret` — das spiegelt die Prioritaet des Detectors.
+14. **Kill-Switch** `maskContentInCaptures` (oben in `AppDelegate`): auf `false`
+   gesetzt fasst die App den Layer-Baum des Windows nie an — Screenshots zeigen
+   dann wieder echten Inhalt (die Warnung sagt das ehrlich), aber ein UI-Versatz
+   ist physisch ausgeschlossen. Umzulegen, falls ein Geraete-Build den Build-68-
+   Fehler nochmal zeigt.
+
+**Konsequenz fuer den Gerätetest:** Die Checkliste oben bleibt Pflicht, plus neu:
+
+- [ ] App-Start: UI sitzt korrekt im Bildschirm (kein Versatz, keine schwarze
+      Flaeche oben, FAB unten rechts vollstaendig sichtbar)
+- [ ] Nach Rotation hoch/quer/hoch: UI weiterhin korrekt positioniert
+- [ ] Nach App-Switch (Home → zurueck): UI weiterhin korrekt positioniert
+- [ ] Wenn die Maskierung auf dem Geraet **nicht** installierbar ist: App laeuft
+      normal weiter, Settings-Toggle springt zurueck, Screenshot-Warnung sagt
+      ehrlich „nicht geschuetzt"

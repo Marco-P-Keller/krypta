@@ -15,13 +15,24 @@ import Security
   /// excluded by the OS from screenshots, screen recordings and AirPlay
   /// mirroring. We reparent the window's layer under that protected canvas
   /// once, then just toggle `isSecureTextEntry` to turn masking on/off.
-  private let secureMaskField = UITextField()
+  /// Kill switch for the capture-masking layer trick. Set to `false` to ship a
+  /// build that never touches the window's layer tree: screenshots then show
+  /// real content again (the warning stays honest about that), but the UI can
+  /// physically not end up shifted. Flip this if a device build ever shows the
+  /// layout problem from build 68 again.
+  private let maskContentInCaptures = true
+  private let secureMaskField = SecureMaskField()
   private var secureMaskInstalled = false
   /// The secure-canvas layer that masks captures, and the window layer's
   /// original parent — cached so a toggle can re-verify the reparenting is
   /// still intact and rebuild it if UIKit ever swapped the field's sublayers.
   private var secureCanvasLayer: CALayer?
   private var savedOriginalSuperlayer: CALayer?
+  /// The window layer frame in that original parent, captured before the
+  /// first reparenting — the reference every geometry check compares against.
+  private var savedOriginalWindowFrame: CGRect?
+  private var secureMaskWatchdogInstalled = false
+  private var isRepairingMask = false
 
   /// VERIFIED runtime state: true only once the secure canvas was actually
   /// installed AND masking is currently on. Distinct from "Dart requested
@@ -247,11 +258,13 @@ import Security
   ///
   /// The reparenting only affects what the OS *captures* — the content keeps
   /// rendering normally on the physical display. Returns whether the mask is
-  /// installed and verified. If a future iOS release ever stops honoring
-  /// this, install fails CLOSED here (we report no protection) and the
-  /// post-hoc screenshot detection still warns the user honestly.
+  /// installed and verified — structurally AND geometrically. If a future iOS
+  /// release ever stops honoring this, install fails CLOSED here (we report
+  /// no protection) and the post-hoc screenshot detection still warns the
+  /// user honestly.
   @discardableResult
   private func installSecureMaskIfNeeded() -> Bool {
+    guard maskContentInCaptures else { return false }
     if secureMaskInstalled { return true }
     guard let window = window else { return false }
     // Reuse the cached original parent on reinstall so we never treat a
@@ -259,50 +272,220 @@ import Security
     guard let originalSuperlayer = savedOriginalSuperlayer ?? window.layer.superlayer
     else { return false }
     savedOriginalSuperlayer = originalSuperlayer
+    // Never start an install from a half-broken tree: if the window layer is
+    // currently parented anywhere but its original home, put it back first.
+    // Otherwise an early return below (no candidates, canvas gone) would leave
+    // it stranded under a detached canvas — a black screen.
+    if window.layer.superlayer !== originalSuperlayer {
+      originalSuperlayer.addSublayer(window.layer)
+      window.layer.frame = CGRect(origin: savedOriginalWindowFrame?.origin ?? .zero,
+                                  size: window.bounds.size)
+      secureCanvasLayer = nil
+    }
+    // Where the window sits in its original parent. Captured before the very
+    // first move only: afterwards window.layer.frame is expressed in canvas
+    // coordinates and would poison the reference.
+    if savedOriginalWindowFrame == nil { savedOriginalWindowFrame = window.layer.frame }
 
     secureMaskField.isUserInteractionEnabled = false
     if secureMaskField.superview == nil {
       secureMaskField.translatesAutoresizingMaskIntoConstraints = false
       window.addSubview(secureMaskField)
+      // Pin to the window's TOP-LEFT at full size — never centered. Every
+      // descendant inherits this layer's origin, so a centered field offsets
+      // the whole UI by half a screen down and right; that is exactly what
+      // shipped in build 68. Full-size + Auto Layout also keeps the origin at
+      // zero across rotation and iPad Split View resizes.
       NSLayoutConstraint.activate([
-        secureMaskField.centerXAnchor.constraint(equalTo: window.centerXAnchor),
-        secureMaskField.centerYAnchor.constraint(equalTo: window.centerYAnchor),
+        secureMaskField.topAnchor.constraint(equalTo: window.topAnchor),
+        secureMaskField.leadingAnchor.constraint(equalTo: window.leadingAnchor),
+        secureMaskField.widthAnchor.constraint(equalTo: window.widthAnchor),
+        secureMaskField.heightAnchor.constraint(equalTo: window.heightAnchor),
       ])
     }
 
     // The secure render canvas only exists once isSecureTextEntry is on, so
     // force it on and lay out BEFORE looking the canvas layer up.
     secureMaskField.isSecureTextEntry = true
+    window.layoutIfNeeded()
     secureMaskField.layoutIfNeeded()
 
-    guard let canvas = secureMaskField.layer.sublayers?.last else {
-      return false // canvas not created on this iOS version — fail closed
-    }
+    // Take ONLY the sublayer the running OS is known to use for the secure
+    // canvas: iOS 17+ the first, earlier releases the last. Deliberately no
+    // fallback to the other one — none of our checks can tell a secure canvas
+    // from an ordinary layer (they verify ancestry, placement and visibility,
+    // all of which an arbitrary layer satisfies), so accepting the alternate
+    // would mean claiming a protection we cannot establish. If the expected
+    // layer does not verify we fail closed: UI correct, masking off, and the
+    // screenshot warning says so.
+    let sublayers = secureMaskField.layer.sublayers ?? []
+    let canvasCandidate: CALayer? = {
+      if #available(iOS 17.0, *) { return sublayers.first }
+      return sublayers.last
+    }()
+    guard let canvas = canvasCandidate else { return false } // no canvas — fail closed
 
     // Reparent: put the field's layer where the window layer was, then nest
     // the window layer inside the secure canvas. addSublayer detaches the
     // window layer from any previous (possibly stale) parent automatically.
     originalSuperlayer.addSublayer(secureMaskField.layer)
-    canvas.addSublayer(window.layer)
 
-    // Verify the move actually took; otherwise restore and report failure.
-    guard window.layer.superlayer === canvas else {
-      originalSuperlayer.addSublayer(window.layer)
-      return false
+    canvas.addSublayer(window.layer)
+    secureCanvasLayer = canvas
+    applySecureMaskGeometry()
+    if isSecureMaskStructureIntact() && isWindowGeometryIntact()
+        && isAncestorChainRenderable() {
+      secureMaskInstalled = true
+      startSecureMaskWatchdog()
+      scheduleSecureMaskRecheck()
+      return true
     }
 
-    secureCanvasLayer = canvas
-    secureMaskInstalled = true
-    return true
+    // Not verified — restore the original tree. A correctly positioned UI
+    // without masking always beats a shifted or blank one that claims a
+    // protection it does not actually have.
+    restoreOriginalParenting()
+    return false
+  }
+
+  /// Re-assert the window layer's geometry inside the secure canvas.
+  ///
+  /// A layer inherits its ancestors' coordinate system, and UIKit re-assigns
+  /// `window.layer.frame` in ORIGINAL parent coordinates on every scene
+  /// resize (rotation, iPad Split View, keyboard). Both effects have to be
+  /// compensated or the UI drifts off-screen.
+  private func applySecureMaskGeometry() {
+    guard let window = window,
+          let canvas = secureCanvasLayer,
+          let originalSuperlayer = savedOriginalSuperlayer,
+          let reference = savedOriginalWindowFrame else { return }
+    // window.bounds is parent-independent and always current, so it stays
+    // correct across rotation; the origin remains the one the window had
+    // before the move.
+    let target = CGRect(origin: reference.origin, size: window.bounds.size)
+    let originInCanvas = originalSuperlayer.convert(target.origin, to: canvas)
+    window.layer.frame = CGRect(origin: originInCanvas, size: target.size)
+  }
+
+  /// True iff the window still renders exactly where it would without the
+  /// mask. This is the check that was missing in build 68: the structure was
+  /// verified, the geometry was not — so a half-screen offset shipped while
+  /// the app reported "protected".
+  private func isWindowGeometryIntact() -> Bool {
+    guard let window = window,
+          let originalSuperlayer = savedOriginalSuperlayer,
+          let reference = savedOriginalWindowFrame,
+          window.layer.superlayer != nil else { return false }
+    let tolerance: CGFloat = 0.5
+    // Convert the whole rect, not just the origin: this walks every ancestor
+    // and therefore also catches a scale, rotation or translation applied by
+    // any layer between the window and its original parent.
+    let rendered = originalSuperlayer.convert(window.layer.bounds, from: window.layer)
+    let expected = CGRect(origin: reference.origin, size: window.bounds.size)
+    return abs(rendered.origin.x - expected.origin.x) <= tolerance
+        && abs(rendered.origin.y - expected.origin.y) <= tolerance
+        && abs(rendered.width - expected.width) <= tolerance
+        && abs(rendered.height - expected.height) <= tolerance
+  }
+
+  /// True iff no layer between the window and its original parent can hide or
+  /// clip the UI. Geometry alone is not enough: a wrong candidate layer can map
+  /// the window rect correctly and still be hidden, transparent or masked.
+  private func isAncestorChainRenderable() -> Bool {
+    guard let window = window, let original = savedOriginalSuperlayer else { return false }
+    var node: CALayer? = window.layer.superlayer
+    while let layer = node, layer !== original {
+      if layer.isHidden || layer.opacity < 0.99 { return false }
+      if layer.masksToBounds {
+        let windowRect = layer.convert(window.layer.bounds, from: window.layer)
+        // Half-point slack: sub-pixel rounding must not reject a canvas that
+        // does contain the window, which would needlessly drop the masking.
+        if !layer.bounds.insetBy(dx: -0.5, dy: -0.5).contains(windowRect) { return false }
+      }
+      node = layer.superlayer
+    }
+    // The chain must actually reach the original parent, not dead-end.
+    return node === original
   }
 
   /// True iff the reparenting is still structurally intact: the window layer
-  /// sits under the secure canvas, which sits under the field's layer. UIKit
-  /// can rebuild a secure field's sublayers across toggles, so we re-check.
+  /// sits under the secure canvas, which sits under the field's layer, which
+  /// sits under the window's original parent. UIKit can rebuild a secure
+  /// field's sublayers across toggles, so we re-check.
   private func isSecureMaskStructureIntact() -> Bool {
     guard let canvas = secureCanvasLayer, let window = window else { return false }
     return window.layer.superlayer === canvas
         && canvas.superlayer === secureMaskField.layer
+        && secureMaskField.layer.superlayer === savedOriginalSuperlayer
+  }
+
+  /// Tear the mask down and put the window layer back where it belongs.
+  /// Runs whenever verification fails: fail VISIBLE, never leave the user
+  /// with a shifted, clipped or black screen.
+  private func restoreOriginalParenting() {
+    secureMaskField.isSecureTextEntry = false
+    if let window = window, let originalSuperlayer = savedOriginalSuperlayer {
+      originalSuperlayer.addSublayer(window.layer)
+      window.layer.frame = CGRect(origin: savedOriginalWindowFrame?.origin ?? .zero,
+                                  size: window.bounds.size)
+    }
+    // Drop the field out of the view hierarchy too, so UIKit is left with a
+    // consistent view/layer tree; a later re-install rebuilds it cleanly.
+    secureMaskField.layer.removeFromSuperlayer()
+    secureMaskField.removeFromSuperview()
+    secureCanvasLayer = nil
+    secureMaskInstalled = false
+    isScreenshotMaskActive = false
+  }
+
+  /// Watch the layout events that can move or orphan the window layer:
+  /// rotation, scene resizes (iPad Split View) and every foreground return.
+  /// Repair if possible, tear the mask down otherwise.
+  private func startSecureMaskWatchdog() {
+    guard !secureMaskWatchdogInstalled else { return }
+    secureMaskWatchdogInstalled = true
+    // The field is pinned to the window, so UIKit lays it out on EVERY window
+    // resize: rotation, iPad Split View, Stage Manager, safe-area changes.
+    // That is the general scene-resize signal an orientation notification is
+    // not — dragging a Split View divider never changes device orientation.
+    secureMaskField.onLayout = { [weak self] in self?.scheduleSecureMaskRepair() }
+    // Foreground returns are covered by applicationDidBecomeActive below.
+  }
+
+  /// Coalesce repairs: the layout hook fires inside a layout pass and the
+  /// repair mutates layer frames, so run it on the next runloop turn and never
+  /// re-enter while one is already queued.
+  private func scheduleSecureMaskRepair() {
+    guard !isRepairingMask else { return }
+    isRepairingMask = true
+    DispatchQueue.main.async { [weak self] in
+      guard let self = self else { return }
+      self.isRepairingMask = false
+      self.repairSecureMaskOrRestore()
+    }
+  }
+
+  /// Verification right after the install only proves the tree was correct at
+  /// that instant. UIKit runs further layout passes afterwards (safe-area,
+  /// keyboard, Flutter's own view setup), so re-check once the runloop has
+  /// settled and once again shortly after — and drop the mask if the UI moved.
+  private func scheduleSecureMaskRecheck() {
+    scheduleSecureMaskRepair()
+    DispatchQueue.main.asyncAfter(deadline: .now() + 0.75) { [weak self] in
+      self?.repairSecureMaskOrRestore()
+    }
+  }
+
+  private func repairSecureMaskOrRestore() {
+    guard secureMaskInstalled else { return }
+    if !isSecureMaskStructureIntact() {
+      restoreOriginalParenting()
+      return
+    }
+    applySecureMaskGeometry()
+    if !isWindowGeometryIntact() || !isAncestorChainRenderable() {
+      restoreOriginalParenting()
+    }
   }
 
   /// Toggle masking on/off, resolving [completion] on the main thread with
@@ -318,15 +501,21 @@ import Security
       }
 
       var ok = self.installSecureMaskIfNeeded()
-      // If a prior install's structure was torn down by UIKit, rebuild once.
+      // If UIKit tore a prior install down, restore FIRST and rebuild from a
+      // visible state — a reinstall that bails early must never leave the
+      // window layer hanging under a detached canvas.
       if ok && !self.isSecureMaskStructureIntact() {
-        self.secureMaskInstalled = false
+        self.restoreOriginalParenting()
         ok = self.installSecureMaskIfNeeded()
       }
       if ok {
         self.secureMaskField.isSecureTextEntry = on
-        // A toggle can rebuild sublayers — confirm it survived.
-        ok = self.isSecureMaskStructureIntact()
+        // A toggle can rebuild sublayers and reset frames — re-assert the
+        // geometry and confirm BOTH invariants survived.
+        self.applySecureMaskGeometry()
+        ok = self.isSecureMaskStructureIntact() && self.isWindowGeometryIntact()
+          && self.isAncestorChainRenderable()
+        if !ok { self.restoreOriginalParenting() }
       }
 
       self.isScreenshotMaskActive = on && ok
@@ -349,6 +538,10 @@ import Security
     // flash of the previous (now stale) screen content during resume.
     DispatchQueue.main.async {
       self.window?.viewWithTag(9999)?.removeFromSuperview()
+      // A backgrounded app can come back with a rebuilt layer tree or a
+      // resized scene — re-assert the mask geometry, or drop the mask if it
+      // cannot be repaired, so the UI is never left shifted.
+      self.repairSecureMaskOrRestore()
     }
   }
 
@@ -414,5 +607,18 @@ class ScreenshotStreamHandler: NSObject, FlutterStreamHandler {
     delegate?.screenshotEventSink = nil
     delegate?.stopScreenshotDetection()
     return nil
+  }
+}
+
+/// Secure-canvas host. Subclassed purely for `layoutSubviews`: pinned to the
+/// window, that callback is the most reliable public signal that the scene
+/// geometry changed — including iPad Split View and Stage Manager resizes,
+/// which post no orientation notification.
+class SecureMaskField: UITextField {
+  var onLayout: (() -> Void)?
+
+  override func layoutSubviews() {
+    super.layoutSubviews()
+    onLayout?()
   }
 }

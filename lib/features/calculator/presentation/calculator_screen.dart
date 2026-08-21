@@ -41,32 +41,43 @@ class _CalculatorScreenState extends State<CalculatorScreen> {
 
   Future<void> _handleEquals() async {
     final codeDetector = context.read<CodeDetector>();
+    // Capture the wipe dependencies BEFORE the await: the emergency delete has
+    // to run even when this State is disposed mid-verification, and reading
+    // from context after dispose is illegal.
+    final messenger = context.read<MessengerProvider>();
+    final wipeService = context.read<EmergencyWipeService>();
+
     final result = await codeDetector.checkCode(_logic.display);
+    // Argon2id verification takes a moment, and app.dart locks back to the
+    // calculator on every lifecycle change — that disposes this State while
+    // we await.
+    final stillMounted = mounted;
 
     switch (result) {
+      case CodeResult.delete:
+        // Highest priority (delete outranks secret): an entered emergency wipe
+        // must never be cancelled by lifecycle timing, so it runs regardless of
+        // the mounted state. Only the UI parts are gated.
+        if (stillMounted) _logic.clear();
+        // Wipe in-memory messenger state first (ratchet keys, contacts, messages)
+        await messenger.wipeAll();
+        await wipeService.wipeEverything();
+        if (mounted) widget.onDeleteCode();
+        return;
       case CodeResult.secret:
+        // A stale result must not notify a disposed logic and, worse, must not
+        // hand out onSecretCode() right after an automatic lock.
+        if (!stillMounted) return;
         _logic.clear();
         widget.onSecretCode();
         return;
       case CodeResult.decoy:
         // Decoy mode removed — treat as no match
         break;
-      case CodeResult.delete:
-        _logic.clear();
-        await _handleDeleteCode();
-        return;
       case CodeResult.none:
+        if (!stillMounted) return;
         _logic.calculate();
     }
-  }
-
-  Future<void> _handleDeleteCode() async {
-    final messenger = context.read<MessengerProvider>();
-    final wipeService = context.read<EmergencyWipeService>();
-    // Wipe in-memory messenger state first (ratchet keys, contacts, messages)
-    await messenger.wipeAll();
-    await wipeService.wipeEverything();
-    if (mounted) widget.onDeleteCode();
   }
 
   @override
