@@ -340,6 +340,7 @@ jobs:
           path: |
             ${{ runner.temp }}/ipa/*.ipa
             ${{ runner.temp }}/dsyms
+            ios/Podfile.lock
           if-no-files-found: ignore
           retention-days: 14
 
