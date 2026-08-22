@@ -52,6 +52,46 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # Läuft vor allem Teuren. Jeder dieser Punkte würde den Build sonst
+      # erst beim Upload killen — nach ~20 Minuten Build- und Signierzeit.
+      - name: Preflight (App-Store-Blocker)
+        run: |
+          set -euo pipefail
+          FAIL=0
+
+          # ITMS-90717: ein App-Icon mit Alphakanal wird beim Upload
+          # abgelehnt. PNG-Farbtyp steht in Byte 25; 6 = RGBA, 4 = Grau+Alpha.
+          for f in ios/Runner/Assets.xcassets/AppIcon.appiconset/*.png; do
+            CT=$(od -An -tu1 -j25 -N1 "$f" | tr -d ' ')
+            if [ "$CT" = "6" ] || [ "$CT" = "4" ]; then
+              echo "::error file=$f::Alphakanal im App-Icon (PNG-Farbtyp $CT) — ITMS-90717"
+              FAIL=1
+            fi
+          done
+
+          # ITMS-91053: das Privacy-Manifest muss im Bundle landen, nicht nur
+          # auf der Platte liegen.
+          if [ ! -f ios/Runner/PrivacyInfo.xcprivacy ]; then
+            echo "::error::ios/Runner/PrivacyInfo.xcprivacy fehlt"
+            FAIL=1
+          elif ! grep -q 'PrivacyInfo.xcprivacy in Resources' ios/Runner.xcodeproj/project.pbxproj; then
+            echo "::error::PrivacyInfo.xcprivacy ist nicht in der Resources-Build-Phase des Runner-Targets"
+            FAIL=1
+          fi
+
+          # OneDrive legt bei Sync-Kollisionen "<name> 2.<ext>" neben das
+          # Original. Sechs solcher Kopien waren schon mal committet; eine
+          # doppelte Podfile.lock oder Generated.xcconfig verwirrt den Build.
+          DUPES=$(git ls-files | grep -E ' [0-9]+\.[A-Za-z0-9]+$' || true)
+          if [ -n "$DUPES" ]; then
+            echo "::error::OneDrive-Duplikate im Repo:"
+            echo "$DUPES"
+            FAIL=1
+          fi
+
+          [ "$FAIL" = "0" ] || exit 1
+          echo "Preflight OK — $(sed -n 's/^version: //p' pubspec.yaml)"
+
       - name: Toolchain-Info
         run: |
           sw_vers
