@@ -5,7 +5,7 @@
   },
   "functions": {
     "source": "firebase/functions",
-    "runtime": "nodejs18"
+    "runtime": "nodejs22"
   },
   "flutter": {
     "platforms": {

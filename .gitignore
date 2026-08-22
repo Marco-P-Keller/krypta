@@ -43,3 +43,6 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# Firebase Cloud Functions dependencies (package-lock.json wird committed).
+firebase/functions/node_modules/
