@@ -57,3 +57,6 @@ ios/Podfile [0-9]*.lock
 
 # Superpowers skill scratch directory (brainstorm servers, prototypes).
 .superpowers/
+
+# Firebase Cloud Functions dependencies (package-lock.json wird committed).
+firebase/functions/node_modules/

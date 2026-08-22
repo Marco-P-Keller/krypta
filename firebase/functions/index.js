@@ -2,14 +2,30 @@
  * Krypta ECC - Firebase Cloud Functions
  *
  * These functions handle server-side message lifecycle:
- * 1. Message TTL cleanup - auto-delete messages after 24h
- * 2. Push notification triggers - notify recipient of new messages
+ * 1. Push notification triggers - notify recipient of new messages
+ * 2. Message TTL cleanup - auto-delete messages after 24h
  *
  * SECURITY: The server NEVER has access to plaintext messages.
  * All payloads are encrypted ciphertext. The server is a dumb relay.
+ *
+ * ---------------------------------------------------------------------------
+ * RUNTIME: these are still 1st-gen functions, deliberately.
+ *
+ * Node 18 was decommissioned by Google, so the previous configuration could
+ * not be deployed at all. Runtime is now nodejs22 (firebase.json +
+ * package.json engines), on firebase-functions v6 with the v1 API imported
+ * explicitly.
+ *
+ * Moving to 2nd-gen (`firebase-functions/v2`, onDocumentCreated / onSchedule)
+ * is the better long-term shape, but it is NOT a drop-in: a function already
+ * deployed as 1st-gen cannot be converted in place — it has to be deleted and
+ * recreated under the same name, which drops events in between. Since nobody
+ * here can see the deployed state of `kryptaecc`, that migration is left as a
+ * deliberate, separate step. See docs/FIREBASE_FUNCTIONS.md.
+ * ---------------------------------------------------------------------------
  */
 
-const functions = require("firebase-functions");
+const functions = require("firebase-functions/v1");
 const admin = require("firebase-admin");
 
 admin.initializeApp();
@@ -32,7 +48,6 @@ exports.onNewMessage = functions.firestore
   .document("messages/{recipientId}/inbox/{messageId}")
   .onCreate(async (snap, context) => {
     const { recipientId } = context.params;
-    const messageData = snap.data();
 
     const tokenDoc = await db.collection("fcmTokens").doc(recipientId).get();
     if (!tokenDoc.exists) return;
@@ -45,6 +60,23 @@ exports.onNewMessage = functions.firestore
       // FCM payloads are logged by Google — including sender ID would leak
       // who is communicating with whom (communication pattern metadata).
       // The app retrieves sender info from its encrypted inbox on wake.
+      //
+      // ⚠️ OPEN — BREAKS THE DISGUISE. The app presents itself as a
+      // calculator named "Calc"/"Rechner". This alert renders on the lock
+      // screen as:
+      //
+      //     Calc — New Message
+      //     You have a new encrypted message
+      //
+      // A calculator that announces encrypted messages gives the whole cover
+      // away to anyone glancing at the phone, which is exactly the threat the
+      // disguise exists for. Three ways out, all needing a product decision
+      // (see docs/FIREBASE_FUNCTIONS.md):
+      //   (a) silent push only — drop `notification`, keep content-available,
+      //       let the app decide locally whether to show anything;
+      //   (b) neutral wording that fits a calculator;
+      //   (c) accept it and drop the disguise for notifications.
+      // Left as-is for now so behaviour does not change under anyone's feet.
       await admin.messaging().send({
         token,
         notification: {
