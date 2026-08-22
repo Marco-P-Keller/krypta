@@ -6,7 +6,11 @@ import Security
 @objc class AppDelegate: FlutterAppDelegate {
   private let securityChannel = "krypta/security"
   private let screenshotEventChannel = "krypta/screenshot_events"
-  private var screenshotEventSink: FlutterEventSink?
+  // `fileprivate`, nicht `private`: ScreenshotStreamHandler ist eine eigene
+  // Klasse weiter unten in dieser Datei und setzt den Sink. `private` gilt
+  // fuer den Typ (plus dessen Extensions), nicht fuer die Datei — ein
+  // fremder Typ kaeme auch aus derselben Datei nicht heran.
+  fileprivate var screenshotEventSink: FlutterEventSink?
   private var isSecureFlagEnabled = false
 
   /// Hidden secure text field used to mask app content in screenshots and

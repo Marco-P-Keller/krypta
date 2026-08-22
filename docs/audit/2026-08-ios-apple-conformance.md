@@ -204,10 +204,30 @@ turned out to be *wrong*, live in the workflow journal; this is the summary
 that matters for shipping. See the two new files in `docs/app-store/` for the
 Guideline 2.3.1 deliverables this produced.
 
-**Known false positive, do not re-report:** `private var screenshotEventSink`
-being read by `ScreenshotStreamHandler` is *not* a Swift access-control error.
-The pattern has existed since `91664b2` (2026-04-26) and build 61 shipped from
-`6451ca9` with it. It compiles.
+**Korrektur — das war KEIN False Positive.** Frühere Fassungen dieses
+Dokuments führten `private var screenshotEventSink`, gelesen von
+`ScreenshotStreamHandler`, als „bekannten False Positive, nicht erneut
+melden". Begründung damals: das Muster existiere seit `91664b2` und Build 61
+sei damit auf TestFlight gegangen, also kompiliere es.
+
+**Der Compiler sagt etwas anderes.** Der erste echte Xcode-Build (GitHub
+Actions, 2026-08-22) brach damit ab:
+
+```
+Swift Compiler Error: 'screenshotEventSink' is inaccessible due to
+'private' protection level — AppDelegate.swift:636 und :642
+```
+
+Der Denkfehler: aus „ein früherer Build ging auf TestFlight" folgt nicht,
+dass *dieser* Code kompiliert — der Rückschluss auf den damaligen Dateistand
+war nie überprüft. Swifts `private` gilt für den **Typ** (plus dessen
+Extensions), nicht für die Datei; ein anderer Typ in derselben Datei kommt
+nicht heran. `ScreenshotStreamHandler` ist eine eigene Klasse, also braucht
+das Feld `fileprivate`. Behoben.
+
+Lehre für dieses Repo: Solange Swift hier nicht kompiliert werden kann, ist
+Empirie aus der Build-Historie **kein** Ersatz für den Compiler — ein
+Agentenfund zu Access Control gehört geprüft, nicht wegargumentiert.
 
 #### Guideline 2.3.1 (the calculator disguise) — viable, disclosure path drafted
 
