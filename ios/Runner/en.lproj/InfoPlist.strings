@@ -1,7 +1,7 @@
 /* Springboard / app switcher / Settings.app name. Must stay the cover
    identity — the product name is only shown inside the app after unlock. */
-"CFBundleDisplayName" = "Calc";
-"CFBundleName" = "Calc";
+"CFBundleDisplayName" = "Rechenblock";
+"CFBundleName" = "Rechenblock";
 
 /* Purpose strings, localized so iOS never falls back to the base plist. */
 "NSFaceIDUsageDescription" = "Face ID unlocks the app without typing your passcode.";

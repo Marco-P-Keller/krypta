@@ -23,8 +23,13 @@ ASC_KEY_PATH. Die Bundle ID kommt aus --bundle-id oder $BUNDLE_ID.
 from __future__ import annotations
 
 import argparse
+import json
 import os
+import plistlib
+import re
 import sys
+import urllib.parse
+import urllib.request
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
@@ -95,6 +100,41 @@ def check_version(candidate, known_versions):
 # Eine zweite Kopie an dieser Stelle waere nur eine, die auseinanderlaeuft.
 
 
+# -- Tarn-Name gegen bereits vergebene App-Namen ------------------------
+#
+# ITMS-90129 "The bundle uses a bundle name or display name that is already
+# taken" killt den Build erst in Apples Verarbeitung, NACH dem Upload — die
+# altool-Validierung laesst ihn durch. Ein Fehlversuch kostet damit einen
+# kompletten Lauf. Am 2026-08-23 passiert: CFBundleDisplayName stand auf
+# "Calc" (vergeben an Michael Wesemann), die deutsche Lokalisierung auf
+# "Rechner" (vergeben an Apple selbst) — zwei Kollisionen auf einmal.
+
+def parse_strings_file(text):
+    """Ein .strings-File als dict. Kommentare und Leerzeilen fallen raus."""
+    pairs = {}
+    text = re.sub(r"/\*.*?\*/", "", text, flags=re.S)
+    for match in re.finditer(r'"([^"]+)"\s*=\s*"([^"]*)"\s*;', text):
+        pairs[match.group(1)] = match.group(2)
+    return pairs
+
+
+def name_verdict(name, own_app_name, hits):
+    """Darf dieser Anzeigename benutzt werden?
+
+    hits: Liste (land, verkaeufer) exakter Namenstreffer im App Store.
+    """
+    if own_app_name and name.strip().lower() == own_app_name.strip().lower():
+        return True, f'"{name}" ist der eigene App-Store-Name — kein Konflikt.'
+    if not hits:
+        return True, f'"{name}" ist in den geprueften Stores frei.'
+    where = ", ".join(f"{country}: {seller}" for country, seller in hits)
+    return False, (
+        f'"{name}" ist bereits vergeben ({where}). Apple lehnt den Build in der '
+        f"Verarbeitung ab (ITMS-90129) — und zwar erst NACH dem Upload, die "
+        f"Validierung laesst ihn durch. Anderen Namen waehlen."
+    )
+
+
 # -- API ----------------------------------------------------------------
 
 def find_app_id(token, bundle_id):
@@ -129,6 +169,65 @@ def fetch_prerelease_versions(token, app_id):
     return _collect(
         token, f"{API_ROOT}/apps/{app_id}/preReleaseVersions?limit=200", "version"
     )
+
+
+ITUNES_SEARCH = "https://itunes.apple.com/search"
+NAME_CHECK_COUNTRIES = ("de", "us")
+
+
+def itunes_exact_matches(name, countries=NAME_CHECK_COUNTRIES):
+    """Exakte Namenstreffer im oeffentlichen App-Store-Katalog.
+
+    Kein Auth noetig. Achtung: die Suche kennt nur *veroeffentlichte* Apps —
+    ein reservierter, noch unveroeffentlichter Name taucht hier nicht auf.
+    Ein Treffer ist also ein sicheres Nein, kein Treffer ein starkes, aber
+    kein garantiertes Ja.
+    """
+    hits = []
+    for country in countries:
+        url = ITUNES_SEARCH + "?" + urllib.parse.urlencode(
+            {"term": name, "entity": "software", "country": country, "limit": 200}
+        )
+        try:
+            with urllib.request.urlopen(url, timeout=30) as resp:
+                payload = json.loads(resp.read().decode("utf-8"))
+        except Exception as exc:  # Netzfehler darf den Build nicht kippen
+            print(f"  (Namenspruefung {country} nicht moeglich: {exc})")
+            continue
+        for entry in payload.get("results", []):
+            if entry.get("trackName", "").strip().lower() == name.strip().lower():
+                hits.append((country, entry.get("sellerName", "?")))
+                break
+    return hits
+
+
+def collect_cover_names(info_plist_path, lproj_dir):
+    """Alle Namen, unter denen die App auf dem Geraet erscheinen kann.
+
+    Die Basis-Info.plist UND jede Lokalisierung — genau daran ist es
+    gescheitert: "Calc" in der Basis, "Rechner" in de.lproj, beide vergeben.
+    """
+    names = set()
+    with open(info_plist_path, "rb") as handle:
+        plist = plistlib.load(handle)
+    for key in ("CFBundleDisplayName", "CFBundleName"):
+        value = plist.get(key, "")
+        if value and not value.startswith("$("):
+            names.add(value)
+
+    if os.path.isdir(lproj_dir):
+        for entry in sorted(os.listdir(lproj_dir)):
+            if not entry.endswith(".lproj"):
+                continue
+            strings_path = os.path.join(lproj_dir, entry, "InfoPlist.strings")
+            if not os.path.isfile(strings_path):
+                continue
+            with open(strings_path, "r", encoding="utf-8") as handle:
+                pairs = parse_strings_file(handle.read())
+            for key in ("CFBundleDisplayName", "CFBundleName"):
+                if pairs.get(key):
+                    names.add(pairs[key])
+    return sorted(names)
 
 
 def fetch_encryption_declarations(token, app_id):
@@ -199,6 +298,33 @@ def cmd_check(args):
     return 0
 
 
+def cmd_check_names(args):
+    own = args.own_name
+    if own is None:
+        # Ohne --own-name per API holen: sonst schlaegt die Pruefung faelschlich
+        # an, wenn der Anzeigename bewusst der eigene App-Store-Name ist.
+        try:
+            _, _, own, _ = _context(args)
+        except SystemExit as exc:
+            print(f"Eigener App-Name nicht ermittelbar ({exc}) — pruefe ohne.")
+            own = None
+
+    names = collect_cover_names(args.info_plist, args.lproj_dir)
+    if not names:
+        print("Keine festen Anzeigenamen gefunden — nichts zu pruefen.")
+        return 0
+
+    print(f"Anzeigenamen im Bundle: {', '.join(names)}")
+    failed = False
+    for name in names:
+        ok, message = name_verdict(name, own, itunes_exact_matches(name))
+        print(("  OK   " if ok else "  FEHLER ") + message)
+        if not ok:
+            print(f"::error::{message}")
+            failed = True
+    return 1 if failed else 0
+
+
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--key-id", help="Default: $ASC_KEY_ID")
@@ -214,6 +340,17 @@ def main(argv=None):
     check = sub.add_parser("check", help="Version gegen App Store Connect pruefen")
     check.add_argument("--version", required=True, help="die Version aus pubspec.yaml")
     check.set_defaults(func=cmd_check)
+
+    names = sub.add_parser(
+        "check-names", help="Tarn-Namen gegen bereits vergebene App-Namen pruefen"
+    )
+    names.add_argument("--info-plist", default="ios/Runner/Info.plist")
+    names.add_argument("--lproj-dir", default="ios/Runner")
+    names.add_argument(
+        "--own-name",
+        help="eigener App-Store-Name; ohne Angabe per API ermittelt (braucht Auth)",
+    )
+    names.set_defaults(func=cmd_check_names)
 
     args = parser.parse_args(argv)
     return args.func(args)

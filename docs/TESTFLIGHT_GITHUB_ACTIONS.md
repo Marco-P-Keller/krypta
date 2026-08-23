@@ -78,7 +78,9 @@ Eingaben:
 
 | Feld | Bedeutung |
 |---|---|
+| `build_purpose` | steht im Titel des Laufs, damit man Läufe später auseinanderhält |
 | `build_number` | leer lassen für automatisch |
+| `revoke_oldest_dev_cert` | nur anhaken, wenn der Build am Zertifikatslimit scheitert – siehe Abschnitt 6 |
 | `run_tests` | `true` = analyze + test vorher ausführen |
 | `upload` | `false` = nur bauen, nicht hochladen (zum Testen der Pipeline) |
 
@@ -102,8 +104,9 @@ Build-Nummer = IOS_BUILD_NUMBER_OFFSET + GITHUB_RUN_NUMBER
 ```
 
 `GITHUB_RUN_NUMBER` zählt pro Workflow monoton hoch, die Nummer steigt also
-automatisch. Der Default-Offset `69` entspricht dem Stand in `pubspec.yaml`
-(`version: 1.0.0+69`), der erste Actions-Build bekommt somit `70`.
+automatisch. Der Default-Offset `69` stammt aus dem damaligen Stand von
+`pubspec.yaml`. Der erste erfolgreiche Actions-Upload war Build `84`
+(Version 4.1.0) am 2026-08-23.
 
 Kollidiert eine Nummer trotzdem – etwa weil parallel über Codemagic gebaut
 wurde – gibt es zwei Wege:
@@ -212,6 +215,7 @@ openssl base64 -A -in Krypta_AppStore.mobileprovision
 | `Missing Push Notification Entitlement` | Capability *Push Notifications* für die Bundle ID aktivieren |
 | `The train version 'X' is closed for new build submissions` (90186)<br>`CFBundleShortVersionString must contain a higher version` (90062) | `version:` in `pubspec.yaml` liegt nicht über der höchsten Version bei App Store Connect. Der Schritt *Version gegen App Store Connect prüfen* fängt das seit 2026-08-23 vorab ab und nennt die Zahl |
 | `Invalid Export Compliance Code` (90592) | `ITSEncryptionExportComplianceCode` fehlt in `ios/Runner/Info.plist`, obwohl die App nicht-ausgenommene Verschlüsselung erklärt. Code siehe unten |
+| `The bundle uses a bundle name or display name that is already taken` (90129) | Der Tarn-Name gehört einer fremden App. **Achtung: dieser Fehler kommt erst NACH dem Upload**, in Apples Verarbeitung — der Workflow ist da längst grün. Der Schritt *Version gegen App Store Connect prüfen* fängt das seit 2026-08-23 vorab ab, siehe Abschnitt 10 |
 
 ## 9. Version und Exportkonformität
 
@@ -293,3 +297,52 @@ werden, sobald der Actions-Workflow einmal erfolgreich durchgelaufen ist.
   Schlüssel – Firebase-Zugriff wird über Security Rules kontrolliert.
 - Der API-Key hat Zugriff auf das gesamte Developer-Team. Bei Verdacht auf
   Kompromittierung: Key in App Store Connect widerrufen und neu erzeugen.
+
+## 10. Der Tarn-Name
+
+Die App gibt sich als Rechner aus. `CFBundleDisplayName` und `CFBundleName`
+sind das, was auf dem Home-Screen, im App-Switcher und in den Einstellungen
+steht — sie dürfen nie den Produktnamen zeigen.
+
+Apple verlangt aber, dass dieser Name keiner fremden App gehört. Am
+2026-08-23 scheiterte Build 84 daran: `Calc` gehört Michael Wesemann, und die
+deutsche Lokalisierung stand auf `Rechner` — das gehört **Apple selbst**. Zwei
+Kollisionen auf einmal.
+
+**Das Tückische:** `altool` validiert den Namen nicht. Der Lauf meldet
+`VERIFY SUCCEEDED` und `UPLOAD SUCCEEDED`, die GitHub-Action wird grün, und
+erst Apples serverseitige Verarbeitung lehnt danach mit ITMS-90129 ab. Sichtbar
+wird das nur in App Store Connect unter *Build-Uploads* (Status
+„Fehlgeschlagen") und per E-Mail. Ein Fehlversuch kostet einen kompletten Lauf.
+
+Deshalb prüft der Workflow das vorab:
+
+```bash
+python3 scripts/asc_app_state.py check-names
+```
+
+Das sammelt **alle** Namen, unter denen die App erscheinen kann — die
+Basis-`Info.plist` und jede `*.lproj/InfoPlist.strings` — und fragt den
+öffentlichen App-Store-Katalog nach exakten Treffern. Der eigene
+App-Store-Name (`Krypta ECC`, Connexa GmbH) gilt nicht als Konflikt.
+
+Einen Namen vorab prüfen, ohne irgendetwas zu ändern:
+
+```bash
+python3 scripts/asc_app_state.py check-names --own-name "Krypta ECC" \
+  --info-plist ios/Runner/Info.plist --lproj-dir ios/Runner
+```
+
+**Grenze der Prüfung:** Der Katalog kennt nur *veröffentlichte* Apps. Ein
+reservierter, noch unveröffentlichter Name taucht dort nicht auf. Ein Treffer
+ist also ein sicheres Nein, kein Treffer ein starkes — aber kein garantiertes —
+Ja.
+
+**Aktuell:** `Rechenblock`, in DE und US frei, in allen drei Dateien identisch.
+Ein Name statt vorher zwei verschiedenen halbiert die Kollisionsfläche.
+
+**Was der Tarn-Name nicht leistet:** Die App ist im App Store öffentlich als
+*Krypta ECC* gelistet. Wer dort sucht oder in die Kaufhistorie schaut, sieht
+das. Der Tarn-Name schützt gegen den Blick aufs Display, nicht gegen eine
+Recherche. Soll die Tarnung weiter tragen, müsste der Store-Eintrag selbst
+umbenannt werden — das kann nur Marco.

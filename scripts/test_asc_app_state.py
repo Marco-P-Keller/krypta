@@ -122,5 +122,54 @@ class RealWorldData(unittest.TestCase):
         self.assertTrue(ok)
 
 
+class StringsParsing(unittest.TestCase):
+    def test_reads_key_value_pairs(self):
+        text = '"CFBundleDisplayName" = "Rechenblock";\n"CFBundleName" = "Rechenblock";'
+        self.assertEqual(
+            st.parse_strings_file(text),
+            {"CFBundleDisplayName": "Rechenblock", "CFBundleName": "Rechenblock"},
+        )
+
+    def test_ignores_comments(self):
+        # Der Tarn-Kommentar in der echten Datei enthaelt selbst Anfuehrungs-
+        # zeichen — der darf nicht als Wertepaar durchgehen.
+        text = (
+            '/* Springboard. Muss die Tarnung halten —\n'
+            '   "CFBundleDisplayName" = "FALSCH"; steht hier nur als Text. */\n'
+            '"CFBundleDisplayName" = "Rechenblock";'
+        )
+        self.assertEqual(st.parse_strings_file(text), {"CFBundleDisplayName": "Rechenblock"})
+
+    def test_empty_file(self):
+        self.assertEqual(st.parse_strings_file(""), {})
+
+
+class NameVerdict(unittest.TestCase):
+    def test_free_name_passes(self):
+        ok, _ = st.name_verdict("Rechenblock", "Krypta ECC", [])
+        self.assertTrue(ok)
+
+    def test_taken_name_fails_and_names_the_owner(self):
+        ok, msg = st.name_verdict("Calc", "Krypta ECC", [("de", "Michael Wesemann")])
+        self.assertFalse(ok)
+        self.assertIn("Michael Wesemann", msg)
+        self.assertIn("90129", msg)
+
+    def test_own_store_name_is_not_a_conflict(self):
+        # "Krypta ECC" gehoert Connexa GmbH — also uns. Ohne diese Ausnahme
+        # wuerde die Pruefung den funktionierenden Zustand als Fehler melden.
+        ok, msg = st.name_verdict("Krypta ECC", "Krypta ECC", [("de", "Connexa GmbH (CH)")])
+        self.assertTrue(ok)
+        self.assertIn("eigene", msg)
+
+    def test_own_name_comparison_ignores_case_and_spacing(self):
+        ok, _ = st.name_verdict("  krypta ecc ", "Krypta ECC", [("us", "Connexa GmbH (CH)")])
+        self.assertTrue(ok)
+
+    def test_no_own_name_known_still_flags_conflicts(self):
+        ok, _ = st.name_verdict("Rechner", None, [("de", "Apple Distribution International")])
+        self.assertFalse(ok)
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)

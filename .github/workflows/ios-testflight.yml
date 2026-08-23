@@ -114,6 +114,11 @@ jobs:
           "${RUNNER_TEMP}/asc-venv/bin/python" scripts/asc_app_state.py show
           "${RUNNER_TEMP}/asc-venv/bin/python" scripts/asc_app_state.py \
             check --version "${{ steps.version.outputs.build_name }}"
+          # ITMS-90129: der Tarn-Name darf keiner fremden App gehoeren. Apple
+          # merkt das erst in der Verarbeitung, NACH dem Upload — die
+          # Validierung laesst es durch. Am 2026-08-23 kostete das einen
+          # kompletten 43-Minuten-Lauf.
+          "${RUNNER_TEMP}/asc-venv/bin/python" scripts/asc_app_state.py check-names
 
       # Läuft vor allem Teuren. Jeder dieser Punkte würde den Build sonst
       # erst beim Upload killen — nach ~20 Minuten Build- und Signierzeit.

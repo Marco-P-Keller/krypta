@@ -14,7 +14,7 @@
 	     presents before unlock, never the product name. Localized in
 	     Runner/en.lproj + Runner/de.lproj InfoPlist.strings. -->
 	<key>CFBundleDisplayName</key>
-	<string>Calc</string>
+	<string>Rechenblock</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
@@ -22,7 +22,7 @@
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
 	<key>CFBundleName</key>
-	<string>Calc</string>
+	<string>Rechenblock</string>
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>
