@@ -90,25 +90,29 @@ class _CalculatorScreenState extends State<CalculatorScreen> {
           builder: (context, _) {
             return Column(
               children: [
+                // Der Anzeigebereich nimmt allen Platz über den Tasten und
+                // richtet seinen Inhalt unten aus. Vorher stand hier ein
+                // festes Verhältnis 2:4. Weil die Tasten quadratisch sind und
+                // ihre zugeteilte Fläche nicht ausfüllten, blieb unten ein
+                // Rest übrig, der ganze Block rutschte nach oben und die Zahl
+                // stand optisch in der Mitte statt über den Tasten.
                 Expanded(
-                  flex: 2,
                   child: CalculatorDisplay(
                     displayValue: _logic.display,
-                    expression: _logic.expression,
+                    liveExpression: _logic.liveExpression,
+                    completedExpression: _logic.completedExpression,
+                    hasResult: _logic.hasResult,
                   ),
                 ),
-                Expanded(
-                  flex: 4,
-                  child: CalculatorKeypad(
-                    onDigit: _logic.inputDigit,
-                    onOperator: _logic.inputOperator,
-                    onEquals: _handleEquals,
-                    onClear: _logic.clear,
-                    onDecimal: _logic.inputDecimal,
-                    onToggleSign: _logic.toggleSign,
-                    onPercentage: _logic.percentage,
-                    onBackspace: _logic.backspace,
-                  ),
+                CalculatorKeypad(
+                  onDigit: _logic.inputDigit,
+                  onOperator: _logic.inputOperator,
+                  onEquals: _handleEquals,
+                  onClear: _logic.clear,
+                  onDecimal: _logic.inputDecimal,
+                  onToggleSign: _logic.toggleSign,
+                  onPercentage: _logic.percentage,
+                  onBackspace: _logic.backspace,
                 ),
                 const SizedBox(height: 12),
               ],

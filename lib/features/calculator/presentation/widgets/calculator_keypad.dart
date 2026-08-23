@@ -30,7 +30,13 @@ class CalculatorKeypad extends StatelessWidget {
     const gap = 12.0;
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 0, 16, 0),
+      // Natürliche Höhe: die Tasten sind quadratisch (AspectRatio), das
+      // Tastenfeld ist also so hoch, wie die fünf Reihen es brauchen. Der
+      // Anzeigebereich darüber bekommt den Rest. Vorher lag hier ein fester
+      // Flex-Anteil an, der grösser war als der Inhalt — der Überschuss fiel
+      // unten weg und schob alles nach oben.
       child: Column(
+        mainAxisSize: MainAxisSize.min,
         children: [
           _Row(gap: gap, children: [
             _Btn.fn('AC', onClear),
