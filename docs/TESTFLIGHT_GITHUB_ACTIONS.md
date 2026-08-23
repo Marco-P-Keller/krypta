@@ -118,10 +118,46 @@ läuft der Build mit **automatischem Cloud-Signing**. Xcode legt Zertifikat und
 Provisioning-Profil über den API-Key bei Apple selbst an. Kein `.p12`, kein
 Mac, kein Keychain-Export.
 
-Zu beachten: Apple erlaubt pro Team maximal **drei** Distribution-Zertifikate.
-Ist das Limit erreicht, schlägt das automatische Signieren fehl – dann entweder
-unter *Certificates* ein altes Zertifikat widerrufen oder auf manuelles Signing
-umstellen.
+### Wenn „maximum number of certificates" kommt
+
+Apple führt **zwei getrennte Kontingente**, und die Fehlermeldung sagt nicht,
+welches voll ist:
+
+- **Distribution**-Zertifikate — davon gibt es wenige pro Team. Die legt man
+  bewusst an, sie werden selten voll.
+- **Development**-Zertifikate — die legt `xcodebuild archive` beim
+  automatischen Signieren **selbst** an, jedes Mal, wenn ein Runner signiert,
+  der das noch nie getan hat. Ein CI-Runner ist bei jedem Lauf eine frische
+  Maschine, also füllt sich dieser Topf von allein.
+
+Praktisch heißt das: Im Developer-Portal sieht unter *Certificates* alles frei
+aus (dort schaut man auf Distribution), und der Build scheitert trotzdem — weil
+der Development-Topf voll ist. Genau dieser Fall trat am 2026-08-22 auf.
+
+Dagegen gibt es beim manuellen Start die Checkbox **„Zuerst das älteste
+Apple-Development-Zertifikat widerrufen"**. Sie ist standardmäßig aus und
+greift nur im automatischen Modus. Angehakt läuft vor dem Build
+`scripts/asc_certs.py revoke-oldest --min-count 2`.
+
+Was das Skript garantiert (abgesichert durch `scripts/test_asc_certs.py`):
+
+- Es fasst **ausschließlich** Development-Zertifikate an. Ein Distribution-
+  Zertifikat zu widerrufen würde jede Release-Signatur des Teams brechen —
+  auch die von Marcos anderen Apps.
+- Es widerruft nie das einzige vorhandene Zertifikat.
+- Unterhalb von `--min-count` passiert nichts, denn dann ist nichts voll.
+
+Den aktuellen Stand ohne jede Änderung ansehen:
+
+```bash
+export ASC_KEY_ID=... ASC_ISSUER_ID=... ASC_KEY_PATH=AuthKey_XXX.p8
+python3 -m pip install 'pyjwt[crypto]'
+python3 scripts/asc_certs.py list
+python3 scripts/asc_certs.py revoke-oldest --dry-run   # zeigt nur, ändert nichts
+```
+
+Alternative ohne Widerruf: auf manuelles Signing umstellen (siehe unten). Dann
+legt die CI überhaupt keine Zertifikate mehr an.
 
 **Manuell (optional):** Sobald zusätzlich die folgenden Secrets gesetzt sind,
 schaltet der Workflow automatisch auf manuelles Signing um:
@@ -171,7 +207,7 @@ openssl base64 -A -in Krypta_AppStore.mobileprovision
 | `No suitable application records were found` | App-Datensatz in App Store Connect fehlt (Schritt 1) |
 | `The provided entity includes an attribute with a value that has already been used` | Build-Nummer schon vergeben → `build_number` setzen oder Offset erhöhen |
 | `No profiles for 'com.calcchat.ww' were found` | Bundle ID nicht registriert, oder API-Key hat nicht die Rolle *App Manager* |
-| `Maximum number of certificates generated` | Drei Distribution-Zertifikate vorhanden → eines widerrufen oder manuelles Signing nutzen |
+| `Your account has reached the maximum number of certificates` | Meist der **Development**-Topf, nicht Distribution — im Portal sieht deshalb alles frei aus. Workflow mit angehakter Checkbox „ältestes Development-Zertifikat widerrufen" neu starten, siehe Abschnitt 6 |
 | `resource fork, Finder information, or similar detritus not allowed` | Extended Attributes – der Workflow ruft `scripts/strip_xattrs_ios.sh` bereits auf, Details in `docs/IOS_ARCHIVE_CODESIGN.md` |
 | `Missing Push Notification Entitlement` | Capability *Push Notifications* für die Bundle ID aktivieren |
 
