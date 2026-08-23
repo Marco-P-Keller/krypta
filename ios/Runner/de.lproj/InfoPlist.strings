@@ -1,7 +1,7 @@
-/* Springboard / App-Switcher / Einstellungen. Muss die Tarnung halten —
-   der Produktname erscheint nur in der App nach dem Entsperren. */
-"CFBundleDisplayName" = "Rechenblock";
-"CFBundleName" = "Rechenblock";
+/* Springboard / App-Switcher / Einstellungen. Bewusst der Produktname,
+   kein Tarn-Name (entschieden am 2026-08-24) — siehe Info.plist. */
+"CFBundleDisplayName" = "Krypta ECC";
+"CFBundleName" = "Krypta ECC";
 
 /* Zweck-Texte, lokalisiert, damit iOS nie auf die Basis-plist zurueckfaellt. */
 "NSFaceIDUsageDescription" = "Face ID entsperrt die App, ohne dass du den Code eingeben musst.";

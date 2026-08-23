@@ -9,12 +9,20 @@
 		<string>en</string>
 		<string>de</string>
 	</array>
-	<!-- Cover identity: the springboard, app switcher, Settings.app and the
-	     share sheet all read these. They must match the calculator the app
-	     presents before unlock, never the product name. Localized in
-	     Runner/en.lproj + Runner/de.lproj InfoPlist.strings. -->
+	<!-- Springboard, app switcher, Settings.app and the share sheet all read
+	     these. Deliberately the PRODUCT name, not a calculator cover name —
+	     decided 2026-08-24: customers should recognise the app they installed,
+	     and the App Store listing says "Krypta ECC" anyway, so a cover name on
+	     the home screen only bought half a disguise. The calculator in front of
+	     the passcode is an unlock gate, not a disguise. Reversing this needs the
+	     store listing renamed too, otherwise it is the same half measure.
+	     Whatever is set here must not collide with another developer's app name
+	     or Apple rejects the build in processing (ITMS-90129) — after upload,
+	     not during validation. scripts/asc_app_state.py check-names guards it;
+	     the own store name is allowed. Localized in Runner/en.lproj +
+	     Runner/de.lproj InfoPlist.strings. -->
 	<key>CFBundleDisplayName</key>
-	<string>Rechenblock</string>
+	<string>Krypta ECC</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
@@ -22,7 +30,7 @@
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
 	<key>CFBundleName</key>
-	<string>Rechenblock</string>
+	<string>Krypta ECC</string>
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>

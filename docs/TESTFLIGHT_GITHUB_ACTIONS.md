@@ -298,22 +298,36 @@ werden, sobald der Actions-Workflow einmal erfolgreich durchgelaufen ist.
 - Der API-Key hat Zugriff auf das gesamte Developer-Team. Bei Verdacht auf
   Kompromittierung: Key in App Store Connect widerrufen und neu erzeugen.
 
-## 10. Der Tarn-Name
+## 10. Der Anzeigename
 
-Die App gibt sich als Rechner aus. `CFBundleDisplayName` und `CFBundleName`
-sind das, was auf dem Home-Screen, im App-Switcher und in den Einstellungen
-steht — sie dürfen nie den Produktnamen zeigen.
+`CFBundleDisplayName` und `CFBundleName` sind das, was auf dem Home-Screen, im
+App-Switcher, in den Einstellungen und im Teilen-Menü steht.
 
-Apple verlangt aber, dass dieser Name keiner fremden App gehört. Am
-2026-08-23 scheiterte Build 84 daran: `Calc` gehört Michael Wesemann, und die
-deutsche Lokalisierung stand auf `Rechner` — das gehört **Apple selbst**. Zwei
-Kollisionen auf einmal.
+**Stand 2026-08-24: bewusst der Produktname „Krypta ECC", kein Tarn-Name.**
+Entschieden von Daniel. Begründung: Die App ist im App Store ohnehin öffentlich
+als *Krypta ECC* gelistet — ein Rechner-Name auf dem Home-Screen hätte also nur
+eine halbe Tarnung gebracht, dafür aber bestehende Kunden verwirrt, die ihre App
+wiedererkennen wollen. Der Taschenrechner vor der Code-Eingabe bleibt, ist damit
+aber eine Zugangssperre und keine Tarnung.
 
-**Das Tückische:** `altool` validiert den Namen nicht. Der Lauf meldet
-`VERIFY SUCCEEDED` und `UPLOAD SUCCEEDED`, die GitHub-Action wird grün, und
-erst Apples serverseitige Verarbeitung lehnt danach mit ITMS-90129 ab. Sichtbar
-wird das nur in App Store Connect unter *Build-Uploads* (Status
-„Fehlgeschlagen") und per E-Mail. Ein Fehlversuch kostet einen kompletten Lauf.
+Wer das umdrehen will, muss auch den Store-Eintrag umbenennen lassen (nur Marco),
+sonst entsteht wieder dasselbe halbe Ergebnis.
+
+### Namenskollisionen (ITMS-90129)
+
+Was hier auch immer steht, darf keiner **fremden** App gehören. Sonst lehnt Apple
+den Build ab — mit *"The bundle uses a bundle name or display name that is already
+taken"*.
+
+**Das Tückische:** `altool` prüft den Namen nicht. Der Lauf meldet
+`VERIFY SUCCEEDED` und `UPLOAD SUCCEEDED`, die GitHub-Action wird grün, und erst
+Apples serverseitige Verarbeitung lehnt danach ab. Sichtbar wird das nur in App
+Store Connect unter *Build-Uploads* (Status „Fehlgeschlagen") und per E-Mail. Ein
+Fehlversuch kostet einen kompletten Lauf.
+
+Am 2026-08-23 genau so passiert: Build 84 lief mit `Calc` (gehört Michael
+Wesemann) und `Rechner` in der deutschen Lokalisierung (gehört **Apple selbst**)
+— zwei Kollisionen auf einmal.
 
 Deshalb prüft der Workflow das vorab:
 
@@ -323,26 +337,16 @@ python3 scripts/asc_app_state.py check-names
 
 Das sammelt **alle** Namen, unter denen die App erscheinen kann — die
 Basis-`Info.plist` und jede `*.lproj/InfoPlist.strings` — und fragt den
-öffentlichen App-Store-Katalog nach exakten Treffern. Der eigene
-App-Store-Name (`Krypta ECC`, Connexa GmbH) gilt nicht als Konflikt.
+öffentlichen App-Store-Katalog nach exakten Treffern. Der **eigene**
+App-Store-Name gilt nicht als Konflikt; deshalb geht „Krypta ECC" durch, obwohl
+der Katalog dafür einen Treffer liefert (Connexa GmbH, also wir).
 
-Einen Namen vorab prüfen, ohne irgendetwas zu ändern:
+Einen Namen vorab prüfen, ohne etwas zu ändern:
 
 ```bash
-python3 scripts/asc_app_state.py check-names --own-name "Krypta ECC" \
-  --info-plist ios/Runner/Info.plist --lproj-dir ios/Runner
+python3 scripts/asc_app_state.py check-names --own-name "Krypta ECC"   --info-plist ios/Runner/Info.plist --lproj-dir ios/Runner
 ```
 
 **Grenze der Prüfung:** Der Katalog kennt nur *veröffentlichte* Apps. Ein
-reservierter, noch unveröffentlichter Name taucht dort nicht auf. Ein Treffer
-ist also ein sicheres Nein, kein Treffer ein starkes — aber kein garantiertes —
-Ja.
-
-**Aktuell:** `Rechenblock`, in DE und US frei, in allen drei Dateien identisch.
-Ein Name statt vorher zwei verschiedenen halbiert die Kollisionsfläche.
-
-**Was der Tarn-Name nicht leistet:** Die App ist im App Store öffentlich als
-*Krypta ECC* gelistet. Wer dort sucht oder in die Kaufhistorie schaut, sieht
-das. Der Tarn-Name schützt gegen den Blick aufs Display, nicht gegen eine
-Recherche. Soll die Tarnung weiter tragen, müsste der Store-Eintrag selbst
-umbenannt werden — das kann nur Marco.
+reservierter, noch unveröffentlichter Name taucht dort nicht auf. Ein Treffer ist
+also ein sicheres Nein, kein Treffer ein starkes — aber kein garantiertes — Ja.
