@@ -65,6 +65,56 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Version bestimmen
+        id: version
+        env:
+          INPUT_BUILD_NUMBER: ${{ inputs.build_number }}
+          OFFSET: ${{ vars.IOS_BUILD_NUMBER_OFFSET || '69' }}
+        run: |
+          set -euo pipefail
+          BUILD_NAME=$(grep -m1 '^version:' pubspec.yaml \
+            | sed 's/^version:[[:space:]]*//' | cut -d'+' -f1 | tr -d '[:space:]')
+          if [ -n "${INPUT_BUILD_NUMBER}" ]; then
+            BUILD_NUMBER="${INPUT_BUILD_NUMBER}"
+          else
+            BUILD_NUMBER=$(( OFFSET + GITHUB_RUN_NUMBER ))
+          fi
+          echo "build_name=${BUILD_NAME}"     >> "$GITHUB_OUTPUT"
+          echo "build_number=${BUILD_NUMBER}" >> "$GITHUB_OUTPUT"
+          echo "Version ${BUILD_NAME} (${BUILD_NUMBER})"
+          {
+            echo "### iOS TestFlight"
+            echo ""
+            echo "| | |"
+            echo "|---|---|"
+            echo "| Version | \`${BUILD_NAME}\` |"
+            echo "| Build | \`${BUILD_NUMBER}\` |"
+            echo "| Bundle ID | \`${BUNDLE_ID}\` |"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      # Eigenes venv statt `pip install --user`: das System-Python auf
+      # macos-latest ist als "externally managed" markiert (PEP 668) und
+      # weist eine Installation sonst ab.
+      - name: App-Store-Connect-Werkzeuge einrichten
+        run: |
+          set -euo pipefail
+          python3 -m venv "${RUNNER_TEMP}/asc-venv"
+          "${RUNNER_TEMP}/asc-venv/bin/python" -m pip install --quiet \
+            --disable-pip-version-check 'pyjwt[crypto]>=2.8'
+
+      # Diese Prüfung kostet Sekunden und hätte den Lauf vom 2026-08-23
+      # gespart: der starb nach 26 Minuten — Archiv und IPA fertig — daran,
+      # dass App Store Connect für diese Bundle ID längst bei 3.0.0 stand,
+      # während pubspec.yaml noch 1.0.0 sagte (ITMS-90062/90186).
+      - name: Version gegen App Store Connect prüfen
+        env:
+          ASC_KEY_P8: ${{ secrets.ASC_KEY_P8 }}
+        run: |
+          set -euo pipefail
+          "${RUNNER_TEMP}/asc-venv/bin/python" scripts/asc_app_state.py show
+          "${RUNNER_TEMP}/asc-venv/bin/python" scripts/asc_app_state.py \
+            check --version "${{ steps.version.outputs.build_name }}"
+
       # Läuft vor allem Teuren. Jeder dieser Punkte würde den Build sonst
       # erst beim Upload killen — nach ~20 Minuten Build- und Signierzeit.
       - name: Preflight (App-Store-Blocker)
@@ -99,6 +149,21 @@ jobs:
           if [ -n "$DUPES" ]; then
             echo "::error::OneDrive-Duplikate im Repo:"
             echo "$DUPES"
+            FAIL=1
+          fi
+
+          # ITMS-90592: erklärt die App nicht-ausgenommene Verschlüsselung,
+          # dann verlangt Apple zusätzlich den Konformitätscode. Fehlt er,
+          # stirbt erst der Upload — nach dem kompletten Build.
+          USES_NON_EXEMPT=$(/usr/libexec/PlistBuddy -c \
+            'Print :ITSAppUsesNonExemptEncryption' ios/Runner/Info.plist 2>/dev/null || echo "missing")
+          COMPLIANCE_CODE=$(/usr/libexec/PlistBuddy -c \
+            'Print :ITSEncryptionExportComplianceCode' ios/Runner/Info.plist 2>/dev/null || echo "")
+          if [ "${USES_NON_EXEMPT}" = "missing" ]; then
+            echo "::error::ITSAppUsesNonExemptEncryption fehlt in ios/Runner/Info.plist"
+            FAIL=1
+          elif [ "${USES_NON_EXEMPT}" = "true" ] && [ -z "${COMPLIANCE_CODE}" ]; then
+            echo "::error::ITSAppUsesNonExemptEncryption ist true, aber ITSEncryptionExportComplianceCode fehlt — ITMS-90592"
             FAIL=1
           fi
 
@@ -150,33 +215,6 @@ jobs:
       # TestFlight lehnt eine Build-Nummer ab, die für diese Version schon
       # existiert. Default: fester Offset + laufende Run-Nummer, dadurch
       # monoton steigend ohne manuelles Nachpflegen.
-
-      - name: Version bestimmen
-        id: version
-        env:
-          INPUT_BUILD_NUMBER: ${{ inputs.build_number }}
-          OFFSET: ${{ vars.IOS_BUILD_NUMBER_OFFSET || '69' }}
-        run: |
-          set -euo pipefail
-          BUILD_NAME=$(grep -m1 '^version:' pubspec.yaml \
-            | sed 's/^version:[[:space:]]*//' | cut -d'+' -f1 | tr -d '[:space:]')
-          if [ -n "${INPUT_BUILD_NUMBER}" ]; then
-            BUILD_NUMBER="${INPUT_BUILD_NUMBER}"
-          else
-            BUILD_NUMBER=$(( OFFSET + GITHUB_RUN_NUMBER ))
-          fi
-          echo "build_name=${BUILD_NAME}"     >> "$GITHUB_OUTPUT"
-          echo "build_number=${BUILD_NUMBER}" >> "$GITHUB_OUTPUT"
-          echo "Version ${BUILD_NAME} (${BUILD_NUMBER})"
-          {
-            echo "### iOS TestFlight"
-            echo ""
-            echo "| | |"
-            echo "|---|---|"
-            echo "| Version | \`${BUILD_NAME}\` |"
-            echo "| Build | \`${BUILD_NUMBER}\` |"
-            echo "| Bundle ID | \`${BUNDLE_ID}\` |"
-          } >> "$GITHUB_STEP_SUMMARY"
 
       # ── Signatur vorbereiten ─────────────────────────────────────────
       # Modus "manual"    : IOS_DIST_CERT_P12 + IOS_PROVISIONING_PROFILE gesetzt
@@ -266,14 +304,8 @@ jobs:
           ASC_KEY_PATH: ${{ steps.signing.outputs.key_path }}
         run: |
           set -euo pipefail
-          # Eigenes venv statt `pip install --user`: das System-Python auf
-          # macos-latest ist als "externally managed" markiert (PEP 668) und
-          # weist eine Installation sonst ab.
-          VENV="${RUNNER_TEMP}/asc-venv"
-          python3 -m venv "${VENV}"
-          "${VENV}/bin/python" -m pip install --quiet --disable-pip-version-check 'pyjwt[crypto]>=2.8'
-          "${VENV}/bin/python" scripts/asc_certs.py list
-          "${VENV}/bin/python" scripts/asc_certs.py revoke-oldest --min-count 2
+          "${RUNNER_TEMP}/asc-venv/bin/python" scripts/asc_certs.py list
+          "${RUNNER_TEMP}/asc-venv/bin/python" scripts/asc_certs.py revoke-oldest --min-count 2
 
       - name: ExportOptions.plist erzeugen
         id: export_options

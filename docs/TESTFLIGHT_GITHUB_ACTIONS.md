@@ -210,6 +210,45 @@ openssl base64 -A -in Krypta_AppStore.mobileprovision
 | `Your account has reached the maximum number of certificates` | Meist der **Development**-Topf, nicht Distribution — im Portal sieht deshalb alles frei aus. Workflow mit angehakter Checkbox „ältestes Development-Zertifikat widerrufen" neu starten, siehe Abschnitt 6 |
 | `resource fork, Finder information, or similar detritus not allowed` | Extended Attributes – der Workflow ruft `scripts/strip_xattrs_ios.sh` bereits auf, Details in `docs/IOS_ARCHIVE_CODESIGN.md` |
 | `Missing Push Notification Entitlement` | Capability *Push Notifications* für die Bundle ID aktivieren |
+| `The train version 'X' is closed for new build submissions` (90186)<br>`CFBundleShortVersionString must contain a higher version` (90062) | `version:` in `pubspec.yaml` liegt nicht über der höchsten Version bei App Store Connect. Der Schritt *Version gegen App Store Connect prüfen* fängt das seit 2026-08-23 vorab ab und nennt die Zahl |
+| `Invalid Export Compliance Code` (90592) | `ITSEncryptionExportComplianceCode` fehlt in `ios/Runner/Info.plist`, obwohl die App nicht-ausgenommene Verschlüsselung erklärt. Code siehe unten |
+
+## 9. Version und Exportkonformität
+
+Beides prüft der Workflow inzwischen **vor** dem Bauen, weil beides sonst erst
+beim Upload auffällt — am 2026-08-23 nach 26 Minuten mit fertigem, signiertem
+IPA.
+
+`scripts/asc_app_state.py` fragt den echten Stand bei App Store Connect ab:
+
+```bash
+export ASC_KEY_ID=... ASC_ISSUER_ID=... ASC_KEY_PATH=AuthKey_XXX.p8
+export BUNDLE_ID=com.calcchat.ww
+python3 scripts/asc_app_state.py show               # Versionen + Exportkonformität
+python3 scripts/asc_app_state.py check --version 3.0.1
+```
+
+**Version:** `version:` in `pubspec.yaml` muss über der höchsten Version liegen,
+die App Store Connect für diese Bundle ID kennt — App-Store- *und*
+TestFlight-Versionen zählen. Achtung: diese Historie steht nicht im Repo. Die
+pubspec sagte lange `1.0.0`, während unter derselben Bundle ID bereits `3.0.0`
+veröffentlicht war.
+
+**Exportkonformität:** `ITSAppUsesNonExemptEncryption` steht auf `true`, und das
+ist für Krypta korrekt — die App ist ein Ende-zu-Ende-verschlüsselter Messenger,
+Verschlüsselung ist Kernfunktion und nicht ausgenommen. Der Wert darf **nicht**
+auf `false` gesetzt werden, nur damit der Upload durchgeht: das ist eine
+Erklärung gegenüber der US-Exportkontrolle, keine Build-Einstellung.
+
+Richtig ist stattdessen, den von Apple vergebenen Code zu ergänzen:
+
+```xml
+<key>ITSEncryptionExportComplianceCode</key>
+<string>DEN-CODE-AUS-APP-STORE-CONNECT</string>
+```
+
+Den Code zeigt `asc_app_state.py show` unter *Exportkonformitäts-Erklärungen*,
+alternativ App Store Connect → App → App-Informationen.
 
 Zum Eingrenzen von Build-Problemen: Workflow mit `upload = false` starten. Dann
 läuft alles bis zur fertigen `.ipa`, die als Artefakt am Run-Ergebnis hängt,
