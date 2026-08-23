@@ -234,21 +234,42 @@ TestFlight-Versionen zählen. Achtung: diese Historie steht nicht im Repo. Die
 pubspec sagte lange `1.0.0`, während unter derselben Bundle ID bereits `3.0.0`
 veröffentlicht war.
 
-**Exportkonformität:** `ITSAppUsesNonExemptEncryption` steht auf `true`, und das
-ist für Krypta korrekt — die App ist ein Ende-zu-Ende-verschlüsselter Messenger,
-Verschlüsselung ist Kernfunktion und nicht ausgenommen. Der Wert darf **nicht**
-auf `false` gesetzt werden, nur damit der Upload durchgeht: das ist eine
-Erklärung gegenüber der US-Exportkontrolle, keine Build-Einstellung.
+**Exportkonformität:** `ITSAppUsesNonExemptEncryption` ist in der `Info.plist`
+absichtlich **nicht gesetzt**.
 
-Richtig ist stattdessen, den von Apple vergebenen Code zu ergänzen:
+Vorher stand dort `<true/>`, mit dem Kommentar, die Frage werde in App Store
+Connect beantwortet. Genau das verhindert diese Kombination aber: steht der
+Schlüssel auf `true` und daneben kein `ITSEncryptionExportComplianceCode`,
+lehnt `altool` den Upload direkt ab (ITMS-90592) — der Fragebogen kommt nie.
+Aufgefallen ist das nie, weil frühere Builds von einem Mac aus über Xcode
+hochgeladen wurden, das interaktiv fragt; die CI validiert strenger.
+
+Ohne den Schlüssel fragt Apple pro Build in App Store Connect nach der
+Verschlüsselung. Der Build lädt hoch und steht in TestFlight zunächst als
+*Missing Compliance*, bis die Fragen dort beantwortet sind.
+
+**Diese Fragen müssen beantwortet werden, bevor an Tester verteilt werden
+kann.** Für Krypta ist die Sache nicht trivial: die App implementiert das
+Signal-Protokoll als Kernfunktion, das fällt nicht unter die einfachen
+Ausnahmen (nur Authentifizierung, nur Betriebssystem-Verschlüsselung, Schlüssel
+unter 56 Bit). Üblich ist dann der Mass-Market-Weg mit einer Selbsteinstufung
+beim BIS, die einmal gemacht und jährlich erneuert wird.
+
+Den Wert **nicht** auf `false` setzen, nur damit der Upload durchgeht. Das ist
+eine Erklärung gegenüber der US-Exportkontrolle, keine Build-Einstellung.
+
+Liegt später eine Konformitätsdokumentation bei Apple vor, kommt deren Code in
+die `Info.plist`, und der Fragebogen entfällt:
 
 ```xml
+<key>ITSAppUsesNonExemptEncryption</key>
+<true/>
 <key>ITSEncryptionExportComplianceCode</key>
 <string>DEN-CODE-AUS-APP-STORE-CONNECT</string>
 ```
 
-Den Code zeigt `asc_app_state.py show` unter *Exportkonformitäts-Erklärungen*,
-alternativ App Store Connect → App → App-Informationen.
+Ob eine solche Erklärung hinterlegt ist, zeigt `asc_app_state.py show` unter
+*Exportkonformitäts-Erklärungen* (Stand 2026-08-23: keine).
 
 Zum Eingrenzen von Build-Problemen: Workflow mit `upload = false` starten. Dann
 läuft alles bis zur fertigen `.ipa`, die als Artefakt am Run-Ergebnis hängt,

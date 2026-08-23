@@ -112,10 +112,23 @@
 			</dict>
 		</dict>
 	</dict>
-	<!-- Encryption export compliance: app uses Signal Protocol (X3DH + Double Ratchet
-	     + XChaCha20-Poly1305). This is non-exempt encryption. Handle export compliance
-	     questionnaire in App Store Connect during submission. -->
-	<key>ITSAppUsesNonExemptEncryption</key>
-	<true/>
+	<!-- Encryption export compliance: the app uses the Signal Protocol (X3DH +
+	     Double Ratchet + XChaCha20-Poly1305) as a core feature.
+
+	     ITSAppUsesNonExemptEncryption is deliberately ABSENT. It used to be set
+	     to <true/> with the note "handle the questionnaire in App Store Connect"
+	     — but that combination does the opposite: with the key set to true and
+	     no ITSEncryptionExportComplianceCode next to it, altool rejects the
+	     upload outright (ITMS-90592). It never reaches the questionnaire.
+	     That went unnoticed because earlier builds were uploaded from Xcode on
+	     a Mac, which asks interactively; CI validates strictly.
+
+	     With the key absent, Apple asks about encryption per build in App Store
+	     Connect, which is what the original note intended. Answer it there.
+
+	     Do NOT set this to <false/> just to make an upload pass. That is a
+	     declaration under US export regulations, not a build setting, and for
+	     an end-to-end encrypted messenger it is not ours to guess.
+	     See docs/TESTFLIGHT_GITHUB_ACTIONS.md, section 9. -->
 </dict>
 </plist>
