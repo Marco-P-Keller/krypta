@@ -32,6 +32,41 @@ admin.initializeApp();
 const db = admin.firestore();
 
 /**
+ * Wording of the push alert that lands on the lock screen.
+ *
+ * The app hides behind a calculator — CFBundleDisplayName is "Rechner" / "Calc"
+ * — so iOS renders this as:
+ *
+ *     RECHNER
+ *     Tippen zum Öffnen
+ *
+ * It used to read "New Message / You have a new encrypted message". A
+ * calculator announcing encrypted messages gives the entire cover away to
+ * anyone glancing at the phone, which is precisely the threat the disguise
+ * exists for. The text must therefore say that *something* arrived without
+ * hinting at what the app is.
+ *
+ * Deliberately no `title`: iOS already shows the app name above the body, and
+ * a second line would only add surface that has to stay in character.
+ *
+ * Not localized. Doing that properly needs APNs `loc-key` plus a
+ * Localizable.strings in every .lproj, and each of those has to be wired into
+ * the Xcode project — not something to do blind without a Mac. All current
+ * users are German-speaking, so German is the honest default rather than a
+ * half-done mechanism. If the user base widens, localize it properly instead
+ * of guessing server-side.
+ *
+ * Stricter alternative, if the cover matters more than being notified at all:
+ * drop `notification` entirely and send a data-only push. The app already
+ * fetches through lib/security/transport/privacy_polling.dart, so no message
+ * would be lost — the user simply would not learn about it until they open
+ * the app. See docs/FIREBASE_FUNCTIONS.md.
+ */
+const COVER_NOTIFICATION = {
+  body: "Tippen zum Öffnen",
+};
+
+/**
  * Triggered when a new encrypted message is written to a user's inbox.
  * Sends a content-free push notification to the recipient.
  *
@@ -60,29 +95,9 @@ exports.onNewMessage = functions.firestore
       // FCM payloads are logged by Google — including sender ID would leak
       // who is communicating with whom (communication pattern metadata).
       // The app retrieves sender info from its encrypted inbox on wake.
-      //
-      // ⚠️ OPEN — BREAKS THE DISGUISE. The app presents itself as a
-      // calculator named "Calc"/"Rechner". This alert renders on the lock
-      // screen as:
-      //
-      //     Calc — New Message
-      //     You have a new encrypted message
-      //
-      // A calculator that announces encrypted messages gives the whole cover
-      // away to anyone glancing at the phone, which is exactly the threat the
-      // disguise exists for. Three ways out, all needing a product decision
-      // (see docs/FIREBASE_FUNCTIONS.md):
-      //   (a) silent push only — drop `notification`, keep content-available,
-      //       let the app decide locally whether to show anything;
-      //   (b) neutral wording that fits a calculator;
-      //   (c) accept it and drop the disguise for notifications.
-      // Left as-is for now so behaviour does not change under anyone's feet.
       await admin.messaging().send({
         token,
-        notification: {
-          title: "New Message",
-          body: "You have a new encrypted message",
-        },
+        notification: COVER_NOTIFICATION,
         data: {
           type: "new_message",
         },

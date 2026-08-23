@@ -35,9 +35,9 @@ unmöglich zu sagen, woran es lag, wenn danach etwas klemmt.
 
 ---
 
-## Offen: Die Push-Nachricht verrät die Tarnung
+## Die Push-Nachricht und die Tarnung
 
-`onNewMessage` verschickt aktuell eine sichtbare Benachrichtigung:
+**Behoben am 2026-08-23.** `onNewMessage` verschickte vorher:
 
 ```
 Calc — New Message
@@ -45,27 +45,46 @@ You have a new encrypted message
 ```
 
 Die App gibt sich als Rechner aus und heißt auf dem Home-Screen „Calc" bzw.
-„Rechner". Ein Rechner, der auf dem Sperrbildschirm verschlüsselte
-Nachrichten ankündigt, hebt die Tarnung genau in dem Moment auf, für den sie
-gedacht ist — wenn jemand anderes auf das Display schaut.
+„Rechner". Ein Rechner, der auf dem Sperrbildschirm verschlüsselte Nachrichten
+ankündigt, hebt die Tarnung genau in dem Moment auf, für den sie gedacht ist —
+wenn jemand anderes auf das Display schaut. Der Code enthielt bereits die
+richtige Vorsichtsmaßnahme für Metadaten (keine Sender-ID im Payload, weil
+FCM-Payloads bei Google geloggt werden); nur der sichtbare Text war übersehen
+worden.
 
-Der Code enthält bereits die richtige Vorsichtsmaßnahme für Metadaten (keine
-Sender-ID im Payload, weil FCM-Payloads bei Google geloggt werden). Nur der
-sichtbare Text wurde dabei übersehen.
+Jetzt steht dort `COVER_NOTIFICATION`, ein einzelner Body ohne Titel:
 
-Drei Wege, alle brauchen eine Produktentscheidung:
+```
+RECHNER
+Tippen zum Öffnen
+```
 
-1. **Nur stille Pushes** — `notification`-Block streichen, `content-available`
-   behalten. Die App wacht auf, holt die Nachricht und entscheidet lokal, ob
-   und was sie anzeigt. Sauberste Lösung für die Tarnung.
-   Nachteil: iOS priorisiert stille Pushes niedriger und drosselt sie —
-   Zustellung wird unzuverlässiger.
-2. **Neutraler Text**, der zu einem Rechner passt. Tarnung bleibt, Zustellung
-   bleibt zuverlässig, aber es ist eine Notlösung.
-3. **So lassen** und akzeptieren, dass Benachrichtigungen die Tarnung brechen.
+Bewusst ohne `title` — iOS zeigt den App-Namen ohnehin darüber, eine zweite
+Zeile wäre nur weitere Fläche, die in der Rolle bleiben muss.
 
-Nicht eigenmächtig geändert — jede Variante ändert spürbar, wie sich die App
-für die Nutzer verhält.
+**Warum dieser Weg und nicht der stille Push.** Naheliegend wäre gewesen, den
+`notification`-Block ganz zu streichen und nur `content-available` zu schicken.
+Das ist für die Tarnung sauberer, hätte hier aber nichts gebracht: der
+Client-Handler ist leer. `firebaseMessagingBackgroundHandler` in
+`lib/services/notification/notification_service.dart` tut nichts, `onMessage`
+und `onMessageOpenedApp` ebenfalls nicht. Ein stiller Push hätte also
+schlicht *gar keine* Wirkung gehabt, und zusätzlich drosselt iOS stille Pushes.
+
+Die Nachrichten selbst kommen ohnehin nicht über den Push, sondern über
+`lib/security/transport/privacy_polling.dart`. Der Push ist reine
+Aufmerksamkeit, kein Transportweg — deshalb kostet ein anderer Text auch keine
+Zustellung.
+
+**Nicht lokalisiert.** Sauber ginge das über APNs `loc-key` plus
+`Localizable.strings` in jedem `.lproj`, und jede dieser Dateien müsste ins
+Xcode-Projekt eingehängt werden — ohne Mac nicht blind zu machen. Alle
+aktuellen Nutzer sind deutschsprachig, deshalb Deutsch als ehrlicher Default
+statt eines halben Mechanismus.
+
+**Strengere Variante, falls die Tarnung wichtiger ist als überhaupt
+benachrichtigt zu werden:** `notification` ganz weglassen und nur Daten
+schicken. Es geht keine Nachricht verloren — das Polling holt sie —, der
+Nutzer erfährt nur erst beim Öffnen davon.
 
 ---
 
