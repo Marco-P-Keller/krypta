@@ -89,18 +89,10 @@ def check_version(candidate, known_versions):
     )
 
 
-def check_encryption_key(uses_non_exempt, code):
-    """Export-Compliance-Schluessel in der Info.plist plausibilisieren."""
-    if not uses_non_exempt:
-        return True, "ITSAppUsesNonExemptEncryption ist false — kein Code noetig."
-    if code:
-        return True, "ITSEncryptionExportComplianceCode ist gesetzt."
-    return False, (
-        "ITSAppUsesNonExemptEncryption ist true, aber ITSEncryptionExportComplianceCode "
-        "fehlt in ios/Runner/Info.plist. Apple lehnt den Upload ab (Fehler 90592). "
-        "Den Code liefert App Store Connect unter der App -> App-Informationen -> "
-        "Exportkonformitaetsdokumentation."
-    )
+# Die Info.plist-Pruefung (ITSAppUsesNonExemptEncryption gegen
+# ITSEncryptionExportComplianceCode) steckt bewusst im Preflight-Schritt des
+# Workflows und nicht hier: sie braucht kein Netz, nur eine lokale Datei.
+# Eine zweite Kopie an dieser Stelle waere nur eine, die auseinanderlaeuft.
 
 
 # -- API ----------------------------------------------------------------

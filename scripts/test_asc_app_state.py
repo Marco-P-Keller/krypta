@@ -96,18 +96,29 @@ class CheckDecision(unittest.TestCase):
         self.assertTrue(ok)
 
 
-class ExportCompliance(unittest.TestCase):
-    def test_missing_code_is_reported(self):
-        ok, msg = st.check_encryption_key(uses_non_exempt=True, code="")
+class RealWorldData(unittest.TestCase):
+    """Der Stand, den App Store Connect am 2026-08-23 fuer com.calcchat.ww
+    gemeldet hat — damit die Auswahl an echten Daten haengt, nicht nur an
+    ausgedachten."""
+
+    STORE = ["1.0", "1.2", "2.0.0"]
+    TESTFLIGHT = ["1.0.0", "1.1.0", "1.2.0", "2.0.0", "3.0.0", "4.0.0"]
+
+    def known(self):
+        return self.STORE + self.TESTFLIGHT
+
+    def test_highest_is_the_testflight_four(self):
+        # Die hoechste Version steht in TestFlight, nicht im Store — wer nur
+        # die Store-Versionen vergleicht, landet bei 2.0.0 und faellt rein.
+        self.assertEqual(latest := st.latest_version(self.known()), "4.0.0")
+        self.assertNotEqual(latest, "2.0.0")
+
+    def test_old_pubspec_version_is_rejected(self):
+        ok, _ = st.check_version("1.0.0", self.known())
         self.assertFalse(ok)
-        self.assertIn("ITSEncryptionExportComplianceCode", msg)
 
-    def test_present_code_passes(self):
-        ok, _ = st.check_encryption_key(uses_non_exempt=True, code="abc-123")
-        self.assertTrue(ok)
-
-    def test_exempt_app_needs_no_code(self):
-        ok, _ = st.check_encryption_key(uses_non_exempt=False, code="")
+    def test_chosen_version_is_accepted(self):
+        ok, _ = st.check_version("4.1.0", self.known())
         self.assertTrue(ok)
 
 

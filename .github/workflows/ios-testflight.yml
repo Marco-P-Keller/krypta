@@ -160,8 +160,10 @@ jobs:
           COMPLIANCE_CODE=$(/usr/libexec/PlistBuddy -c \
             'Print :ITSEncryptionExportComplianceCode' ios/Runner/Info.plist 2>/dev/null || echo "")
           if [ "${USES_NON_EXEMPT}" = "missing" ]; then
-            echo "::error::ITSAppUsesNonExemptEncryption fehlt in ios/Runner/Info.plist"
-            FAIL=1
+            # Kein Fehler: fehlt der Schlüssel, stellt App Store Connect die
+            # Verschlüsselungsfrage stattdessen pro Build in der Oberfläche.
+            # Das ist ein gültiger Zustand, nur eben ein manueller Schritt.
+            echo "::notice::ITSAppUsesNonExemptEncryption ist nicht gesetzt — App Store Connect fragt die Exportkonformität pro Build in der Oberfläche ab"
           elif [ "${USES_NON_EXEMPT}" = "true" ] && [ -z "${COMPLIANCE_CODE}" ]; then
             echo "::error::ITSAppUsesNonExemptEncryption ist true, aber ITSEncryptionExportComplianceCode fehlt — ITMS-90592"
             FAIL=1
