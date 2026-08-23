@@ -355,9 +355,15 @@ jobs:
       - name: Flutter Release bauen (unsigniert)
         run: |
           set -euo pipefail
+          # Die Defines speisen die Versionsanzeige im Einstellungs-Bildschirm
+          # aus derselben Quelle wie CFBundleShortVersionString. Vorher stand
+          # die Zahl fest im Dart-Code und behauptete 1.0.0, während im Store
+          # 4.0.0 lief.
           flutter build ios --release --no-codesign \
             --build-name="${{ steps.version.outputs.build_name }}" \
-            --build-number="${{ steps.version.outputs.build_number }}"
+            --build-number="${{ steps.version.outputs.build_number }}" \
+            --dart-define=APP_VERSION="${{ steps.version.outputs.build_name }}" \
+            --dart-define=APP_BUILD="${{ steps.version.outputs.build_number }}"
 
       - name: Extended Attributes entfernen
         run: ./scripts/strip_xattrs_ios.sh
