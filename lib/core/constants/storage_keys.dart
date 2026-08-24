@@ -42,6 +42,9 @@ abstract final class StorageKeys {
   // ── Privacy mode (push vs polling) ──────────────────────────────────────
   static const String pushPrivacyMode = 'krypta_cfg_push_privacy';
 
+  /// Die gewaehlte Anzeigesprache als reiner Sprachcode ('en', 'de', ...).
+  static const String languageCode = 'krypta_cfg_language';
+
   // ── Receipt privacy (metadata minimization) ────────────────────────────
   /// Whether delivery confirmations are sent. Default: false (disabled).
   static const String deliveryReceiptsEnabled = 'krypta_cfg_delivery_receipts';

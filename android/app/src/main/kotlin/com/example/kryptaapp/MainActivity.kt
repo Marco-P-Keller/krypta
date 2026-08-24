@@ -23,6 +23,7 @@ import javax.crypto.spec.GCMParameterSpec
 class MainActivity : FlutterActivity() {
     private val CHANNEL = "krypta/security"
     private val SCREENSHOT_EVENT_CHANNEL = "krypta/screenshot_events"
+    private val CAPTURE_EVENT_CHANNEL = "krypta/capture_events"
     private val HARDWARE_KEY_ALIAS = "krypta_hw_wrapping_key"
     private val GCM_TAG_LENGTH = 128
 
@@ -53,6 +54,18 @@ class MainActivity : FlutterActivity() {
                 }
             })
 
+        // Aufnahmezustand: auf Android dauerhaft "keine Aufnahme", weil
+        // FLAG_SECURE sie gar nicht erst zulaesst. Der Kanal existiert
+        // trotzdem, damit Dart nicht plattformabhaengig auf einen fehlenden
+        // Kanal laufen muss.
+        EventChannel(flutterEngine.dartExecutor.binaryMessenger, CAPTURE_EVENT_CHANNEL)
+            .setStreamHandler(object : EventChannel.StreamHandler {
+                override fun onListen(arguments: Any?, events: EventChannel.EventSink?) {
+                    events?.success(false)
+                }
+                override fun onCancel(arguments: Any?) {}
+            })
+
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, CHANNEL).setMethodCallHandler { call, result ->
             when (call.method) {
                 "enableSecureFlag" -> {
@@ -67,6 +80,18 @@ class MainActivity : FlutterActivity() {
                     isSecureFlagEnabled = false
                     window.clearFlags(WindowManager.LayoutParams.FLAG_SECURE)
                     result.success(true)
+                }
+                "isScreenshotProtectionActive" -> {
+                    // Auf Android ist FLAG_SECURE eine echte Zusage des
+                    // Systems: gesetzt heisst geschuetzt. Anders als der
+                    // iOS-Layer-Trick gibt es hier nichts nachzupruefen.
+                    result.success(isSecureFlagEnabled)
+                }
+                "isScreenCaptured" -> {
+                    // FLAG_SECURE blockiert Aufnahme und Spiegelung bereits.
+                    // Eine Erkennung wie UIScreen.isCaptured auf iOS braucht
+                    // es deshalb nicht — und es gibt sie hier auch nicht.
+                    result.success(false)
                 }
                 "isStrongBoxAvailable" -> {
                     result.success(isStrongBoxAvailable())

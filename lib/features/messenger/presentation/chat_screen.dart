@@ -7,6 +7,7 @@ import '../../../services/platform/platform_security_service.dart';
 import '../../../theme/app_colors.dart';
 import '../../../widgets/emergency_button.dart';
 import '../data/models/chat_model.dart';
+import '../data/models/contact_model.dart';
 import '../logic/messenger_provider.dart';
 import 'widgets/chat_settings_sheet.dart';
 import 'widgets/message_bubble.dart';
@@ -242,7 +243,21 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
           _buildVerificationStaleBanner(context, l10n),
           Expanded(child: _buildMessageList(context, l10n)),
           _buildStatusBars(context, l10n, isDark),
-          _buildMessageInput(context, l10n, isDark),
+          // Solange die Kontaktanfrage nicht angenommen ist, steht hier die
+          // Entscheidung statt des Schreibfelds — geschrieben wird erst
+          // danach. Siehe docs/KONTAKTANFRAGEN.md.
+          Consumer<MessengerProvider>(
+            builder: (context, messenger, _) {
+              final contact =
+                  messenger.contactForId(widget.chat.recipientId);
+              if (contact == null ||
+                  contact.requestState == ContactRequestState.established) {
+                return _buildMessageInput(context, l10n, isDark);
+              }
+              return _buildRequestBar(
+                  context, l10n, isDark, messenger, contact);
+            },
+          ),
         ],
       ),
     );
@@ -590,6 +605,135 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
     if (d.inHours <= 1) return '1h';
     if (d.inDays <= 1) return '1 day';
     return '1 week';
+  }
+
+  /// Die Leiste, die das Schreibfeld ersetzt, solange die Kontaktanfrage
+  /// offen ist.
+  Widget _buildRequestBar(
+    BuildContext context,
+    AppLocalizations l10n,
+    bool isDark,
+    MessengerProvider messenger,
+    Contact contact,
+  ) {
+    final eingehend = contact.isIncomingRequest;
+    final dimColor =
+        isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight;
+
+    return Container(
+      padding: EdgeInsets.only(
+        left: 16,
+        right: 16,
+        top: 14,
+        bottom: MediaQuery.of(context).padding.bottom + 14,
+      ),
+      decoration: BoxDecoration(
+        color: isDark ? AppColors.backgroundDark : AppColors.backgroundLight,
+        border: Border(
+          top: BorderSide(
+            color: isDark ? AppColors.dividerDark : AppColors.dividerLight,
+            width: 0.33,
+          ),
+        ),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              Icon(
+                eingehend
+                    ? Icons.person_add_alt_1_rounded
+                    : Icons.schedule_rounded,
+                size: 18,
+                color: AppColors.accent,
+              ),
+              const SizedBox(width: 8),
+              Text(
+                eingehend ? l10n.contactRequestTitle : l10n.contactRequestSent,
+                style: const TextStyle(fontWeight: FontWeight.w600),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          Text(
+            eingehend
+                ? l10n.contactRequestIncomingHint
+                : l10n.contactRequestWaitingHint,
+            style: TextStyle(fontSize: 13, color: dimColor),
+          ),
+          const SizedBox(height: 12),
+          if (eingehend)
+            Row(
+              children: [
+                Expanded(
+                  child: FilledButton(
+                    onPressed: () =>
+                        messenger.acceptContactRequest(contact.id),
+                    style: FilledButton.styleFrom(
+                      backgroundColor: AppColors.accent,
+                    ),
+                    child: Text(l10n.acceptRequest),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: () =>
+                        messenger.declineContactRequest(contact.id),
+                    child: Text(l10n.declineRequest),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                IconButton(
+                  tooltip: l10n.blockContact,
+                  icon: const Icon(Icons.block_rounded,
+                      color: AppColors.destructive),
+                  onPressed: () => _confirmBlock(context, l10n, messenger,
+                      contact.id),
+                ),
+              ],
+            )
+          else
+            OutlinedButton.icon(
+              onPressed: () => messenger.resendContactRequest(contact.id),
+              icon: const Icon(Icons.refresh_rounded, size: 16),
+              label: Text(l10n.resendRequest),
+            ),
+        ],
+      ),
+    );
+  }
+
+  /// Blockieren immer mit Rückfrage — es ist nicht offensichtlich, dass die
+  /// Gegenseite davon nichts erfährt.
+  Future<void> _confirmBlock(
+    BuildContext context,
+    AppLocalizations l10n,
+    MessengerProvider messenger,
+    String contactId,
+  ) async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(l10n.blockContact),
+        content: Text(l10n.blockContactConfirm),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: Text(l10n.cancel),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            style: TextButton.styleFrom(
+                foregroundColor: AppColors.destructive),
+            child: Text(l10n.blockContact),
+          ),
+        ],
+      ),
+    );
+    if (ok == true) await messenger.blockContact(contactId);
   }
 
   Widget _buildMessageInput(BuildContext context, AppLocalizations l10n, bool isDark) {

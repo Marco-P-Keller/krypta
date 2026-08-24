@@ -474,6 +474,324 @@ class AppLocalizationsEn extends AppLocalizations {
       'Warning: screenshot taken – the content was not protected';
 
   @override
+  String get screenCaptureWarning =>
+      'Screen recording detected – content hidden';
+
+  @override
+  String get screenshotProtectionUnavailable =>
+      'Not possible on this device – screenshots show the content';
+
+  @override
+  String get screenshotMaskDiagnostics => 'Diagnostics: screenshot mask';
+
+  @override
+  String get keysNotPublishedDenied =>
+      'The server rejected your keys – others cannot message you.';
+
+  @override
+  String get keysNotPublishedFailed =>
+      'Your keys could not be published – others cannot message you.';
+
+  @override
+  String get biometricUnlockReason => 'Unlock Krypta Messenger';
+
+  @override
+  String get deviceCompromised => 'Device may be compromised.';
+
+  @override
+  String get deviceCompromisedDegraded =>
+      'Device may be compromised. Hardware security disabled.';
+
+  @override
+  String get fieldRequired => 'Required';
+
+  @override
+  String codeMinDigits(int count) {
+    return 'At least $count digits';
+  }
+
+  @override
+  String get codeDigitsOnly => 'Digits only';
+
+  @override
+  String get deleteCodeMustDiffer =>
+      'The delete code must differ from your secret code.';
+
+  @override
+  String get setupFailed => 'Setup failed. Please try again.';
+
+  @override
+  String get setupSecretCodeSubtitle =>
+      'Enter this in the calculator to open your vault.';
+
+  @override
+  String get setupDeleteCodeSubtitle =>
+      'Instantly erases everything. Use in emergencies only.';
+
+  @override
+  String get contactKeyChangedWarning =>
+      'The security key for this contact has changed. Messages are blocked until you verify their identity. Scan their QR code or compare safety numbers to resume messaging.';
+
+  @override
+  String get verifyIdentity => 'Verify Identity';
+
+  @override
+  String get safetyNumberCompareHint =>
+      'Compare safety numbers or scan QR codes to verify end-to-end encryption.';
+
+  @override
+  String get viewSafetyNumber => 'View Safety Number';
+
+  @override
+  String get safetyNumberTitle => 'Safety Number';
+
+  @override
+  String get safetyNumberCopied => 'Safety number copied';
+
+  @override
+  String get safetyNumberMatchHint =>
+      'Compare this number with your contact. If they match, your conversation is secure.';
+
+  @override
+  String get verificationFailedKeyMismatch =>
+      'Verification failed — the keys do not match';
+
+  @override
+  String get markVerified => 'Mark Verified';
+
+  @override
+  String get securitySettingsReason => 'Change security settings';
+
+  @override
+  String get vaultPasswordReAuthHint =>
+      'Enter your vault password to change security settings.';
+
+  @override
+  String get codeAlreadyInUse => 'Code already in use for another action.';
+
+  @override
+  String get deviceSecure => 'Device secure';
+
+  @override
+  String get deviceCompromisedDetected => 'Compromise detected';
+
+  @override
+  String get deviceStatusUnknown => 'Status unknown';
+
+  @override
+  String get deviceSecureSubtitle => 'No root/jailbreak/Frida indicators';
+
+  @override
+  String get deviceCompromisedSubtitle =>
+      'Root, jailbreak or instrumentation detected. Hardware security disabled.';
+
+  @override
+  String get deviceStatusUnknownSubtitle =>
+      'Integrity check failed — restricted mode active.';
+
+  @override
+  String get hardwareEnclave => 'Hardware enclave';
+
+  @override
+  String get hardwareTee => 'TEE key store';
+
+  @override
+  String get hardwareSoftware => 'Software key store';
+
+  @override
+  String get hardwareBoundSubtitle => 'Database key bound to hardware';
+
+  @override
+  String get hardwareEnclaveSubtitle => 'StrongBox/Secure Enclave available';
+
+  @override
+  String get hardwareTeeSubtitle =>
+      'Key held in the Trusted Execution Environment';
+
+  @override
+  String get hardwareSoftwareSubtitle => 'No hardware security available';
+
+  @override
+  String get pushPrivacy => 'Push privacy';
+
+  @override
+  String get pushPrivacyOn => 'On — messages are fetched by polling';
+
+  @override
+  String get pushPrivacyOff => 'Off — push notifications active';
+
+  @override
+  String get readReceipts => 'Read receipts';
+
+  @override
+  String get readReceiptsOn => 'On — the sender sees when you read';
+
+  @override
+  String get readReceiptsOff => 'Off — maximum privacy';
+
+  @override
+  String get deliveryReceipts => 'Delivery receipts';
+
+  @override
+  String get deliveryReceiptsOn => 'On — the sender sees when delivered';
+
+  @override
+  String get deliveryReceiptsOff => 'Off — maximum privacy';
+
+  @override
+  String get privacyPolicyBody =>
+      'Krypta ECC — Privacy Policy\n\nLast updated: April 2026\n\n1. Controller\nConnexa GmbH\nContact: https://connexa-gmbh.ch\n\n2. What data is collected?\nKrypta collects as little data as is technically possible:\n• Anonymous Firebase ID (no email, no name, no phone number)\n• Public encryption key (X25519)\n• FCM push token (for notifications)\n\n3. Encryption\nAll messages are end-to-end encrypted (Signal protocol: X3DH + Double Ratchet). At no point does the server have access to the plaintext of your messages. Encryption: XChaCha20-Poly1305. Password hashing: Argon2id.\n\n4. Data storage\n• Messages are stored only on your device (encrypted)\n• The server acts solely as a temporary relay — messages are deleted after delivery\n• Keys are stored in the iOS Keychain / Android Keystore\n\n5. No trackers\nKrypta contains no analytics tools, no advertising and no trackers (0 of 432 known trackers).\n\n6. Data sharing\nNo personal data is passed on to third parties. Google Firebase is used as the infrastructure provider (anonymous authentication and push notifications).\n\n7. Data deletion\nYou can irreversibly delete all of your data at any time:\n• In the settings via \"Delete everything\"\n• By entering the delete code in the calculator\nThis destroys all local data, keys and server-side data.\n\n8. Your rights (GDPR)\nYou have the right to access, rectification, erasure and data portability. Contact us at: https://connexa-gmbh.ch\n\n9. Changes\nThis privacy policy may be updated. The current version is always available in the app.';
+
+  @override
+  String get tutStartSetup => 'Start setup';
+
+  @override
+  String get tutWelcomeTitle => 'Welcome to Krypta';
+
+  @override
+  String get tutWelcomeBody =>
+      'Krypta is a secret messenger.\n\nTo everyone else the app looks like an ordinary calculator — nobody will suspect that an encrypted chat is hiding behind it.\n\nWe recommend reading this tutorial carefully.';
+
+  @override
+  String get tutSecretCodeTitle => 'Your secret code';
+
+  @override
+  String get tutSecretCodeBody =>
+      'During setup you choose a numeric code.\n\nThis code is your key — it is the only way to open the hidden messenger.';
+
+  @override
+  String get tutDeleteCodeBody =>
+      'The second code is for emergencies.\n\nEntering it erases everything immediately — messages, keys, account. Irreversibly.\n\nChoose a code you will not enter by accident.';
+
+  @override
+  String get tutDeleteCodeWarning =>
+      'Everything is erased immediately.\nNo recovery is possible.';
+
+  @override
+  String get tutOpenMessengerTitle => 'Open the messenger';
+
+  @override
+  String get tutOpenMessengerBody =>
+      'To open your messenger:\n\n1. Enter your secret code in the calculator\n2. Press the = key\n\nThe messenger opens right away.';
+
+  @override
+  String get tutPressEquals => 'Press =';
+
+  @override
+  String get tutMessengerUnlocked => 'Messenger unlocked';
+
+  @override
+  String get tutVaultBody =>
+      'In the settings you can enable an additional password.\n\nAfter the secret code the vault password is then requested as well — double security for your messages.';
+
+  @override
+  String get tutAddContactsTitle => 'Add contacts';
+
+  @override
+  String get tutAddContactsBody =>
+      'There are two ways to add contacts:\n\n• Scan a QR code — quick and simple\n• Enter a user ID — when you are not in the same place\n\nAfter that you can write to each other.';
+
+  @override
+  String get tutQrFast => 'Quick & simple';
+
+  @override
+  String get tutEnterUserId => 'Enter user ID';
+
+  @override
+  String get tutForRemoteContacts => 'For remote contacts';
+
+  @override
+  String get tutEmergencyBody =>
+      'You will find red emergency buttons in the app.\n\nThey erase everything immediately — just like the delete code. Use them only when it really matters.';
+
+  @override
+  String get tutInSettings => 'In the settings';
+
+  @override
+  String get tutChatFeaturesIntro => 'A chat gives you three special features:';
+
+  @override
+  String get tutLockMessageDesc =>
+      'Protect individual messages with a password';
+
+  @override
+  String get tutAutoDeleteDesc => 'Messages delete themselves after a set time';
+
+  @override
+  String get tutBurnAfterReadDesc =>
+      'The message is deleted immediately after reading';
+
+  @override
+  String get tutReadyTitle => 'All set!';
+
+  @override
+  String get tutReadyBody =>
+      'You now know everything you need.\n\nIn the next step you set up your codes — after that your messenger is ready to use.';
+
+  @override
+  String get language => 'Language';
+
+  @override
+  String get chooseLanguage => 'Choose your language';
+
+  @override
+  String get deviceSecuritySection => 'Device security';
+
+  @override
+  String get tutDeleteCodeTitle => 'Emergency code';
+
+  @override
+  String get tutEmergencyTitle => 'Emergency buttons';
+
+  @override
+  String get tutChatFeaturesTitle => 'Chat features';
+
+  @override
+  String get blockContact => 'Block';
+
+  @override
+  String get authentication => 'Authentication';
+
+  @override
+  String get contactRequestTitle => 'Contact request';
+
+  @override
+  String get contactRequestIncomingHint =>
+      'This person wants to message you. You can only write to each other once you accept.';
+
+  @override
+  String get acceptRequest => 'Accept';
+
+  @override
+  String get declineRequest => 'Decline';
+
+  @override
+  String get contactRequestSent => 'Request sent';
+
+  @override
+  String get contactRequestWaitingHint =>
+      'You can write once the other person accepts.';
+
+  @override
+  String get resendRequest => 'Request again';
+
+  @override
+  String get acceptToReply => 'Accept the request to reply';
+
+  @override
+  String get requestBadge => 'Request';
+
+  @override
+  String get blockContactConfirm =>
+      'Block this person? They will not be able to message you, and they will not be told.';
+
+  @override
+  String get unblockContact => 'Unblock';
+
+  @override
+  String get contactBlocked => 'Blocked';
+
+  @override
   String get privacyPolicy => 'Privacy Policy';
 
   @override

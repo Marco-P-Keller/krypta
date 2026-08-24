@@ -66,8 +66,10 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
     }
 
     // Version check
+    // v1 bleibt lesbar: ein Gerät mit älterem Stand zeigt weiterhin solche
+    // Codes, und dann läuft es eben über die gewöhnliche Rückfrage.
     final version = json['v'];
-    if (version is! int || version != 1) {
+    if (version is! int || (version != 1 && version != 2)) {
       _error = AppLocalizations.of(context)!.qrUnsupportedVersion;
       return null;
     }
@@ -105,7 +107,15 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
       return null;
     }
 
-    return _QrPayload(uid: uid, publicKey: publicKey, fingerprint: fp);
+    // Ab v2 liegt ein Einmal-Token bei. Fehlt es, ist das kein Fehler —
+    // dann gilt der gewöhnliche Weg mit Rückfrage.
+    final rt = json['rt'];
+    return _QrPayload(
+      uid: uid,
+      publicKey: publicKey,
+      fingerprint: fp,
+      requestToken: rt is String && rt.isNotEmpty ? rt : null,
+    );
   }
 
   Future<void> _handleBarcode(BarcodeCapture capture) async {
@@ -155,6 +165,7 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
       contactId: payload.uid,
       qrPublicKey: payload.publicKey,
       qrFingerprint: payload.fingerprint,
+      qrToken: payload.requestToken,
     );
 
     if (!mounted) return;
@@ -381,10 +392,14 @@ class _QrPayload {
   final Uint8List publicKey;
   final String fingerprint;
 
+  /// Nachweis, dass der Code wirklich vorlag. Null bei v1.
+  final String? requestToken;
+
   const _QrPayload({
     required this.uid,
     required this.publicKey,
     required this.fingerprint,
+    this.requestToken,
   });
 }
 

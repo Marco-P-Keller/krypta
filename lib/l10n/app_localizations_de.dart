@@ -477,6 +477,328 @@ class AppLocalizationsDe extends AppLocalizations {
       'Achtung: Screenshot gemacht – der Inhalt war nicht geschützt';
 
   @override
+  String get screenCaptureWarning =>
+      'Bildschirmaufnahme erkannt – der Inhalt ist ausgeblendet';
+
+  @override
+  String get screenshotProtectionUnavailable =>
+      'Auf diesem Gerät nicht möglich – Screenshots zeigen den Inhalt';
+
+  @override
+  String get screenshotMaskDiagnostics => 'Diagnose: Screenshot-Maske';
+
+  @override
+  String get keysNotPublishedDenied =>
+      'Deine Schlüssel wurden vom Server abgelehnt – andere können dir nicht schreiben.';
+
+  @override
+  String get keysNotPublishedFailed =>
+      'Deine Schlüssel konnten nicht hinterlegt werden – andere können dir nicht schreiben.';
+
+  @override
+  String get biometricUnlockReason => 'Krypta Messenger entsperren';
+
+  @override
+  String get deviceCompromised => 'Gerät möglicherweise kompromittiert.';
+
+  @override
+  String get deviceCompromisedDegraded =>
+      'Gerät möglicherweise kompromittiert. Hardware-Sicherheit deaktiviert.';
+
+  @override
+  String get fieldRequired => 'Erforderlich';
+
+  @override
+  String codeMinDigits(int count) {
+    return 'Mindestens $count Ziffern';
+  }
+
+  @override
+  String get codeDigitsOnly => 'Nur Ziffern';
+
+  @override
+  String get deleteCodeMustDiffer =>
+      'Der Löschcode muss sich vom Geheimcode unterscheiden.';
+
+  @override
+  String get setupFailed =>
+      'Einrichtung fehlgeschlagen. Bitte noch einmal versuchen.';
+
+  @override
+  String get setupSecretCodeSubtitle =>
+      'Diesen Code im Rechner eingeben, um den Tresor zu öffnen.';
+
+  @override
+  String get setupDeleteCodeSubtitle =>
+      'Löscht sofort alles. Nur im Notfall verwenden.';
+
+  @override
+  String get contactKeyChangedWarning =>
+      'Der Sicherheitsschlüssel dieses Kontakts hat sich geändert. Nachrichten sind blockiert, bis du seine Identität bestätigt hast. Scanne seinen QR-Code oder vergleicht die Sicherheitsnummern, um weiterzuschreiben.';
+
+  @override
+  String get verifyIdentity => 'Identität bestätigen';
+
+  @override
+  String get safetyNumberCompareHint =>
+      'Vergleicht die Sicherheitsnummern oder scannt die QR-Codes, um die Ende-zu-Ende-Verschlüsselung zu bestätigen.';
+
+  @override
+  String get viewSafetyNumber => 'Sicherheitsnummer anzeigen';
+
+  @override
+  String get safetyNumberTitle => 'Sicherheitsnummer';
+
+  @override
+  String get safetyNumberCopied => 'Sicherheitsnummer kopiert';
+
+  @override
+  String get safetyNumberMatchHint =>
+      'Vergleiche diese Nummer mit deinem Kontakt. Stimmen sie überein, ist euer Gespräch sicher.';
+
+  @override
+  String get verificationFailedKeyMismatch =>
+      'Verifikation fehlgeschlagen — Schlüssel stimmen nicht überein';
+
+  @override
+  String get markVerified => 'Als bestätigt markieren';
+
+  @override
+  String get securitySettingsReason => 'Sicherheitseinstellungen ändern';
+
+  @override
+  String get vaultPasswordReAuthHint =>
+      'Tresor-Passwort eingeben um Sicherheitseinstellungen zu ändern.';
+
+  @override
+  String get codeAlreadyInUse =>
+      'Dieser Code wird bereits für eine andere Aktion verwendet.';
+
+  @override
+  String get deviceSecure => 'Gerät sicher';
+
+  @override
+  String get deviceCompromisedDetected => 'Kompromittierung erkannt';
+
+  @override
+  String get deviceStatusUnknown => 'Status unbekannt';
+
+  @override
+  String get deviceSecureSubtitle => 'Keine Root/Jailbreak/Frida-Indikatoren';
+
+  @override
+  String get deviceCompromisedSubtitle =>
+      'Root, Jailbreak oder Instrumentierung erkannt. Hardware-Sicherheit deaktiviert.';
+
+  @override
+  String get deviceStatusUnknownSubtitle =>
+      'Integritätsprüfung fehlgeschlagen — eingeschränkter Modus aktiv.';
+
+  @override
+  String get hardwareEnclave => 'Hardware-Enklave';
+
+  @override
+  String get hardwareTee => 'TEE-Schlüsselspeicher';
+
+  @override
+  String get hardwareSoftware => 'Software-Schlüsselspeicher';
+
+  @override
+  String get hardwareBoundSubtitle => 'Datenbankschlüssel an Hardware gebunden';
+
+  @override
+  String get hardwareEnclaveSubtitle => 'StrongBox/Secure Enclave verfügbar';
+
+  @override
+  String get hardwareTeeSubtitle =>
+      'Schlüssel im Trusted Execution Environment';
+
+  @override
+  String get hardwareSoftwareSubtitle => 'Keine Hardware-Sicherheit verfügbar';
+
+  @override
+  String get pushPrivacy => 'Push-Privatsphäre';
+
+  @override
+  String get pushPrivacyOn =>
+      'Aktiv — Nachrichten werden per Polling abgerufen';
+
+  @override
+  String get pushPrivacyOff => 'Deaktiviert — Push-Benachrichtigungen aktiv';
+
+  @override
+  String get readReceipts => 'Lesebestätigungen';
+
+  @override
+  String get readReceiptsOn => 'Aktiv — Absender sieht, wann du liest';
+
+  @override
+  String get readReceiptsOff => 'Deaktiviert — maximale Privatsphäre';
+
+  @override
+  String get deliveryReceipts => 'Zustellbestätigungen';
+
+  @override
+  String get deliveryReceiptsOn => 'Aktiv — Absender sieht, wann zugestellt';
+
+  @override
+  String get deliveryReceiptsOff => 'Deaktiviert — maximale Privatsphäre';
+
+  @override
+  String get privacyPolicyBody =>
+      'Krypta ECC — Datenschutzerklärung\n\nStand: April 2026\n\n1. Verantwortlicher\nConnexa GmbH\nKontakt: https://connexa-gmbh.ch\n\n2. Welche Daten werden erhoben?\nKrypta erhebt so wenig Daten wie technisch möglich:\n• Anonyme Firebase-ID (keine E-Mail, kein Name, keine Telefonnummer)\n• Öffentlicher Verschlüsselungsschlüssel (X25519)\n• FCM-Push-Token (für Benachrichtigungen)\n\n3. Verschlüsselung\nAlle Nachrichten sind Ende-zu-Ende-verschlüsselt (Signal-Protokoll: X3DH + Double Ratchet). Der Server hat zu keinem Zeitpunkt Zugriff auf den Klartext Ihrer Nachrichten. Verschlüsselung: XChaCha20-Poly1305. Passwort-Hashing: Argon2id.\n\n4. Datenspeicherung\n• Nachrichten werden nur auf Ihrem Gerät gespeichert (verschlüsselt)\n• Der Server fungiert nur als temporärer Relay — Nachrichten werden nach Zustellung gelöscht\n• Schlüssel werden im iOS Keychain / Android Keystore gespeichert\n\n5. Keine Tracker\nKrypta enthält keine Analyse-Tools, keine Werbung und keine Tracker (0 von 432 bekannten Trackern).\n\n6. Datenweitergabe\nEs werden keine personenbezogenen Daten an Dritte weitergegeben. Google Firebase wird als Infrastruktur-Anbieter verwendet (anonyme Authentifizierung und Push-Benachrichtigungen).\n\n7. Datenlöschung\nSie können jederzeit alle Ihre Daten unwiderruflich löschen:\n• In den Einstellungen über \"Alles löschen\"\n• Durch Eingabe des Lösch-Codes im Taschenrechner\nDabei werden alle lokalen Daten, Schlüssel und Server-Daten vernichtet.\n\n8. Ihre Rechte (DSGVO)\nSie haben das Recht auf Auskunft, Berichtigung, Löschung und Datenübertragbarkeit. Kontaktieren Sie uns unter: https://connexa-gmbh.ch\n\n9. Änderungen\nDiese Datenschutzerklärung kann aktualisiert werden. Die aktuelle Version ist immer in der App einsehbar.';
+
+  @override
+  String get tutStartSetup => 'Setup starten';
+
+  @override
+  String get tutWelcomeTitle => 'Willkommen bei Krypta';
+
+  @override
+  String get tutWelcomeBody =>
+      'Krypta ist ein geheimer Messenger.\n\nFür alle anderen sieht die App aus wie ein ganz normaler Taschenrechner — niemand wird vermuten, dass sich dahinter ein verschlüsselter Chat versteckt.\n\nWir empfehlen, dieses Tutorial ausführlich zu lesen.';
+
+  @override
+  String get tutSecretCodeTitle => 'Dein Geheimcode';
+
+  @override
+  String get tutSecretCodeBody =>
+      'Beim Einrichten legst du einen Zahlencode fest.\n\nDieser Code ist dein Schlüssel — nur damit kannst du den versteckten Messenger öffnen.';
+
+  @override
+  String get tutDeleteCodeBody =>
+      'Der zweite Code ist für den Notfall.\n\nWenn du diesen Code eingibst, wird sofort alles gelöscht — Nachrichten, Schlüssel, Account. Unwiderruflich.\n\nNur im Ernstfall verwenden!';
+
+  @override
+  String get tutDeleteCodeWarning =>
+      'Alles wird sofort gelöscht.\nKeine Wiederherstellung möglich.';
+
+  @override
+  String get tutOpenMessengerTitle => 'Messenger öffnen';
+
+  @override
+  String get tutOpenMessengerBody =>
+      'Um deinen Messenger zu öffnen:\n\n1. Gib deinen Geheimcode im Taschenrechner ein\n2. Drücke die = Taste\n\nDer Messenger öffnet sich sofort.';
+
+  @override
+  String get tutPressEquals => 'Drücke =';
+
+  @override
+  String get tutMessengerUnlocked => 'Messenger entsperrt';
+
+  @override
+  String get tutVaultBody =>
+      'In den Einstellungen kannst du ein zusätzliches Passwort aktivieren.\n\nNach dem Geheimcode wird dann noch das Tresor-Passwort abgefragt — doppelte Sicherheit.\n\nWir empfehlen das aus Sicherheitsgründen.';
+
+  @override
+  String get tutAddContactsTitle => 'Kontakte hinzufügen';
+
+  @override
+  String get tutAddContactsBody =>
+      'Du kannst Kontakte auf zwei Arten hinzufügen:\n\n• QR-Code scannen — schnell und einfach\n• User-ID eingeben — wenn ihr nicht am selben Ort seid\n\nDanach kannst du der Person einen Namen geben.';
+
+  @override
+  String get tutQrFast => 'Schnell & einfach';
+
+  @override
+  String get tutEnterUserId => 'User-ID eingeben';
+
+  @override
+  String get tutForRemoteContacts => 'Für Fernkontakte';
+
+  @override
+  String get tutEmergencyBody =>
+      'In der App findest du rote Notfall-Knöpfe.\n\nSie löschen sofort alles — genau wie der Delete-Code. Verwende sie nur im Ernstfall.';
+
+  @override
+  String get tutInSettings => 'In den Einstellungen';
+
+  @override
+  String get tutChatFeaturesIntro =>
+      'Im Chat hast du drei besondere Funktionen:';
+
+  @override
+  String get tutLockMessageDesc => 'Einzelne Nachrichten mit Passwort schützen';
+
+  @override
+  String get tutAutoDeleteDesc =>
+      'Nachrichten löschen sich nach einer Zeit automatisch';
+
+  @override
+  String get tutBurnAfterReadDesc =>
+      'Nachricht wird nach dem Lesen sofort gelöscht';
+
+  @override
+  String get tutReadyTitle => 'Alles klar!';
+
+  @override
+  String get tutReadyBody =>
+      'Du weisst jetzt alles was du brauchst.\n\nIm nächsten Schritt richtest du deine Codes ein — danach ist dein Messenger einsatzbereit.';
+
+  @override
+  String get language => 'Sprache';
+
+  @override
+  String get chooseLanguage => 'Wähle deine Sprache';
+
+  @override
+  String get deviceSecuritySection => 'Gerätesicherheit';
+
+  @override
+  String get tutDeleteCodeTitle => 'Notfall-Code';
+
+  @override
+  String get tutEmergencyTitle => 'Notfall-Knöpfe';
+
+  @override
+  String get tutChatFeaturesTitle => 'Chat-Funktionen';
+
+  @override
+  String get blockContact => 'Blockieren';
+
+  @override
+  String get authentication => 'Authentifizierung';
+
+  @override
+  String get contactRequestTitle => 'Kontaktanfrage';
+
+  @override
+  String get contactRequestIncomingHint =>
+      'Diese Person möchte dir schreiben. Schreiben könnt ihr euch erst, wenn du annimmst.';
+
+  @override
+  String get acceptRequest => 'Annehmen';
+
+  @override
+  String get declineRequest => 'Ablehnen';
+
+  @override
+  String get contactRequestSent => 'Anfrage gesendet';
+
+  @override
+  String get contactRequestWaitingHint =>
+      'Schreiben kannst du, sobald die andere Person annimmt.';
+
+  @override
+  String get resendRequest => 'Erneut anfragen';
+
+  @override
+  String get acceptToReply => 'Nimm die Anfrage an, um zu antworten';
+
+  @override
+  String get requestBadge => 'Anfrage';
+
+  @override
+  String get blockContactConfirm =>
+      'Diese Person blockieren? Sie kann dir dann nicht mehr schreiben und erfährt nichts davon.';
+
+  @override
+  String get unblockContact => 'Blockierung aufheben';
+
+  @override
+  String get contactBlocked => 'Blockiert';
+
+  @override
   String get privacyPolicy => 'Datenschutzerklärung';
 
   @override

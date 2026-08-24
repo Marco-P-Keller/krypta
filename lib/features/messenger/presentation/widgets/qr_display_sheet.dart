@@ -1,11 +1,13 @@
 import 'dart:convert';
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../../../services/platform/clipboard_helper.dart';
 import '../../../../theme/app_colors.dart';
 import '../../data/models/contact_model.dart';
+import '../../logic/messenger_provider.dart';
 
 /// Bottom sheet that shows the user's identity QR code for contact verification.
 ///
@@ -14,17 +16,27 @@ import '../../data/models/contact_model.dart';
 /// - uid: user ID
 /// - ik: identity public key (Base64)
 /// - fp: SHA-256 fingerprint of the public key (hex)
+/// - rt: Einmal-Token (ab v2)
 ///
 /// This eliminates first-key-trust: the scanner can verify the key
 /// independently from the server.
+///
+/// Das Token in `rt` ist der einzige Teil, den man nicht anderswo herbekommt:
+/// Kennung, Schlüssel und Hash stehen ohnehin öffentlich in `publicKeys`. Wer
+/// das Token vorlegt, hat den Code wirklich vor sich gehabt — und wer ihn
+/// zeigt, will den Kontakt. Deshalb entfällt für ihn die Rückfrage.
 class QrDisplaySheet extends StatelessWidget {
   final String userId;
   final Uint8List identityPublicKey;
+
+  /// Einmal-Token für diesen Aushang. Null lässt den Code auf v1 fallen.
+  final String? requestToken;
 
   const QrDisplaySheet({
     super.key,
     required this.userId,
     required this.identityPublicKey,
+    this.requestToken,
   });
 
   static void show(
@@ -32,11 +44,15 @@ class QrDisplaySheet extends StatelessWidget {
     required String userId,
     required Uint8List publicKey,
   }) {
+    // Für jeden Aushang ein frisches Token. Es lebt zehn Minuten und gilt
+    // genau einmal — für den Moment, in dem zwei Menschen nebeneinanderstehen.
+    final token = context.read<MessengerProvider>().issueQrToken();
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
       builder: (_) => QrDisplaySheet(
+        requestToken: token,
         userId: userId,
         identityPublicKey: publicKey,
       ),
@@ -47,11 +63,15 @@ class QrDisplaySheet extends StatelessWidget {
   String _buildQrPayload() {
     final ikBase64 = base64Encode(identityPublicKey);
     final fp = Contact.computeFullFingerprint(identityPublicKey);
+    if (requestToken == null) {
+      return jsonEncode({'v': 1, 'uid': userId, 'ik': ikBase64, 'fp': fp});
+    }
     return jsonEncode({
-      'v': 1,
+      'v': 2,
       'uid': userId,
       'ik': ikBase64,
       'fp': fp,
+      'rt': requestToken,
     });
   }
 

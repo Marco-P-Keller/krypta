@@ -200,6 +200,9 @@ class ChatListScreen extends StatelessWidget {
             onTap: () => onChatTap(chat),
             onLongPress: () =>
                 _showChatContextMenu(context, chat, messenger),
+            requestState:
+                messenger.contactForId(chat.recipientId)?.requestState,
+            requestLabel: AppLocalizations.of(context)!.requestBadge,
           ),
         );
       },

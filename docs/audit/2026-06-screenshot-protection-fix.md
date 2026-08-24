@@ -200,3 +200,133 @@ kein OS-Schutz) — zusaetzlicher Versatz **und** keine wirksame Schwaerzung.
 - [ ] Wenn die Maskierung auf dem Geraet **nicht** installierbar ist: App laeuft
       normal weiter, Settings-Toggle springt zurueck, Screenshot-Warnung sagt
       ehrlich „nicht geschuetzt"
+
+---
+
+## iOS 26.6 (Gerätefund an Build 85, gebaut 2026-08-24)
+
+### Symptom
+
+Auf einem iPhone mit **iOS 26.6**, TestFlight-Build 85: Screenshots im
+entsperrten Messenger zeigen den echten Inhalt. Der Schalter in den
+Einstellungen stand dabei auf **an**.
+
+Der Schutz gilt für die ganze Messenger-Sitzung, nicht nur für `chat_screen`
+(`app.dart`: *"Screenshot protection stays active throughout the messenger
+session"*). Nur die Warnmeldung hängt in `chat_screen._listenForScreenshots()`
+— deshalb kam auf dem Einstellungs-Bildschirm keine.
+
+### Zwei getrennte Ursachen
+
+**1. Nativ: die Zeichenfläche wird über einen festen Index gesucht.**
+`installSecureMaskIfNeeded()` nimmt ab iOS 17 `sublayers.first`, davor
+`sublayers.last`. Auf iOS 26 trifft das nicht mehr zu, die Verifikation fällt
+durch, der Code schaltet **fail-closed** ab. Das Verhalten ist korrekt
+implementiert — es schützt nur nichts mehr.
+
+**2. Dart: der Einstellungs-Schalter zeigte einen Zustand, den niemand
+geprüft hatte.** `_screenshotProtection` stand fest verdrahtet auf `true` und
+wurde von `_loadSettings()` nie angefasst. Der Schalter zeigte also immer
+„an", ganz gleich was nativ passiert war.
+
+Fehler 2 ist der gefährlichere. Fail-closed ohne ehrliche Anzeige ist kein
+Schutz, sondern eine Falschaussage: der Nutzer hält Inhalte für geschützt und
+richtet sein Verhalten danach. Behoben durch
+`PlatformSecurityService.refreshScreenshotProtectionState()`, das den
+**geprüften** Zustand nativ abfragt, statt der eigenen Kopie zu glauben — die
+Kopie veraltet ohnehin, sobald der Watchdog die Maske später abbaut.
+
+Neu ist außerdem eine eigene Unterzeile, wenn das Betriebssystem den Schutz
+verweigert (`screenshotProtectionUnavailable`). Vorher sprang der Schalter
+kommentarlos zurück und wirkte kaputt.
+
+### Neu: Aufnahme- und Spiegelungsschutz über `UIScreen.isCaptured`
+
+`UIScreen.isCaptured` / `UIScreen.capturedDidChangeNotification` wurden
+**nirgends** genutzt. Das ist die dokumentierte, von Apple unterstützte
+Erkennung für Bildschirmaufnahme und AirPlay-Spiegelung — im Gegensatz zum
+Layer-Trick, der auf undokumentiertem Verhalten beruht. Für Aufnahme und
+Spiegelung gab es damit bis hierher **überhaupt keinen Schutz**.
+
+Jetzt: solange der Schutz eingeschaltet ist, deckt die App das Fenster
+während einer Aufnahme mit einer undurchsichtigen Fläche ab und meldet den
+Zustand an Dart. Der Hinweistext kommt lokalisiert aus den `.arb`-Dateien
+über `enableSecureFlag(captureNotice:)` herunter, damit im Plattformcode keine
+zweite Textquelle entsteht.
+
+**Sichtbare Verhaltensänderung, bewusst so gebaut:** während einer Aufnahme
+ist der Bildschirm auch für den Nutzer selbst schwarz. Das entspricht dem,
+was die Einstellung verspricht, und dem, was die App beim App-Switcher-
+Schnappschuss ohnehin schon tut. Rückgängig zu machen, indem in
+`applyCaptureMask()` die Abdeckung entfällt und nur das Ereignis an Dart
+gemeldet wird.
+
+Screenshots bleiben davon unberührt — die meldet iOS grundsätzlich erst
+*nach* der Aufnahme, verhindern kann man sie nicht.
+
+### Neu: Diagnose statt Raten
+
+Welcher Index auf iOS 26.6 richtig wäre — oder ob Apple das Verhalten ganz
+abgestellt hat — lässt sich ohne Gerät nicht beantworten. Jeder Rateversuch
+kostet einen eigenen Build von rund 45 Minuten.
+
+Deshalb: **die Standardwahl bleibt unverändert.** Es wird nichts geraten,
+bevor nicht vom Gerät feststeht, was dort tatsächlich vorliegt. Stattdessen
+gibt es einen Diagnose-Bildschirm hinter
+`--dart-define=KRYPTA_DIAG=true` (Checkbox „Diagnose-Bildschirm" im
+`workflow_dispatch`-Dialog), der
+
+- die echte Struktur des Secure-Feldes meldet (Subviews und Sublayer mit
+  Klassennamen, Rahmen, Sichtbarkeit),
+- **jeden** Sublayer einmal wirklich einbaut und durch dieselben drei
+  Prüfungen schickt wie im Normalbetrieb,
+- pro fehlgeschlagenem Versuch benennt, **welche** Prüfung durchfiel
+  (`noCandidate`, `structure`, `geometry`, `renderable`, `killswitch`,
+  `noWindow`, `noSuperlayer`),
+- jeden Kandidaten auf Knopfdruck aktiv lässt, damit ein echter Screenshot
+  zeigt, ob iOS den Inhalt noch ausschließt,
+- und den Bericht in die Zwischenablage legt.
+
+Nach dem Erzwingen wartet der Bildschirm 1,2 Sekunden und fragt den Zustand
+erneut ab, bevor er zum Screenshot auffordert: der native Watchdog prüft rund
+0,75 Sekunden nach dem Einbau nach und baut die Maske gegebenenfalls wieder
+ab. Ohne dieses Warten käme ein Kandidat zu Unrecht als untauglich heraus.
+
+### Ablauf am Gerät (ein Build genügt)
+
+1. Workflow auf `dev-Daniele` starten, Checkbox **Diagnose-Bildschirm**
+   anhaken.
+2. Messenger entsperren → Einstellungen → „Diagnose: Screenshot-Maske".
+3. Bericht kopieren und weiterreichen.
+4. Für jeden Kandidaten: „Diesen erzwingen" → warten bis die Meldung
+   „hält auch nach der Nachprüfung" steht → Screenshot machen → in Fotos
+   nachsehen.
+   - **schwarz** → dieser Kandidat ist der richtige; die Standardwahl im
+     nativen Code wird auf sein Merkmal umgestellt.
+   - **bei allen Kandidaten Inhalt sichtbar** → Apple hat das Verhalten
+     abgestellt. Dann fällt der Layer-Trick weg, `maskContentInCaptures`
+     geht auf `false`, und es bleibt bei `isCaptured` plus ehrlicher
+     Warnung nach dem Screenshot.
+5. Danach: der Diagnose-Bildschirm gehört in keinen Store-Build. Der
+   nächste Lauf ohne die Checkbox baut ihn wieder heraus.
+
+### Was hier bewusst *nicht* gemacht wurde
+
+Ein Rückfall auf den jeweils anderen Index. Keine der drei Prüfungen kann
+eine geschützte Zeichenfläche von einem gewöhnlichen Layer unterscheiden —
+sie prüfen Abstammung, Lage und Sichtbarkeit, und das erfüllt ein beliebiger
+Layer genauso. Den anderen Index anzunehmen hieße, einen Schutz zu
+behaupten, den man nicht feststellen kann. Genau davor warnt der Kommentar
+an der Fundstelle, und dabei bleibt es.
+
+### Tests
+
+`test/security/screenshot_protection_test.dart`, 12 Tests: geprüfter Zustand
+statt Wunsch, Korrektur einer veralteten Kopie, Durchreichen des
+Hinweistextes, Aufnahmezustand und -strom, Diagnosebericht. 371 Tests grün
+(vorher 359), `flutter analyze lib` sauber.
+
+Die Änderung im Einstellungs-Bildschirm selbst steht unter keinem
+Widget-Test — dort gibt es bislang keinen Test-Aufbau für die sechs
+Provider, die der Bildschirm braucht. Abgedeckt ist die Dienstschicht
+darunter.

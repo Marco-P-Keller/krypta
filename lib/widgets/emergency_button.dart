@@ -40,12 +40,13 @@ class EmergencyButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Opacity(
       opacity: 0.5,
       child: IconButton(
         icon: const Icon(Icons.warning_amber_rounded, size: 20),
         color: AppColors.destructive,
-        tooltip: 'Emergency wipe',
+        tooltip: l10n.emergencyDelete,
         onPressed: () => _confirm(context),
         padding: EdgeInsets.zero,
         constraints: const BoxConstraints(minWidth: 36, minHeight: 36),

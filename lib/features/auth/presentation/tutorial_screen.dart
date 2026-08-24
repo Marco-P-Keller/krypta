@@ -51,6 +51,7 @@ class _TutorialScreenState extends State<TutorialScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final isLast = _currentPage == _pageCount - 1;
     final color = _pageColors[_currentPage];
@@ -132,7 +133,7 @@ class _TutorialScreenState extends State<TutorialScreen> {
                       ),
                     ),
                     child: Text(
-                      isLast ? 'Setup starten' : 'Weiter',
+                      isLast ? l10n.tutStartSetup : l10n.next,
                       style: const TextStyle(fontWeight: FontWeight.w600),
                     ),
                   ),
@@ -154,11 +155,12 @@ class _Page1Welcome extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return _Layout(
       isDark: isDark,
-      title: 'Willkommen bei Krypta',
+      title: l10n.tutWelcomeTitle,
       description:
-          'Krypta ist ein geheimer Messenger.\n\nFür alle anderen sieht die App aus wie ein ganz normaler Taschenrechner — niemand wird vermuten, dass sich dahinter ein verschlüsselter Chat versteckt.\n\nWir empfehlen, dieses Tutorial ausführlich zu lesen.',
+          l10n.tutWelcomeBody,
       preview: Container(
         width: 200,
         padding: const EdgeInsets.all(14),
@@ -234,11 +236,12 @@ class _Page2SetupCodes extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return _Layout(
       isDark: isDark,
-      title: 'Dein Geheimcode',
+      title: l10n.tutSecretCodeTitle,
       description:
-          'Beim Einrichten legst du einen Zahlencode fest.\n\nDieser Code ist dein Schlüssel — nur damit kannst du den versteckten Messenger öffnen.',
+          l10n.tutSecretCodeBody,
       preview: Container(
         width: 220,
         padding: const EdgeInsets.all(20),
@@ -265,7 +268,7 @@ class _Page2SetupCodes extends StatelessWidget {
             ),
             const SizedBox(height: 14),
             Text(
-              'Secret Code',
+              l10n.secretCodeLabel,
               style: TextStyle(
                 color: isDark
                     ? AppColors.textPrimaryDark
@@ -312,11 +315,12 @@ class _Page3DeleteCode extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return _Layout(
       isDark: isDark,
-      title: 'Notfall-Code',
+      title: l10n.tutDeleteCodeTitle,
       description:
-          'Der zweite Code ist für den Notfall.\n\nWenn du diesen Code eingibst, wird sofort alles gelöscht — Nachrichten, Schlüssel, Account. Unwiderruflich.\n\nNur im Ernstfall verwenden!',
+          l10n.tutDeleteCodeBody,
       preview: Container(
         width: 220,
         padding: const EdgeInsets.all(20),
@@ -341,8 +345,8 @@ class _Page3DeleteCode extends StatelessWidget {
                   color: AppColors.destructive, size: 28),
             ),
             const SizedBox(height: 14),
-            const Text(
-              'Delete Code',
+            Text(
+              l10n.deleteCodeLabel,
               style: TextStyle(
                 color: AppColors.destructive,
                 fontSize: 16,
@@ -351,7 +355,7 @@ class _Page3DeleteCode extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             Text(
-              'Alles wird sofort gelöscht.\nKeine Wiederherstellung möglich.',
+              l10n.tutDeleteCodeWarning,
               textAlign: TextAlign.center,
               style: TextStyle(
                 color: AppColors.destructive.withValues(alpha: 0.7),
@@ -374,11 +378,12 @@ class _Page4OpenMessenger extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return _Layout(
       isDark: isDark,
-      title: 'Messenger öffnen',
+      title: l10n.tutOpenMessengerTitle,
       description:
-          'Um deinen Messenger zu öffnen:\n\n1. Gib deinen Geheimcode im Taschenrechner ein\n2. Drücke die = Taste\n\nDer Messenger öffnet sich sofort.',
+          l10n.tutOpenMessengerBody,
       preview: Container(
         width: 220,
         padding: const EdgeInsets.all(16),
@@ -416,13 +421,13 @@ class _Page4OpenMessenger extends StatelessWidget {
                     color: const Color(0xFF30D158).withValues(alpha: 0.15),
                     borderRadius: BorderRadius.circular(8),
                   ),
-                  child: const Row(
+                  child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(Icons.touch_app_rounded,
+                      const Icon(Icons.touch_app_rounded,
                           color: Color(0xFF30D158), size: 14),
-                      SizedBox(width: 4),
-                      Text('Drücke =',
+                      const SizedBox(width: 4),
+                      Text(l10n.tutPressEquals,
                           style: TextStyle(
                               color: Color(0xFF30D158),
                               fontSize: 11,
@@ -464,13 +469,13 @@ class _Page4OpenMessenger extends StatelessWidget {
                 border: Border.all(
                     color: const Color(0xFF30D158).withValues(alpha: 0.3)),
               ),
-              child: const Row(
+              child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(Icons.lock_open_rounded,
+                  const Icon(Icons.lock_open_rounded,
                       color: Color(0xFF30D158), size: 14),
-                  SizedBox(width: 5),
-                  Text('Messenger entsperrt',
+                  const SizedBox(width: 5),
+                  Text(l10n.tutMessengerUnlocked,
                       style: TextStyle(
                           color: Color(0xFF30D158),
                           fontSize: 11,
@@ -493,11 +498,12 @@ class _Page5VaultPassword extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return _Layout(
       isDark: isDark,
-      title: 'Tresor-Passwort',
+      title: l10n.vaultPassword,
       description:
-          'In den Einstellungen kannst du ein zusätzliches Passwort aktivieren.\n\nNach dem Geheimcode wird dann noch das Tresor-Passwort abgefragt — doppelte Sicherheit.\n\nWir empfehlen das aus Sicherheitsgründen.',
+          l10n.tutVaultBody,
       preview: Container(
         width: 220,
         padding: const EdgeInsets.all(20),
@@ -524,7 +530,7 @@ class _Page5VaultPassword extends StatelessWidget {
             ),
             const SizedBox(height: 14),
             Text(
-              'Vault Password',
+              l10n.vaultPassword,
               style: TextStyle(
                 color: isDark
                     ? AppColors.textPrimaryDark
@@ -598,11 +604,12 @@ class _Page6AddContacts extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return _Layout(
       isDark: isDark,
-      title: 'Kontakte hinzufügen',
+      title: l10n.tutAddContactsTitle,
       description:
-          'Du kannst Kontakte auf zwei Arten hinzufügen:\n\n• QR-Code scannen — schnell und einfach\n• User-ID eingeben — wenn ihr nicht am selben Ort seid\n\nDanach kannst du der Person einen Namen geben.',
+          l10n.tutAddContactsBody,
       preview: Container(
         width: 240,
         padding: const EdgeInsets.all(16),
@@ -643,7 +650,7 @@ class _Page6AddContacts extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('QR-Code scannen',
+                        Text(l10n.scanQrCode,
                             style: TextStyle(
                               color: isDark
                                   ? AppColors.textPrimaryDark
@@ -651,7 +658,7 @@ class _Page6AddContacts extends StatelessWidget {
                               fontSize: 14,
                               fontWeight: FontWeight.w600,
                             )),
-                        Text('Schnell & einfach',
+                        Text(l10n.tutQrFast,
                             style: TextStyle(
                               color: isDark
                                   ? AppColors.textSecondaryDark
@@ -691,7 +698,7 @@ class _Page6AddContacts extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('User-ID eingeben',
+                        Text(l10n.tutEnterUserId,
                             style: TextStyle(
                               color: isDark
                                   ? AppColors.textPrimaryDark
@@ -699,7 +706,7 @@ class _Page6AddContacts extends StatelessWidget {
                               fontSize: 14,
                               fontWeight: FontWeight.w600,
                             )),
-                        Text('Für Fernkontakte',
+                        Text(l10n.tutForRemoteContacts,
                             style: TextStyle(
                               color: isDark
                                   ? AppColors.textSecondaryDark
@@ -727,11 +734,12 @@ class _Page7EmergencyButtons extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return _Layout(
       isDark: isDark,
-      title: 'Notfall-Knöpfe',
+      title: l10n.tutEmergencyTitle,
       description:
-          'In der App findest du rote Notfall-Knöpfe.\n\nSie löschen sofort alles — genau wie der Delete-Code. Verwende sie nur im Ernstfall.',
+          l10n.tutEmergencyBody,
       preview: Container(
         width: 240,
         padding: const EdgeInsets.all(16),
@@ -764,7 +772,7 @@ class _Page7EmergencyButtons extends StatelessWidget {
                           : AppColors.textPrimaryLight),
                   const SizedBox(width: 8),
                   Expanded(
-                    child: Text('Chats',
+                    child: Text(l10n.chats,
                         style: TextStyle(
                           color: isDark
                               ? AppColors.textPrimaryDark
@@ -843,16 +851,16 @@ class _Page7EmergencyButtons extends StatelessWidget {
                         color: AppColors.destructive, size: 18),
                   ),
                   const SizedBox(width: 10),
-                  const Expanded(
+                  Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('Emergency Delete',
+                        Text(l10n.emergencyDelete,
                             style: TextStyle(
                                 color: AppColors.destructive,
                                 fontSize: 13,
                                 fontWeight: FontWeight.w600)),
-                        Text('In den Einstellungen',
+                        Text(l10n.tutInSettings,
                             style: TextStyle(
                                 color: AppColors.destructive,
                                 fontSize: 10)),
@@ -877,11 +885,12 @@ class _Page8ChatFeatures extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return _Layout(
       isDark: isDark,
-      title: 'Chat-Funktionen',
+      title: l10n.tutChatFeaturesTitle,
       description:
-          'Im Chat hast du drei besondere Funktionen:',
+          l10n.tutChatFeaturesIntro,
       preview: Container(
         width: 260,
         padding: const EdgeInsets.all(16),
@@ -902,8 +911,8 @@ class _Page8ChatFeatures extends StatelessWidget {
               icon: Icons.lock_outline_rounded,
               activeIcon: Icons.lock_rounded,
               color: const Color(0xFFFFD60A),
-              title: 'Nachrichten sperren',
-              description: 'Einzelne Nachrichten mit Passwort schützen',
+              title: l10n.lockMessage,
+              description: l10n.tutLockMessageDesc,
             ),
             const SizedBox(height: 10),
             // Feature 2: Auto-delete timer
@@ -912,8 +921,8 @@ class _Page8ChatFeatures extends StatelessWidget {
               icon: Icons.timer_outlined,
               activeIcon: Icons.timer_rounded,
               color: AppColors.accent,
-              title: 'Auto-Delete Timer',
-              description: 'Nachrichten löschen sich nach einer Zeit automatisch',
+              title: l10n.autoDeleteTimer,
+              description: l10n.tutAutoDeleteDesc,
             ),
             const SizedBox(height: 10),
             // Feature 3: Burn after read
@@ -922,8 +931,8 @@ class _Page8ChatFeatures extends StatelessWidget {
               icon: Icons.local_fire_department_rounded,
               activeIcon: Icons.local_fire_department_rounded,
               color: AppColors.destructive,
-              title: 'Burn After Read',
-              description: 'Nachricht wird nach dem Lesen sofort gelöscht',
+              title: l10n.burnAfterRead,
+              description: l10n.tutBurnAfterReadDesc,
             ),
             const SizedBox(height: 14),
             // Input bar mock showing the buttons
@@ -978,7 +987,7 @@ class _Page8ChatFeatures extends StatelessWidget {
                         borderRadius: BorderRadius.circular(15),
                       ),
                       alignment: Alignment.centerLeft,
-                      child: Text('Nachricht...',
+                      child: Text(l10n.typeMessage,
                           style: TextStyle(
                             color: isDark
                                 ? AppColors.textTertiaryDark
@@ -1075,11 +1084,12 @@ class _Page9Ready extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return _Layout(
       isDark: isDark,
-      title: 'Alles klar!',
+      title: l10n.tutReadyTitle,
       description:
-          'Du weisst jetzt alles was du brauchst.\n\nIm nächsten Schritt richtest du deine Codes ein — danach ist dein Messenger einsatzbereit.',
+          l10n.tutReadyBody,
       preview: Container(
         width: 100,
         height: 100,

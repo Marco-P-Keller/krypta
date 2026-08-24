@@ -6,6 +6,9 @@ import '../../../l10n/app_localizations.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../core/constants/storage_keys.dart';
 import '../../auth/presentation/tutorial_screen.dart';
+import 'language_screen.dart';
+import 'screenshot_diagnostics_screen.dart';
+import '../../../core/locale/locale_controller.dart';
 import '../../messenger/logic/messenger_provider.dart';
 import '../../../security/device/device_integrity_policy.dart';
 import '../../../security/hardware/hardware_security_binding.dart';
@@ -33,7 +36,20 @@ class SettingsScreen extends StatefulWidget {
 
 class _SettingsScreenState extends State<SettingsScreen> {
   bool _biometricEnabled = false;
-  bool _screenshotProtection = true;
+  /// Der GEPRÜFTE Zustand, nicht der gewünschte.
+  ///
+  /// Hier stand ein fest verdrahtetes `true`, das `_loadSettings` nie
+  /// angefasst hat. Der Schalter zeigte damit immer „an", auch wenn der
+  /// native Schutz gar nicht zustande kam — genau so sah Daniel beim Test von
+  /// Build 85 auf iOS 26.6 einen aktiven Schutz, während der Screenshot den
+  /// Inhalt zeigte. Eine App, die einen Schutz behauptet, den sie nicht hat,
+  /// ist schlechter als eine, die ehrlich sagt, dass sie ihn nicht hat.
+  bool _screenshotProtection = false;
+
+  /// Der Nutzer wollte den Schutz, das Betriebssystem gibt ihn nicht her.
+  /// Unterscheidet „aus, weil abgeschaltet" von „aus, weil unmöglich" — sonst
+  /// springt der Schalter kommentarlos zurück.
+  bool _screenshotProtectionRefused = false;
   bool _biometricAvailable = false;
   bool _vaultPasswordEnabled = false;
   bool _pushPrivacyEnabled = false;
@@ -68,6 +84,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final pushPrivacy = await storage.isPushPrivacyEnabled();
     final deliveryReceipts = await storage.isDeliveryReceiptsEnabled();
     final readReceipts = await storage.isReadReceiptsEnabled();
+    // Nativ nachfragen statt der eigenen Kopie glauben: der Watchdog auf iOS
+    // kann die Maske nach dem Einschalten jederzeit wieder abbauen.
+    final screenshotVerified = await platform.refreshScreenshotProtectionState();
 
     if (mounted) {
       setState(() {
@@ -77,6 +96,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         _pushPrivacyEnabled = pushPrivacy;
         _deliveryReceiptsEnabled = deliveryReceipts;
         _readReceiptsEnabled = readReceipts;
+        _screenshotProtection = screenshotVerified;
         _deviceIntegrityLevel = integrity.lastResult?.level;
         _hardwareSecurityLevel = hardware.level;
         _isHardwareWrapped = localStore.isHardwareWrapped;
@@ -109,7 +129,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     // Fallback: biometric if available
     if (_biometricAvailable && _biometricEnabled) {
       return await platform.authenticate(
-        reason: 'Sicherheitseinstellungen ändern',
+        reason: AppLocalizations.of(context)!.securitySettingsReason,
       );
     }
 
@@ -127,12 +147,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
         context: context,
         barrierDismissible: false,
         builder: (ctx) => AlertDialog(
-          title: const Text('Authentifizierung'),
+          title: Text(AppLocalizations.of(context)!.authentication),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               Text(
-                'Tresor-Passwort eingeben um Sicherheitseinstellungen zu ändern.',
+                AppLocalizations.of(context)!.vaultPasswordReAuthHint,
                 style: Theme.of(context).textTheme.bodySmall,
               ),
               const SizedBox(height: 12),
@@ -251,17 +271,27 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   Future<void> _toggleScreenshotProtection(bool value) async {
     final platform = context.read<PlatformSecurityService>();
+    final l10n = AppLocalizations.of(context)!;
     // Reflect the VERIFIED state, not the requested one: on iOS the OS-level
     // content mask can fail to install, in which case enable returns false
     // and the switch must snap back instead of falsely showing "on".
     bool effective = value;
     if (value) {
-      effective = await platform.enableScreenshotProtection();
+      // Der Hinweistext für die native Aufnahme-Abdeckung wandert hier
+      // hinunter, damit die Übersetzung in den .arb-Dateien bleibt.
+      effective = await platform.enableScreenshotProtection(
+        captureNotice: l10n.screenCaptureWarning,
+      );
     } else {
       await platform.disableScreenshotProtection();
       effective = false;
     }
-    if (mounted) setState(() => _screenshotProtection = effective);
+    if (mounted) {
+      setState(() {
+        _screenshotProtection = effective;
+        _screenshotProtectionRefused = value && !effective;
+      });
+    }
   }
 
   void _showChangeCodeDialog(
@@ -293,7 +323,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(),
-            child: const Text('Cancel'),
+            child: Text(AppLocalizations.of(context)!.cancel),
           ),
           ElevatedButton(
             onPressed: () async {
@@ -305,8 +335,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 if (collides) {
                   if (ctx.mounted) {
                     ScaffoldMessenger.of(ctx).showSnackBar(
-                      const SnackBar(
-                        content: Text('Code already in use for another action.'),
+                      SnackBar(
+                        content: Text(
+                            AppLocalizations.of(ctx)!.codeAlreadyInUse),
                       ),
                     );
                   }
@@ -316,7 +347,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 if (ctx.mounted) Navigator.of(ctx).pop();
               }
             },
-            child: const Text('Save'),
+            child: Text(AppLocalizations.of(context)!.save),
           ),
         ],
       ),
@@ -333,6 +364,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   void _showPrivacyPolicy(BuildContext context, bool isDark) {
+    // Vor showModalBottomSheet gelesen: der Bauer unten bekommt einen eigenen
+    // context, und der Text soll aus derselben Sprache kommen wie der Rest.
+    final l10n = AppLocalizations.of(context)!;
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -350,7 +384,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             Padding(
               padding: const EdgeInsets.all(20),
               child: Text(
-                AppLocalizations.of(context)!.privacyPolicy,
+                l10n.privacyPolicy,
                 style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                   color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
                 ),
@@ -361,40 +395,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 controller: scrollController,
                 padding: const EdgeInsets.fromLTRB(20, 0, 20, 40),
                 child: Text(
-                  'Krypta ECC — Datenschutzerklärung\n\n'
-                  'Stand: April 2026\n\n'
-                  '1. Verantwortlicher\n'
-                  'Connexa GmbH\n'
-                  'Kontakt: https://connexa-gmbh.ch\n\n'
-                  '2. Welche Daten werden erhoben?\n'
-                  'Krypta erhebt so wenig Daten wie technisch möglich:\n'
-                  '• Anonyme Firebase-ID (keine E-Mail, kein Name, keine Telefonnummer)\n'
-                  '• Öffentlicher Verschlüsselungsschlüssel (X25519)\n'
-                  '• FCM-Push-Token (für Benachrichtigungen)\n\n'
-                  '3. Verschlüsselung\n'
-                  'Alle Nachrichten sind Ende-zu-Ende-verschlüsselt (Signal-Protokoll: X3DH + Double Ratchet). '
-                  'Der Server hat zu keinem Zeitpunkt Zugriff auf den Klartext Ihrer Nachrichten. '
-                  'Verschlüsselung: XChaCha20-Poly1305. Passwort-Hashing: Argon2id.\n\n'
-                  '4. Datenspeicherung\n'
-                  '• Nachrichten werden nur auf Ihrem Gerät gespeichert (verschlüsselt)\n'
-                  '• Der Server fungiert nur als temporärer Relay — Nachrichten werden nach Zustellung gelöscht\n'
-                  '• Schlüssel werden im iOS Keychain / Android Keystore gespeichert\n\n'
-                  '5. Keine Tracker\n'
-                  'Krypta enthält keine Analyse-Tools, keine Werbung und keine Tracker (0 von 432 bekannten Trackern).\n\n'
-                  '6. Datenweitergabe\n'
-                  'Es werden keine personenbezogenen Daten an Dritte weitergegeben. '
-                  'Google Firebase wird als Infrastruktur-Anbieter verwendet (anonyme Authentifizierung und Push-Benachrichtigungen).\n\n'
-                  '7. Datenlöschung\n'
-                  'Sie können jederzeit alle Ihre Daten unwiderruflich löschen:\n'
-                  '• In den Einstellungen über "Alles löschen"\n'
-                  '• Durch Eingabe des Lösch-Codes im Taschenrechner\n'
-                  'Dabei werden alle lokalen Daten, Schlüssel und Server-Daten vernichtet.\n\n'
-                  '8. Ihre Rechte (DSGVO)\n'
-                  'Sie haben das Recht auf Auskunft, Berichtigung, Löschung und Datenübertragbarkeit. '
-                  'Kontaktieren Sie uns unter: https://connexa-gmbh.ch\n\n'
-                  '9. Änderungen\n'
-                  'Diese Datenschutzerklärung kann aktualisiert werden. '
-                  'Die aktuelle Version ist immer in der App einsehbar.',
+                  l10n.privacyPolicyBody,
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                     color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight,
                     height: 1.6,
@@ -641,7 +642,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
             const SizedBox(height: 14),
             Text(
-              'Krypta ECC',
+              l10n.appName,
               style: Theme.of(ctx).textTheme.titleLarge?.copyWith(
                     fontWeight: FontWeight.w600,
                   ),
@@ -696,6 +697,20 @@ class _SettingsScreenState extends State<SettingsScreen> {
         padding: const EdgeInsets.symmetric(
             horizontal: AppSpacing.screenPadding, vertical: 16),
         children: [
+          // Sprache — bewusst weit oben: wer die App in einer Sprache
+          // vorfindet, die er nicht liest, soll nicht erst scrollen muessen.
+          _SectionHeader(l10n.language),
+          _Card(isDark: isDark, children: [
+            _NavTile(
+              icon: Icons.language_rounded,
+              title: l10n.language,
+              subtitle: LocaleController.labelFor(
+                  context.watch<LocaleController>().locale),
+              onTap: () => showLanguageSheet(context),
+            ),
+          ]),
+          const SizedBox(height: 28),
+
           // Account
           if (widget.userId != null) ...[
             _SectionHeader(l10n.accountSection),
@@ -718,7 +733,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
           // Device Security Status
           if (_deviceIntegrityLevel != null) ...[
-            _SectionHeader('Gerätesicherheit'),
+            _SectionHeader(l10n.deviceSecuritySection),
             _Card(isDark: isDark, children: [
               _NavTile(
                 icon: _deviceIntegrityLevel == DeviceIntegrityLevel.clean
@@ -728,20 +743,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     ? AppColors.success
                     : Colors.orange,
                 title: switch (_deviceIntegrityLevel!) {
-                  DeviceIntegrityLevel.clean => 'Gerät sicher',
-                  DeviceIntegrityLevel.compromised =>
-                    'Kompromittierung erkannt',
-                  DeviceIntegrityLevel.unknown => 'Status unbekannt',
+                  DeviceIntegrityLevel.clean => l10n.deviceSecure,
+                  DeviceIntegrityLevel.compromised => l10n.deviceCompromisedDetected,
+                  DeviceIntegrityLevel.unknown => l10n.deviceStatusUnknown,
                 },
                 subtitle: switch (_deviceIntegrityLevel!) {
-                  DeviceIntegrityLevel.clean =>
-                    'Keine Root/Jailbreak/Frida-Indikatoren',
+                  DeviceIntegrityLevel.clean => l10n.deviceSecureSubtitle,
                   DeviceIntegrityLevel.compromised =>
-                    'Root, Jailbreak oder Instrumentierung erkannt. '
-                        'Hardware-Sicherheit deaktiviert.',
-                  DeviceIntegrityLevel.unknown =>
-                    'Integritätsprüfung fehlgeschlagen — '
-                        'eingeschränkter Modus aktiv.',
+                    l10n.deviceCompromisedSubtitle,
+                  DeviceIntegrityLevel.unknown => l10n.deviceStatusUnknownSubtitle,
                 },
                 trailing: const SizedBox.shrink(),
                 onTap: () {},
@@ -758,22 +768,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           ? AppColors.textSecondaryDark
                           : AppColors.textSecondaryLight),
                   title: switch (_hardwareSecurityLevel!) {
-                    HardwareSecurityLevel.hardwareEnclave =>
-                      'Hardware-Enklave',
-                    HardwareSecurityLevel.trustedExecution =>
-                      'TEE-Schlüsselspeicher',
-                    HardwareSecurityLevel.softwareOnly =>
-                      'Software-Schlüsselspeicher',
+                    HardwareSecurityLevel.hardwareEnclave => l10n.hardwareEnclave,
+                    HardwareSecurityLevel.trustedExecution => l10n.hardwareTee,
+                    HardwareSecurityLevel.softwareOnly => l10n.hardwareSoftware,
                   },
                   subtitle: _isHardwareWrapped
-                      ? 'Datenbankschlüssel an Hardware gebunden'
+                      ? l10n.hardwareBoundSubtitle
                       : switch (_hardwareSecurityLevel!) {
                           HardwareSecurityLevel.hardwareEnclave =>
-                            'StrongBox/Secure Enclave verfügbar',
+                            l10n.hardwareEnclaveSubtitle,
                           HardwareSecurityLevel.trustedExecution =>
-                            'Schlüssel im Trusted Execution Environment',
+                            l10n.hardwareTeeSubtitle,
                           HardwareSecurityLevel.softwareOnly =>
-                            'Keine Hardware-Sicherheit verfügbar',
+                            l10n.hardwareSoftwareSubtitle,
                         },
                   trailing: _isHardwareWrapped
                       ? const Icon(Icons.check_circle_rounded,
@@ -825,12 +832,30 @@ class _SettingsScreenState extends State<SettingsScreen> {
             _SwitchTile(
               icon: Icons.screenshot_monitor_outlined,
               title: l10n.screenshotProtection,
-              subtitle: l10n.screenshotDescription,
+              // Sagt, WARUM der Schalter aus ist, wenn das Betriebssystem den
+              // Schutz verweigert hat. Ohne das springt er kommentarlos
+              // zurück und wirkt kaputt.
+              subtitle: _screenshotProtectionRefused
+                  ? l10n.screenshotProtectionUnavailable
+                  : l10n.screenshotDescription,
               value: _screenshotProtection,
               onChanged: _toggleScreenshotProtection,
               isDark: isDark,
             ),
             _Divider(isDark: isDark),
+            // Nur in Diagnose-Builds (--dart-define=KRYPTA_DIAG=true).
+            if (ScreenshotDiagnosticsScreen.enabled) ...[
+              _NavTile(
+                icon: Icons.bug_report_outlined,
+                title: l10n.screenshotMaskDiagnostics,
+                onTap: () => Navigator.of(context).push(
+                  MaterialPageRoute<void>(
+                    builder: (_) => const ScreenshotDiagnosticsScreen(),
+                  ),
+                ),
+              ),
+              _Divider(isDark: isDark),
+            ],
             _NavTile(
               icon: Icons.shield_rounded,
               title: l10n.vaultPassword,
@@ -846,10 +871,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
             _Divider(isDark: isDark),
             _SwitchTile(
               icon: Icons.wifi_off_rounded,
-              title: 'Push-Privatsphäre',
+              title: l10n.pushPrivacy,
               subtitle: _pushPrivacyEnabled
-                  ? 'Aktiv — Nachrichten werden per Polling abgerufen'
-                  : 'Deaktiviert — Push-Benachrichtigungen aktiv',
+                  ? l10n.pushPrivacyOn
+                  : l10n.pushPrivacyOff,
               value: _pushPrivacyEnabled,
               onChanged: _togglePushPrivacy,
               isDark: isDark,
@@ -857,10 +882,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
             _Divider(isDark: isDark),
             _SwitchTile(
               icon: Icons.mark_email_read_outlined,
-              title: 'Lesebestätigungen',
+              title: l10n.readReceipts,
               subtitle: _readReceiptsEnabled
-                  ? 'Aktiv — Absender sieht, wann du liest'
-                  : 'Deaktiviert — maximale Privatsphäre',
+                  ? l10n.readReceiptsOn
+                  : l10n.readReceiptsOff,
               value: _readReceiptsEnabled,
               onChanged: _toggleReadReceipts,
               isDark: isDark,
@@ -868,10 +893,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
             _Divider(isDark: isDark),
             _SwitchTile(
               icon: Icons.done_all_rounded,
-              title: 'Zustellbestätigungen',
+              title: l10n.deliveryReceipts,
               subtitle: _deliveryReceiptsEnabled
-                  ? 'Aktiv — Absender sieht, wann zugestellt'
-                  : 'Deaktiviert — maximale Privatsphäre',
+                  ? l10n.deliveryReceiptsOn
+                  : l10n.deliveryReceiptsOff,
               value: _deliveryReceiptsEnabled,
               onChanged: _toggleDeliveryReceipts,
               isDark: isDark,

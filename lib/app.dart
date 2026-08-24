@@ -4,6 +4,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:provider/provider.dart';
 import 'l10n/app_localizations.dart';
+import 'core/locale/locale_controller.dart';
+import 'features/settings/presentation/language_screen.dart';
+import 'features/messenger/logic/key_publish_status.dart';
 import 'features/auth/presentation/setup_screen.dart';
 import 'features/auth/presentation/tutorial_screen.dart';
 import 'features/auth/presentation/vault_password_screen.dart';
@@ -41,10 +44,14 @@ class KryptaApp extends StatelessWidget {
         GlobalWidgetsLocalizations.delegate,
         GlobalCupertinoLocalizations.delegate,
       ],
-      supportedLocales: const [
-        Locale('en'),
-        Locale('de'),
-      ],
+      // Die Liste kommt aus dem Controller, damit sie nicht an zwei Stellen
+      // gepflegt werden muss und nicht auseinanderlaufen kann.
+      supportedLocales: LocaleController.supported,
+      // Die bewusste Wahl des Nutzers schlaegt die Geraetesprache. Ohne das
+      // hier richtete sich die App nach dem Telefon — und weil ein guter Teil
+      // der Oberflaeche fest verdrahtete Texte trug, ergab das einen
+      // Mischmasch aus Deutsch und Englisch.
+      locale: context.watch<LocaleController>().locale,
       home: const KryptaShell(),
     );
   }
@@ -63,6 +70,9 @@ class KryptaShell extends StatefulWidget {
 
 enum _AppScreen {
   calculator,
+  // Steht vor dem Tutorial: alles danach ist Text, und der soll in der
+  // Sprache erscheinen, die der Nutzer versteht.
+  language,
   setup,
   tutorial,
   vaultPassword,
@@ -184,7 +194,12 @@ class _KryptaShellState extends State<KryptaShell> with WidgetsBindingObserver {
     if (!isSetup) {
       if (!mounted) return;
       setState(() {
-        _currentScreen = _AppScreen.tutorial;
+        // Beim allerersten Start zuerst die Sprache. Wurde sie schon einmal
+        // gewaehlt (etwa nach einem abgebrochenen Einrichten), direkt weiter
+        // ins Tutorial.
+        _currentScreen = context.read<LocaleController>().hasChosen
+            ? _AppScreen.tutorial
+            : _AppScreen.language;
         _isInitialized = true;
       });
       return;
@@ -209,6 +224,10 @@ class _KryptaShellState extends State<KryptaShell> with WidgetsBindingObserver {
 
     final storage = context.read<SecureStorageService>();
     final platform = context.read<PlatformSecurityService>();
+    // Vor dem ersten await gelesen: danach ist der context nicht mehr
+    // unstrittig gueltig, und der Text wird erst nach mehreren awaits
+    // gebraucht.
+    final l10n = AppLocalizations.of(context)!;
 
     // H4: if the unified fail counter is already at wipe threshold, act now.
     // This catches the case where an earlier biometric-only session
@@ -223,7 +242,7 @@ class _KryptaShellState extends State<KryptaShell> with WidgetsBindingObserver {
 
     if (biometricEnabled) {
       final authenticated = await platform.authenticate(
-        reason: 'Unlock Krypta Messenger',
+        reason: l10n.biometricUnlockReason,
       );
       if (!mounted) return;
       if (!authenticated) {
@@ -261,7 +280,13 @@ class _KryptaShellState extends State<KryptaShell> with WidgetsBindingObserver {
     // is unavailable (returns false), we continue in a degraded mode rather
     // than blocking the messenger — E2E encryption is the core guarantee and
     // the post-capture warning stays honest about the unprotected state.
-    await platform.enableScreenshotProtection();
+    //
+    // Der Hinweis für die native Aufnahme-Abdeckung wandert hier mit hinunter,
+    // damit die Übersetzung in den .arb-Dateien bleibt. Vor dem ersten await
+    // gelesen, deshalb ist der context hier unstrittig gültig.
+    await platform.enableScreenshotProtection(
+      captureNotice: AppLocalizations.of(context)!.screenCaptureWarning,
+    );
     await messenger.initialize();
 
     // C6: start periodic integrity monitoring while the messenger is unlocked
@@ -347,34 +372,72 @@ class _KryptaShellState extends State<KryptaShell> with WidgetsBindingObserver {
       duration: const Duration(milliseconds: 300),
       transitionBuilder: (child, animation) =>
           FadeTransition(opacity: animation, child: child),
-      child: showWarning && isMessengerScreen
-          ? _wrapWithIntegrityWarning(screen)
+      child: isMessengerScreen
+          ? _wrapWithBanners(screen, integrity: showWarning)
           : screen,
     );
   }
 
-  /// Wraps a screen with a persistent device integrity warning banner.
-  Widget _wrapWithIntegrityWarning(Widget screen) {
-    final degraded = _deviceAction == DeviceIntegrityAction.warnAndDegrade;
+  /// Legt die Warnbanner über einen Messenger-Bildschirm.
+  ///
+  /// Der Schlüssel-Zustand wird per [Selector] gelesen statt per `watch`:
+  /// sonst würde die ganze Hülle bei jeder Änderung im MessengerProvider neu
+  /// bauen — also bei jeder eingehenden Nachricht.
+  Widget _wrapWithBanners(Widget screen, {required bool integrity}) {
     return Column(
-      key: ValueKey('integrity_warn_${screen.key}'),
+      key: ValueKey('shell_${screen.key}'),
       children: [
-        MaterialBanner(
-          backgroundColor: Colors.orange.shade900,
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          content: Text(
-            degraded
-                ? 'Gerät möglicherweise kompromittiert. '
-                  'Hardware-Sicherheit deaktiviert.'
-                : 'Gerät möglicherweise kompromittiert.',
-            style: const TextStyle(color: Colors.white, fontSize: 12),
-          ),
-          leading: const Icon(Icons.warning_amber_rounded,
-              color: Colors.orange, size: 20),
-          actions: const [SizedBox.shrink()],
+        if (integrity) _buildIntegrityBanner(context),
+        Selector<MessengerProvider, KeyPublishState>(
+          selector: (_, messenger) => messenger.keyPublishState,
+          builder: (context, state, _) => state == KeyPublishState.ok
+              ? const SizedBox.shrink()
+              : _buildKeyPublishBanner(context, state),
         ),
         Expanded(child: screen),
       ],
+    );
+  }
+
+  /// Persistent device integrity warning banner.
+  Widget _buildIntegrityBanner(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final degraded = _deviceAction == DeviceIntegrityAction.warnAndDegrade;
+    return MaterialBanner(
+      backgroundColor: Colors.orange.shade900,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      content: Text(
+        degraded ? l10n.deviceCompromisedDegraded : l10n.deviceCompromised,
+        style: const TextStyle(color: Colors.white, fontSize: 12),
+      ),
+      leading: const Icon(Icons.warning_amber_rounded,
+          color: Colors.orange, size: 20),
+      actions: const [SizedBox.shrink()],
+    );
+  }
+
+  /// Warnt, wenn die eigenen Schlüssel nicht auf dem Server liegen.
+  ///
+  /// Ohne sie kann niemand eine Session aufbauen und es kommt keine Nachricht
+  /// an. Vorher verschwand dieser Fehlschlag in einem `catch`, das nur in
+  /// Debug-Builds etwas ausgab — im TestFlight-Build war er unsichtbar, und
+  /// die App wirkte, als sei alles in Ordnung.
+  Widget _buildKeyPublishBanner(BuildContext context, KeyPublishState state) {
+    final l10n = AppLocalizations.of(context)!;
+    final denied = state == KeyPublishState.denied;
+    return MaterialBanner(
+      backgroundColor: denied ? Colors.red.shade900 : Colors.orange.shade900,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      content: Text(
+        denied ? l10n.keysNotPublishedDenied : l10n.keysNotPublishedFailed,
+        style: const TextStyle(color: Colors.white, fontSize: 12),
+      ),
+      leading: Icon(
+        denied ? Icons.gpp_bad_rounded : Icons.cloud_off_rounded,
+        color: Colors.white,
+        size: 20,
+      ),
+      actions: const [SizedBox.shrink()],
     );
   }
 
@@ -384,6 +447,12 @@ class _KryptaShellState extends State<KryptaShell> with WidgetsBindingObserver {
         return SetupScreen(
           key: const ValueKey('setup'),
           onSetupComplete: () => _navigateTo(_AppScreen.calculator),
+        );
+
+      case _AppScreen.language:
+        return LanguageScreen(
+          key: const ValueKey('language'),
+          onContinue: () => _navigateTo(_AppScreen.tutorial),
         );
 
       case _AppScreen.tutorial:

@@ -22,6 +22,7 @@ import 'services/platform/platform_security_service.dart';
 import 'security/transparency/key_commitment.dart';
 import 'security/transparency/key_transparency_log.dart';
 import 'security/transparency/consistency_checker.dart';
+import 'core/locale/locale_controller.dart';
 import 'services/storage/encrypted_local_store.dart';
 import 'services/storage/file_helper.dart' as file_helper;
 import 'services/storage/secure_storage_service.dart';
@@ -149,10 +150,19 @@ Future<void> main() async {
     checker: consistencyChecker,
   );
 
+  // Die Sprachwahl vor dem ersten Bild laden, sonst blitzt kurz die
+  // falsche Sprache auf.
+  final localeController = LocaleController(
+    read: secureStorage.getLanguageCode,
+    write: secureStorage.setLanguageCode,
+  );
+  await localeController.load();
+
   runApp(
     MultiProvider(
       providers: [
         Provider<SecureStorageService>.value(value: secureStorage),
+        ChangeNotifierProvider<LocaleController>.value(value: localeController),
         Provider<EncryptionService>.value(value: encryptionService),
         Provider<KeyManager>.value(value: keyManager),
         Provider<AuthService>.value(value: authService),

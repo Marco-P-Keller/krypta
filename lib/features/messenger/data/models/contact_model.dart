@@ -20,6 +20,28 @@ enum TrustState {
   blocked,
 }
 
+/// Ob der Kontakt zustande gekommen ist — getrennt von [TrustState].
+///
+/// [TrustState] beschreibt die *kryptografische* Vertrauenslage, dieser Typ
+/// die Bekanntschaft. Das sind zwei Achsen: ein Fremder kann kryptografisch
+/// einwandfrei sein. Beides in einen Typ zu legen würde die Logik um
+/// `keyChanged` und `blocked` brechen, und genau die schützt vor MITM.
+enum ContactRequestState {
+  /// Angenommen — beide Seiten dürfen schreiben.
+  established,
+
+  /// Ich habe angefragt und warte. Ob die Gegenseite abgelehnt oder blockiert
+  /// hat, erfahre ich nicht — beides sähe von hier aus gleich aus.
+  outgoing,
+
+  /// Jemand hat mich angefragt, ich entscheide.
+  incoming,
+
+  /// Ich habe abgelehnt. Die Gegenseite darf erneut anfragen, begrenzt durch
+  /// [Contact.declineCount].
+  declined,
+}
+
 /// Method used to verify a contact's identity.
 enum VerificationMethod {
   qrCode,
@@ -35,6 +57,16 @@ class Contact extends Equatable {
 
   /// Cryptographic trust state — determines if sending is allowed.
   final TrustState trustState;
+
+  /// Ob der Kontakt zustande gekommen ist. Siehe [ContactRequestState].
+  final ContactRequestState requestState;
+
+  /// Wie oft ich Anfragen von diesem Absender abgelehnt habe.
+  ///
+  /// Bremst wiederholtes Anklopfen: ab [ContactRequestPolicy.maxDeclines]
+  /// kommt von dieser ID nichts mehr durch. Wird zurückgesetzt, wenn ich die
+  /// Person selbst hinzufüge — der Zähler bremst Fremde, nicht mich.
+  final int declineCount;
 
   /// When the contact was last verified (null if never verified).
   final DateTime? verifiedAt;
@@ -84,6 +116,10 @@ class Contact extends Equatable {
     required this.publicKey,
     required this.addedAt,
     this.trustState = TrustState.unverified,
+    // Wer selbst hinzufügt, hat zugestimmt — der Standard ist deshalb
+    // `established`, nicht „offene Anfrage".
+    this.requestState = ContactRequestState.established,
+    this.declineCount = 0,
     this.verifiedAt,
     this.verificationMethod,
     this.verifiedFingerprint,
@@ -104,6 +140,8 @@ class Contact extends Equatable {
     required this.addedAt,
     required this.trustState,
     required this.keyFingerprint,
+    this.requestState = ContactRequestState.established,
+    this.declineCount = 0,
     this.verifiedAt,
     this.verificationMethod,
     this.verifiedFingerprint,
@@ -139,10 +177,22 @@ class Contact extends Equatable {
   bool get isBlocked => trustState == TrustState.blocked;
 
   /// Whether sending messages to this contact is allowed.
-  /// Blocked when key changed (MITM protection) or explicitly blocked.
+  ///
+  /// Gesperrt bei Schlüsselwechsel (MITM-Schutz), bei ausdrücklicher
+  /// Blockierung — und solange die Kontaktanfrage nicht angenommen ist.
+  /// Die Anfrage selbst läuft an dieser Sperre vorbei, über einen eigenen Weg.
   bool get canSendMessages =>
       trustState != TrustState.keyChanged &&
-      trustState != TrustState.blocked;
+      trustState != TrustState.blocked &&
+      requestState == ContactRequestState.established;
+
+  /// Ob dieser Kontakt eine unbeantwortete Anfrage an mich ist.
+  bool get isIncomingRequest =>
+      requestState == ContactRequestState.incoming;
+
+  /// Ob ich auf eine Antwort warte.
+  bool get isOutgoingRequest =>
+      requestState == ContactRequestState.outgoing;
 
   /// Whether this contact's verification is stale (>90 days old).
   /// Returns false if never verified — only applies to verified contacts.
@@ -156,6 +206,8 @@ class Contact extends Equatable {
     String? displayName,
     Uint8List? publicKey,
     TrustState? trustState,
+    ContactRequestState? requestState,
+    int? declineCount,
     Object? verifiedAt = _sentinel,
     Object? verificationMethod = _sentinel,
     Object? verifiedFingerprint = _sentinel,
@@ -174,6 +226,8 @@ class Contact extends Equatable {
       publicKey: newPublicKey,
       addedAt: addedAt,
       trustState: trustState ?? this.trustState,
+      requestState: requestState ?? this.requestState,
+      declineCount: declineCount ?? this.declineCount,
       keyFingerprint: publicKey != null
           ? _computeFingerprint(newPublicKey)
           : keyFingerprint,
@@ -213,6 +267,8 @@ class Contact extends Equatable {
         'publicKey': base64Encode(publicKey),
         'addedAt': addedAt.millisecondsSinceEpoch,
         'trustState': trustState.index,
+        'requestState': requestState.index,
+        'declineCount': declineCount,
         if (verifiedAt != null)
           'verifiedAt': verifiedAt!.millisecondsSinceEpoch,
         if (verificationMethod != null)
@@ -244,12 +300,22 @@ class Contact extends Equatable {
           : TrustState.unverified;
     }
 
+    // Migration: gespeicherte Kontakte aus der Zeit vor den Kontaktanfragen
+    // tragen das Feld nicht. Sie gelten als angenommen — alles andere würde
+    // laufende Chats nach dem Update in eine offene Anfrage verwandeln, und
+    // niemand könnte mehr schreiben.
+    final requestState = map.containsKey('requestState')
+        ? ContactRequestState.values[map['requestState'] as int]
+        : ContactRequestState.established;
+
     return Contact(
       id: map['id'] as String,
       displayName: map['displayName'] as String,
       publicKey: base64Decode(map['publicKey'] as String),
       addedAt: DateTime.fromMillisecondsSinceEpoch(map['addedAt'] as int),
       trustState: state,
+      requestState: requestState,
+      declineCount: (map['declineCount'] as int?) ?? 0,
       verifiedAt: map['verifiedAt'] != null
           ? DateTime.fromMillisecondsSinceEpoch(map['verifiedAt'] as int)
           : null,

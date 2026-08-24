@@ -27,6 +27,11 @@ on:
         required: false
         default: false
         type: boolean
+      diagnostics:
+        description: "Diagnose-Bildschirm für die Screenshot-Maske einbauen (nur für Gerätetests, nicht für den Store)"
+        required: false
+        default: false
+        type: boolean
       run_tests:
         description: "flutter analyze + flutter test vor dem Build"
         required: false
@@ -359,11 +364,15 @@ jobs:
           # aus derselben Quelle wie CFBundleShortVersionString. Vorher stand
           # die Zahl fest im Dart-Code und behauptete 1.0.0, während im Store
           # 4.0.0 lief.
+          # KRYPTA_DIAG blendet den Diagnose-Bildschirm für die
+          # Screenshot-Maske in die Einstellungen ein. Standardmäßig aus: er
+          # gehört in einen Gerätetest, nicht in einen Store-Build.
           flutter build ios --release --no-codesign \
             --build-name="${{ steps.version.outputs.build_name }}" \
             --build-number="${{ steps.version.outputs.build_number }}" \
             --dart-define=APP_VERSION="${{ steps.version.outputs.build_name }}" \
-            --dart-define=APP_BUILD="${{ steps.version.outputs.build_number }}"
+            --dart-define=APP_BUILD="${{ steps.version.outputs.build_number }}" \
+            --dart-define=KRYPTA_DIAG="${{ inputs.diagnostics && 'true' || 'false' }}"
 
       - name: Extended Attributes entfernen
         run: ./scripts/strip_xattrs_ios.sh

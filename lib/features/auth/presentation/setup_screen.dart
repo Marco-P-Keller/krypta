@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../../../core/constants/app_constants.dart';
+import '../../../l10n/app_localizations.dart';
 import '../../../services/firebase/auth_service.dart';
 import '../../../services/storage/secure_storage_service.dart';
 import '../../../security/key_management/key_manager.dart';
@@ -47,11 +48,12 @@ class _SetupScreenState extends State<SetupScreen>
   }
 
   String? _validateCode(String? v) {
-    if (v == null || v.isEmpty) return 'Required';
+    final l10n = AppLocalizations.of(context)!;
+    if (v == null || v.isEmpty) return l10n.fieldRequired;
     if (v.length < AppConstants.minCodeLength) {
-      return 'Min ${AppConstants.minCodeLength} digits';
+      return l10n.codeMinDigits(AppConstants.minCodeLength);
     }
-    if (!RegExp(r'^\d+$').hasMatch(v)) return 'Digits only';
+    if (!RegExp(r'^\d+$').hasMatch(v)) return l10n.codeDigitsOnly;
     return null;
   }
 
@@ -62,8 +64,8 @@ class _SetupScreenState extends State<SetupScreen>
     // first, so a collision would make the secret code permanently unreachable.
     if (_step == 1 && _controllers[1].text == _controllers[0].text) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Delete code must differ from your secret code.'),
+        SnackBar(
+          content: Text(AppLocalizations.of(context)!.deleteCodeMustDiffer),
         ),
       );
       return;
@@ -112,7 +114,7 @@ class _SetupScreenState extends State<SetupScreen>
     } catch (_) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Setup failed. Please try again.')),
+          SnackBar(content: Text(AppLocalizations.of(context)!.setupFailed)),
         );
       }
     } finally {
@@ -120,25 +122,29 @@ class _SetupScreenState extends State<SetupScreen>
     }
   }
 
-  static const _stepData = [
-    (
-      icon: Icons.lock_outline_rounded,
-      color: AppColors.accent,
-      title: 'Secret Code',
-      subtitle: 'Enter this in the calculator to open your vault.',
-    ),
-    (
-      icon: Icons.delete_forever_outlined,
-      color: AppColors.destructive,
-      title: 'Delete Code',
-      subtitle: 'Instantly erases everything. Use in emergencies only.',
-    ),
-  ];
+  /// Aus `static const` zu einer Methode geworden: Titel und Untertitel
+  /// kommen jetzt aus der Übersetzung und brauchen deshalb den context.
+  /// Symbol und Farbe bleiben fest.
+  static List<({IconData icon, Color color, String title, String subtitle})>
+      _stepData(AppLocalizations l10n) => [
+            (
+              icon: Icons.lock_outline_rounded,
+              color: AppColors.accent,
+              title: l10n.secretCodeLabel,
+              subtitle: l10n.setupSecretCodeSubtitle,
+            ),
+            (
+              icon: Icons.delete_forever_outlined,
+              color: AppColors.destructive,
+              title: l10n.deleteCodeLabel,
+              subtitle: l10n.setupDeleteCodeSubtitle,
+            ),
+          ];
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final step = _stepData[_step];
+    final step = _stepData(AppLocalizations.of(context)!)[_step];
 
     return Scaffold(
       backgroundColor:
@@ -274,7 +280,7 @@ class _SetupScreenState extends State<SetupScreen>
                   if (_step > 0)
                     TextButton(
                       onPressed: _back,
-                      child: const Text('Back'),
+                      child: Text(AppLocalizations.of(context)!.back),
                     )
                   else
                     const SizedBox(width: 80),

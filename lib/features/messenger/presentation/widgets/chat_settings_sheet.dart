@@ -328,9 +328,7 @@ class _ChatSettingsSheetState extends State<ChatSettingsSheet> {
                     ),
                     const SizedBox(height: 6),
                     Text(
-                      'The security key for this contact has changed. '
-                      'Messages are blocked until you verify their identity. '
-                      'Scan their QR code or compare safety numbers to resume messaging.',
+                      l10n.contactKeyChangedWarning,
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
                             color: isDark
                                 ? AppColors.textSecondaryDark
@@ -345,7 +343,7 @@ class _ChatSettingsSheetState extends State<ChatSettingsSheet> {
                             onPressed: () => _showSafetyNumber(
                                 context, messenger, chat.recipientId),
                             icon: const Icon(Icons.qr_code_2_rounded, size: 16),
-                            label: const Text('Verify Identity'),
+                            label: Text(l10n.verifyIdentity),
                             style: OutlinedButton.styleFrom(
                               foregroundColor: AppColors.accent,
                               side: const BorderSide(color: AppColors.accent),
@@ -360,7 +358,7 @@ class _ChatSettingsSheetState extends State<ChatSettingsSheet> {
                             setState(() {});
                           },
                           icon: const Icon(Icons.block_rounded, size: 16),
-                          label: const Text('Block'),
+                          label: Text(l10n.blockContact),
                           style: OutlinedButton.styleFrom(
                             foregroundColor: AppColors.destructive,
                             side: const BorderSide(color: AppColors.destructive),
@@ -440,7 +438,7 @@ class _ChatSettingsSheetState extends State<ChatSettingsSheet> {
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      'Compare safety numbers or scan QR codes to verify end-to-end encryption.',
+                      l10n.safetyNumberCompareHint,
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
                             color: isDark
                                 ? AppColors.textSecondaryDark
@@ -455,7 +453,7 @@ class _ChatSettingsSheetState extends State<ChatSettingsSheet> {
                         onPressed: () => _showSafetyNumber(
                             context, messenger, chat.recipientId),
                         icon: const Icon(Icons.qr_code_2_rounded, size: 18),
-                        label: const Text('View Safety Number'),
+                        label: Text(l10n.viewSafetyNumber),
                         style: OutlinedButton.styleFrom(
                           foregroundColor: AppColors.primary,
                           side: const BorderSide(color: AppColors.accent),
@@ -505,6 +503,37 @@ class _ChatSettingsSheetState extends State<ChatSettingsSheet> {
           ],
           const SizedBox(height: 16),
 
+          // ── Blockieren ──
+          //
+          // Bis hierher steckte der Block-Knopf ausschliesslich im Warnblock
+          // fuer einen geaenderten Schluessel — einen gewoehnlichen Kontakt
+          // konnte man gar nicht blockieren. Jetzt immer erreichbar.
+          SizedBox(
+            width: double.infinity,
+            child: Builder(builder: (context) {
+              final blockiert =
+                  messenger.contactForId(chat.recipientId)?.isBlocked ?? false;
+              return OutlinedButton.icon(
+              onPressed: () =>
+                  _toggleBlock(context, messenger, chat.recipientId),
+              icon: Icon(
+                blockiert ? Icons.lock_open_rounded : Icons.block_rounded,
+                size: 18,
+              ),
+              label: Text(
+                  blockiert ? l10n.unblockContact : l10n.blockContact),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: AppColors.destructive,
+                side: const BorderSide(color: AppColors.destructive),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
+                ),
+              ),
+            );
+            }),
+          ),
+          const SizedBox(height: 8),
+
           // ── Clear Chat ──
           SizedBox(
             width: double.infinity,
@@ -525,6 +554,44 @@ class _ChatSettingsSheetState extends State<ChatSettingsSheet> {
         ],
       ),
     );
+  }
+
+  /// Blockieren mit Rueckfrage, Entblocken ohne — Aufheben ist harmlos.
+  Future<void> _toggleBlock(BuildContext context, MessengerProvider messenger,
+      String contactId) async {
+    final l10n = AppLocalizations.of(context)!;
+    final contact = messenger.contactForId(contactId);
+    if (contact == null) return;
+
+    if (contact.isBlocked) {
+      await messenger.unblockContact(contactId);
+      if (context.mounted) setState(() {});
+      return;
+    }
+
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(l10n.blockContact),
+        content: Text(l10n.blockContactConfirm),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: Text(l10n.cancel),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            style:
+                TextButton.styleFrom(foregroundColor: AppColors.destructive),
+            child: Text(l10n.blockContact),
+          ),
+        ],
+      ),
+    );
+    if (ok == true) {
+      await messenger.blockContact(contactId);
+      if (context.mounted) setState(() {});
+    }
   }
 
   void _confirmClearChat(BuildContext context, MessengerProvider messenger) {
@@ -619,6 +686,7 @@ class _ChatSettingsSheetState extends State<ChatSettingsSheet> {
 
     if (!context.mounted) return;
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final l10n = AppLocalizations.of(context)!;
 
     showDialog(
       context: context,
@@ -627,7 +695,7 @@ class _ChatSettingsSheetState extends State<ChatSettingsSheet> {
           children: [
             const Icon(Icons.shield_rounded, size: 20),
             const SizedBox(width: 8),
-            Text('Safety Number',
+            Text(l10n.safetyNumberTitle,
                 style: Theme.of(ctx).textTheme.titleMedium?.copyWith(
                       fontWeight: FontWeight.w600,
                     )),
@@ -653,7 +721,7 @@ class _ChatSettingsSheetState extends State<ChatSettingsSheet> {
                 // M2-Client: ephemeral copy with auto-clear (60s).
                 ClipboardHelper.copyEphemeral(safetyNumber);
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Safety number copied')),
+                  SnackBar(content: Text(l10n.safetyNumberCopied)),
                 );
               },
               child: Container(
@@ -680,7 +748,7 @@ class _ChatSettingsSheetState extends State<ChatSettingsSheet> {
             ),
             const SizedBox(height: 8),
             Text(
-              'Compare this number with your contact. If they match, your conversation is secure.',
+              l10n.safetyNumberMatchHint,
               textAlign: TextAlign.center,
               style: Theme.of(ctx).textTheme.bodySmall?.copyWith(
                     color: isDark
@@ -693,7 +761,7 @@ class _ChatSettingsSheetState extends State<ChatSettingsSheet> {
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(),
-            child: const Text('Close'),
+            child: Text(l10n.aboutClose),
           ),
           if (!contact.isVerified)
             ElevatedButton.icon(
@@ -708,8 +776,8 @@ class _ChatSettingsSheetState extends State<ChatSettingsSheet> {
                     Navigator.of(ctx).pop();
                   } else {
                     ScaffoldMessenger.of(ctx).showSnackBar(
-                      const SnackBar(
-                        content: Text('Verifikation fehlgeschlagen — Schlüssel stimmen nicht überein'),
+                      SnackBar(
+                        content: Text(l10n.verificationFailedKeyMismatch),
                         backgroundColor: AppColors.destructive,
                       ),
                     );
@@ -717,7 +785,7 @@ class _ChatSettingsSheetState extends State<ChatSettingsSheet> {
                 }
               },
               icon: const Icon(Icons.verified_rounded, size: 16),
-              label: const Text('Mark Verified'),
+              label: Text(l10n.markVerified),
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.success,
                 foregroundColor: Colors.white,

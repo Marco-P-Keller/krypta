@@ -7,6 +7,11 @@ import 'package:intl/intl.dart' as intl;
 
 import 'app_localizations_de.dart';
 import 'app_localizations_en.dart';
+import 'app_localizations_es.dart';
+import 'app_localizations_fr.dart';
+import 'app_localizations_it.dart';
+import 'app_localizations_nl.dart';
+import 'app_localizations_pt.dart';
 
 // ignore_for_file: type=lint
 
@@ -96,6 +101,11 @@ abstract class AppLocalizations {
   static const List<Locale> supportedLocales = <Locale>[
     Locale('de'),
     Locale('en'),
+    Locale('es'),
+    Locale('fr'),
+    Locale('it'),
+    Locale('nl'),
+    Locale('pt'),
   ];
 
   /// Application name
@@ -956,6 +966,576 @@ abstract class AppLocalizations {
   /// **'Warning: screenshot taken – the content was not protected'**
   String get screenshotTaken;
 
+  /// No description provided for @screenCaptureWarning.
+  ///
+  /// In en, this message translates to:
+  /// **'Screen recording detected – content hidden'**
+  String get screenCaptureWarning;
+
+  /// No description provided for @screenshotProtectionUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Not possible on this device – screenshots show the content'**
+  String get screenshotProtectionUnavailable;
+
+  /// No description provided for @screenshotMaskDiagnostics.
+  ///
+  /// In en, this message translates to:
+  /// **'Diagnostics: screenshot mask'**
+  String get screenshotMaskDiagnostics;
+
+  /// No description provided for @keysNotPublishedDenied.
+  ///
+  /// In en, this message translates to:
+  /// **'The server rejected your keys – others cannot message you.'**
+  String get keysNotPublishedDenied;
+
+  /// No description provided for @keysNotPublishedFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Your keys could not be published – others cannot message you.'**
+  String get keysNotPublishedFailed;
+
+  /// No description provided for @biometricUnlockReason.
+  ///
+  /// In en, this message translates to:
+  /// **'Unlock Krypta Messenger'**
+  String get biometricUnlockReason;
+
+  /// No description provided for @deviceCompromised.
+  ///
+  /// In en, this message translates to:
+  /// **'Device may be compromised.'**
+  String get deviceCompromised;
+
+  /// No description provided for @deviceCompromisedDegraded.
+  ///
+  /// In en, this message translates to:
+  /// **'Device may be compromised. Hardware security disabled.'**
+  String get deviceCompromisedDegraded;
+
+  /// No description provided for @fieldRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Required'**
+  String get fieldRequired;
+
+  /// No description provided for @codeMinDigits.
+  ///
+  /// In en, this message translates to:
+  /// **'At least {count} digits'**
+  String codeMinDigits(int count);
+
+  /// No description provided for @codeDigitsOnly.
+  ///
+  /// In en, this message translates to:
+  /// **'Digits only'**
+  String get codeDigitsOnly;
+
+  /// No description provided for @deleteCodeMustDiffer.
+  ///
+  /// In en, this message translates to:
+  /// **'The delete code must differ from your secret code.'**
+  String get deleteCodeMustDiffer;
+
+  /// No description provided for @setupFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Setup failed. Please try again.'**
+  String get setupFailed;
+
+  /// No description provided for @setupSecretCodeSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter this in the calculator to open your vault.'**
+  String get setupSecretCodeSubtitle;
+
+  /// No description provided for @setupDeleteCodeSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Instantly erases everything. Use in emergencies only.'**
+  String get setupDeleteCodeSubtitle;
+
+  /// No description provided for @contactKeyChangedWarning.
+  ///
+  /// In en, this message translates to:
+  /// **'The security key for this contact has changed. Messages are blocked until you verify their identity. Scan their QR code or compare safety numbers to resume messaging.'**
+  String get contactKeyChangedWarning;
+
+  /// No description provided for @verifyIdentity.
+  ///
+  /// In en, this message translates to:
+  /// **'Verify Identity'**
+  String get verifyIdentity;
+
+  /// No description provided for @safetyNumberCompareHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Compare safety numbers or scan QR codes to verify end-to-end encryption.'**
+  String get safetyNumberCompareHint;
+
+  /// No description provided for @viewSafetyNumber.
+  ///
+  /// In en, this message translates to:
+  /// **'View Safety Number'**
+  String get viewSafetyNumber;
+
+  /// No description provided for @safetyNumberTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Safety Number'**
+  String get safetyNumberTitle;
+
+  /// No description provided for @safetyNumberCopied.
+  ///
+  /// In en, this message translates to:
+  /// **'Safety number copied'**
+  String get safetyNumberCopied;
+
+  /// No description provided for @safetyNumberMatchHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Compare this number with your contact. If they match, your conversation is secure.'**
+  String get safetyNumberMatchHint;
+
+  /// No description provided for @verificationFailedKeyMismatch.
+  ///
+  /// In en, this message translates to:
+  /// **'Verification failed — the keys do not match'**
+  String get verificationFailedKeyMismatch;
+
+  /// No description provided for @markVerified.
+  ///
+  /// In en, this message translates to:
+  /// **'Mark Verified'**
+  String get markVerified;
+
+  /// No description provided for @securitySettingsReason.
+  ///
+  /// In en, this message translates to:
+  /// **'Change security settings'**
+  String get securitySettingsReason;
+
+  /// No description provided for @vaultPasswordReAuthHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter your vault password to change security settings.'**
+  String get vaultPasswordReAuthHint;
+
+  /// No description provided for @codeAlreadyInUse.
+  ///
+  /// In en, this message translates to:
+  /// **'Code already in use for another action.'**
+  String get codeAlreadyInUse;
+
+  /// No description provided for @deviceSecure.
+  ///
+  /// In en, this message translates to:
+  /// **'Device secure'**
+  String get deviceSecure;
+
+  /// No description provided for @deviceCompromisedDetected.
+  ///
+  /// In en, this message translates to:
+  /// **'Compromise detected'**
+  String get deviceCompromisedDetected;
+
+  /// No description provided for @deviceStatusUnknown.
+  ///
+  /// In en, this message translates to:
+  /// **'Status unknown'**
+  String get deviceStatusUnknown;
+
+  /// No description provided for @deviceSecureSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No root/jailbreak/Frida indicators'**
+  String get deviceSecureSubtitle;
+
+  /// No description provided for @deviceCompromisedSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Root, jailbreak or instrumentation detected. Hardware security disabled.'**
+  String get deviceCompromisedSubtitle;
+
+  /// No description provided for @deviceStatusUnknownSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Integrity check failed — restricted mode active.'**
+  String get deviceStatusUnknownSubtitle;
+
+  /// No description provided for @hardwareEnclave.
+  ///
+  /// In en, this message translates to:
+  /// **'Hardware enclave'**
+  String get hardwareEnclave;
+
+  /// No description provided for @hardwareTee.
+  ///
+  /// In en, this message translates to:
+  /// **'TEE key store'**
+  String get hardwareTee;
+
+  /// No description provided for @hardwareSoftware.
+  ///
+  /// In en, this message translates to:
+  /// **'Software key store'**
+  String get hardwareSoftware;
+
+  /// No description provided for @hardwareBoundSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Database key bound to hardware'**
+  String get hardwareBoundSubtitle;
+
+  /// No description provided for @hardwareEnclaveSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'StrongBox/Secure Enclave available'**
+  String get hardwareEnclaveSubtitle;
+
+  /// No description provided for @hardwareTeeSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Key held in the Trusted Execution Environment'**
+  String get hardwareTeeSubtitle;
+
+  /// No description provided for @hardwareSoftwareSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No hardware security available'**
+  String get hardwareSoftwareSubtitle;
+
+  /// No description provided for @pushPrivacy.
+  ///
+  /// In en, this message translates to:
+  /// **'Push privacy'**
+  String get pushPrivacy;
+
+  /// No description provided for @pushPrivacyOn.
+  ///
+  /// In en, this message translates to:
+  /// **'On — messages are fetched by polling'**
+  String get pushPrivacyOn;
+
+  /// No description provided for @pushPrivacyOff.
+  ///
+  /// In en, this message translates to:
+  /// **'Off — push notifications active'**
+  String get pushPrivacyOff;
+
+  /// No description provided for @readReceipts.
+  ///
+  /// In en, this message translates to:
+  /// **'Read receipts'**
+  String get readReceipts;
+
+  /// No description provided for @readReceiptsOn.
+  ///
+  /// In en, this message translates to:
+  /// **'On — the sender sees when you read'**
+  String get readReceiptsOn;
+
+  /// No description provided for @readReceiptsOff.
+  ///
+  /// In en, this message translates to:
+  /// **'Off — maximum privacy'**
+  String get readReceiptsOff;
+
+  /// No description provided for @deliveryReceipts.
+  ///
+  /// In en, this message translates to:
+  /// **'Delivery receipts'**
+  String get deliveryReceipts;
+
+  /// No description provided for @deliveryReceiptsOn.
+  ///
+  /// In en, this message translates to:
+  /// **'On — the sender sees when delivered'**
+  String get deliveryReceiptsOn;
+
+  /// No description provided for @deliveryReceiptsOff.
+  ///
+  /// In en, this message translates to:
+  /// **'Off — maximum privacy'**
+  String get deliveryReceiptsOff;
+
+  /// No description provided for @privacyPolicyBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Krypta ECC — Privacy Policy\n\nLast updated: April 2026\n\n1. Controller\nConnexa GmbH\nContact: https://connexa-gmbh.ch\n\n2. What data is collected?\nKrypta collects as little data as is technically possible:\n• Anonymous Firebase ID (no email, no name, no phone number)\n• Public encryption key (X25519)\n• FCM push token (for notifications)\n\n3. Encryption\nAll messages are end-to-end encrypted (Signal protocol: X3DH + Double Ratchet). At no point does the server have access to the plaintext of your messages. Encryption: XChaCha20-Poly1305. Password hashing: Argon2id.\n\n4. Data storage\n• Messages are stored only on your device (encrypted)\n• The server acts solely as a temporary relay — messages are deleted after delivery\n• Keys are stored in the iOS Keychain / Android Keystore\n\n5. No trackers\nKrypta contains no analytics tools, no advertising and no trackers (0 of 432 known trackers).\n\n6. Data sharing\nNo personal data is passed on to third parties. Google Firebase is used as the infrastructure provider (anonymous authentication and push notifications).\n\n7. Data deletion\nYou can irreversibly delete all of your data at any time:\n• In the settings via \"Delete everything\"\n• By entering the delete code in the calculator\nThis destroys all local data, keys and server-side data.\n\n8. Your rights (GDPR)\nYou have the right to access, rectification, erasure and data portability. Contact us at: https://connexa-gmbh.ch\n\n9. Changes\nThis privacy policy may be updated. The current version is always available in the app.'**
+  String get privacyPolicyBody;
+
+  /// No description provided for @tutStartSetup.
+  ///
+  /// In en, this message translates to:
+  /// **'Start setup'**
+  String get tutStartSetup;
+
+  /// No description provided for @tutWelcomeTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Welcome to Krypta'**
+  String get tutWelcomeTitle;
+
+  /// No description provided for @tutWelcomeBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Krypta is a secret messenger.\n\nTo everyone else the app looks like an ordinary calculator — nobody will suspect that an encrypted chat is hiding behind it.\n\nWe recommend reading this tutorial carefully.'**
+  String get tutWelcomeBody;
+
+  /// No description provided for @tutSecretCodeTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Your secret code'**
+  String get tutSecretCodeTitle;
+
+  /// No description provided for @tutSecretCodeBody.
+  ///
+  /// In en, this message translates to:
+  /// **'During setup you choose a numeric code.\n\nThis code is your key — it is the only way to open the hidden messenger.'**
+  String get tutSecretCodeBody;
+
+  /// No description provided for @tutDeleteCodeBody.
+  ///
+  /// In en, this message translates to:
+  /// **'The second code is for emergencies.\n\nEntering it erases everything immediately — messages, keys, account. Irreversibly.\n\nChoose a code you will not enter by accident.'**
+  String get tutDeleteCodeBody;
+
+  /// No description provided for @tutDeleteCodeWarning.
+  ///
+  /// In en, this message translates to:
+  /// **'Everything is erased immediately.\nNo recovery is possible.'**
+  String get tutDeleteCodeWarning;
+
+  /// No description provided for @tutOpenMessengerTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Open the messenger'**
+  String get tutOpenMessengerTitle;
+
+  /// No description provided for @tutOpenMessengerBody.
+  ///
+  /// In en, this message translates to:
+  /// **'To open your messenger:\n\n1. Enter your secret code in the calculator\n2. Press the = key\n\nThe messenger opens right away.'**
+  String get tutOpenMessengerBody;
+
+  /// No description provided for @tutPressEquals.
+  ///
+  /// In en, this message translates to:
+  /// **'Press ='**
+  String get tutPressEquals;
+
+  /// No description provided for @tutMessengerUnlocked.
+  ///
+  /// In en, this message translates to:
+  /// **'Messenger unlocked'**
+  String get tutMessengerUnlocked;
+
+  /// No description provided for @tutVaultBody.
+  ///
+  /// In en, this message translates to:
+  /// **'In the settings you can enable an additional password.\n\nAfter the secret code the vault password is then requested as well — double security for your messages.'**
+  String get tutVaultBody;
+
+  /// No description provided for @tutAddContactsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Add contacts'**
+  String get tutAddContactsTitle;
+
+  /// No description provided for @tutAddContactsBody.
+  ///
+  /// In en, this message translates to:
+  /// **'There are two ways to add contacts:\n\n• Scan a QR code — quick and simple\n• Enter a user ID — when you are not in the same place\n\nAfter that you can write to each other.'**
+  String get tutAddContactsBody;
+
+  /// No description provided for @tutQrFast.
+  ///
+  /// In en, this message translates to:
+  /// **'Quick & simple'**
+  String get tutQrFast;
+
+  /// No description provided for @tutEnterUserId.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter user ID'**
+  String get tutEnterUserId;
+
+  /// No description provided for @tutForRemoteContacts.
+  ///
+  /// In en, this message translates to:
+  /// **'For remote contacts'**
+  String get tutForRemoteContacts;
+
+  /// No description provided for @tutEmergencyBody.
+  ///
+  /// In en, this message translates to:
+  /// **'You will find red emergency buttons in the app.\n\nThey erase everything immediately — just like the delete code. Use them only when it really matters.'**
+  String get tutEmergencyBody;
+
+  /// No description provided for @tutInSettings.
+  ///
+  /// In en, this message translates to:
+  /// **'In the settings'**
+  String get tutInSettings;
+
+  /// No description provided for @tutChatFeaturesIntro.
+  ///
+  /// In en, this message translates to:
+  /// **'A chat gives you three special features:'**
+  String get tutChatFeaturesIntro;
+
+  /// No description provided for @tutLockMessageDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Protect individual messages with a password'**
+  String get tutLockMessageDesc;
+
+  /// No description provided for @tutAutoDeleteDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Messages delete themselves after a set time'**
+  String get tutAutoDeleteDesc;
+
+  /// No description provided for @tutBurnAfterReadDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'The message is deleted immediately after reading'**
+  String get tutBurnAfterReadDesc;
+
+  /// No description provided for @tutReadyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'All set!'**
+  String get tutReadyTitle;
+
+  /// No description provided for @tutReadyBody.
+  ///
+  /// In en, this message translates to:
+  /// **'You now know everything you need.\n\nIn the next step you set up your codes — after that your messenger is ready to use.'**
+  String get tutReadyBody;
+
+  /// No description provided for @language.
+  ///
+  /// In en, this message translates to:
+  /// **'Language'**
+  String get language;
+
+  /// No description provided for @chooseLanguage.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose your language'**
+  String get chooseLanguage;
+
+  /// No description provided for @deviceSecuritySection.
+  ///
+  /// In en, this message translates to:
+  /// **'Device security'**
+  String get deviceSecuritySection;
+
+  /// No description provided for @tutDeleteCodeTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Emergency code'**
+  String get tutDeleteCodeTitle;
+
+  /// No description provided for @tutEmergencyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Emergency buttons'**
+  String get tutEmergencyTitle;
+
+  /// No description provided for @tutChatFeaturesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Chat features'**
+  String get tutChatFeaturesTitle;
+
+  /// No description provided for @blockContact.
+  ///
+  /// In en, this message translates to:
+  /// **'Block'**
+  String get blockContact;
+
+  /// No description provided for @authentication.
+  ///
+  /// In en, this message translates to:
+  /// **'Authentication'**
+  String get authentication;
+
+  /// No description provided for @contactRequestTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Contact request'**
+  String get contactRequestTitle;
+
+  /// No description provided for @contactRequestIncomingHint.
+  ///
+  /// In en, this message translates to:
+  /// **'This person wants to message you. You can only write to each other once you accept.'**
+  String get contactRequestIncomingHint;
+
+  /// No description provided for @acceptRequest.
+  ///
+  /// In en, this message translates to:
+  /// **'Accept'**
+  String get acceptRequest;
+
+  /// No description provided for @declineRequest.
+  ///
+  /// In en, this message translates to:
+  /// **'Decline'**
+  String get declineRequest;
+
+  /// No description provided for @contactRequestSent.
+  ///
+  /// In en, this message translates to:
+  /// **'Request sent'**
+  String get contactRequestSent;
+
+  /// No description provided for @contactRequestWaitingHint.
+  ///
+  /// In en, this message translates to:
+  /// **'You can write once the other person accepts.'**
+  String get contactRequestWaitingHint;
+
+  /// No description provided for @resendRequest.
+  ///
+  /// In en, this message translates to:
+  /// **'Request again'**
+  String get resendRequest;
+
+  /// No description provided for @acceptToReply.
+  ///
+  /// In en, this message translates to:
+  /// **'Accept the request to reply'**
+  String get acceptToReply;
+
+  /// No description provided for @requestBadge.
+  ///
+  /// In en, this message translates to:
+  /// **'Request'**
+  String get requestBadge;
+
+  /// No description provided for @blockContactConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Block this person? They will not be able to message you, and they will not be told.'**
+  String get blockContactConfirm;
+
+  /// No description provided for @unblockContact.
+  ///
+  /// In en, this message translates to:
+  /// **'Unblock'**
+  String get unblockContact;
+
+  /// No description provided for @contactBlocked.
+  ///
+  /// In en, this message translates to:
+  /// **'Blocked'**
+  String get contactBlocked;
+
   /// No description provided for @privacyPolicy.
   ///
   /// In en, this message translates to:
@@ -979,8 +1559,15 @@ class _AppLocalizationsDelegate
   }
 
   @override
-  bool isSupported(Locale locale) =>
-      <String>['de', 'en'].contains(locale.languageCode);
+  bool isSupported(Locale locale) => <String>[
+    'de',
+    'en',
+    'es',
+    'fr',
+    'it',
+    'nl',
+    'pt',
+  ].contains(locale.languageCode);
 
   @override
   bool shouldReload(_AppLocalizationsDelegate old) => false;
@@ -993,6 +1580,16 @@ AppLocalizations lookupAppLocalizations(Locale locale) {
       return AppLocalizationsDe();
     case 'en':
       return AppLocalizationsEn();
+    case 'es':
+      return AppLocalizationsEs();
+    case 'fr':
+      return AppLocalizationsFr();
+    case 'it':
+      return AppLocalizationsIt();
+    case 'nl':
+      return AppLocalizationsNl();
+    case 'pt':
+      return AppLocalizationsPt();
   }
 
   throw FlutterError(

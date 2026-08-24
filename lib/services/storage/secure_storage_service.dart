@@ -172,6 +172,18 @@ class SecureStorageService {
     return value == 'true';
   }
 
+  // --- Anzeigesprache ---
+
+  /// Die gewaehlte Sprache als Code ('en', 'de', 'es', 'it', 'pt', 'fr').
+  /// `null`, solange noch keine Wahl getroffen wurde — dann gilt Englisch.
+  Future<String?> getLanguageCode() async {
+    return _storage.read(key: StorageKeys.languageCode);
+  }
+
+  Future<void> setLanguageCode(String code) async {
+    await _storage.write(key: StorageKeys.languageCode, value: code);
+  }
+
   // --- Receipt Privacy Settings ---
 
   /// Delivery receipts: inform sender that message was received.

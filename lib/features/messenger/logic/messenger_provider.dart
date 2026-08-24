@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:math';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cryptography/cryptography.dart';
 import 'package:flutter/foundation.dart';
@@ -15,6 +16,8 @@ import '../../../security/ratchet/double_ratchet.dart';
 import '../../../security/ratchet/ratchet_message.dart';
 import '../../../security/ratchet/ratchet_state.dart';
 import '../../../security/ratchet/replay_guard.dart';
+import 'contact_request_policy.dart';
+import 'key_publish_status.dart';
 import '../../../security/session/session_errors.dart';
 import '../../../security/session/session_handshake_service.dart';
 import '../../../security/transparency/consistency_checker.dart';
@@ -169,6 +172,16 @@ class MessengerProvider extends ChangeNotifier {
   bool _isSyncing = false;
   bool _isInitialized = false;
 
+  /// Ob die eigenen Schlüssel auf dem Server liegen.
+  ///
+  /// Ohne sie kann niemand eine Session zu einem aufbauen und es kommt keine
+  /// Nachricht an — die App verhält sich sonst aber völlig normal. Vorher
+  /// verschwand genau dieser Fehlschlag in einem `catch`, das nur in
+  /// Debug-Builds etwas ausgab.
+  final KeyPublishStatus _keyPublish = KeyPublishStatus();
+  KeyPublishState get keyPublishState => _keyPublish.state;
+  bool get keysArePublished => _keyPublish.isHealthy;
+
   MessengerProvider({
     required EncryptionService encryption,
     required KeyManager keyManager,
@@ -313,7 +326,12 @@ class MessengerProvider extends ChangeNotifier {
           userId: userId!,
           publicKeyBase64: keyPair.publicKeyBase64,
         );
+        _keyPublish.recordIdentitySuccess();
       } catch (e) {
+        // Nicht mehr stillschweigend verschlucken: ohne Identity-Key im
+        // Register findet einen niemand. `permission-denied` heißt dabei
+        // etwas ganz anderes als ein Netzwerkfehler — siehe KeyPublishStatus.
+        _keyPublish.recordIdentityFailure(e);
         if (kDebugMode) debugPrint('Key registration failed');
       }
 
@@ -339,10 +357,17 @@ class MessengerProvider extends ChangeNotifier {
             userId: userId!,
             bundle: bundle.toMap(),
           );
+          _keyPublish.recordPreKeySuccess();
         }
       } catch (e) {
+        // Ohne veröffentlichtes Bundle kommt kein X3DH-Handshake zustande.
+        // Für die Zustellung genauso tödlich wie ein fehlender Identity-Key.
+        _keyPublish.recordPreKeyFailure(e);
         if (kDebugMode) debugPrint('PreKey management failed');
       }
+      // Der Zustand steuert ein Warnbanner in app.dart — die Oberfläche muss
+      // davon erfahren.
+      notifyListeners();
 
       // Check push privacy mode setting
       _pushPrivacyEnabled = await _secureStorage.isPushPrivacyEnabled();
@@ -428,6 +453,15 @@ class MessengerProvider extends ChangeNotifier {
 
       final existing = contactForId(contactId);
       if (existing != null) {
+        // Anfragezustand nachziehen: wer hinzufügt, hat zugestimmt.
+        final moved = ContactRequestPolicy.afterLocalAdd(existing);
+        if (moved.requestState != existing.requestState) {
+          final i = _contacts.indexWhere((c) => c.id == contactId);
+          _contacts[i] = moved;
+          await _localStore.saveContacts(_contacts);
+          notifyListeners();
+          await _announceRequestTransition(existing, moved);
+        }
         // Key change detection: if the public key changed, block sending until re-verified.
         // Also invalidate existing ratchet sessions (compromised key = untrusted session).
         if (base64Encode(existing.publicKey) != publicKeyBase64) {
@@ -461,12 +495,17 @@ class MessengerProvider extends ChangeNotifier {
 
       // New contact: always starts as unverified — never trust blindly.
       // Record first-seen identity key as TOFU baseline.
+      //
+      // Der Anfragezustand ist `outgoing`: geschrieben werden darf erst, wenn
+      // die Gegenseite annimmt. Vorher ging die erste Nachricht verloren —
+      // sie wurde beim Empfänger verworfen UND vom Server gelöscht.
       final contact = Contact(
         id: contactId,
         displayName: 'User ${contactId.substring(0, 6)}',
         publicKey: newPublicKey,
         addedAt: DateTime.now(),
         trustState: TrustState.unverified,
+        requestState: ContactRequestState.outgoing,
         firstSeenIdentityKey: Uint8List.fromList(newPublicKey),
       );
 
@@ -477,6 +516,12 @@ class MessengerProvider extends ChangeNotifier {
       await verifyContactTransparency(contactId);
 
       notifyListeners();
+
+      // Die Anfrage abschicken. Ohne sie erfaehrt die Gegenseite nichts und
+      // beide warten auf den jeweils anderen — genau der Zustand, den dieser
+      // Umbau beseitigt.
+      await _sendRequestTo(contact);
+
       return contact;
     } catch (e) {
       if (kDebugMode) debugPrint('Add contact failed: $e');
@@ -498,6 +543,7 @@ class MessengerProvider extends ChangeNotifier {
     required String contactId,
     required Uint8List qrPublicKey,
     required String qrFingerprint,
+    String? qrToken,
   }) async {
     if (contactId == userId) return (null, QrContactResult.userNotFound);
 
@@ -554,7 +600,8 @@ class MessengerProvider extends ChangeNotifier {
       final existing = contactForId(contactId);
       if (existing != null) {
         final idx = _contacts.indexWhere((c) => c.id == contactId);
-        _contacts[idx] = existing.copyWith(
+        final moved = ContactRequestPolicy.afterLocalAdd(existing);
+        _contacts[idx] = moved.copyWith(
           publicKey: qrPublicKey,
           trustState: TrustState.verified,
           verifiedAt: DateTime.now(),
@@ -565,6 +612,9 @@ class MessengerProvider extends ChangeNotifier {
         );
         await _localStore.saveContacts(_contacts);
         notifyListeners();
+        if (_contacts[idx].isOutgoingRequest) {
+          await _sendRequestTo(_contacts[idx], qrToken: qrToken);
+        }
         return (_contacts[idx], QrContactResult.verified);
       }
 
@@ -580,10 +630,16 @@ class MessengerProvider extends ChangeNotifier {
         verifiedFingerprint: qrFingerprint,
         firstSeenIdentityKey: Uint8List.fromList(qrPublicKey),
         safetyNumberVersion: SafetyNumber.currentVersion,
+        // Verifiziert heisst: der Schluessel stimmt. Einverstanden heisst es
+        // nicht — auch hier geht eine Anfrage voraus, sonst haette der
+        // QR-Pfad eine andere Regel als der ID-Pfad und die erste Nachricht
+        // ginge beim Empfaenger genauso verloren wie vorher.
+        requestState: ContactRequestState.outgoing,
       );
       _contacts.add(contact);
       await _localStore.saveContacts(_contacts);
       notifyListeners();
+      await _sendRequestTo(contact, qrToken: qrToken);
       return (contact, QrContactResult.verified);
     } catch (e) {
       if (kDebugMode) debugPrint('QR contact add failed: $e');
@@ -684,6 +740,337 @@ class MessengerProvider extends ChangeNotifier {
   }
 
   // ─── Centralized Trust Gates ────────────────────────────────────────────
+
+  // ─── QR-Token: Zeigen heisst Zustimmen ──────────────────────────────
+
+  /// Einmal-Token aus gerade angezeigten QR-Codes.
+  ///
+  /// Der übrige QR-Inhalt — Nutzerkennung, Schlüssel und dessen Hash — ist
+  /// vollständig öffentlich: wer eine ID kennt, baut ihn nach, ohne den Code
+  /// je gesehen zu haben. Erst dieses Token macht aus dem Scannen einen
+  /// Nachweis. Wer es vorlegt, hat den Code wirklich vor sich gehabt — und wer
+  /// den Code zeigt, will den Kontakt. Deshalb entfällt für ihn die Rückfrage.
+  ///
+  /// Bewusst nur im Arbeitsspeicher und kurzlebig: das Token gilt für den
+  /// Moment, in dem zwei Menschen nebeneinanderstehen, nicht darüber hinaus.
+  final Map<String, DateTime> _shownQrTokens = {};
+  static const Duration _qrTokenLifetime = Duration(minutes: 10);
+  final Random _tokenRandom = Random.secure();
+
+  /// Ein frisches Token für einen QR-Code, der gleich gezeigt wird.
+  String issueQrToken() {
+    _pruneQrTokens();
+    final bytes = List<int>.generate(24, (_) => _tokenRandom.nextInt(256));
+    final token = base64Url.encode(bytes);
+    _shownQrTokens[token] = DateTime.now();
+    return token;
+  }
+
+  /// Ein vorgelegtes Token einlösen. Einmalig — danach ist es verbraucht.
+  bool _consumeQrToken(String? token) {
+    if (token == null || token.isEmpty) return false;
+    _pruneQrTokens();
+    return _shownQrTokens.remove(token) != null;
+  }
+
+  void _pruneQrTokens() {
+    final cutoff = DateTime.now().subtract(_qrTokenLifetime);
+    _shownQrTokens.removeWhere((_, gezeigt) => gezeigt.isBefore(cutoff));
+  }
+
+  // ─── Kontaktanfragen ────────────────────────────────────────────────
+
+  /// Alle unbeantworteten Anfragen an mich.
+  List<Contact> get incomingRequests =>
+      _contacts.where((c) => c.isIncomingRequest).toList();
+
+  /// Eine Anfrage annehmen. Danach dürfen beide Seiten schreiben.
+  ///
+  /// Schickt der Gegenseite eine Kontrollnachricht, damit dort die Sperre
+  /// ebenfalls fällt. Zu diesem Zeitpunkt existiert eine Sitzung — die
+  /// Anfrage wurde ja entschlüsselt —, also trägt der übliche HMAC.
+  Future<void> acceptContactRequest(String contactId) async {
+    final idx = _contacts.indexWhere((c) => c.id == contactId);
+    if (idx == -1) return;
+    if (!_contacts[idx].isIncomingRequest) return;
+
+    _contacts[idx] = ContactRequestPolicy.afterAccept(_contacts[idx]);
+    await _localStore.saveContacts(_contacts);
+    notifyListeners();
+
+    final chat = chatForContact(contactId);
+    if (chat != null) {
+      await _sendControlMessage(
+        chatId: chat.id,
+        contact: _contacts[idx],
+        type: 'accepted',
+        messageId: _uuid.v4(),
+      );
+    }
+  }
+
+  /// Eine Anfrage ablehnen.
+  ///
+  /// Es wird **nichts** zurückgeschickt: der Gegenseite mitzuteilen „du wurdest
+  /// abgelehnt" verrät eine Entscheidung, die allein hier getroffen wird. Für
+  /// sie sieht eine Ablehnung genauso aus wie eine Blockierung — nach nichts.
+  Future<void> declineContactRequest(String contactId) async {
+    final idx = _contacts.indexWhere((c) => c.id == contactId);
+    if (idx == -1) return;
+    if (!_contacts[idx].isIncomingRequest) return;
+
+    _contacts[idx] = ContactRequestPolicy.afterDecline(_contacts[idx]);
+    await _localStore.saveContacts(_contacts);
+
+    // Der Chat verschwindet — es steht ohnehin nichts drin, eine Anfrage
+    // trägt keinen Inhalt.
+    final chat = chatForContact(contactId);
+    if (chat != null) await deleteChat(chat.id);
+
+    notifyListeners();
+  }
+
+  /// Der Gegenseite mitteilen, was der eigene Zustandswechsel für sie bedeutet.
+  ///
+  /// Ohne das bliebe der andere hängen: hat er mich angefragt und füge ich ihn
+  /// dann selbst hinzu, statt auf „Annehmen" zu tippen, wird der Kontakt hier
+  /// zwar frei — auf seiner Seite stünde aber weiter „Anfrage gesendet", für
+  /// immer.
+  Future<void> _announceRequestTransition(Contact vorher, Contact nachher) async {
+    final chat = chatForContact(nachher.id);
+    if (chat == null) return;
+
+    // Aus einer offenen Anfrage ist ein Kontakt geworden: das ist eine
+    // Annahme, auch wenn der Weg dorthin das Hinzufügen war.
+    if (vorher.isIncomingRequest &&
+        nachher.requestState == ContactRequestState.established) {
+      await _sendControlMessage(
+        chatId: chat.id,
+        contact: nachher,
+        type: 'accepted',
+        messageId: _uuid.v4(),
+      );
+      return;
+    }
+
+    // Nach eigener Ablehnung doch wieder angefragt.
+    if (nachher.isOutgoingRequest) {
+      await _sendRequestTo(nachher);
+    }
+  }
+
+  /// Die Kontaktanfrage an [contact] verschicken.
+  ///
+  /// Eigener Weg, damit der ID-Pfad und der QR-Pfad dieselbe Regel benutzen.
+  Future<void> _sendRequestTo(Contact contact, {String? qrToken}) async {
+    final chat = getOrCreateChat(contact);
+    await sendMessage(
+      chatId: chat.id,
+      text: '',
+      asContactRequest: true,
+      qrToken: qrToken,
+    );
+  }
+
+  /// Eine Anfrage erneut senden. Ob sie ankommt, entscheidet die Gegenseite.
+  ///
+  /// Erzwingt dabei eine **frische Sitzung**. Beim Ablehnen wirft die
+  /// Gegenseite ihren Chat und damit ihre Ratchet-Sitzung weg; hier bliebe sie
+  /// bestehen. Eine Nachricht aus einer laufenden Sitzung trägt keinen
+  /// Handschlag-Kopf (`ek`) — die Gegenseite könnte sie nicht entschlüsseln,
+  /// und die erneute Anfrage fiele stumm durch. Genau die Art Fehlschlag, die
+  /// diesen Umbau ausgelöst hat.
+  Future<void> resendContactRequest(String contactId) async {
+    final contact = contactForId(contactId);
+    final chat = chatForContact(contactId);
+    if (contact == null || chat == null) return;
+
+    _ratchetStates.remove(chat.id);
+    try {
+      await _localStore.deleteRatchetState(chat.id);
+    } catch (_) {}
+
+    await _sendRequestTo(contact);
+  }
+
+  // ─── Kontaktanfragen: Empfang ───────────────────────────────────────────
+
+  /// Ob von diesem Absender nur eine Anfrage angenommen werden darf.
+  ///
+  /// `established` und `outgoing` laufen den normalen Weg: bei `outgoing` habe
+  /// ich selbst angefragt und muss die Annahme der Gegenseite empfangen
+  /// können.
+  bool _onlyAcceptsRequestFrom(Contact? contact) =>
+      contact == null ||
+      contact.requestState == ContactRequestState.incoming ||
+      contact.requestState == ContactRequestState.declined;
+
+  /// Eine Nachricht von jemandem ohne angenommenen Kontakt verarbeiten.
+  ///
+  /// Angenommen wird ausschliesslich eine Kontaktanfrage ohne Inhalt. Jede
+  /// andere Nachricht wird verworfen — der Spalt, der sich hier oeffnet, ist
+  /// bewusst eng. Die Nachricht ist danach in jedem Fall verbraucht und wird
+  /// vom Server geloescht.
+  ///
+  /// Siehe `docs/KONTAKTANFRAGEN.md`, Abschnitt 3.
+  Future<void> _receiveContactRequest({
+    required String senderId,
+    required String messageId,
+    required Map<String, dynamic> payloadMap,
+    required String docId,
+    required Contact? existing,
+  }) async {
+    Future<void> drop() => _firestore.deleteRelayedMessage(userId!, docId);
+
+    final rejection = ContactRequestPolicy.rejectIncoming(
+      existing: existing,
+      openIncomingCount: ContactRequestPolicy.openIncomingCount(_contacts),
+    );
+    if (rejection != null) {
+      if (kDebugMode) debugPrint('Kontaktanfrage abgewiesen: $rejection');
+      return drop();
+    }
+
+    // Nur v3 traegt die Markierung innerhalb der Verschluesselung. Aeltere
+    // Fassungen legen sie neben die Ratchet-Felder, wo der Server sie setzen
+    // koennte.
+    if ((payloadMap['v'] as int? ?? 1) < 3) return drop();
+
+    // Der Schluessel des Absenders. Ohne ihn laesst sich nichts entschluesseln.
+    Contact contact;
+    if (existing != null) {
+      contact = existing;
+    } else {
+      final keyBase64 = await _firestore.getPublicKey(senderId);
+      if (keyBase64 == null) return drop();
+      final key = base64Decode(keyBase64);
+      contact = Contact(
+        id: senderId,
+        displayName: 'User ${senderId.substring(0, 6)}',
+        publicKey: key,
+        addedAt: DateTime.now(),
+        trustState: TrustState.unverified,
+        requestState: ContactRequestState.incoming,
+        // TOFU-Grundlinie ab der ersten Beruehrung, genau wie in addContact.
+        firstSeenIdentityKey: Uint8List.fromList(key),
+      );
+    }
+
+    // Entschluesseln braucht eine Chat-Kennung. Gibt es schon einen Chat
+    // (erneute Anfrage), wird dessen Sitzung weiterbenutzt; sonst entsteht
+    // eine neue Kennung, die erst bei Erfolg wirklich gespeichert wird.
+    final existingChat = chatForContact(senderId);
+    final chatId = existingChat?.id ?? _uuid.v4();
+
+    try {
+      final plaintext = await _decryptWithRatchet(
+          chatId, contact, payloadMap, messageId: messageId);
+      final inner = jsonDecode(plaintext) as Map<String, dynamic>;
+
+      // Sealed Sender: die massgebliche Absenderkennung steht innerhalb der
+      // Verschluesselung. Ohne diese Pruefung bestimmt der Server, wer jemand
+      // ist.
+      if (inner['_sid'] != senderId) {
+        _discardPendingHeal(chatId, messageId);
+        if (existingChat == null) await _scrubProvisionalSession(chatId);
+        return drop();
+      }
+
+      // Von Fremden wird ausschliesslich eine Anfrage angenommen.
+      if (inner['_rq'] != 1) {
+        if (kDebugMode) {
+          debugPrint('Inhalt von unbestaetigtem Kontakt verworfen: $senderId');
+        }
+        _discardPendingHeal(chatId, messageId);
+        if (existingChat == null) await _scrubProvisionalSession(chatId);
+        return drop();
+      }
+
+      // Ab hier ist die Anfrage echt und wird sichtbar.
+      //
+      // Legt sie ein Token vor, das aus einem QR-Code stammt, den ich gerade
+      // selbst gezeigt habe, entfällt die Rückfrage: den Code zu zeigen IST
+      // die Zustimmung. Das Token ist danach verbraucht.
+      final ausQrCode = _consumeQrToken(inner['_rt'] as String?);
+      final state = ausQrCode
+          ? ContactRequestState.established
+          : ContactRequestPolicy.stateAfterIncoming(existing);
+      final updated = contact.copyWith(requestState: state);
+
+      final idx = _contacts.indexWhere((c) => c.id == senderId);
+      if (idx == -1) {
+        _contacts.add(updated);
+      } else {
+        _contacts[idx] = updated;
+      }
+      await _localStore.saveContacts(_contacts);
+
+      if (existingChat == null) {
+        final chat = Chat(
+          id: chatId,
+          recipientId: updated.id,
+          recipientName: updated.displayName,
+        );
+        _chats.insert(0, chat);
+        _messagesByChat[chat.id] = [];
+        await _localStore.saveChats(_chats);
+      }
+
+      await _finalizeAcceptedMessage(chatId, messageId, payloadMap);
+      _processedMessageIds.add(messageId);
+      notifyListeners();
+
+      // Direkt angenommen: die Gegenseite wartet sonst weiter auf eine
+      // Antwort, die nie käme.
+      if (state == ContactRequestState.established) {
+        await _sendControlMessage(
+          chatId: chatId,
+          contact: updated,
+          type: 'accepted',
+          messageId: _uuid.v4(),
+        );
+      }
+      return drop();
+    } catch (e) {
+      if (kDebugMode) debugPrint('Kontaktanfrage nicht entschluesselbar: $e');
+      _discardPendingHeal(chatId, messageId);
+      if (existingChat == null) await _scrubProvisionalSession(chatId);
+      return drop();
+    }
+  }
+
+  /// Eine Sitzung wegraeumen, die nur fuer den Versuch angelegt wurde.
+  ///
+  /// Ohne das koennte jeder mit Muell-Nutzlasten Ratchet-Zustaende auf fremden
+  /// Geraeten anlegen.
+  Future<void> _scrubProvisionalSession(String chatId) async {
+    _ratchetStates.remove(chatId);
+    try {
+      await _localStore.deleteRatchetState(chatId);
+    } catch (_) {}
+  }
+
+  /// Die Gegenseite hat eine Anfrage von mir angenommen.
+  void _applyContactAccepted(String contactId) {
+    final idx = _contacts.indexWhere((c) => c.id == contactId);
+    if (idx == -1) return;
+    if (_contacts[idx].requestState != ContactRequestState.outgoing) return;
+    _contacts[idx] = ContactRequestPolicy.afterAccept(_contacts[idx]);
+    _localStore.saveContacts(_contacts);
+    notifyListeners();
+  }
+
+  /// Eine Anfrage von jemandem, den ich selbst schon angefragt habe.
+  /// Beide sind einverstanden — kein Knopf, keine Blase.
+  Future<void> _applyMutualRequest(Contact contact) async {
+    final idx = _contacts.indexWhere((c) => c.id == contact.id);
+    if (idx == -1) return;
+    final state = ContactRequestPolicy.stateAfterIncoming(_contacts[idx]);
+    if (state == _contacts[idx].requestState) return;
+    _contacts[idx] = _contacts[idx].copyWith(requestState: state);
+    await _localStore.saveContacts(_contacts);
+    notifyListeners();
+  }
 
   /// Single trust gate for sending. Fail-closed.
   /// Returns null if permitted, or error string if blocked.
@@ -907,6 +1294,8 @@ class MessengerProvider extends ChangeNotifier {
         _applyRemoteDelete(ctrl.messageId);
       case 'unlock':
         _applyUnlockNotification(ctrl.messageId);
+      case 'accepted':
+        _applyContactAccepted(contact.id);
       default:
         if (kDebugMode) debugPrint('Unknown control message type: ${ctrl.type}');
     }
@@ -1321,12 +1710,17 @@ class MessengerProvider extends ChangeNotifier {
 
   // --- Sending Messages ---
 
+  /// [asContactRequest] schickt eine Kontaktanfrage statt einer Nachricht:
+  /// ohne Text, ohne sichtbare Blase, und an der Sendesperre vorbei — sie ist
+  /// der einzige Weg, diese Sperre überhaupt aufzulösen.
   Future<void> sendMessage({
     required String chatId,
     required String text,
     Duration? selfDestruct,
     bool burnAfterRead = false,
     String? password,
+    bool asContactRequest = false,
+    String? qrToken,
   }) async {
     // H1-Proto: serialize concurrent sendMessage calls per chat so the
     // ratchet-encrypt + globalSendSeqNo update happens atomically. Without
@@ -1339,6 +1733,8 @@ class MessengerProvider extends ChangeNotifier {
           selfDestruct: selfDestruct,
           burnAfterRead: burnAfterRead,
           password: password,
+          asContactRequest: asContactRequest,
+          qrToken: qrToken,
         ));
   }
 
@@ -1348,6 +1744,8 @@ class MessengerProvider extends ChangeNotifier {
     Duration? selfDestruct,
     bool burnAfterRead = false,
     String? password,
+    bool asContactRequest = false,
+    String? qrToken,
   }) async {
     // A3: bail out if a deleteChat is already tearing this chat down. Without
     // this, a send started during the delete window can still hit Firestore
@@ -1360,11 +1758,18 @@ class MessengerProvider extends ChangeNotifier {
     final contact = contactForId(chat.recipientId);
     if (contact == null || userId == null) return;
 
-    // Centralized trust gate — fail-closed
-    final trustError = _validateSendPermission(contact);
-    if (trustError != null) {
-      if (kDebugMode) debugPrint('Send blocked: $trustError');
-      return;
+    // Centralized trust gate — fail-closed.
+    //
+    // Eine Kontaktanfrage läuft bewusst daran vorbei: sie ist der einzige Weg,
+    // eine Sperre überhaupt aufzulösen. Blockiert bleibt blockiert.
+    if (asContactRequest) {
+      if (contact.isBlocked) return;
+    } else {
+      final trustError = _validateSendPermission(contact);
+      if (trustError != null) {
+        if (kDebugMode) debugPrint('Send blocked: $trustError');
+        return;
+      }
     }
 
     // Pre-send key validation: check if the server key has changed since
@@ -1445,9 +1850,11 @@ class MessengerProvider extends ChangeNotifier {
       passwordUnlocked: !hasPassword, // Both sides start locked
     );
 
-    _addMessageToChat(chatId, message);
-    _updateChatPreview(chatId, hasPassword ? '🔒 Password message' : text, now);
-    notifyListeners();
+    if (!asContactRequest) {
+      _addMessageToChat(chatId, message);
+      _updateChatPreview(chatId, hasPassword ? '🔒 Password message' : text, now);
+      notifyListeners();
+    }
 
     try {
       // Initialize ratchet for first message if needed
@@ -1474,6 +1881,12 @@ class MessengerProvider extends ChangeNotifier {
         '_t': contentForTransmission,
         '_sid': userId!,
         '_seq': state.globalSendSeqNo, // Monotonic sequence for replay protection
+        // Kontaktanfrage: trägt keinen Text. Die Markierung liegt innerhalb
+        // der Verschlüsselung, der Server sieht sie nicht.
+        if (asContactRequest) '_rq': 1,
+        // Nachweis, dass der QR-Code wirklich vorlag. Fehlt er, wird die
+        // Anfrage ganz normal zur Rückfrage.
+        if (asContactRequest && qrToken != null) '_rt': qrToken,
       };
       // Anti-rollback: include previous session ID in first message of new session
       if (state.globalSendSeqNo == 0 && state.previousSessionId != null) {
@@ -1872,13 +2285,23 @@ class MessengerProvider extends ChangeNotifier {
           continue;
         }
 
-        // Reject messages from unknown senders. Do NOT auto-create contacts.
+        // Von jemandem ohne angenommenen Kontakt wird genau eine Sache
+        // angenommen: eine Kontaktanfrage ohne Inhalt. Alles andere fliegt
+        // weiterhin raus. Siehe docs/KONTAKTANFRAGEN.md.
         final contact = contactForId(senderId);
-        if (contact == null) {
-          if (kDebugMode) debugPrint('Rejected message from unknown sender: $senderId');
-          await _firestore.deleteRelayedMessage(userId!, change.doc.id);
+        if (_onlyAcceptsRequestFrom(contact)) {
+          await _receiveContactRequest(
+            senderId: senderId,
+            messageId: messageId,
+            payloadMap: payloadMap,
+            docId: change.doc.id,
+            existing: contact,
+          );
           continue;
         }
+        // _onlyAcceptsRequestFrom schliesst null bereits aus — der Analyzer
+        // sieht das durch die Funktion hindurch nicht.
+        if (contact == null) continue;
 
         // Centralized trust gate — fail-closed
         final trustError = _validateReceivePermission(contact);
@@ -1970,6 +2393,17 @@ class MessengerProvider extends ChangeNotifier {
         if (sealedSenderId != senderId) {
           if (kDebugMode) debugPrint('Sealed sender mismatch: routing=$senderId, sealed=$sealedSenderId');
           _discardPendingHeal(chat.id, messageId);
+          await _firestore.deleteRelayedMessage(userId!, change.doc.id);
+          continue;
+        }
+
+        // Kontaktanfrage von jemandem, den ich selbst schon angefragt habe:
+        // beide sind einverstanden. Sie traegt keinen Inhalt, also entsteht
+        // auch keine Blase.
+        if (innerPayload['_rq'] == 1) {
+          await _applyMutualRequest(contact);
+          await _finalizeAcceptedMessage(chat.id, messageId, payloadMap);
+          _processedMessageIds.add(messageId);
           await _firestore.deleteRelayedMessage(userId!, change.doc.id);
           continue;
         }
@@ -2118,12 +2552,22 @@ class MessengerProvider extends ChangeNotifier {
         return;
       }
 
+      // Gleiche Regel wie im Live-Listener — die beiden Pfade sind schon
+      // einmal auseinandergelaufen, deshalb dieselbe Funktion.
       final contact = contactForId(senderId);
-      if (contact == null) {
-        if (kDebugMode) debugPrint('Rejected polled message from unknown sender: $senderId');
-        await _firestore.deleteRelayedMessage(userId!, doc.id);
+      if (_onlyAcceptsRequestFrom(contact)) {
+        await _receiveContactRequest(
+          senderId: senderId,
+          messageId: messageId,
+          payloadMap: payloadMap,
+          docId: doc.id,
+          existing: contact,
+        );
         return;
       }
+      // Siehe Live-Listener: die Einschraenkung auf non-null steckt in
+      // _onlyAcceptsRequestFrom, der Analyzer erkennt sie nicht.
+      if (contact == null) return;
 
       // Centralized trust gate — fail-closed
       final trustError = _validateReceivePermission(contact);
@@ -2200,6 +2644,17 @@ class MessengerProvider extends ChangeNotifier {
       }
       if (sealedSenderId != senderId) {
         _discardPendingHeal(chat.id, messageId);
+        await _firestore.deleteRelayedMessage(userId!, doc.id);
+        return;
+      }
+
+      // Kontaktanfrage von jemandem, den ich selbst schon angefragt habe:
+      // beide sind einverstanden. Sie traegt keinen Inhalt, also entsteht
+      // auch keine Blase.
+      if (innerPayload['_rq'] == 1) {
+        await _applyMutualRequest(contact);
+        await _finalizeAcceptedMessage(chat.id, messageId, payloadMap);
+        _processedMessageIds.add(messageId);
         await _firestore.deleteRelayedMessage(userId!, doc.id);
         return;
       }

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../../theme/app_colors.dart';
 import '../../../../theme/app_spacing.dart';
 import '../../data/models/chat_model.dart';
+import '../../data/models/contact_model.dart';
 
 const _avatarGradients = [
   [Color(0xFF0A84FF), Color(0xFF5856D6)],
@@ -17,11 +18,21 @@ class ChatTile extends StatelessWidget {
   final VoidCallback onTap;
   final VoidCallback? onLongPress;
 
+  /// Anfragezustand des Kontakts. Ist er nicht `established`, steht statt der
+  /// Vorschau eine Markierung — eine offene Anfrage traegt ohnehin keinen
+  /// Inhalt, den man zeigen koennte.
+  final ContactRequestState? requestState;
+
+  /// Beschriftung der Markierung, lokalisiert vom Aufrufer gereicht.
+  final String? requestLabel;
+
   const ChatTile({
     super.key,
     required this.chat,
     required this.onTap,
     this.onLongPress,
+    this.requestState,
+    this.requestLabel,
   });
 
   List<Color> _gradientFor(String name) {
@@ -117,6 +128,32 @@ class ChatTile extends StatelessWidget {
                   // Preview + unread badge
                   Row(
                     children: [
+                      if (requestState != null &&
+                          requestState != ContactRequestState.established)
+                        Expanded(
+                          child: Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 8, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: AppColors.accent.withValues(
+                                      alpha: 0.15),
+                                  borderRadius: BorderRadius.circular(6),
+                                ),
+                                child: Text(
+                                  requestLabel ?? '',
+                                  style: const TextStyle(
+                                    color: AppColors.accent,
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        )
+                      else
                       Expanded(
                         child: chat.isTyping
                             ? _TypingIndicator(isDark: isDark)
