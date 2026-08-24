@@ -961,6 +961,12 @@ class MessengerProvider extends ChangeNotifier {
     final existingChat = chatForContact(senderId);
     final chatId = existingChat?.id ?? _uuid.v4();
 
+    // Ab dem Moment, in dem Kontakt und Chat gespeichert sind, darf der
+    // catch-Zweig unten nichts mehr wegraeumen. Sonst wuerde ein
+    // fehlgeschlagenes Loeschen auf dem Server die gerade aufgebaute Sitzung
+    // gleich wieder zerstoeren.
+    var festgeschrieben = false;
+
     try {
       final plaintext = await _decryptWithRatchet(
           chatId, contact, payloadMap, messageId: messageId);
@@ -972,7 +978,8 @@ class MessengerProvider extends ChangeNotifier {
       if (inner['_sid'] != senderId) {
         _discardPendingHeal(chatId, messageId);
         if (existingChat == null) await _scrubProvisionalSession(chatId);
-        return drop();
+        await drop();
+        return;
       }
 
       // Von Fremden wird ausschliesslich eine Anfrage angenommen.
@@ -982,7 +989,8 @@ class MessengerProvider extends ChangeNotifier {
         }
         _discardPendingHeal(chatId, messageId);
         if (existingChat == null) await _scrubProvisionalSession(chatId);
-        return drop();
+        await drop();
+        return;
       }
 
       // Ab hier ist die Anfrage echt und wird sichtbar.
@@ -1017,6 +1025,7 @@ class MessengerProvider extends ChangeNotifier {
 
       await _finalizeAcceptedMessage(chatId, messageId, payloadMap);
       _processedMessageIds.add(messageId);
+      festgeschrieben = true;
       notifyListeners();
 
       // Direkt angenommen: die Gegenseite wartet sonst weiter auf eine
@@ -1029,9 +1038,17 @@ class MessengerProvider extends ChangeNotifier {
           messageId: _uuid.v4(),
         );
       }
-      return drop();
+      await drop();
+      return;
     } catch (e) {
       if (kDebugMode) debugPrint('Kontaktanfrage nicht entschluesselbar: $e');
+      if (festgeschrieben) {
+        // Die Anfrage steht bereits; hier ist nur das Aufraeumen auf dem
+        // Server schiefgegangen. Die Nachricht bleibt liegen und wird beim
+        // naechsten Durchlauf erneut verarbeitet — sie traegt einen
+        // Handschlag-Kopf, ist also weiterhin entschluesselbar.
+        return;
+      }
       _discardPendingHeal(chatId, messageId);
       if (existingChat == null) await _scrubProvisionalSession(chatId);
       return drop();
