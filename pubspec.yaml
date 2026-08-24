@@ -1,7 +1,17 @@
 ﻿name: kryptaapp
 description: "Krypta ECC – Secure encrypted messenger"
 publish_to: 'none'
-version: 4.1.0+69
+# 4.2.0, nicht 4.1.1: mit der Sprachauswahl, den Kontaktanfragen und dem
+# Aufnahmeschutz kommt echte neue Funktionalitaet dazu, keine Fehlerbehebung.
+#
+# Die Zahl MUSS ueber allem liegen, was App Store Connect schon kennt — dort
+# steht 4.1.0 seit Build 85. Der Preflight prueft das vor dem Bauen; frueher
+# fiel es erst nach 26 Minuten beim Upload auf.
+#
+# Die Build-Nummer hinter dem + ist hier nur Platzhalter: der GitHub-Workflow
+# rechnet sie aus (Offset + Lauf-Nummer) und reicht sie per --build-number
+# durch.
+version: 4.2.0+69
 
 environment:
   sdk: ^3.10.7
