@@ -804,6 +804,15 @@ class AppLocalizationsFr extends AppLocalizations {
   String get contactBlocked => 'Bloqué';
 
   @override
+  String get minute1 => '1 minute';
+
+  @override
+  String get welcomeBack => 'Bon retour';
+
+  @override
+  String get minutes30 => '30 minutes';
+
+  @override
   String get privacyPolicy => 'Politique de confidentialité';
 
   @override

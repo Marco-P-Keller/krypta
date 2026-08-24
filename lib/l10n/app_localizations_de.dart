@@ -799,6 +799,15 @@ class AppLocalizationsDe extends AppLocalizations {
   String get contactBlocked => 'Blockiert';
 
   @override
+  String get minute1 => '1 Minute';
+
+  @override
+  String get welcomeBack => 'Willkommen zurück';
+
+  @override
+  String get minutes30 => '30 Minuten';
+
+  @override
   String get privacyPolicy => 'Datenschutzerklärung';
 
   @override

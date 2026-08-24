@@ -275,6 +275,9 @@
   "blockContactConfirm": "Block this person? They will not be able to message you, and they will not be told.",
   "unblockContact": "Unblock",
   "contactBlocked": "Blocked",
+  "minute1": "1 minute",
+  "welcomeBack": "Welcome back",
+  "minutes30": "30 minutes",
   "privacyPolicy": "Privacy Policy",
   "legalSection": "Legal"
 }

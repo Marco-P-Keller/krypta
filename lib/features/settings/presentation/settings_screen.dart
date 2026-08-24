@@ -782,6 +782,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           HardwareSecurityLevel.softwareOnly =>
                             l10n.hardwareSoftwareSubtitle,
                         },
+                  // Reine Anzeige: es gibt nichts einzustellen. Der Eintrag
+                  // sieht aus wie vorher, reagiert aber nicht mehr auf Tippen.
+                  interactive: false,
                   trailing: _isHardwareWrapped
                       ? const Icon(Icons.check_circle_rounded,
                           color: AppColors.success, size: 18)
@@ -931,8 +934,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
           _Card(isDark: isDark, children: [
             _NavTile(
               icon: Icons.info_outline_rounded,
-              title: l10n.about,
-              subtitle: l10n.version(AppConstants.appVersion),
+              // Die Versionsnummer steht jetzt im Titel statt darunter — sie
+              // ist das, wonach man hier sucht. Sie kommt über --dart-define
+              // aus derselben Quelle wie CFBundleShortVersionString.
+              title: '${l10n.appName} ${l10n.version(AppConstants.appVersion)}',
               onTap: () => _showAboutDialog(context, l10n),
             ),
             _Divider(isDark: isDark),
@@ -1165,6 +1170,13 @@ class _NavTile extends StatelessWidget {
   final Widget? trailing;
   final VoidCallback onTap;
 
+  /// Ob der Eintrag auf Tippen reagiert.
+  ///
+  /// `false` macht ihn zur reinen Anzeige: gleiches Aussehen, aber kein Pfeil
+  /// und keine Reaktion. Für Einträge, hinter denen es nichts einzustellen
+  /// gibt und deren Pfeil sonst etwas verspricht, das nicht kommt.
+  final bool interactive;
+
   const _NavTile({
     required this.icon,
     required this.title,
@@ -1172,6 +1184,7 @@ class _NavTile extends StatelessWidget {
     this.iconColor,
     this.trailing,
     required this.onTap,
+    this.interactive = true,
   });
 
   @override
@@ -1192,12 +1205,14 @@ class _NavTile extends StatelessWidget {
                   ))
           : null,
       trailing: trailing ??
-          Icon(Icons.chevron_right_rounded,
-              size: 18,
-              color: isDark
-                  ? AppColors.textTertiaryDark
-                  : AppColors.textTertiaryLight),
-      onTap: onTap,
+          (interactive
+              ? Icon(Icons.chevron_right_rounded,
+                  size: 18,
+                  color: isDark
+                      ? AppColors.textTertiaryDark
+                      : AppColors.textTertiaryLight)
+              : null),
+      onTap: interactive ? onTap : null,
     );
   }
 }
@@ -1272,10 +1287,16 @@ class _CopyTile extends StatelessWidget {
             ),
         overflow: TextOverflow.ellipsis,
       ),
-      trailing: Icon(Icons.copy_rounded,
-          size: 16,
-          color: isDark ? AppColors.textTertiaryDark : AppColors.textTertiaryLight),
-      onTap: onCopy,
+      // Nur das Symbol kopiert. Die ID selbst ist Anzeige: wer sie liest oder
+      // vorliest, soll sie nicht versehentlich in die Zwischenablage legen.
+      trailing: IconButton(
+        icon: Icon(Icons.copy_rounded,
+            size: 16,
+            color:
+                isDark ? AppColors.textTertiaryDark : AppColors.textTertiaryLight),
+        tooltip: AppLocalizations.of(context)!.copy,
+        onPressed: onCopy,
+      ),
     );
   }
 }

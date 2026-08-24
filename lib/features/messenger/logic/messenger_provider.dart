@@ -6,7 +6,6 @@ import 'package:cryptography/cryptography.dart';
 import 'package:flutter/foundation.dart';
 import 'package:uuid/uuid.dart';
 import '../../../security/encryption/encryption_service.dart';
-import '../../../security/encryption/password_validator.dart';
 import '../../../security/key_management/key_manager.dart';
 import '../../../security/memory/sensitive_buffer.dart';
 import '../../../security/messaging/control_message.dart';
@@ -1817,10 +1816,11 @@ class MessengerProvider extends ChangeNotifier {
     // The sender sees the original text; the recipient sees a locked message.
     String contentForTransmission = text;
     if (hasPassword) {
-      final pwError = PasswordValidator.validate(password);
-      if (pwError != null) {
-        throw ArgumentError('Password too weak: $pwError');
-      }
+      // Keine Mindestregeln für das Passwort einer einzelnen Nachricht —
+      // siehe chat_screen. Argon2id leitet auch aus einem kurzen Passwort
+      // einen brauchbaren Schlüssel ab; der Schutz ist ohnehin nur die
+      // zweite Schicht über der Ende-zu-Ende-Verschlüsselung.
+      //
       // H4-Crypto (audit 2026-05): bind the password-encrypted blob to its
       // cross-device context. NOTE: `chatId` is a per-device local UUID
       // and would not match between sender and recipient — Codex round 1

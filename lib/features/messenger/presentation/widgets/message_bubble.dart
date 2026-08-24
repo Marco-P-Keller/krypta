@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../../../../l10n/app_localizations.dart';
-import '../../../../services/platform/clipboard_helper.dart';
 import '../../../../theme/app_colors.dart';
 import '../../../../theme/app_spacing.dart';
 import '../../data/models/message_model.dart';
@@ -40,19 +39,11 @@ class MessageBubble extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            if (!message.isLocked && message.decryptedContent != null)
-              ListTile(
-                leading: const Icon(Icons.copy_rounded),
-                title: Text(l10n.copy),
-                onTap: () {
-                  // M2-Client: ephemeral copy with auto-clear.
-                  ClipboardHelper.copyEphemeral(message.decryptedContent!);
-                  Navigator.of(ctx).pop();
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text(l10n.copied)),
-                  );
-                },
-              ),
+            // Kein Kopieren aus dem Chat. Die Zwischenablage ist systemweit
+            // lesbar, und was dort landet, ist aus der App heraus nicht mehr
+            // zu schützen — auch die 60-Sekunden-Löschung half nur gegen
+            // Vergessen, nicht gegen einen Mitleser. Einfügen bleibt möglich:
+            // ein anderswo kopierter Text lässt sich weiterhin senden.
             ListTile(
               leading: const Icon(Icons.delete_outline_rounded),
               title: Text(l10n.deleteForMe),

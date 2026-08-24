@@ -238,6 +238,9 @@
   "blockContactConfirm": "Bloquear esta pessoa? Não poderá escrever-lhe e não será informada.",
   "unblockContact": "Desbloquear",
   "contactBlocked": "Bloqueado",
+  "minute1": "1 minuto",
+  "welcomeBack": "Bem-vindo de volta",
+  "minutes30": "30 minutos",
   "privacyPolicy": "Política de privacidade",
   "legalSection": "Informação legal"
 }

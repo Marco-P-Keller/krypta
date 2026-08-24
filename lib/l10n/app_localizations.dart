@@ -1536,6 +1536,24 @@ abstract class AppLocalizations {
   /// **'Blocked'**
   String get contactBlocked;
 
+  /// No description provided for @minute1.
+  ///
+  /// In en, this message translates to:
+  /// **'1 minute'**
+  String get minute1;
+
+  /// No description provided for @welcomeBack.
+  ///
+  /// In en, this message translates to:
+  /// **'Welcome back'**
+  String get welcomeBack;
+
+  /// No description provided for @minutes30.
+  ///
+  /// In en, this message translates to:
+  /// **'30 minutes'**
+  String get minutes30;
+
   /// No description provided for @privacyPolicy.
   ///
   /// In en, this message translates to:

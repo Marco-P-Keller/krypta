@@ -5,6 +5,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:provider/provider.dart';
 import 'l10n/app_localizations.dart';
 import 'core/locale/locale_controller.dart';
+import 'features/auth/presentation/welcome_back_screen.dart';
 import 'features/settings/presentation/language_screen.dart';
 import 'features/messenger/logic/key_publish_status.dart';
 import 'features/auth/presentation/setup_screen.dart';
@@ -75,6 +76,8 @@ enum _AppScreen {
   language,
   setup,
   tutorial,
+  /// Übergang zwischen Taschenrechner und Messenger — begrüßt und lädt.
+  welcomeBack,
   vaultPassword,
   messenger,
   chat,
@@ -131,8 +134,13 @@ class _KryptaShellState extends State<KryptaShell> with WidgetsBindingObserver {
       // something else themselves.
       unawaited(ClipboardHelper.clearEphemeralNow());
 
+      // Die Einrichtung ist ausgenommen: wer beim ersten Start kurz die App
+      // verlässt, soll nicht auf dem Rechner landen, ohne je einen Code
+      // vergeben zu haben. Der Willkommens-Übergang ist NICHT ausgenommen —
+      // dahinter liegt bereits der entsperrte Messenger.
       if (_currentScreen != _AppScreen.calculator &&
           _currentScreen != _AppScreen.setup &&
+          _currentScreen != _AppScreen.language &&
           _currentScreen != _AppScreen.tutorial) {
         // Do NOT disable screenshot protection here — keep it active
         // until the calculator screen is fully visible.
@@ -270,10 +278,23 @@ class _KryptaShellState extends State<KryptaShell> with WidgetsBindingObserver {
     await _unlockMessenger();
   }
 
+  /// Wie lange der Willkommensbildschirm mindestens steht.
+  ///
+  /// Ohne Untergrenze blitzt er auf einem schnellen Gerät nur auf, was
+  /// unruhiger wirkt als gar kein Übergang. Dauert das Laden länger, bleibt
+  /// er entsprechend länger stehen — er ist auch der Ladebildschirm.
+  static const _welcomeBackMinimum = Duration(milliseconds: 900);
+
   Future<void> _unlockMessenger() async {
     final platform = context.read<PlatformSecurityService>();
     final messenger = context.read<MessengerProvider>();
     final integrity = context.read<DeviceIntegrityPolicyService>();
+
+    // Erst der Übergang, dann die Arbeit: Schlüssel laden und den
+    // Aufnahmeschutz einrichten dauert, und solange soll nicht der Rechner
+    // stehenbleiben, als wäre der Code nicht angekommen.
+    if (mounted) setState(() => _currentScreen = _AppScreen.welcomeBack);
+    final gezeigtSeit = DateTime.now();
 
     // Enable screenshot/recording protection BEFORE rendering the messenger.
     // Awaited so the native content mask is installed first. If the OS mask
@@ -300,6 +321,12 @@ class _KryptaShellState extends State<KryptaShell> with WidgetsBindingObserver {
         }
       },
     );
+
+    // Den Rest der Mindestdauer abwarten, falls das Laden schneller war.
+    final verstrichen = DateTime.now().difference(gezeigtSeit);
+    if (verstrichen < _welcomeBackMinimum) {
+      await Future<void>.delayed(_welcomeBackMinimum - verstrichen);
+    }
 
     if (mounted) setState(() => _currentScreen = _AppScreen.messenger);
   }
@@ -454,6 +481,9 @@ class _KryptaShellState extends State<KryptaShell> with WidgetsBindingObserver {
           key: const ValueKey('language'),
           onContinue: () => _navigateTo(_AppScreen.tutorial),
         );
+
+      case _AppScreen.welcomeBack:
+        return const WelcomeBackScreen(key: ValueKey('welcome_back'));
 
       case _AppScreen.tutorial:
         return TutorialScreen(

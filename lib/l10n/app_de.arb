@@ -259,6 +259,9 @@
   "blockContactConfirm": "Diese Person blockieren? Sie kann dir dann nicht mehr schreiben und erfährt nichts davon.",
   "unblockContact": "Blockierung aufheben",
   "contactBlocked": "Blockiert",
+  "minute1": "1 Minute",
+  "welcomeBack": "Willkommen zurück",
+  "minutes30": "30 Minuten",
   "privacyPolicy": "Datenschutzerklärung",
   "legalSection": "Rechtliches"
 }

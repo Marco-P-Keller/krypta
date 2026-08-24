@@ -802,6 +802,15 @@ class AppLocalizationsPt extends AppLocalizations {
   String get contactBlocked => 'Bloqueado';
 
   @override
+  String get minute1 => '1 minuto';
+
+  @override
+  String get welcomeBack => 'Bem-vindo de volta';
+
+  @override
+  String get minutes30 => '30 minutos';
+
+  @override
   String get privacyPolicy => 'Política de privacidade';
 
   @override

@@ -800,6 +800,15 @@ class AppLocalizationsNl extends AppLocalizations {
   String get contactBlocked => 'Geblokkeerd';
 
   @override
+  String get minute1 => '1 minuut';
+
+  @override
+  String get welcomeBack => 'Welkom terug';
+
+  @override
+  String get minutes30 => '30 minuten';
+
+  @override
   String get privacyPolicy => 'Privacyverklaring';
 
   @override

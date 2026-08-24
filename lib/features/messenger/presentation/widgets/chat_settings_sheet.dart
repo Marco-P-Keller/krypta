@@ -39,12 +39,18 @@ const _avatarGradients = [
 ];
 
 class _ChatSettingsSheetState extends State<ChatSettingsSheet> {
+  /// Zeiten für den ganzen Chat. Bewusst gröber als die Auswahl an einer
+  /// einzelnen Nachricht: 30 Sekunden auf alles anzuwenden wäre kein
+  /// Sicherheitsgewinn, sondern ein unbenutzbarer Chat.
+  ///
+  /// Die Uhr läuft je Nachricht erst ab dem Moment, in dem der Empfänger sie
+  /// gelesen hat — siehe `Message.isExpired`.
   static const _timerOptions = <Duration?>[
     null,
-    Duration(seconds: 30),
     Duration(minutes: 5),
+    Duration(minutes: 30),
     Duration(hours: 1),
-    Duration(days: 1),
+    Duration(hours: 24),
     Duration(days: 7),
   ];
 

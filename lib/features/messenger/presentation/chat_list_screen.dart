@@ -233,7 +233,7 @@ class ChatListScreen extends StatelessWidget {
               leading: const Icon(Icons.timer_outlined),
               title: Text(l10n.selfDestructTimerLabel),
               subtitle: chat.defaultSelfDestruct != null
-                  ? Text(_durationLabel(chat.defaultSelfDestruct))
+                  ? Text(_durationLabel(chat.defaultSelfDestruct, l10n))
                   : Text(l10n.off),
               onTap: () {
                 Navigator.of(ctx).pop();
@@ -291,12 +291,15 @@ class ChatListScreen extends StatelessWidget {
 
   void _showTimerPicker(
       BuildContext context, Chat chat, MessengerProvider messenger) {
+    // Dieselben Zeiten wie im Chat-Einstellungsblatt. Bewusst gröber als die
+    // Auswahl an einer einzelnen Nachricht: 30 Sekunden auf einen ganzen Chat
+    // anzuwenden wäre kein Sicherheitsgewinn, sondern ein unbenutzbarer Chat.
     final options = <Duration?>[
       null,
-      const Duration(seconds: 30),
       const Duration(minutes: 5),
+      const Duration(minutes: 30),
       const Duration(hours: 1),
-      const Duration(days: 1),
+      const Duration(hours: 24),
       const Duration(days: 7),
     ];
     final l10n = AppLocalizations.of(context)!;
@@ -324,7 +327,7 @@ class ChatListScreen extends StatelessWidget {
                 ),
                 const SizedBox(width: 12),
                 Text(
-                  _durationLabel(d),
+                  _durationLabel(d, AppLocalizations.of(context)!),
                   style: TextStyle(
                     fontWeight:
                         isSelected ? FontWeight.w600 : FontWeight.w400,
@@ -339,12 +342,18 @@ class ChatListScreen extends StatelessWidget {
     );
   }
 
-  String _durationLabel(Duration? d) {
-    if (d == null) return 'Off';
-    if (d.inSeconds <= 30) return '30 seconds';
-    if (d.inMinutes <= 5) return '5 minutes';
-    if (d.inHours <= 1) return '1 hour';
-    if (d.inDays <= 1) return '1 day';
-    return '1 week';
+  /// Beschriftung einer Selbstzerstörungs-Zeit, übersetzt.
+  ///
+  /// Stand hier zuvor in englischem Klartext — und kannte die neuen Zeiten
+  /// nicht, die für den ganzen Chat wählbar sind.
+  String _durationLabel(Duration? d, AppLocalizations l10n) {
+    if (d == null) return l10n.off;
+    if (d.inSeconds <= 30) return l10n.seconds30;
+    if (d.inMinutes <= 1) return l10n.minute1;
+    if (d.inMinutes <= 5) return l10n.minutes5;
+    if (d.inMinutes <= 30) return l10n.minutes30;
+    if (d.inHours <= 1) return l10n.hour1;
+    if (d.inDays <= 1) return l10n.day1;
+    return l10n.week1;
   }
 }

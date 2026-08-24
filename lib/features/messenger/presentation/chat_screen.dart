@@ -2,7 +2,6 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../l10n/app_localizations.dart';
-import '../../../security/encryption/password_validator.dart';
 import '../../../services/platform/platform_security_service.dart';
 import '../../../theme/app_colors.dart';
 import '../../../widgets/emergency_button.dart';
@@ -121,17 +120,12 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
     final text = _controller.text.trim();
     if (text.isEmpty) return;
 
-    // Pre-validate per-message password before fire-and-forget send.
-    // Without this, a weak password causes sendMessage() to throw an
-    // unhandled ArgumentError after the composer has already been cleared.
-    if (_messagePassword != null &&
-        PasswordValidator.validate(_messagePassword!) != null) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(AppLocalizations.of(context)!.passwordTooWeak),
-        backgroundColor: AppColors.warning,
-      ));
-      return;
-    }
+    // Für das Passwort einer einzelnen Nachricht gelten bewusst keine Regeln
+     // mehr. Es schützt eine Nachricht in einem ohnehin Ende-zu-Ende
+     // verschlüsselten Chat vor jemandem, der einem über die Schulter schaut —
+     // dafür reicht „baum". Erzwungene Sonderzeichen führen hier nur dazu,
+     // dass niemand die Funktion benutzt. Für das Tresor-Passwort, das den
+     // Zugang zur App schützt, gelten die Regeln weiterhin.
 
     final messenger = context.read<MessengerProvider>();
     messenger.sendMessage(
@@ -501,9 +495,9 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
       if (_burnAfterRead) {
         label = l10n.burnAfterRead;
       } else if (!_hasPerMessageOverride && chatDefault != null) {
-        label = l10n.chatDefaultWithTimer(_durationLabel(chatDefault));
+        label = l10n.chatDefaultWithTimer(_durationLabel(chatDefault, l10n));
       } else {
-        label = _durationLabelFor(timerDuration);
+        label = _durationLabel(timerDuration, l10n);
       }
 
       bars.add(_buildInfoBar(
@@ -589,22 +583,20 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
     );
   }
 
-  String _durationLabelFor(Duration? d) {
-    if (d == null) return 'Off';
-    if (d.inSeconds <= 30) return '30s';
-    if (d.inMinutes <= 5) return '5 min';
-    if (d.inHours <= 1) return '1h';
-    if (d.inDays <= 1) return '1 day';
-    return '1 week';
-  }
-
-  String _durationLabel(Duration? d) {
-    if (d == null) return 'Off';
-    if (d.inSeconds <= 30) return '30s';
-    if (d.inMinutes <= 5) return '5 min';
-    if (d.inHours <= 1) return '1h';
-    if (d.inDays <= 1) return '1 day';
-    return '1 week';
+  /// Beschriftung einer Selbstzerstörungs-Zeit, übersetzt.
+  ///
+  /// Ersetzt zwei identische Kopien mit fest verdrahtetem Englisch. Die
+  /// Reihenfolge der Vergleiche ist aufsteigend, damit ein Wert, der genau
+  /// auf einer Grenze liegt, die kürzere Beschriftung bekommt.
+  String _durationLabel(Duration? d, AppLocalizations l10n) {
+    if (d == null) return l10n.off;
+    if (d.inSeconds <= 30) return l10n.seconds30;
+    if (d.inMinutes <= 1) return l10n.minute1;
+    if (d.inMinutes <= 5) return l10n.minutes5;
+    if (d.inMinutes <= 30) return l10n.minutes30;
+    if (d.inHours <= 1) return l10n.hour1;
+    if (d.inDays <= 1) return l10n.day1;
+    return l10n.week1;
   }
 
   /// Die Leiste, die das Schreibfeld ersetzt, solange die Kontaktanfrage
@@ -825,10 +817,11 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
                       PopupMenuItem(
                         value: 'default',
                         child: Text(l10n.chatDefaultWithTimer(
-                            _durationLabel(chat!.defaultSelfDestruct))),
+                            _durationLabel(chat!.defaultSelfDestruct, l10n))),
                       ),
                     PopupMenuItem(value: 'off', child: Text(l10n.off)),
                     PopupMenuItem(value: '30', child: Text(l10n.seconds30)),
+                    PopupMenuItem(value: '60', child: Text(l10n.minute1)),
                     PopupMenuItem(value: '300', child: Text(l10n.minutes5)),
                     PopupMenuItem(value: '3600', child: Text(l10n.hour1)),
                     PopupMenuItem(value: '86400', child: Text(l10n.day1)),

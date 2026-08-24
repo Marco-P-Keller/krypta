@@ -238,6 +238,9 @@
   "blockContactConfirm": "Deze persoon blokkeren? Diegene kan je dan niet meer berichten sturen en hoort daar niets over.",
   "unblockContact": "Deblokkeren",
   "contactBlocked": "Geblokkeerd",
+  "minute1": "1 minuut",
+  "welcomeBack": "Welkom terug",
+  "minutes30": "30 minuten",
   "privacyPolicy": "Privacyverklaring",
   "legalSection": "Juridisch"
 }

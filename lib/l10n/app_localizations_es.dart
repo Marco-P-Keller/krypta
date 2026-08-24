@@ -803,6 +803,15 @@ class AppLocalizationsEs extends AppLocalizations {
   String get contactBlocked => 'Bloqueado';
 
   @override
+  String get minute1 => '1 minuto';
+
+  @override
+  String get welcomeBack => 'Bienvenido de nuevo';
+
+  @override
+  String get minutes30 => '30 minutos';
+
+  @override
   String get privacyPolicy => 'Política de privacidad';
 
   @override
