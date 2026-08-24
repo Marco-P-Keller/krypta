@@ -109,20 +109,122 @@ Grund — und dann lohnt der Umstieg sofort.
 
 ## Deploy
 
-Muss Marco machen — auf `kryptaecc` hat sonst niemand die Rechte.
+Seit 2026-08-24 ist Daniel im Firebase-Projekt, der Deploy hängt also nicht
+mehr allein an Marco.
+
+Wichtig in beiden Wegen: **nicht** `firebase deploy` ohne `--only`. Der würde
+auch Rules und Indexes mitnehmen; das ist in `docs/FIREBASE_RULES_DEPLOY.md`
+bewusst getrennt gehalten.
+
+### Weg 1 — GitHub Actions (bevorzugt)
+
+`.github/workflows/firebase-functions.yml`, Actions → **Firebase Functions**
+→ Run workflow. Braucht keinen lokalen Rechner und keinen Firebase-Login.
+
+Auswahl im Dialog:
+
+| Eingabe | Zweck |
+|---|---|
+| `beide` | Standard — beide Functions |
+| `onNewMessage` | nur der Push-Trigger |
+| `cleanupExpiredMessages` | nur das 24-Stunden-Aufräumen |
+
+Der Lauf prüft vorher `npm ci` und `npm run check`, damit ein Deploy nicht
+mitten drin an einem Syntaxfehler scheitert, und listet danach auf, was
+tatsächlich im Projekt liegt.
+
+**Bewusst nur manuell**, nie automatisch auf Push: ein Functions-Deploy legt
+Trigger und einen Scheduler an, dauert Minuten und wirkt sofort auf das
+Live-Projekt mit echten Nutzern.
+
+**Bewusst ohne `--force`.** Liegen in `kryptaecc` Functions, die es in
+`firebase/functions` nicht gibt, will die CLI sie löschen. Ohne `--force`
+lässt sie sie stehen und meldet es nur. Marco hat einmal „die noch nötigen
+Functions bzw. deren Integration" erwähnt — falls dort etwas liegt, von dem
+dieses Repo nichts weiß, darf ein Deploy von hier es nicht wegräumen.
+
+#### Dienstkonto
+
+Derselbe Secret-Name wie beim Rules-Workflow: `FIREBASE_SERVICE_ACCOUNT`.
+Anlegen wie in `docs/FIREBASE_RULES_DEPLOY.md` Abschnitt 1 beschrieben — nur
+mit mehr Rollen, weil ein Functions-Deploy deutlich mehr anfasst als das
+Veröffentlichen von Regeln:
+
+- **Cloud Functions Admin** (`roles/cloudfunctions.admin`)
+- **Service Account User** (`roles/iam.serviceAccountUser`) — sonst darf das
+  Dienstkonto die Laufzeit-Identität der Function nicht setzen
+- **Cloud Build Editor** (`roles/cloudbuild.builds.editor`) — der Quellcode
+  wird serverseitig gebaut
+- **Artifact Registry Administrator** (`roles/artifactregistry.admin`) — dort
+  landet das gebaute Image
+- **Cloud Scheduler Admin** (`roles/cloudscheduler.admin`) — nur für
+  `cleanupExpiredMessages`
+- **Service Usage Admin** (`roles/serviceusage.serviceUsageAdmin`) — um beim
+  ersten Lauf die nötigen APIs zu aktivieren
+- **Firebase Admin** (`roles/firebase.developAdmin`)
+
+Ehrlich gesagt: diese Liste zusammenzuklicken ist mühsam, und eine fehlende
+Rolle zeigt sich erst mitten im Deploy. Wer es schneller will, gibt dem
+Dienstkonto **Editor** plus **Service Account User** — das deckt alles ab, ist
+aber deutlich mehr Recht als nötig. Falls das Dienstkonto ohnehin nur für
+diesen einen Zweck existiert und der Schlüssel im Repo-Secret liegt, ist das
+vertretbar; sauberer bleibt die Einzelliste.
+
+### Weg 2 — lokal von einem Rechner
+
+Setzt einen interaktiven Browser-Login voraus, geht also nur in einem echten
+Terminal (nicht in einer nicht-interaktiven Shell):
 
 ```
-firebase deploy --only functions --project kryptaecc
+npx firebase-tools login
+npx firebase-tools deploy --only functions --project kryptaecc
 ```
 
-Wichtig: **nicht** `firebase deploy` ohne `--only`. Der würde auch Rules und
-Indexes mitnehmen; das ist in `docs/FIREBASE_RULES_DEPLOY.md` bewusst
-getrennt gehalten.
+Dafür braucht der eingeloggte **Google-Account** dieselben Rechte wie oben
+das Dienstkonto. „Zum Projekt hinzugefügt" allein reicht nicht — mit der
+Rolle *Viewer* scheitert der Deploy an `Permission denied`.
 
-Beim ersten Deploy werden Firestore-Trigger und Scheduler neu angelegt — das
-kann ein paar Minuten dauern und verlangt, dass die nötigen APIs im Projekt
-aktiviert sind (Cloud Functions, Cloud Build, Artifact Registry, Cloud
-Scheduler, Eventarc). Die Firebase CLI bietet an, sie zu aktivieren.
+### Was beim ersten Deploy passiert
+
+Firestore-Trigger und Scheduler werden neu angelegt; das dauert einige
+Minuten. Die nötigen APIs müssen im Projekt aktiviert sein (Cloud Functions,
+Cloud Build, Artifact Registry, Cloud Scheduler, Eventarc) — die CLI bietet
+an, das zu erledigen, wenn die Rechte reichen.
+
+Scheitert genau `cleanupExpiredMessages`, ist fast sicher die fehlende
+App-Engine-App im Projekt der Grund (siehe Abschnitt *1st Gen vs. 2nd Gen*).
+Dann erst einmal nur `onNewMessage` deployen, damit der Push läuft, und die
+Umstellung auf 2nd Gen als eigenen Schritt planen.
+
+### Was der Deploy NICHT repariert
+
+Die Nachrichten selbst laufen nicht über die Functions. `firestore.rules`
+lässt den Absender direkt in `messages/{empfänger}/inbox/` schreiben, und
+`lib/security/transport/privacy_polling.dart` holt diese Inbox alle 10 bis 30
+Sekunden ab. `onNewMessage` verschickt nur die Benachrichtigung.
+
+Nach dem Deploy kommt also der **Hinweis** an, dass etwas da ist. Kommt eine
+Nachricht danach immer noch nicht im Chat an, liegt die Ursache woanders —
+dann ist die Frage an Marco, welche Function die Zustellung machen soll und
+wo ihr Code liegt.
+
+### Damit Push auf iOS überhaupt ankommt
+
+Der Deploy allein genügt nicht. Die Kette ist:
+
+1. `aps-environment` im Entitlement — vorhanden
+   (`ios/Runner/Runner.entitlements`, `RunnerRelease.entitlements`)
+2. **APNs-Auth-Key (`.p8`) in der Firebase Console hinterlegt**, unter
+   Projekteinstellungen → Cloud Messaging → die iOS-App. Fehlt der, kann FCM
+   iOS überhaupt nicht erreichen — unabhängig von den Functions
+3. Regel für `fcmTokens` live, sonst lehnt der Catch-all das Speichern des
+   Tokens ab (`firebase/firestore.rules`)
+4. `onNewMessage` deployt
+
+Punkt 2 ist bisher nirgends geprüft worden. Zu beachten: in
+`lib/services/notification/notification_service.dart` liegt der ganze
+Anmeldevorgang in einem `try`, das den Fehler nur in Debug-Builds ausgibt —
+schlägt einer dieser Schritte fehl, passiert sichtbar **gar nichts**.
 
 ---
 

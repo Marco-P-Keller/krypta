@@ -82,8 +82,10 @@ jobs:
         run: |
           set -euo pipefail
           # Bewusst nur firestore:rules. Ein pauschales `firebase deploy`
-          # würde auch firebase/functions mitnehmen, die in firebase.json
-          # auf der abgekündigten Runtime nodejs18 stehen. firestore:indexes
+          # würde auch firebase/functions mitnehmen — die gehören in einen
+          # eigenen, bewusst ausgelösten Schritt, weil ein Functions-Deploy
+          # Trigger und Scheduler anlegt und Minuten braucht. Dieses
+          # Dienstkonto hat dafür auch nicht die Rollen. firestore:indexes
           # bleibt außen vor, weil firestore.indexes.json leer ist — das
           # spart dem Dienstkonto die Rolle "Cloud Datastore Index Admin".
           npx --yes firebase-tools@"${FIREBASE_TOOLS_VERSION}" deploy \

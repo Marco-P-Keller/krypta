@@ -60,9 +60,13 @@ Actions → **Firebase Rules** → **Run workflow**. Oder einfach die Regeln auf
 Der Workflow ruft `firebase deploy --only firestore:rules` auf, nicht
 `firebase deploy` pauschal. Zwei Gründe:
 
-- **Functions bleiben außen vor.** `firebase.json` stellt `firebase/functions`
-  auf die Runtime `nodejs18`, die Google inzwischen abgekündigt hat. Ein
-  pauschaler Deploy würde daran scheitern – oder Schlimmeres tun.
+- **Functions bleiben außen vor.** Sie gehören in einen eigenen, bewusst
+  ausgelösten Schritt: ein Functions-Deploy legt Firestore-Trigger und
+  Scheduler an, braucht mehrere Minuten und zusätzliche Rollen, die dieses
+  Dienstkonto nicht hat. Siehe `docs/FIREBASE_FUNCTIONS.md`.
+  (Bis `2cb14c9` stand hier, der Deploy scheitere an der abgekündigten
+  Runtime `nodejs18` – das galt, solange `firebase.json` darauf stand. Es
+  steht seither auf `nodejs22`, ein Functions-Deploy ist also möglich.)
 - **Indexes bleiben außen vor.** `firebase/firestore.indexes.json` ist leer
   (`"indexes": []`). Das erspart dem Dienstkonto die Rolle
   *Cloud Datastore Index Admin*.

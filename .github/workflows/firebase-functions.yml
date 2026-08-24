@@ -1,0 +1,149 @@
+name: Firebase Functions
+
+# Deployt firebase/functions nach kryptaecc.
+#
+# Bewusst NUR manuell (workflow_dispatch), nie automatisch auf Push: ein
+# Functions-Deploy legt Firestore-Trigger und einen Scheduler an, braucht
+# mehrere Minuten und wirkt sofort auf das Live-Projekt mit echten Nutzern.
+# Das gehört ausgelöst, nicht nebenbei mitgenommen.
+#
+# Getrennt von firebase-rules.yml, weil beides unterschiedlich gefährlich ist
+# und unterschiedliche Rollen braucht. Siehe docs/FIREBASE_FUNCTIONS.md.
+
+on:
+  workflow_dispatch:
+    inputs:
+      only:
+        description: "Welche Functions deployen"
+        required: false
+        default: beide
+        type: choice
+        options:
+          - beide
+          - onNewMessage
+          - cleanupExpiredMessages
+      reason:
+        description: "Wofür ist dieser Deploy? (steht im Titel des Laufs)"
+        required: false
+        default: "Functions deployen"
+        type: string
+
+run-name: >-
+  Firebase Functions — ${{ inputs.reason }} (${{ inputs.only }})
+
+concurrency:
+  group: firebase-functions
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    name: Functions deployen
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    env:
+      FIREBASE_PROJECT: ${{ vars.FIREBASE_PROJECT_ID || 'kryptaecc' }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # Dieselbe Major-Version wie die Ziel-Runtime in firebase.json und
+      # package.json engines. Sonst prüft der Preflight unten gegen ein
+      # anderes Node als das, auf dem der Code später läuft.
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Ziel bestimmen
+        id: target
+        env:
+          ONLY_INPUT: ${{ inputs.only }}
+        run: |
+          set -euo pipefail
+          case "${ONLY_INPUT}" in
+            onNewMessage)           TARGET="functions:onNewMessage" ;;
+            cleanupExpiredMessages) TARGET="functions:cleanupExpiredMessages" ;;
+            *)                      TARGET="functions" ;;
+          esac
+          echo "target=${TARGET}" >> "$GITHUB_OUTPUT"
+          {
+            echo "### Firebase Functions Deploy"
+            echo ""
+            echo "| | |"
+            echo "|---|---|"
+            echo "| Projekt | \`${FIREBASE_PROJECT}\` |"
+            echo "| Ziel | \`${TARGET}\` |"
+            echo "| Commit | \`${GITHUB_SHA:0:7}\` |"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      # Ein Deploy, der an einem Syntaxfehler scheitert, hat vorher schon
+      # Trigger angefasst. Deshalb erst hier prüfen, wo es nichts kostet.
+      - name: Preflight (Abhängigkeiten und Modul laden)
+        working-directory: firebase/functions
+        run: |
+          set -euo pipefail
+          npm ci --no-audit --no-fund
+          npm run check
+
+      - name: Dienstkonto vorbereiten
+        id: auth
+        env:
+          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+        run: |
+          set -euo pipefail
+          if [ -z "${FIREBASE_SERVICE_ACCOUNT}" ]; then
+            echo "::error::Secret FIREBASE_SERVICE_ACCOUNT fehlt — siehe docs/FIREBASE_FUNCTIONS.md"
+            exit 1
+          fi
+
+          CRED="${RUNNER_TEMP}/firebase-sa.json"
+          # Rohes JSON und Base64-kodiertes JSON werden beide akzeptiert.
+          if [ "${FIREBASE_SERVICE_ACCOUNT:0:1}" = "{" ]; then
+            printf '%s' "${FIREBASE_SERVICE_ACCOUNT}" > "${CRED}"
+          else
+            printf '%s' "${FIREBASE_SERVICE_ACCOUNT}" | tr -d '[:space:]' | base64 -d > "${CRED}"
+          fi
+          chmod 600 "${CRED}"
+
+          node -e 'var sa=JSON.parse(require("fs").readFileSync(process.argv[1],"utf8"));["client_email","private_key","project_id"].forEach(function(k){if(!sa[k]){console.error("::error::Dienstkonto-JSON ohne Feld "+k);process.exit(1);}});console.log("Dienstkonto: "+sa.client_email+" (Projekt "+sa.project_id+")");' "${CRED}"
+
+          echo "cred=${CRED}" >> "$GITHUB_OUTPUT"
+
+      - name: Functions deployen
+        env:
+          GOOGLE_APPLICATION_CREDENTIALS: ${{ steps.auth.outputs.cred }}
+          FIREBASE_TOOLS_VERSION: ${{ vars.FIREBASE_TOOLS_VERSION || 'latest' }}
+          TARGET: ${{ steps.target.outputs.target }}
+        run: |
+          set -euo pipefail
+          # --only ist Pflicht: ein pauschales `firebase deploy` würde Rules
+          # und Indexes mitnehmen, die bewusst über firebase-rules.yml laufen.
+          npx --yes firebase-tools@"${FIREBASE_TOOLS_VERSION}" deploy \
+            --only "${TARGET}" \
+            --project "${FIREBASE_PROJECT}" \
+            --non-interactive
+          # Bewusst OHNE --force. Liegen im Projekt Functions, die es in
+          # firebase/functions nicht gibt, will die CLI sie löschen. Ohne
+          # --force lässt sie sie in Ruhe und sagt es nur. Marco könnte dort
+          # eigene deployt haben, von denen dieses Repo nichts weiß.
+
+      - name: Deployte Functions auflisten
+        if: success()
+        env:
+          GOOGLE_APPLICATION_CREDENTIALS: ${{ steps.auth.outputs.cred }}
+          FIREBASE_TOOLS_VERSION: ${{ vars.FIREBASE_TOOLS_VERSION || 'latest' }}
+        run: |
+          set -euo pipefail
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+          npx --yes firebase-tools@"${FIREBASE_TOOLS_VERSION}" functions:list \
+            --project "${FIREBASE_PROJECT}" \
+            --non-interactive | tee -a "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Zugangsdaten vom Runner entfernen
+        if: always()
+        run: rm -f "${RUNNER_TEMP}/firebase-sa.json"
