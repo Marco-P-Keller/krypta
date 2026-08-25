@@ -72,28 +72,55 @@ class LatestVersion(unittest.TestCase):
 
 
 class CheckDecision(unittest.TestCase):
-    """Was der Preflight meldet — das ist die Zeile, die im Log landet."""
+    """Was der Preflight meldet — das ist die Zeile, die im Log landet.
 
-    def test_ok_when_higher(self):
-        ok, msg = st.check_version("3.0.1", ["1.0.0", "3.0.0"])
+    Zwei verschiedene Regeln, die frueher in einen Topf geworfen wurden:
+    gegen *veroeffentlichte* App-Store-Versionen muss die Version echt
+    hoeher sein (der Zug ist zu), gegen *TestFlight*-Versionen genuegt
+    gleich — derselbe offene Zug nimmt beliebig viele Builds auf, solange
+    die Build-Nummer neu ist.
+    """
+
+    def test_ok_when_higher_than_store(self):
+        ok, msg = st.check_version("3.0.1", ["1.0.0", "3.0.0"], [])
         self.assertTrue(ok)
         self.assertIn("3.0.1", msg)
 
-    def test_fails_when_equal(self):
-        ok, msg = st.check_version("3.0.0", ["3.0.0"])
+    def test_fails_when_equal_to_released_store_version(self):
+        ok, msg = st.check_version("3.0.0", ["3.0.0"], [])
         self.assertFalse(ok)
         self.assertIn("3.0.0", msg)
 
     def test_fails_when_lower_and_names_the_blocker(self):
-        ok, msg = st.check_version("1.0.0", ["1.0.0", "3.0.0"])
+        ok, msg = st.check_version("1.0.0", ["1.0.0", "3.0.0"], [])
         self.assertFalse(ok)
         # Die Meldung muss sagen, wogegen verglichen wurde, sonst raetselt
         # man wieder 26 Minuten lang.
         self.assertIn("3.0.0", msg)
 
     def test_ok_when_app_has_no_versions_yet(self):
-        ok, _ = st.check_version("1.0.0", [])
+        ok, _ = st.check_version("1.0.0", [], [])
         self.assertTrue(ok)
+
+    def test_ok_when_equal_to_open_testflight_train(self):
+        # Genau der Fall vom 2026-08-25: Build 89 liegt als 4.2.0 auf
+        # TestFlight, Build 90 soll unter derselben Version nach. Das ist
+        # der Normalfall beim Testen und wurde faelschlich abgelehnt.
+        ok, msg = st.check_version("4.2.0", ["2.0.0"], ["4.1.0", "4.2.0"])
+        self.assertTrue(ok)
+        self.assertIn("Build-Nummer", msg)
+
+    def test_fails_when_below_an_existing_train(self):
+        # Zurueck auf 4.1.0 waere ein geschlossener Zug — Fehler 90478.
+        ok, msg = st.check_version("4.1.0", ["2.0.0"], ["4.1.0", "4.2.0"])
+        self.assertFalse(ok)
+        self.assertIn("4.2.0", msg)
+
+    def test_store_version_still_wins_over_testflight(self):
+        # Auch wenn TestFlight nur 2.0.0 kennt: 2.0.0 ist veroeffentlicht,
+        # der Zug ist zu.
+        ok, _ = st.check_version("2.0.0", ["2.0.0"], ["2.0.0"])
+        self.assertFalse(ok)
 
 
 class RealWorldData(unittest.TestCase):
@@ -114,11 +141,11 @@ class RealWorldData(unittest.TestCase):
         self.assertNotEqual(latest, "2.0.0")
 
     def test_old_pubspec_version_is_rejected(self):
-        ok, _ = st.check_version("1.0.0", self.known())
+        ok, _ = st.check_version("1.0.0", self.STORE, self.TESTFLIGHT)
         self.assertFalse(ok)
 
     def test_chosen_version_is_accepted(self):
-        ok, _ = st.check_version("4.1.0", self.known())
+        ok, _ = st.check_version("4.1.0", self.STORE, self.TESTFLIGHT)
         self.assertTrue(ok)
 
 

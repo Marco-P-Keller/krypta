@@ -78,20 +78,58 @@ def latest_version(versions):
     return max(usable)[1]
 
 
-def check_version(candidate, known_versions):
-    """Rueckgabe: (ok, Meldung fuers Log)."""
-    latest = latest_version(known_versions)
-    if latest is None:
+def check_version(candidate, store_versions, prerelease_versions):
+    """Rueckgabe: (ok, Meldung fuers Log).
+
+    Zwei Regeln, und es sind wirklich zwei — hier stand frueher nur eine,
+    und die hat am 2026-08-25 einen voellig normalen Upload abgelehnt:
+
+    * Gegen **veroeffentlichte App-Store-Versionen** muss die Version echt
+      hoeher sein. So ein Zug ist zu, Apple nimmt nichts mehr an
+      (Fehler 90062/90186/90478).
+    * Gegen **TestFlight-Versionen** genuegt *gleich*. Ein offener Zug nimmt
+      beliebig viele Builds auf; unterscheiden muessen sie sich nur in der
+      Build-Nummer, nicht in der Version. Genau so testet man ja:
+      4.2.0 (89), 4.2.0 (90), 4.2.0 (91).
+
+    Bewusst streng bleibt die Store-Seite: `appStoreVersions` liefert auch
+    Versionen, die noch gar nicht draussen sind. Die auszusortieren hiesse,
+    sich auf den Zustandsnamen zu verlassen — und ein Irrtum in die andere
+    Richtung kostet einen 26-Minuten-Lauf, waehrend ein zu strenges Nein
+    hier sofort und mit klarer Ansage auffaellt.
+    """
+    store_latest = latest_version(store_versions)
+    pre_latest = latest_version(prerelease_versions)
+
+    if store_latest is None and pre_latest is None:
         return True, (
             f"App Store Connect kennt noch keine Version — {candidate} ist in Ordnung."
         )
-    if is_higher(candidate, latest):
-        return True, f"{candidate} liegt ueber der hoechsten bekannten Version {latest}."
-    return False, (
-        f"Version {candidate} ist nicht hoeher als {latest} (bereits bei App Store "
-        f"Connect). Apple lehnt den Upload ab (Fehler 90062/90186). "
-        f"pubspec.yaml auf etwas ueber {latest} setzen."
-    )
+
+    if store_latest is not None and not is_higher(candidate, store_latest):
+        return False, (
+            f"Version {candidate} ist nicht hoeher als {store_latest}, und die liegt "
+            f"schon als App-Store-Version vor. Der Zug ist zu, Apple lehnt den Upload "
+            f"ab (Fehler 90062/90186). pubspec.yaml auf etwas ueber {store_latest} "
+            f"setzen."
+        )
+
+    if pre_latest is not None and is_higher(pre_latest, candidate):
+        return False, (
+            f"Version {candidate} liegt unter der neuesten TestFlight-Version "
+            f"{pre_latest}. Dieser aeltere Zug nimmt nichts mehr an (Fehler 90478). "
+            f"pubspec.yaml auf mindestens {pre_latest} setzen."
+        )
+
+    if pre_latest is not None and not is_higher(candidate, pre_latest):
+        return True, (
+            f"{candidate} laeuft im offenen TestFlight-Zug {pre_latest} weiter — "
+            f"erlaubt, solange die Build-Nummer neu und hoeher ist."
+        )
+
+    hoechste = store_latest if pre_latest is None else pre_latest
+    return True, f"{candidate} liegt ueber der hoechsten bekannten Version {hoechste}."
+
 
 
 # Die Info.plist-Pruefung (ITSAppUsesNonExemptEncryption gegen
@@ -268,10 +306,17 @@ def cmd_show(args):
     for version in sorted(set(pre), key=lambda v: parse_version(v) or (0, 0, 0)):
         print(f"  {version}")
 
-    highest = latest_version(store + pre)
-    print(f"\nHoechste bekannte Version: {highest}")
-    if highest:
-        print(f"Naechster Upload braucht mehr als {highest}.")
+    store_latest = latest_version(store)
+    pre_latest = latest_version(pre)
+    print()
+    print(f"Hoechste bekannte Version: {latest_version(store + pre)}")
+    if store_latest:
+        print(f"Ueber {store_latest} muss die Version liegen — App Store, Zug zu.")
+    if pre_latest:
+        print(
+            f"Mindestens {pre_latest} muss sie sein (TestFlight); gleich ist "
+            f"erlaubt, dann zaehlt nur eine neue Build-Nummer."
+        )
 
     decls = fetch_encryption_declarations(token, app_id)
     print(f"\nExportkonformitaets-Erklaerungen ({len(decls)}):")
@@ -289,7 +334,7 @@ def cmd_check(args):
     token, app_id, name, bundle_id = _context(args)
     store = fetch_store_versions(token, app_id)
     pre = fetch_prerelease_versions(token, app_id)
-    ok, message = check_version(args.version, store + pre)
+    ok, message = check_version(args.version, store, pre)
     print(f"App: {name} ({bundle_id})")
     print(message)
     if not ok:
