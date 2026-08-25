@@ -48,40 +48,49 @@ class CalculatorDisplay extends StatelessWidget {
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(24, 0, 24, 8),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.end,
-        mainAxisAlignment: MainAxisAlignment.end,
-        children: [
-          if (hasResult && completedExpression.isNotEmpty) ...[
-            Text(
-              completedExpression,
-              style: const TextStyle(
-                color: AppColors.textSecondaryDark,
-                fontSize: 22,
-                fontWeight: FontWeight.w300,
-                letterSpacing: -0.5,
+      // Volle Breite erzwingen. Ohne das ist der Column nur so breit wie sein
+      // breitestes Kind — bei einer einzelnen Ziffer also so breit wie die
+      // Ziffer. `crossAxisAlignment: end` hat dann nichts auszurichten, und
+      // der Column des Bildschirms darüber zentriert den ganzen Block, weil
+      // das seine Voreinstellung ist. Ergebnis: die „0" stand mittig, eine
+      // lange Rechnung dagegen richtig — sie füllte die Breite von selbst.
+      child: SizedBox(
+        width: double.infinity,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.end,
+          mainAxisAlignment: MainAxisAlignment.end,
+          children: [
+            if (hasResult && completedExpression.isNotEmpty) ...[
+              Text(
+                completedExpression,
+                style: const TextStyle(
+                  color: AppColors.textSecondaryDark,
+                  fontSize: 22,
+                  fontWeight: FontWeight.w300,
+                  letterSpacing: -0.5,
+                ),
+                textAlign: TextAlign.right,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
-              textAlign: TextAlign.right,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
+              const SizedBox(height: 4),
+            ],
+            // Lange Ketten dürfen nicht überlaufen — scaleDown verkleinert sie,
+            // statt sie abzuschneiden.
+            FittedBox(
+              fit: BoxFit.scaleDown,
+              alignment: Alignment.centerRight,
+              child: Text(
+                primary,
+                style: AppTypography.calculatorDisplay.copyWith(
+                  color: AppColors.calculatorDisplay,
+                ),
+                textAlign: TextAlign.right,
+                maxLines: 1,
+              ),
             ),
-            const SizedBox(height: 4),
           ],
-          // Lange Ketten dürfen nicht überlaufen — scaleDown verkleinert sie,
-          // statt sie abzuschneiden.
-          FittedBox(
-            fit: BoxFit.scaleDown,
-            alignment: Alignment.centerRight,
-            child: Text(
-              primary,
-              style: AppTypography.calculatorDisplay.copyWith(
-                color: AppColors.calculatorDisplay,
-              ),
-              textAlign: TextAlign.right,
-              maxLines: 1,
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }
