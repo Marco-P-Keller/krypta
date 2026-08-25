@@ -23,6 +23,7 @@ import 'features/settings/presentation/settings_screen.dart';
 import 'security/device/device_integrity_policy.dart';
 import 'services/emergency/emergency_wipe_service.dart';
 import 'services/platform/clipboard_helper.dart';
+import 'services/platform/biometric_outcome.dart';
 import 'services/platform/platform_security_service.dart';
 import 'services/storage/encrypted_local_store.dart';
 import 'services/storage/secure_storage_service.dart';
@@ -249,18 +250,25 @@ class _KryptaShellState extends State<KryptaShell> with WidgetsBindingObserver {
     final biometricEnabled = await storage.isBiometricEnabled();
 
     if (biometricEnabled) {
-      final authenticated = await platform.authenticate(
+      final outcome = await platform.authenticateDetailed(
         reason: l10n.biometricUnlockReason,
       );
       if (!mounted) return;
-      if (!authenticated) {
+      if (outcome != BiometricOutcome.success) {
         // H4: unify biometric fails into the vault counter so an attacker
         // cannot burn through biometric attempts and then get a fresh
         // 5-attempt vault budget.
-        await storage.incrementVaultFailCount();
-        final fails = await storage.getVaultFailCount();
-        if (fails >= SecureStorageService.maxVaultAttempts) {
-          await _handleEmergencyWipe();
+        //
+        // Aber nur eine echte Ablehnung zaehlt. Ein Abbruch oder ein Geraet,
+        // das gerade nicht pruefen kann, ist kein Angriffsversuch — und
+        // fuenf davon wuerden alles loeschen. Zugang gibt es trotzdem
+        // keinen: ohne Erfolg geht es hier nicht weiter.
+        if (outcome.countsAsFailedAttempt) {
+          await storage.incrementVaultFailCount();
+          final fails = await storage.getVaultFailCount();
+          if (fails >= SecureStorageService.maxVaultAttempts) {
+            await _handleEmergencyWipe();
+          }
         }
         return;
       }

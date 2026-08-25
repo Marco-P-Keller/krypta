@@ -4,6 +4,8 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:local_auth/local_auth.dart';
 
+import 'biometric_outcome.dart';
+
 /// Platform security: biometric auth, screenshot protection,
 /// root/jailbreak/Frida/debugger detection, screenshot event detection.
 ///
@@ -70,17 +72,36 @@ class PlatformSecurityService {
     }
   }
 
-  Future<bool> authenticate({String reason = 'Authenticate to continue'}) async {
-    if (kIsWeb) return true;
+  /// Gesicht oder Finger abfragen — mit dem Geräte-Code als Rückfallebene.
+  ///
+  /// `biometricOnly` stand hier auf `true`, und das hat die Sperre des
+  /// Betriebssystems ausgehebelt: erkennt iOS das Gesicht nicht, bietet es
+  /// „Passwort nutzen" an — mit dieser Einstellung durfte es das nicht
+  /// einlösen und meldete stattdessen einen Abbruch. Wer darauf tippte,
+  /// landete zurück im Taschenrechner und kam nicht mehr in seinen eigenen
+  /// Messenger.
+  ///
+  /// Schlimmer noch: dieser Abbruch zählte als Fehlversuch, und fünf davon
+  /// lösen die Notfall-Löschung aus. Ein paarmal auf „Passwort nutzen" tippen
+  /// hätte die Daten vernichtet.
+  ///
+  /// Der Geräte-Code ist hier auch kein Verlust an Sicherheit: die Abfrage
+  /// kommt erst NACH dem Geheimcode des Rechners, und danach steht bei
+  /// eingeschaltetem Tresor noch dessen Passwort.
+  Future<BiometricOutcome> authenticateDetailed({
+    String reason = 'Authenticate to continue',
+  }) async {
+    if (kIsWeb) return BiometricOutcome.success;
     try {
-      return await _localAuth.authenticate(
-        localizedReason: reason,
-        biometricOnly: true,
-      );
-    } catch (_) {
-      return false;
+      final ok = await _localAuth.authenticate(localizedReason: reason);
+      return readBiometricResult(ok, null);
+    } catch (error) {
+      return readBiometricResult(null, error);
     }
   }
+
+  Future<bool> authenticate({String reason = 'Authenticate to continue'}) async =>
+      await authenticateDetailed(reason: reason) == BiometricOutcome.success;
 
   // --- Screenshot Protection ---
 
