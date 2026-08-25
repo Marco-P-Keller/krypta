@@ -176,6 +176,23 @@ void main() {
 
       expect(service.captureSession, 0);
     });
+
+    test('nach dem Ausschalten wird nichts mehr gemeldet', () async {
+      // „Aus" ist eine Zusage an den Nutzer: niemand erfaehrt etwas, auch
+      // die Gegenseite nicht. Ein Ereignis, das nach dem Abschalten noch
+      // hereinkommt, darf sie nicht brechen.
+      handlers['disableSecureFlag'] = (_) => true;
+      final gemeldet = <int>[];
+      final sub = service.onScreenRecordingStarted.listen(gemeldet.add);
+      addTearDown(sub.cancel);
+
+      await service.disableScreenshotProtection();
+      await sende(captureChannel, true);
+      await Future<void>.delayed(Duration.zero);
+
+      expect(gemeldet, isEmpty);
+      expect(service.captureSession, 0);
+    });
   });
 
   group('Bildschirmaufnahme', () {
