@@ -150,5 +150,46 @@ class DecideRevocation(unittest.TestCase):
         self.assertIsNone(chosen)
 
 
+
+
+class CapacityVerdict(unittest.TestCase):
+    """Wann der Zertifikatstopf den Build kippt — und zwar frueh.
+
+    Am 2026-08-25 lief ein Build 22 Minuten, baute jeden Pod, und starb
+    dann im Archive-Schritt an "Your account has reached the maximum number
+    of certificates". Die Zahl der Zertifikate steht binnen Sekunden fest.
+
+    Das Limit rate ich bewusst nicht: es haengt am Accounttyp, und ein zu
+    niedrig geratenes Limit wuerde gesunde Builds blockieren. Ohne bekannte
+    Zahl wird nur gewarnt.
+    """
+
+    def test_no_limit_known_only_warns(self):
+        ok, msg = asc_certs.capacity_verdict(5, limit=None, revoke_enabled=False)
+        self.assertTrue(ok)
+        self.assertIn("5", msg)
+
+    def test_below_limit_is_fine(self):
+        ok, _ = asc_certs.capacity_verdict(1, limit=2, revoke_enabled=False)
+        self.assertTrue(ok)
+
+    def test_at_limit_stops_the_run(self):
+        ok, msg = asc_certs.capacity_verdict(2, limit=2, revoke_enabled=False)
+        self.assertFalse(ok)
+        # Die Meldung muss den Ausweg nennen, sonst sucht man ihn wieder.
+        self.assertIn("revoke_oldest_dev_cert", msg)
+
+    def test_at_limit_passes_when_revoke_is_armed(self):
+        # Der Widerruf-Schritt laeuft gleich danach und macht einen Platz
+        # frei — dann waere ein Abbruch hier falsch.
+        ok, msg = asc_certs.capacity_verdict(2, limit=2, revoke_enabled=True)
+        self.assertTrue(ok)
+        self.assertIn("widerrufen", msg.lower())
+
+    def test_over_limit_also_stops(self):
+        ok, _ = asc_certs.capacity_verdict(3, limit=2, revoke_enabled=False)
+        self.assertFalse(ok)
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)

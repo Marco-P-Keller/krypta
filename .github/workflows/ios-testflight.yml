@@ -109,6 +109,8 @@ jobs:
       - name: Version gegen App Store Connect prüfen
         env:
           ASC_KEY_P8: ${{ secrets.ASC_KEY_P8 }}
+          IOS_DEV_CERT_LIMIT: ${{ vars.IOS_DEV_CERT_LIMIT }}
+          REVOKE_ARMED: ${{ inputs.revoke_oldest_dev_cert && '1' || '' }}
         run: |
           set -euo pipefail
           "${RUNNER_TEMP}/asc-venv/bin/python" scripts/asc_app_state.py show
@@ -119,6 +121,14 @@ jobs:
           # Validierung laesst es durch. Am 2026-08-23 kostete das einen
           # kompletten 43-Minuten-Lauf.
           "${RUNNER_TEMP}/asc-venv/bin/python" scripts/asc_app_state.py check-names
+
+          # Der Zertifikatstopf. Am 2026-08-25 lief ein Build 22 Minuten und
+          # starb dann im Archive-Schritt an "maximum number of
+          # certificates" — die automatische Signatur legt auf jedem frischen
+          # Runner ein neues Development-Zertifikat an, irgendwann ist der
+          # Topf voll. Die Zahl steht hier in Sekunden fest.
+          "${RUNNER_TEMP}/asc-venv/bin/python" scripts/asc_certs.py list
+          "${RUNNER_TEMP}/asc-venv/bin/python" scripts/asc_certs.py check-capacity ${IOS_DEV_CERT_LIMIT:+--limit "${IOS_DEV_CERT_LIMIT}"} ${REVOKE_ARMED:+--revoke-enabled}
 
       # Läuft vor allem Teuren. Jeder dieser Punkte würde den Build sonst
       # erst beim Upload killen — nach ~20 Minuten Build- und Signierzeit.

@@ -207,6 +207,53 @@ def _sort_key(cert):
     return parse_date((cert.get("attributes") or {}).get("createdDate"))
 
 
+def capacity_verdict(count, limit, revoke_enabled):
+    """Reicht der Platz im Development-Topf noch? (ok, Meldung).
+
+    Am 2026-08-25 lief ein Build 22 Minuten — jeder Pod gebaut — und starb
+    dann im Archive-Schritt an "Your account has reached the maximum number
+    of certificates". Die Zahl steht binnen Sekunden fest, der Abbruch
+    gehoert also nach vorn.
+
+    Das Limit wird bewusst nicht geraten: es haengt am Accounttyp, und ein
+    zu niedrig geratenes wuerde gesunde Builds blockieren. Ohne bekannte
+    Zahl (Repository-Variable IOS_DEV_CERT_LIMIT) wird nur gewarnt.
+    """
+    if revoke_enabled:
+        return True, (
+            f"{count} Development-Zertifikat(e); das aelteste wird gleich "
+            f"widerrufen, damit ist wieder Platz."
+        )
+    if limit is None:
+        return True, (
+            f"{count} Development-Zertifikat(e) im Account. Limit unbekannt — "
+            f"setze die Repository-Variable IOS_DEV_CERT_LIMIT auf die Zahl, bei "
+            f"der Apple 'maximum number of certificates' meldet, dann bricht der "
+            f"Lauf hier ab statt nach 20 Minuten."
+        )
+    if count >= limit:
+        return False, (
+            f"{count} von {limit} Development-Zertifikaten belegt — Apple laesst "
+            f"kein weiteres zu, und die automatische Signatur braucht genau eins. "
+            f"Der Archive-Schritt wuerde nach rund 20 Minuten mit 'maximum number "
+            f"of certificates' abbrechen. Lauf mit angehaktem "
+            f"revoke_oldest_dev_cert neu starten."
+        )
+    return True, f"{count} von {limit} Development-Zertifikaten belegt — passt."
+
+
+def cmd_check_capacity(args):
+    token = _token_from_env(args)
+    count = len(filter_revocable(fetch_certificates(token)))
+    ok, message = capacity_verdict(count, args.limit, args.revoke_enabled)
+    print(message)
+    if not ok:
+        print(f"::error::{message}")
+        return 1
+    return 0
+
+
+
 def cmd_list(args):
     token = _token_from_env(args)
     certs = fetch_certificates(token)
@@ -248,6 +295,20 @@ def main(argv=None):
     sub = parser.add_subparsers(dest="command", required=True)
 
     sub.add_parser("list", help="Zertifikate anzeigen").set_defaults(func=cmd_list)
+
+    capacity = sub.add_parser(
+        "check-capacity", help="frueh pruefen, ob noch ein Zertifikat passt"
+    )
+    capacity.add_argument(
+        "--limit", type=int, default=None,
+        help="Zahl der erlaubten Development-Zertifikate; ohne Angabe nur Warnung",
+    )
+    capacity.add_argument(
+        "--revoke-enabled", action="store_true",
+        help="der Widerruf-Schritt laeuft gleich danach — dann nie abbrechen",
+    )
+    capacity.set_defaults(func=cmd_check_capacity)
+
 
     revoke = sub.add_parser(
         "revoke-oldest", help="aeltestes Development-Zertifikat widerrufen"
