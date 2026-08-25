@@ -576,11 +576,11 @@ abstract class AppLocalizations {
   /// **'Clear Chat'**
   String get clearChat;
 
-  /// No description provided for @clearChatConfirm.
+  /// Rueckfrage vor dem Leeren; {name} ist der Kontakt
   ///
   /// In en, this message translates to:
-  /// **'Delete all messages in this chat? This cannot be undone.'**
-  String get clearChatConfirm;
+  /// **'Delete all messages in this chat? On {name}\'s device the messages you sent will disappear too — their own stay. This cannot be undone.'**
+  String clearChatConfirm(String name);
 
   /// No description provided for @autoDeleteTimer.
   ///

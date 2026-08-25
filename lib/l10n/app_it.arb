@@ -78,7 +78,7 @@
   "skip": "Salta",
   "deleteChat": "Elimina chat",
   "clearChat": "Svuota chat",
-  "clearChatConfirm": "Eliminare tutti i messaggi di questa chat? L’operazione non può essere annullata.",
+  "clearChatConfirm": "Eliminare tutti i messaggi di questa chat? Sul dispositivo di {name} spariranno anche i messaggi che hai inviato; i suoi restano. L'operazione non può essere annullata.",
   "autoDeleteTimer": "Timer di cancellazione automatica",
   "autoDeleteHint": "I nuovi messaggi di questa chat si autodistruggeranno dopo il tempo scelto.",
   "chatDefault": "Impostazione predefinita della chat",

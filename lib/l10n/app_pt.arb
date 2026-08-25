@@ -78,7 +78,7 @@
   "skip": "Ignorar",
   "deleteChat": "Eliminar conversa",
   "clearChat": "Limpar conversa",
-  "clearChatConfirm": "Eliminar todas as mensagens desta conversa? Esta ação não pode ser anulada.",
+  "clearChatConfirm": "Eliminar todas as mensagens deste chat? No dispositivo de {name} desaparecem também as mensagens que enviaste — as dele mantêm-se. Isto não pode ser anulado.",
   "autoDeleteTimer": "Temporizador de eliminação automática",
   "autoDeleteHint": "As novas mensagens desta conversa autodestroem-se após o tempo escolhido.",
   "chatDefault": "Predefinição da conversa",

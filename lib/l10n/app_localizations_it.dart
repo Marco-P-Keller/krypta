@@ -253,8 +253,9 @@ class AppLocalizationsIt extends AppLocalizations {
   String get clearChat => 'Svuota chat';
 
   @override
-  String get clearChatConfirm =>
-      'Eliminare tutti i messaggi di questa chat? L’operazione non può essere annullata.';
+  String clearChatConfirm(String name) {
+    return 'Eliminare tutti i messaggi di questa chat? Sul dispositivo di $name spariranno anche i messaggi che hai inviato; i suoi restano. L\'operazione non può essere annullata.';
+  }
 
   @override
   String get autoDeleteTimer => 'Timer di cancellazione automatica';

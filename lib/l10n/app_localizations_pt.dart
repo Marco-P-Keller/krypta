@@ -254,8 +254,9 @@ class AppLocalizationsPt extends AppLocalizations {
   String get clearChat => 'Limpar conversa';
 
   @override
-  String get clearChatConfirm =>
-      'Eliminar todas as mensagens desta conversa? Esta ação não pode ser anulada.';
+  String clearChatConfirm(String name) {
+    return 'Eliminar todas as mensagens deste chat? No dispositivo de $name desaparecem também as mensagens que enviaste — as dele mantêm-se. Isto não pode ser anulado.';
+  }
 
   @override
   String get autoDeleteTimer => 'Temporizador de eliminação automática';

@@ -254,8 +254,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get clearChat => 'Vaciar chat';
 
   @override
-  String get clearChatConfirm =>
-      '¿Borrar todos los mensajes de este chat? Esta acción no se puede deshacer.';
+  String clearChatConfirm(String name) {
+    return '¿Eliminar todos los mensajes de este chat? En el dispositivo de $name también desaparecerán los mensajes que enviaste; los suyos se mantienen. Esto no se puede deshacer.';
+  }
 
   @override
   String get autoDeleteTimer => 'Temporizador de borrado automático';

@@ -16,6 +16,7 @@ import '../../../security/ratchet/ratchet_message.dart';
 import '../../../security/ratchet/ratchet_state.dart';
 import '../../../security/ratchet/replay_guard.dart';
 import 'recording_notice_policy.dart';
+import 'remote_clear_policy.dart';
 import 'contact_request_policy.dart';
 import 'key_publish_status.dart';
 import '../../../security/session/session_errors.dart';
@@ -1413,6 +1414,8 @@ class MessengerProvider extends ChangeNotifier {
         _applyUnlockNotification(ctrl.messageId);
       case 'accepted':
         _applyContactAccepted(contact.id);
+      case 'clearMine':
+        _applyPeerClear(chatId, contact.id);
       case 'screenshot':
         _applySystemEventFromPeer(
             chatId, contact, SystemEventKind.screenshot, ctrl.messageId);
@@ -1737,8 +1740,69 @@ class MessengerProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Clear all messages in a chat but keep the chat itself.
+  /// Die Gegenseite hat ihren Chat geleert.
+  ///
+  /// Entfernt nur, was sie selbst geschrieben hat — siehe
+  /// [removedByPeerClear]. Die Kontrollnachricht ist an ihren Absender
+  /// gebunden (HMAC, Zaehler, Absenderpruefung), sie kann also nicht in
+  /// fremdem Namen aufraeumen.
+  void _applyPeerClear(String chatId, String peerId) {
+    final messages = _messagesByChat[chatId];
+    if (messages == null) return;
+
+    final weg = messages.where((m) => removedByPeerClear(m, peerId)).toList();
+    if (weg.isEmpty) return;
+    messages.removeWhere((m) => removedByPeerClear(m, peerId));
+
+    _localStore.saveMessages(chatId, messages);
+    _pruneUnlockAttempts(weg.map((m) => m.id).toList());
+    if (messages.isEmpty) {
+      final idx = _chats.indexWhere((c) => c.id == chatId);
+      if (idx != -1) {
+        _chats[idx] = _chats[idx].copyWith(
+          lastMessagePreview: null,
+          lastMessageTime: null,
+        );
+        _localStore.saveChats(_chats);
+      }
+    } else {
+      final last = messages.last;
+      _updateChatPreview(chatId, last.decryptedContent ?? '', last.timestamp);
+    }
+    notifyListeners();
+  }
+
+  /// Den Chat leeren — auf beiden Geraeten.
+  ///
+  /// Hier verschwindet alles. Bei der Gegenseite nur, was ich selbst
+  /// geschrieben habe: ihre eigenen Nachrichten gehoeren ihr.
+  ///
+  /// Eine einzige Kontrollnachricht, nicht eine je Nachricht. Ein Chat mit
+  /// tausend Eintraegen wuerde sonst tausend Sendevorgaenge ausloesen, den
+  /// Ratchet-Zaehler durchdrehen lassen und beim ersten Netzfehler halb
+  /// erledigt liegenbleiben.
   Future<void> clearChat(String chatId) async {
+    final chat = chatById(chatId);
+    final contact =
+        chat == null ? null : contactForId(chat.recipientId);
+    final hatEigene =
+        (_messagesByChat[chatId] ?? const []).any((m) => m.senderId == userId);
+    if (contact != null && hatEigene) {
+      try {
+        await _sendControlMessage(
+          chatId: chatId,
+          contact: contact,
+          type: 'clearMine',
+          messageId: _uuid.v4(),
+        );
+      } catch (e) {
+        // Kein Netz, blockiert, keine Sitzung: lokal wird trotzdem geleert.
+        // Der Nutzer hat es angewiesen, und ein halb geleerter Chat waere
+        // schlechter als einer, der drueben stehen bleibt.
+        if (kDebugMode) debugPrint('Chat leeren nicht zustellbar: $e');
+      }
+    }
+
     final removedIds =
         (_messagesByChat[chatId] ?? const []).map((m) => m.id).toList();
     _messagesByChat[chatId]?.clear();

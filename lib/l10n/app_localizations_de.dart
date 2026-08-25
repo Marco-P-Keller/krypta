@@ -251,8 +251,9 @@ class AppLocalizationsDe extends AppLocalizations {
   String get clearChat => 'Chat leeren';
 
   @override
-  String get clearChatConfirm =>
-      'Alle Nachrichten in diesem Chat löschen? Das kann nicht rückgängig gemacht werden.';
+  String clearChatConfirm(String name) {
+    return 'Alle Nachrichten in diesem Chat löschen? Bei $name verschwinden zusätzlich die Nachrichten, die du geschickt hast — ihre eigenen bleiben. Das kann nicht rückgängig gemacht werden.';
+  }
 
   @override
   String get autoDeleteTimer => 'Auto-Lösch-Timer';

@@ -78,7 +78,7 @@
   "skip": "Ignorer",
   "deleteChat": "Supprimer la discussion",
   "clearChat": "Vider la discussion",
-  "clearChatConfirm": "Supprimer tous les messages de cette discussion ? Cette action est irréversible.",
+  "clearChatConfirm": "Supprimer tous les messages de cette conversation ? Chez {name}, les messages que tu as envoyés disparaîtront aussi — les siens restent. Cette action est irréversible.",
   "autoDeleteTimer": "Minuteur d’effacement automatique",
   "autoDeleteHint": "Les nouveaux messages de cette discussion s’autodétruiront après le délai choisi.",
   "chatDefault": "Réglage par défaut de la discussion",

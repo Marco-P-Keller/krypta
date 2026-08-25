@@ -249,8 +249,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get clearChat => 'Clear Chat';
 
   @override
-  String get clearChatConfirm =>
-      'Delete all messages in this chat? This cannot be undone.';
+  String clearChatConfirm(String name) {
+    return 'Delete all messages in this chat? On $name\'s device the messages you sent will disappear too — their own stay. This cannot be undone.';
+  }
 
   @override
   String get autoDeleteTimer => 'Auto-Delete Timer';

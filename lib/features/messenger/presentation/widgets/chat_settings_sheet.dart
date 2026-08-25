@@ -608,11 +608,14 @@ class _ChatSettingsSheetState extends State<ChatSettingsSheet> {
 
   void _confirmClearChat(BuildContext context, MessengerProvider messenger) {
     final l10n = AppLocalizations.of(context)!;
+    // Der Name gehoert in die Rueckfrage: geloescht wird jetzt auch drueben,
+    // und wer das bestaetigt, soll wissen, bei wem.
+    final name = messenger.chatById(widget.chatId)?.recipientName ?? '';
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
         title: Text(l10n.clearChat),
-        content: Text(l10n.clearChatConfirm),
+        content: Text(l10n.clearChatConfirm(name)),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(),

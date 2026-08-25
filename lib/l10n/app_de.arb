@@ -78,7 +78,7 @@
   "skip": "Überspringen",
   "deleteChat": "Chat löschen",
   "clearChat": "Chat leeren",
-  "clearChatConfirm": "Alle Nachrichten in diesem Chat löschen? Das kann nicht rückgängig gemacht werden.",
+  "clearChatConfirm": "Alle Nachrichten in diesem Chat löschen? Bei {name} verschwinden zusätzlich die Nachrichten, die du geschickt hast — ihre eigenen bleiben. Das kann nicht rückgängig gemacht werden.",
   "autoDeleteTimer": "Auto-Lösch-Timer",
   "autoDeleteHint": "Neue Nachrichten in diesem Chat werden nach der gewählten Zeit automatisch gelöscht.",
   "chatDefault": "Chat-Standard",

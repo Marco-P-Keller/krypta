@@ -88,7 +88,7 @@
   "skip": "Skip",
   "deleteChat": "Delete Chat",
   "clearChat": "Clear Chat",
-  "clearChatConfirm": "Delete all messages in this chat? This cannot be undone.",
+  "clearChatConfirm": "Delete all messages in this chat? On {name}'s device the messages you sent will disappear too — their own stay. This cannot be undone.",
   "autoDeleteTimer": "Auto-Delete Timer",
   "autoDeleteHint": "New messages in this chat will automatically self-destruct after the selected time.",
   "chatDefault": "Chat default",
@@ -345,5 +345,13 @@
   "verifiedContact": "verified",
   "@verifiedContact": {
     "description": "Steht im Chat klein unter dem Namen"
+  },
+  "@clearChatConfirm": {
+    "description": "Rueckfrage vor dem Leeren; {name} ist der Kontakt",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
   }
 }

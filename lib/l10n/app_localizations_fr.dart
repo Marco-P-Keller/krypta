@@ -253,8 +253,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String get clearChat => 'Vider la discussion';
 
   @override
-  String get clearChatConfirm =>
-      'Supprimer tous les messages de cette discussion ? Cette action est irréversible.';
+  String clearChatConfirm(String name) {
+    return 'Supprimer tous les messages de cette conversation ? Chez $name, les messages que tu as envoyés disparaîtront aussi — les siens restent. Cette action est irréversible.';
+  }
 
   @override
   String get autoDeleteTimer => 'Minuteur d’effacement automatique';

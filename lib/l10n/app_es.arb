@@ -78,7 +78,7 @@
   "skip": "Omitir",
   "deleteChat": "Borrar chat",
   "clearChat": "Vaciar chat",
-  "clearChatConfirm": "¿Borrar todos los mensajes de este chat? Esta acción no se puede deshacer.",
+  "clearChatConfirm": "¿Eliminar todos los mensajes de este chat? En el dispositivo de {name} también desaparecerán los mensajes que enviaste; los suyos se mantienen. Esto no se puede deshacer.",
   "autoDeleteTimer": "Temporizador de borrado automático",
   "autoDeleteHint": "Los mensajes nuevos de este chat se autodestruirán tras el tiempo seleccionado.",
   "chatDefault": "Valor por defecto del chat",

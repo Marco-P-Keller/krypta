@@ -250,8 +250,9 @@ class AppLocalizationsNl extends AppLocalizations {
   String get clearChat => 'Gesprek leegmaken';
 
   @override
-  String get clearChatConfirm =>
-      'Alle berichten in dit gesprek verwijderen? Dit kan niet ongedaan worden gemaakt.';
+  String clearChatConfirm(String name) {
+    return 'Alle berichten in deze chat verwijderen? Bij $name verdwijnen ook de berichten die jij hebt gestuurd — die van hen blijven staan. Dit kan niet ongedaan worden gemaakt.';
+  }
 
   @override
   String get autoDeleteTimer => 'Timer voor automatisch wissen';
