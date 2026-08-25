@@ -21,7 +21,7 @@ class AppLocalizationsNl extends AppLocalizations {
   String get settings => 'Instellingen';
 
   @override
-  String get chats => 'Gesprekken';
+  String get chats => 'Chats';
 
   @override
   String get contacts => 'Contacten';

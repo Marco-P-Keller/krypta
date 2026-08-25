@@ -21,7 +21,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get settings => 'Réglages';
 
   @override
-  String get chats => 'Discussions';
+  String get chats => 'Chats';
 
   @override
   String get contacts => 'Contacts';

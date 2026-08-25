@@ -40,6 +40,12 @@ class ChatListScreen extends StatelessWidget {
         title: Text(
           l10n.chats,
           style: Theme.of(context).textTheme.headlineLarge,
+          // Zwischen Zurueck-Pfeil und zwei Symbolen ist in dieser Schriftgroesse
+          // kaum Platz. Deshalb heisst der Titel in allen Sprachen „Chats" —
+          // und falls doch einmal etwas Laengeres hier landet, wird es
+          // abgeschnitten statt ueber den Rand zu laufen.
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
         ),
         actions: [
           IconButton(

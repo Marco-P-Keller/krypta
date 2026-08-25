@@ -21,7 +21,7 @@ class AppLocalizationsPt extends AppLocalizations {
   String get settings => 'Definições';
 
   @override
-  String get chats => 'Conversas';
+  String get chats => 'Chats';
 
   @override
   String get contacts => 'Contactos';
