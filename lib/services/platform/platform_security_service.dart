@@ -144,9 +144,14 @@ class PlatformSecurityService {
   ///
   /// Der Wert ist immer `false`: verhindert wurde nichts, iOS meldet den
   /// Screenshot erst danach. Der Strom selbst ist das Ereignis.
+  /// Der native Kanal wird geoeffnet, sobald ein Chat zuhoert — unabhaengig
+  /// davon, ob der Hinweis eingeschaltet ist. Deshalb wird hier gefiltert:
+  /// „aus" ist eine Zusage an den Nutzer, und ohne diese Sperre bekaeme die
+  /// Gegenseite eine Meldung, obwohl er den Hinweis abgeschaltet hat.
   Stream<bool> get onScreenshotDetected {
     _screenshotStream ??= _screenshotEventChannel
         .receiveBroadcastStream()
+        .where((_) => _screenshotProtectionActive)
         .map((event) => event == true)
         .handleError((_) {});
     return _screenshotStream!;

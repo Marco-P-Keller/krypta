@@ -90,4 +90,48 @@ void main() {
           .senderId, 'du');
     });
   });
+
+  group('Der Hinweis ueberlebt die Bearbeitung', () {
+    Message hinweis() => Message(
+          id: 'm1',
+          chatId: 'c1',
+          senderId: 'a',
+          recipientId: 'b',
+          encryptedContent: '',
+          timestamp: DateTime(2026, 8, 25),
+          systemEvent: SystemEventKind.screenshot,
+        );
+
+    test('copyWith behaelt die Art des Ereignisses', () {
+      // Ohne das wird aus dem Hinweis eine gewoehnliche Nachricht ohne
+      // Inhalt — und die zeigt die Blase als „••••••" an. Genau das ist der
+      // Gegenseite auf Build 90 passiert.
+      final kopie = hinweis().copyWith(status: MessageStatus.read);
+
+      expect(kopie.systemEvent, SystemEventKind.screenshot);
+      expect(kopie.isSystemEvent, isTrue);
+    });
+
+    test('auch wenn der Klartext geloescht wird', () {
+      // Beim Verlassen des Chats raeumt der Provider den Klartext aus dem
+      // Speicher. Der Hinweis hat gar keinen — er darf dabei nicht kippen.
+      final kopie = hinweis().copyWith(decryptedContent: null);
+
+      expect(kopie.isSystemEvent, isTrue);
+    });
+
+    test('eine gewoehnliche Nachricht wird dabei keiner', () {
+      final normal = Message(
+        id: 'm2',
+        chatId: 'c1',
+        senderId: 'a',
+        recipientId: 'b',
+        encryptedContent: 'x',
+        timestamp: DateTime(2026, 8, 25),
+        decryptedContent: 'Hallo',
+      );
+
+      expect(normal.copyWith(status: MessageStatus.read).isSystemEvent, isFalse);
+    });
+  });
 }

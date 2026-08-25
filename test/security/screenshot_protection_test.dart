@@ -98,6 +98,8 @@ void main() {
 
   group('Screenshot-Ereignisse', () {
     test('der Strom meldet jeden Screenshot', () async {
+      handlers['enableSecureFlag'] = (_) => true;
+      await service.enableScreenshotProtection();
       final gesehen = <bool>[];
       final sub = service.onScreenshotDetected.listen(gesehen.add);
       addTearDown(sub.cancel);
@@ -192,6 +194,34 @@ void main() {
 
       expect(gemeldet, isEmpty);
       expect(service.captureSession, 0);
+    });
+  });
+
+  group('Screenshot-Erkennung folgt dem Schalter', () {
+    test('ausgeschaltet erreicht kein Screenshot mehr die App', () async {
+      // Der native Ereigniskanal wird geoeffnet, sobald ein Chat zuhoert —
+      // unabhaengig davon, ob der Hinweis eingeschaltet ist. Ohne diese
+      // Sperre wuerde die Gegenseite eine Meldung bekommen, obwohl der
+      // Nutzer den Hinweis abgeschaltet hat.
+      final gesehen = <bool>[];
+      final sub = service.onScreenshotDetected.listen(gesehen.add);
+      addTearDown(sub.cancel);
+
+      await sende(screenshotChannel, false);
+      await Future<void>.delayed(Duration.zero);
+      expect(gesehen, isEmpty, reason: 'nie eingeschaltet');
+
+      handlers['enableSecureFlag'] = (_) => true;
+      await service.enableScreenshotProtection();
+      await sende(screenshotChannel, false);
+      await Future<void>.delayed(Duration.zero);
+      expect(gesehen, hasLength(1));
+
+      handlers['disableSecureFlag'] = (_) => true;
+      await service.disableScreenshotProtection();
+      await sende(screenshotChannel, false);
+      await Future<void>.delayed(Duration.zero);
+      expect(gesehen, hasLength(1), reason: 'nach dem Ausschalten nichts mehr');
     });
   });
 

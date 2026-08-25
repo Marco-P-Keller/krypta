@@ -362,7 +362,17 @@ import Security
 
   // MARK: - Screenshot Event Detection
 
+  /// NotificationCenter fasst mehrfaches Registrieren NICHT zusammen: wer
+  /// denselben Beobachter zweimal anmeldet, bekommt jede Meldung zweimal.
+  /// Genau das passierte auf Build 90 — `enableSecureFlag` meldete an, und
+  /// der Stream-Handler tat es beim Zuhoeren gleich noch einmal. Ein
+  /// Screenshot erzeugte dadurch zwei Hinweise, und die Gegenseite bekam
+  /// zwei Meldungen.
+  private var screenshotObserverInstalled = false
+
   func startScreenshotDetection() {
+    guard !screenshotObserverInstalled else { return }
+    screenshotObserverInstalled = true
     NotificationCenter.default.addObserver(
       self,
       selector: #selector(screenshotTaken),
@@ -372,6 +382,8 @@ import Security
   }
 
   func stopScreenshotDetection() {
+    guard screenshotObserverInstalled else { return }
+    screenshotObserverInstalled = false
     NotificationCenter.default.removeObserver(
       self,
       name: UIApplication.userDidTakeScreenshotNotification,
@@ -396,15 +408,18 @@ class ScreenshotStreamHandler: NSObject, FlutterStreamHandler {
     self.delegate = delegate
   }
 
+  // Nur die Leitung, nicht der Schalter: ob ueberhaupt erkannt wird,
+  // entscheiden `enableSecureFlag` und `disableSecureFlag` — so wie bei der
+  // Bildschirmaufnahme auch. Wuerde das Zuhoeren die Erkennung selbst
+  // starten, liefe sie wieder an, sobald ein Chat geoeffnet wird, obwohl der
+  // Nutzer den Hinweis abgeschaltet hat.
   func onListen(withArguments arguments: Any?, eventSink events: @escaping FlutterEventSink) -> FlutterError? {
     delegate?.screenshotEventSink = events
-    delegate?.startScreenshotDetection()
     return nil
   }
 
   func onCancel(withArguments arguments: Any?) -> FlutterError? {
     delegate?.screenshotEventSink = nil
-    delegate?.stopScreenshotDetection()
     return nil
   }
 }

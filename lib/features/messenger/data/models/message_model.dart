@@ -97,6 +97,11 @@ class Message extends Equatable {
       burnAfterRead: burnAfterRead,
       isPasswordProtected: isPasswordProtected,
       passwordUnlocked: passwordUnlocked ?? this.passwordUnlocked,
+      // Nicht vergessen: ohne diese Zeile wird aus einem Systemhinweis eine
+      // gewoehnliche Nachricht ohne Inhalt, und die Blase zeigt „••••••".
+      // Genau das passierte der Gegenseite, sobald der Provider beim
+      // Verlassen des Chats den Klartext ausraeumte.
+      systemEvent: systemEvent,
     );
   }
 
