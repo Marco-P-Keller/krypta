@@ -1193,6 +1193,7 @@ class MessengerProvider extends ChangeNotifier {
   /// Single trust gate for sending. Fail-closed.
   /// Returns null if permitted, or error string if blocked.
   String? _validateSendPermission(Contact contact) {
+    if (contact.isGone) return 'gone';
     if (contact.isBlocked) return 'blocked';
     if (contact.hasKeyChanged) return 'key_changed';
     if (!contact.canSendMessages) return 'trust_insufficient';
@@ -1416,6 +1417,8 @@ class MessengerProvider extends ChangeNotifier {
         _applyContactAccepted(contact.id);
       case 'clearMine':
         _applyPeerClear(chatId, contact.id);
+      case 'gone':
+        await _applyPeerGone(chatId, contact.id);
       case 'screenshot':
         _applySystemEventFromPeer(
             chatId, contact, SystemEventKind.screenshot, ctrl.messageId);
@@ -1740,6 +1743,30 @@ class MessengerProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Die Gegenseite hat die Notfall-Loeschung ausgeloest.
+  ///
+  /// Ihre Nachrichten verschwinden, im Verlauf steht ein Hinweis, und
+  /// geschrieben werden kann nicht mehr: Schluessel und Konto sind auf dem
+  /// Server geloescht, eine Nachricht kaeme nie an. Der Chat bleibt lesbar —
+  /// was ich geschrieben habe, gehoert weiterhin mir.
+  Future<void> _applyPeerGone(String chatId, String peerId) async {
+    _applyPeerClear(chatId, peerId);
+
+    final idx = _contacts.indexWhere((c) => c.id == peerId);
+    if (idx != -1 && !_contacts[idx].isGone) {
+      _contacts[idx] = _contacts[idx].copyWith(isGone: true);
+      await _localStore.saveContacts(_contacts);
+    }
+
+    _appendSystemEvent(
+      chatId: chatId,
+      kind: SystemEventKind.accountDeleted,
+      senderId: peerId,
+      recipientId: userId ?? '',
+      messageId: _uuid.v4(),
+    );
+  }
+
   /// Die Gegenseite hat ihren Chat geleert.
   ///
   /// Entfernt nur, was sie selbst geschrieben hat — siehe
@@ -1771,6 +1798,43 @@ class MessengerProvider extends ChangeNotifier {
     }
     notifyListeners();
   }
+
+  /// Allen Kontakten sagen, dass es dieses Konto gleich nicht mehr gibt.
+  ///
+  /// Muss VOR dem Loeschen laufen: danach sind Schluessel und Sitzungen weg
+  /// und es laesst sich nichts mehr senden.
+  ///
+  /// Streng begrenzt auf [_wipeAnnounceTimeout]. Die Notfall-Loeschung ist
+  /// ein Panikknopf — sie darf unter keinen Umstaenden am Netz haengen
+  /// bleiben. Wer sie drueckt, hat es eilig. Was in der Zeit rausgeht, geht
+  /// raus; der Rest faellt weg, und die Gegenseite merkt es spaetestens
+  /// daran, dass ihre Nachrichten nicht mehr zugestellt werden.
+  Future<void> _announceGone() async {
+    if (userId == null) return;
+    final sendungen = <Future<void>>[];
+    for (final chat in List<Chat>.from(_chats)) {
+      final contact = contactForId(chat.recipientId);
+      if (contact == null || contact.isGone) continue;
+      if (!_ratchetStates.containsKey(chat.id)) continue;
+      sendungen.add(
+        _sendControlMessage(
+          chatId: chat.id,
+          contact: contact,
+          type: 'gone',
+          messageId: _uuid.v4(),
+        ).catchError((_) {}),
+      );
+    }
+    if (sendungen.isEmpty) return;
+    try {
+      await Future.wait(sendungen).timeout(_wipeAnnounceTimeout);
+    } catch (_) {
+      // Zeit abgelaufen oder Senden fehlgeschlagen. Beides aendert nichts:
+      // geloescht wird trotzdem, und zwar jetzt.
+    }
+  }
+
+  static const Duration _wipeAnnounceTimeout = Duration(seconds: 3);
 
   /// Den Chat leeren — auf beiden Geraeten.
   ///
@@ -3499,6 +3563,7 @@ class MessengerProvider extends ChangeNotifier {
   // --- Wipe ---
 
   Future<void> wipeAll() async {
+    await _announceGone();
     _stopSync();
     // Zero private key bytes in ratchet states before clearing references.
     // Best-effort: Dart GC may retain copies, but this prevents casual inspection.

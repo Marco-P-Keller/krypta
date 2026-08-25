@@ -39,12 +39,18 @@ class SystemEventRow extends StatelessWidget {
         return isMine
             ? l10n.recordingByYou
             : l10n.recordingByPeer(peerName);
+      case SystemEventKind.accountDeleted:
+        // Immer über die Gegenseite: das eigene Konto zu löschen räumt auch
+        // den eigenen Verlauf ab, ein Hinweis an mich selbst hätte niemanden,
+        // der ihn liest.
+        return l10n.accountGone(peerName);
     }
   }
 
   IconData get _icon => switch (message.systemEvent!) {
         SystemEventKind.screenshot => Icons.screenshot_rounded,
         SystemEventKind.screenRecording => Icons.videocam_rounded,
+        SystemEventKind.accountDeleted => Icons.person_off_rounded,
       };
 
   @override

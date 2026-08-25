@@ -850,4 +850,13 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get verifiedContact => 'vérifié';
+
+  @override
+  String accountGone(String name) {
+    return '$name n\'existe plus';
+  }
+
+  @override
+  String get accountGoneCannotWrite =>
+      'Ce compte n\'existe plus — impossible d\'écrire ici.';
 }

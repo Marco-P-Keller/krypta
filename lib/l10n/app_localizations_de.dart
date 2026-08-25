@@ -846,4 +846,13 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get verifiedContact => 'bestätigt';
+
+  @override
+  String accountGone(String name) {
+    return '$name gibt es nicht mehr';
+  }
+
+  @override
+  String get accountGoneCannotWrite =>
+      'Dieses Konto existiert nicht mehr — hier lässt sich nichts mehr schreiben.';
 }

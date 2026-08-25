@@ -272,5 +272,7 @@
   "safetyNumberDiffers": "Die Nummern stimmen nicht überein.",
   "safetyNumberDiffersHint": "Möglicherweise hört jemand mit. Schick nichts Vertrauliches, bis ihr das persönlich geklärt habt.",
   "safetyNumberNotRecognised": "Das ist keine Sicherheitsnummer. Scanne den Code, der bei deinem Kontakt unter der Sicherheitsnummer steht.",
-  "verifiedContact": "bestätigt"
+  "verifiedContact": "bestätigt",
+  "accountGone": "{name} gibt es nicht mehr",
+  "accountGoneCannotWrite": "Dieses Konto existiert nicht mehr — hier lässt sich nichts mehr schreiben."
 }

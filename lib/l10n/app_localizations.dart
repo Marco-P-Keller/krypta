@@ -1619,6 +1619,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'verified'**
   String get verifiedContact;
+
+  /// Hinweis im Verlauf nach der Notfall-Loeschung der Gegenseite
+  ///
+  /// In en, this message translates to:
+  /// **'{name} no longer exists'**
+  String accountGone(String name);
+
+  /// Statt des Eingabefelds im Chat
+  ///
+  /// In en, this message translates to:
+  /// **'This account no longer exists — you can\'t write here.'**
+  String get accountGoneCannotWrite;
 }
 
 class _AppLocalizationsDelegate

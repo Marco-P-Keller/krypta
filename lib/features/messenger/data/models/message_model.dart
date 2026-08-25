@@ -15,6 +15,10 @@ enum SystemEventKind {
 
   /// Jemand nimmt den Bildschirm auf oder spiegelt ihn.
   screenRecording,
+
+  /// Die Gegenseite hat die Notfall-Löschung ausgelöst. Das Konto gibt es
+  /// nicht mehr — eine Nachricht dorthin käme nie an.
+  accountDeleted,
 }
 
 class Message extends Equatable {
@@ -160,14 +164,23 @@ class Message extends Equatable {
       passwordUnlocked: (map['pwUnlocked'] as int?) == 1,
       // Fehlt das Feld, stammt der Eintrag aus der Zeit vor den
       // Systemhinweisen — dann ist es eine gewöhnliche Nachricht.
-      systemEvent: map['sysEvent'] != null
-          ? SystemEventKind.values[map['sysEvent'] as int]
-          : null,
+      // Eine unbekannte Nummer darf hier nicht werfen: loadMessages fängt
+      // Fehler ab und gibt eine LEERE Liste zurück — ein einziger Eintrag
+      // aus einer neueren Version würde sonst den ganzen Verlauf
+      // verschwinden lassen. Dann lieber eine gewöhnliche Nachricht.
+      systemEvent: _decodeSystemEvent(map['sysEvent']),
     );
   }
 
   @override
   List<Object?> get props => [id, chatId, senderId, timestamp, status];
+
+  /// Systemereignis aus dem Speicher lesen; Unbekanntes wird zu `null`.
+  static SystemEventKind? _decodeSystemEvent(Object? raw) {
+    if (raw is! int) return null;
+    if (raw < 0 || raw >= SystemEventKind.values.length) return null;
+    return SystemEventKind.values[raw];
+  }
 
   /// A2: safe decode for stored self-destruct milliseconds.
   /// Non-positive → null; capped at 30 days.

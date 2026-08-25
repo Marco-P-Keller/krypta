@@ -58,6 +58,14 @@ class Contact extends Equatable {
   /// Cryptographic trust state — determines if sending is allowed.
   final TrustState trustState;
 
+  /// Ob dieses Konto gelöscht wurde.
+  ///
+  /// Gesetzt, wenn die Gegenseite die Notfall-Löschung ausgelöst hat. Danach
+  /// ist Schreiben zwecklos: Schlüssel und Konto sind auf dem Server weg, eine
+  /// Nachricht käme nie an. Der Chat bleibt lesbar — was da steht, gehört
+  /// weiterhin mir.
+  final bool isGone;
+
   /// Ob der Kontakt zustande gekommen ist. Siehe [ContactRequestState].
   final ContactRequestState requestState;
 
@@ -130,6 +138,7 @@ class Contact extends Equatable {
     this.keyChangeCount = 0,
     this.lastVerifiedEpoch,
     this.transparencyVerified = false,
+    this.isGone = false,
   }) : keyFingerprint = _computeFingerprint(publicKey);
 
   /// For deserialization — fingerprint is provided, not computed.
@@ -152,6 +161,7 @@ class Contact extends Equatable {
     this.keyChangeCount = 0,
     this.lastVerifiedEpoch,
     this.transparencyVerified = false,
+    this.isGone = false,
   });
 
   static String _computeFingerprint(Uint8List key) {
@@ -182,6 +192,7 @@ class Contact extends Equatable {
   /// Blockierung — und solange die Kontaktanfrage nicht angenommen ist.
   /// Die Anfrage selbst läuft an dieser Sperre vorbei, über einen eigenen Weg.
   bool get canSendMessages =>
+      !isGone &&
       trustState != TrustState.keyChanged &&
       trustState != TrustState.blocked &&
       requestState == ContactRequestState.established;
@@ -218,6 +229,7 @@ class Contact extends Equatable {
     int? keyChangeCount,
     Object? lastVerifiedEpoch = _sentinel,
     bool? transparencyVerified,
+    bool? isGone,
   }) {
     final newPublicKey = publicKey ?? this.publicKey;
     return Contact._internal(
@@ -258,6 +270,7 @@ class Contact extends Equatable {
           : lastVerifiedEpoch as int?,
       transparencyVerified:
           transparencyVerified ?? this.transparencyVerified,
+      isGone: isGone ?? this.isGone,
     );
   }
 
@@ -287,6 +300,7 @@ class Contact extends Equatable {
         if (lastVerifiedEpoch != null)
           'ktEpoch': lastVerifiedEpoch,
         'ktVerified': transparencyVerified,
+        'gone': isGone,
       };
 
   factory Contact.fromMap(Map<String, dynamic> map) {
@@ -336,6 +350,7 @@ class Contact extends Equatable {
       keyChangeCount: (map['keyChangeCount'] as int?) ?? 0,
       lastVerifiedEpoch: map['ktEpoch'] as int?,
       transparencyVerified: (map['ktVerified'] as bool?) ?? false,
+      isGone: (map['gone'] as bool?) ?? false,
     );
   }
 

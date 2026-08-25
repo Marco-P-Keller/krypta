@@ -251,5 +251,7 @@
   "safetyNumberDiffers": "I numeri non coincidono.",
   "safetyNumberDiffersHint": "Qualcuno potrebbe intercettare questa conversazione. Non inviare nulla di riservato finché non lo verificate di persona.",
   "safetyNumberNotRecognised": "Questo non è un numero di sicurezza. Scansiona il codice che il tuo contatto mostra sotto il numero di sicurezza.",
-  "verifiedContact": "verificato"
+  "verifiedContact": "verificato",
+  "accountGone": "{name} non esiste più",
+  "accountGoneCannotWrite": "Questo account non esiste più: qui non si può più scrivere."
 }

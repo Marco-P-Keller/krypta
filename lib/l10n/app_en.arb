@@ -353,5 +353,18 @@
         "type": "String"
       }
     }
+  },
+  "accountGone": "{name} no longer exists",
+  "@accountGone": {
+    "description": "Hinweis im Verlauf nach der Notfall-Loeschung der Gegenseite",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "accountGoneCannotWrite": "This account no longer exists — you can't write here.",
+  "@accountGoneCannotWrite": {
+    "description": "Statt des Eingabefelds im Chat"
   }
 }

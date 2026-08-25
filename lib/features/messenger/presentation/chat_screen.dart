@@ -769,6 +769,49 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
         ? AppColors.textTertiaryDark
         : AppColors.textTertiaryLight;
 
+    // Gibt es das Konto nicht mehr, steht hier kein Eingabefeld. Eines
+    // anzubieten, aus dem nichts herauskommt, waere eine Luege: Schluessel
+    // und Konto sind auf dem Server geloescht, die Nachricht kaeme nie an.
+    final istFort = context
+            .watch<MessengerProvider>()
+            .contactForId(widget.chat.recipientId)
+            ?.isGone ??
+        false;
+    if (istFort) {
+      return Container(
+        width: double.infinity,
+        padding: EdgeInsets.only(
+          left: 24,
+          right: 24,
+          top: 16,
+          bottom: MediaQuery.of(context).padding.bottom + 16,
+        ),
+        decoration: BoxDecoration(
+          color: isDark ? AppColors.backgroundDark : AppColors.backgroundLight,
+          border: Border(
+            top: BorderSide(
+              color: isDark ? AppColors.dividerDark : AppColors.dividerLight,
+              width: 0.33,
+            ),
+          ),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.person_off_rounded, size: 16, color: dimColor),
+            const SizedBox(width: 8),
+            Flexible(
+              child: Text(
+                l10n.accountGoneCannotWrite,
+                textAlign: TextAlign.center,
+                style: TextStyle(color: dimColor, fontSize: 13),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
     return Container(
       padding: EdgeInsets.only(
         left: 8,

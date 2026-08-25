@@ -251,5 +251,7 @@
   "safetyNumberDiffers": "De nummers komen niet overeen.",
   "safetyNumberDiffersHint": "Mogelijk luistert iemand mee. Stuur niets vertrouwelijks totdat je dit persoonlijk hebt nagegaan.",
   "safetyNumberNotRecognised": "Dat is geen veiligheidsnummer. Scan de code die bij je contact onder het veiligheidsnummer staat.",
-  "verifiedContact": "geverifieerd"
+  "verifiedContact": "geverifieerd",
+  "accountGone": "{name} bestaat niet meer",
+  "accountGoneCannotWrite": "Dit account bestaat niet meer — hier kun je niets meer schrijven."
 }

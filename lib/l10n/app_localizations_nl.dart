@@ -847,4 +847,13 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get verifiedContact => 'geverifieerd';
+
+  @override
+  String accountGone(String name) {
+    return '$name bestaat niet meer';
+  }
+
+  @override
+  String get accountGoneCannotWrite =>
+      'Dit account bestaat niet meer — hier kun je niets meer schrijven.';
 }
