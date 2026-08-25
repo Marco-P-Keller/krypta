@@ -136,6 +136,10 @@ Future<void> showLanguageSheet(BuildContext context) {
   final l10n = AppLocalizations.of(context)!;
   return showModalBottomSheet<void>(
     context: context,
+    // Ohne das deckelt Flutter das Blatt bei etwa halber Bildschirmhoehe.
+    // Sieben Sprachen plus Ueberschrift passen da nicht hinein: der letzte
+    // Eintrag — Portugiesisch — lag ausserhalb und war nicht antippbar.
+    isScrollControlled: true,
     backgroundColor:
         isDark ? AppColors.surfaceElevatedDark : AppColors.surfaceElevatedLight,
     shape: const RoundedRectangleBorder(
@@ -154,9 +158,17 @@ Future<void> showLanguageSheet(BuildContext context) {
                   ),
             ),
           ),
+          // Flexible statt fest: reicht die Hoehe trotzdem nicht — kleines
+          // Geraet, grosse Systemschrift —, wird die Liste scrollbar statt
+          // unten abgeschnitten.
+          //
           // Schließt nach der Wahl: der Wechsel ist sofort sichtbar, das Blatt
           // offen zu lassen wirkt, als sei nichts passiert.
-          LanguageList(onSelected: () => Navigator.of(sheetContext).pop()),
+          Flexible(
+            child: LanguageList(
+              onSelected: () => Navigator.of(sheetContext).pop(),
+            ),
+          ),
           const SizedBox(height: 8),
         ],
       ),

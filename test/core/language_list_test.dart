@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kryptaapp/core/locale/locale_controller.dart';
+import 'package:kryptaapp/l10n/app_localizations.dart';
 import 'package:kryptaapp/features/settings/presentation/language_screen.dart';
 import 'package:provider/provider.dart';
 
@@ -98,6 +99,54 @@ void main() {
     );
     expect((checked.title as Text).data, 'Italiano');
     expect(find.byIcon(Icons.check_rounded), findsOneWidget);
+  });
+
+  testWidgets('auch die letzte Sprache ist im Blatt erreichbar',
+      (tester) async {
+    // Auf dem Geraet gemeldet: in den Einstellungen liess sich Portugiesisch
+    // nicht antippen. `showModalBottomSheet` deckelt die Hoehe ohne
+    // `isScrollControlled` bei etwa der halben Bildschirmhoehe — sieben
+    // Sprachen plus Ueberschrift passen da nicht hinein, der letzte Eintrag
+    // lag ausserhalb.
+    //
+    // Deshalb ein kleines Geraet nachstellen und wirklich tippen: findsOne
+    // allein wuerde den Fehler NICHT zeigen, denn gefunden wird der Eintrag
+    // auch dann, wenn er ausserhalb liegt.
+    tester.view.physicalSize = const Size(750, 1334); // iPhone SE, 2x
+    tester.view.devicePixelRatio = 2.0;
+    addTearDown(tester.view.reset);
+
+    final t = build();
+    await tester.pumpWidget(
+      ChangeNotifierProvider<LocaleController>.value(
+        value: t.controller,
+        child: MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(
+            body: Builder(
+              builder: (context) => ElevatedButton(
+                onPressed: () => showLanguageSheet(context),
+                child: const Text('oeffnen'),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+
+    await tester.tap(find.text('oeffnen'));
+    await tester.pumpAndSettle();
+
+    final letzte = LocaleController.labelFor(LocaleController.supported.last);
+    expect(find.text(letzte), findsOneWidget);
+
+    // Der eigentliche Test: antippen. Liegt der Eintrag ausserhalb des
+    // Blattes, schlaegt das hier fehl.
+    await tester.tap(find.text(letzte));
+    await tester.pumpAndSettle();
+
+    expect(t.controller.locale, LocaleController.supported.last);
   });
 
   testWidgets('meldet die Wahl an den Aufrufer', (tester) async {
