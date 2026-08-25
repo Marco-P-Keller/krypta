@@ -2,9 +2,14 @@ import 'package:flutter/foundation.dart';
 
 /// Rechenlogik des Taschenrechners.
 ///
-/// Rechnet **von links nach rechts**, ohne Punkt-vor-Strich — wie die
-/// Rechner-App von iOS und wie diese Klasse es immer schon tat. `2+3×4`
-/// ergibt hier also 20, nicht 14.
+/// **Punkt vor Strich:** `2+3×4` ergibt 14, nicht 20. Gleichrangiges wird von
+/// links nach rechts gerechnet, `100÷10÷2` ist also 5.
+///
+/// Gerechnet wird aus dem *getippten Text* heraus, nicht aus einem laufenden
+/// Zwischenergebnis. Anders geht es nicht: solange `2+3` dasteht, ist noch
+/// nicht entschieden, ob daraus 5 wird — ein folgendes `×` bindet die 3 an
+/// den naechsten Operanden. Erst am Ende der Rechnung steht fest, was wozu
+/// gehoert. Nebenbei faellt damit jedes Zwischenrunden weg.
 ///
 /// Ketten: `5+5+5=` ergibt 15. Vorher ergab es 10 — `inputOperator` setzte
 /// den ersten Operanden bedingungslos auf den Anzeigewert und warf die noch
@@ -17,9 +22,6 @@ class CalculatorLogic extends ChangeNotifier {
   /// Operators: bei `5+5+` also genau `'5+5+'`. Hält den *getippten* Text
   /// fest, nicht die gerundete Zahl, damit `3.50+` nicht zu `3.5+` wird.
   String _chain = '';
-
-  /// Das Zwischenergebnis der Kette bis zum offenen Operator.
-  double _accumulated = 0;
 
   String _operator = '';
   bool _shouldResetDisplay = false;
@@ -81,22 +83,22 @@ class CalculatorLogic extends ChangeNotifier {
     _resultOf = null;
 
     if (_operator.isEmpty) {
-      // Erster Operator der Kette.
-      _accumulated = double.tryParse(_display) ?? 0;
-      _chain = '$_display$op';
+      // Erster Operator der Kette. Steht dort 'Error', ist das keine Zahl —
+      // dann faengt die Kette bei 0 an, statt den Fehler mitzuschleppen.
+      final start = double.tryParse(_display) == null ? '0' : _display;
+      _chain = '$start$op';
     } else if (_shouldResetDisplay) {
       // Operator direkt hintereinander gedrückt — den letzten ersetzen,
       // statt eine sinnlose Kette wie `5+×` entstehen zu lassen.
       _chain = _chain.substring(0, _chain.length - 1) + op;
     } else {
-      // Ein zweiter Operand steht da: die offene Rechnung jetzt ausführen,
-      // sonst ginge sie verloren (das war der 5+5+5-Fehler).
-      final next = _applyPending();
-      if (next == null) {
+      // Der Operand ist fertig. Gerechnet wird erst am Ende, aber eine
+      // Division durch null steht schon hier fest — und soll auch hier
+      // auffallen, nicht erst beim Gleichheitszeichen.
+      if (_evaluate('$_chain$_display') == null) {
         _failWithError();
         return;
       }
-      _accumulated = next;
       _chain = '$_chain$_display$op';
     }
 
@@ -112,7 +114,10 @@ class CalculatorLogic extends ChangeNotifier {
     // Vor dem Zurücksetzen festhalten — danach steht sie klein und grau über
     // dem Ergebnis, statt wie bisher zu verschwinden.
     final completed = liveExpression;
-    final result = _applyPending();
+    // Nicht liveExpression auswerten: nach `5+` steht dort nur `5+`. Der
+    // Anzeigewert ist dann noch der erste Operand, `5+=` ergibt also 10 —
+    // so verhaelt sich der Rechner seit jeher.
+    final result = _evaluate('$_chain$_display');
     if (result == null) {
       _failWithError();
       return;
@@ -121,30 +126,71 @@ class CalculatorLogic extends ChangeNotifier {
     _display = _formatNumber(result);
     _resultOf = completed;
     _chain = '';
-    _accumulated = 0;
     _operator = '';
     _shouldResetDisplay = true;
     _hasDecimal = result != result.roundToDouble();
     notifyListeners();
   }
 
-  /// Führt den offenen Operator auf [_accumulated] und dem Anzeigewert aus.
-  /// `null` bedeutet Division durch null.
-  double? _applyPending() {
-    final operand = double.tryParse(_display) ?? 0;
-    switch (_operator) {
-      case '+':
-        return _accumulated + operand;
-      case '−':
-        return _accumulated - operand;
-      case '×':
-        return _accumulated * operand;
-      case '÷':
-        if (operand == 0) return null;
-        return _accumulated / operand;
-      default:
-        return _accumulated;
+  /// Wertet die getippte Rechnung aus. `null` heisst: geht nicht — Division
+  /// durch null oder ein Text, der keine Rechnung ist.
+  ///
+  /// Zwei Rangstufen genuegen, der Rechner kennt keine Klammern. Die Strich-
+  /// Teile werden in [sum] aufsummiert, waehrend [term] den Punkt-Teil
+  /// sammelt, der gerade laeuft; erst wenn ein `+` oder `−` kommt, ist der
+  /// Term fertig und wandert in die Summe.
+  ///
+  /// Ein Minuszeichen ist entweder Vorzeichen oder Rechenoperator — hier
+  /// lassen sich die beiden nicht verwechseln: [toggleSign] und
+  /// [_formatNumber] schreiben ASCII `-`, die Taste liefert U+2212 `−`.
+  static double? _evaluate(String expression) {
+    double sum = 0;
+    var addOp = '+';
+    double term = 0;
+    var mulOp = '';
+    var i = 0;
+
+    while (i < expression.length) {
+      final start = i;
+      if (expression[i] == '-') i++;
+      while (i < expression.length && _isNumberChar(expression[i])) {
+        i++;
+      }
+      final zahl = double.tryParse(expression.substring(start, i));
+      if (zahl == null) return null;
+
+      if (mulOp == '×') {
+        term *= zahl;
+      } else if (mulOp == '÷') {
+        if (zahl == 0) return null;
+        term /= zahl;
+      } else {
+        term = zahl;
+      }
+      mulOp = '';
+
+      if (i >= expression.length) break;
+      final op = expression[i];
+      i++;
+      if (op == '×' || op == '÷') {
+        mulOp = op;
+      } else if (op == '+' || op == '−') {
+        sum = addOp == '+' ? sum + term : sum - term;
+        addOp = op;
+        term = 0;
+      } else {
+        return null;
+      }
     }
+
+    final ergebnis = addOp == '+' ? sum + term : sum - term;
+    return ergebnis.isFinite ? ergebnis : null;
+  }
+
+  static bool _isNumberChar(String c) {
+    if (c == '.') return true;
+    final code = c.codeUnitAt(0);
+    return code >= 0x30 && code <= 0x39;
   }
 
   void _failWithError() {
@@ -153,7 +199,6 @@ class CalculatorLogic extends ChangeNotifier {
     // sie aufgegangen.
     _resultOf = null;
     _chain = '';
-    _accumulated = 0;
     _operator = '';
     _shouldResetDisplay = true;
     _hasDecimal = false;
@@ -164,7 +209,6 @@ class CalculatorLogic extends ChangeNotifier {
     _display = '0';
     _resultOf = null;
     _chain = '';
-    _accumulated = 0;
     _operator = '';
     _shouldResetDisplay = false;
     _hasDecimal = false;

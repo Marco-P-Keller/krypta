@@ -191,16 +191,120 @@ void main() {
       expect(logic.liveExpression, '5+5+5');
     });
 
-    test('Zwischenergebnis stimmt bei gemischten Operatoren', () {
-      // Von links nach rechts, kein Punkt-vor-Strich: (2+3)*4 = 20.
+    test('Punkt vor Strich: 2+3×4 ergibt 14, nicht 20', () {
       logic.inputDigit('2');
       logic.inputOperator('+');
       logic.inputDigit('3');
       logic.inputOperator('×');
       logic.inputDigit('4');
       logic.calculate();
-      expect(logic.display, '20');
+      expect(logic.display, '14');
       expect(logic.completedExpression, '2+3×4');
+    });
+
+    test('steht der Punkt vorn, aendert sich nichts: 2×3+4 ergibt 10', () {
+      logic.inputDigit('2');
+      logic.inputOperator('×');
+      logic.inputDigit('3');
+      logic.inputOperator('+');
+      logic.inputDigit('4');
+      logic.calculate();
+      expect(logic.display, '10');
+    });
+
+    test('auch vor dem Minus: 10−2×3 ergibt 4', () {
+      logic.inputDigit('1');
+      logic.inputDigit('0');
+      logic.inputOperator('−');
+      logic.inputDigit('2');
+      logic.inputOperator('×');
+      logic.inputDigit('3');
+      logic.calculate();
+      expect(logic.display, '4');
+    });
+
+    test('Division bindet genauso stark: 2+8÷4 ergibt 4', () {
+      logic.inputDigit('2');
+      logic.inputOperator('+');
+      logic.inputDigit('8');
+      logic.inputOperator('÷');
+      logic.inputDigit('4');
+      logic.calculate();
+      expect(logic.display, '4');
+    });
+
+    test('mehrere Punkt-Teile: 2+3×4+5×6 ergibt 44', () {
+      for (final schritt in ['2', '+', '3', '×', '4', '+', '5', '×', '6']) {
+        if ('+−×÷'.contains(schritt)) {
+          logic.inputOperator(schritt);
+        } else {
+          logic.inputDigit(schritt);
+        }
+      }
+      logic.calculate();
+      expect(logic.display, '44');
+    });
+
+    test('gleichrangig wird von links nach rechts gerechnet', () {
+      // 100÷10÷2 ist 5, nicht 20 — sonst waere die Reihenfolge falsch.
+      logic.inputDigit('1');
+      logic.inputDigit('0');
+      logic.inputDigit('0');
+      logic.inputOperator('÷');
+      logic.inputDigit('1');
+      logic.inputDigit('0');
+      logic.inputOperator('÷');
+      logic.inputDigit('2');
+      logic.calculate();
+      expect(logic.display, '5');
+    });
+
+    test('auch Plus und Minus von links nach rechts: 10−5+2 ergibt 7', () {
+      logic.inputDigit('1');
+      logic.inputDigit('0');
+      logic.inputOperator('−');
+      logic.inputDigit('5');
+      logic.inputOperator('+');
+      logic.inputDigit('2');
+      logic.calculate();
+      expect(logic.display, '7');
+    });
+
+    test('Kommazahlen im Punkt-Teil: 1.5×2+1 ergibt 4', () {
+      logic.inputDigit('1');
+      logic.inputDecimal();
+      logic.inputDigit('5');
+      logic.inputOperator('×');
+      logic.inputDigit('2');
+      logic.inputOperator('+');
+      logic.inputDigit('1');
+      logic.calculate();
+      expect(logic.display, '4');
+    });
+
+    test('ein negativer Operand mitten in der Kette', () {
+      // 2+(−3)×4 ist −10. Das Vorzeichen gehoert zur Zahl, nicht zur
+      // Rechnung — im Text steht ASCII-Minus, der Operator ist U+2212.
+      logic.inputDigit('2');
+      logic.inputOperator('+');
+      logic.inputDigit('3');
+      logic.toggleSign();
+      logic.inputOperator('×');
+      logic.inputDigit('4');
+      logic.calculate();
+      expect(logic.display, '-10');
+    });
+
+    test('Division durch null im Punkt-Teil bricht ab', () {
+      // 2+8÷0 — der Fehler steckt im Punkt-Teil und muss trotzdem greifen.
+      logic.inputDigit('2');
+      logic.inputOperator('+');
+      logic.inputDigit('8');
+      logic.inputOperator('÷');
+      logic.inputDigit('0');
+      logic.calculate();
+      expect(logic.display, 'Error');
+      expect(logic.hasResult, isFalse);
     });
 
     test('lange Kette', () {
@@ -231,6 +335,23 @@ void main() {
       logic.inputOperator('+');
       expect(logic.display, 'Error');
       expect(logic.hasResult, isFalse);
+    });
+
+    test('nach Error zaehlt ein Operator die Anzeige als 0', () {
+      // 'Error' ist keine Zahl. Frueher fiel sie ueber `?? 0` still auf null
+      // zurueck; das bleibt so, sonst haengt der Rechner nach einem Fehler
+      // fest und jede weitere Taste ergibt wieder Error.
+      logic.inputDigit('8');
+      logic.inputOperator('÷');
+      logic.inputDigit('0');
+      logic.calculate();
+      expect(logic.display, 'Error');
+
+      logic.inputOperator('+');
+      logic.inputDigit('5');
+      logic.calculate();
+
+      expect(logic.display, '5');
     });
 
     test('nach Error setzt eine Ziffer neu auf', () {
