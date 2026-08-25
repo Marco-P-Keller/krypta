@@ -6,10 +6,12 @@ import '../../../services/platform/platform_security_service.dart';
 import '../../../theme/app_colors.dart';
 import '../../../widgets/emergency_button.dart';
 import '../data/models/chat_model.dart';
+import '../data/models/message_model.dart';
 import '../data/models/contact_model.dart';
 import '../logic/messenger_provider.dart';
 import 'widgets/chat_settings_sheet.dart';
 import 'widgets/message_bubble.dart';
+import 'widgets/system_event_row.dart';
 
 class ChatScreen extends StatefulWidget {
   final Chat chat;
@@ -36,6 +38,7 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
   bool _burnAfterRead = false;
   String? _messagePassword;
   StreamSubscription<bool>? _screenshotSub;
+  StreamSubscription<int>? _captureSub;
 
   @override
   void initState() {
@@ -50,6 +53,7 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
   @override
   void dispose() {
     _screenshotSub?.cancel();
+    _captureSub?.cancel();
     // Clear sensitive state from memory immediately on screen exit.
     _messagePassword = null;
     _controller.clear();
@@ -64,39 +68,39 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
     super.dispose();
   }
 
+  /// Auf Screenshots und Bildschirmaufnahmen horchen.
+  ///
+  /// Beides laesst sich auf iOS nicht verhindern. Der fruehere Versuch, den
+  /// Inhalt zu schwaerzen, beruhte auf undokumentiertem Verhalten und wirkte
+  /// ab iOS 26 nicht mehr — die App behauptete einen Schutz, den sie nicht
+  /// hatte. Jetzt erfahren stattdessen beide Seiten davon, als Eintrag im
+  /// Verlauf.
   void _listenForScreenshots() {
     final platform = context.read<PlatformSecurityService>();
-    _screenshotSub = platform.onScreenshotDetected.listen((blocked) {
+    final messenger = context.read<MessengerProvider>();
+
+    _screenshotSub = platform.onScreenshotDetected.listen((_) {
       if (!mounted) return;
-      final l10n = AppLocalizations.of(context)!;
-      final snackBar = SnackBar(
-        content: Row(
-          children: [
-            Icon(
-              blocked ? Icons.shield_rounded : Icons.screenshot_rounded,
-              color: Colors.white,
-              size: 20,
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Text(
-                blocked ? l10n.screenshotAttemptBlocked : l10n.screenshotTaken,
-                style: const TextStyle(color: Colors.white),
-              ),
-            ),
-          ],
-        ),
-        backgroundColor: blocked ? AppColors.warning : AppColors.destructive,
-        behavior: SnackBarBehavior.floating,
-        margin: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        // Security warning — keep it on screen long enough to read fully.
-        duration: const Duration(seconds: 6),
-      );
-      // Replace any in-flight screenshot snackbar instead of queueing, so
-      // rapid repeated captures don't stack up a backlog of toasts.
-      final sm = ScaffoldMessenger.of(context)..removeCurrentSnackBar();
-      sm.showSnackBar(snackBar);
+      messenger.reportSystemEvent(widget.chat.id, SystemEventKind.screenshot);
+    });
+
+    // Eine Aufnahme kann schon laufen, bevor dieser Chat geoeffnet wurde —
+    // genau der heimliche Fall. Deshalb erst der aktuelle Zustand, dann jeder
+    // spaetere Beginn. Das Ende ist nichts, was die Gegenseite erfahren muss.
+    //
+    // Die Nummer der Aufnahme haelt die Meldung im Zaum: dieser Bildschirm
+    // wird beim Wechseln neu gebaut und liefe sonst fuer EINE Aufnahme
+    // mehrfach los.
+    //
+    // Erst nach dem ersten Frame: der Hinweis landet als Eintrag im Verlauf,
+    // und ein `notifyListeners` mitten im Aufbau des Baums ist ein Fehler.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      messenger.reportScreenRecording(widget.chat.id, platform.captureSession);
+    });
+    _captureSub = platform.onScreenRecordingStarted.listen((session) {
+      if (!mounted) return;
+      messenger.reportScreenRecording(widget.chat.id, session);
     });
   }
 
@@ -469,10 +473,17 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
           itemCount: messages.length,
           itemBuilder: (context, index) {
             final msg = messages[index];
-            return MessageBubble(
-              message: msg,
-              isMine: msg.senderId == messenger.userId,
-            );
+            final isMine = msg.senderId == messenger.userId;
+            // Hinweise gehoeren niemandem — sie stehen mittig zwischen den
+            // Blasen, nicht auf einer Seite.
+            if (msg.isSystemEvent) {
+              return SystemEventRow(
+                message: msg,
+                isMine: isMine,
+                peerName: widget.chat.recipientName,
+              );
+            }
+            return MessageBubble(message: msg, isMine: isMine);
           },
         );
       },

@@ -15,6 +15,7 @@ import '../../../security/ratchet/double_ratchet.dart';
 import '../../../security/ratchet/ratchet_message.dart';
 import '../../../security/ratchet/ratchet_state.dart';
 import '../../../security/ratchet/replay_guard.dart';
+import 'recording_notice_policy.dart';
 import 'contact_request_policy.dart';
 import 'key_publish_status.dart';
 import '../../../security/session/session_errors.dart';
@@ -63,6 +64,11 @@ class MessengerProvider extends ChangeNotifier {
   List<Chat> _chats = [];
   List<Contact> _contacts = [];
   final Map<String, List<Message>> _messagesByChat = {};
+
+  /// Wer hat von welcher Bildschirmaufnahme schon erfahren. Siehe
+  /// [RecordingNoticePolicy]: eine Aufnahme laeuft weiter, waehrend man durch
+  /// die App navigiert, und der Chat-Bildschirm fragt bei jedem Aufbau erneut.
+  final _recordingNotices = RecordingNoticePolicy();
   final Map<String, RatchetState> _ratchetStates = {};
   /// X3DH session header to include in the first encrypted message per chat.
   /// Contains the sender's ephemeral public key the receiver needs.
@@ -740,6 +746,103 @@ class MessengerProvider extends ChangeNotifier {
 
   // ─── Centralized Trust Gates ────────────────────────────────────────────
 
+  // ─── Systemhinweise: Screenshot und Bildschirmaufnahme ──────────────
+
+  /// Kontrollnachrichten-Typen dieser Hinweise, in derselben Reihenfolge wie
+  /// [SystemEventKind]. Der Name reist ueber die Leitung, der Index nicht —
+  /// eine spaetere Umsortierung des Aufzaehlungstyps darf die Bedeutung nicht
+  /// verschieben.
+  static const Map<SystemEventKind, String> _systemEventTypes = {
+    SystemEventKind.screenshot: 'screenshot',
+    SystemEventKind.screenRecording: 'recording',
+  };
+
+  /// Festhalten, dass ich selbst einen Screenshot gemacht oder den Bildschirm
+  /// aufgenommen habe — und es der Gegenseite mitteilen.
+  ///
+  /// Verhindern laesst sich beides auf iOS nicht. Der fruehere Versuch, den
+  /// Inhalt zu schwaerzen, beruhte auf undokumentiertem Verhalten und wirkte
+  /// ab iOS 26 nicht mehr; die App behauptete einen Schutz, den sie nicht
+  /// hatte. Ehrlich ist: beide Seiten erfahren davon.
+  Future<void> reportSystemEvent(String chatId, SystemEventKind kind) async {
+    final chatIdx = _chats.indexWhere((c) => c.id == chatId);
+    if (chatIdx == -1 || userId == null) return;
+    final chat = _chats[chatIdx];
+    final contact = contactForId(chat.recipientId);
+    if (contact == null) return;
+
+    final messageId = _uuid.v4();
+    _appendSystemEvent(
+      chatId: chatId,
+      kind: kind,
+      senderId: userId!,
+      recipientId: chat.recipientId,
+      messageId: messageId,
+    );
+
+    // Scheitert das Senden — kein Netz, blockiert —, bleibt der eigene
+    // Eintrag stehen. Er ist auch dann richtig: gemacht wurde der Screenshot.
+    try {
+      await _sendControlMessage(
+        chatId: chatId,
+        contact: contact,
+        type: _systemEventTypes[kind]!,
+        messageId: messageId,
+      );
+    } catch (e) {
+      if (kDebugMode) debugPrint('Systemhinweis nicht zustellbar: $e');
+    }
+  }
+
+  /// Eine laufende Bildschirmaufnahme melden — hoechstens einmal je Aufnahme
+  /// und Chat.
+  ///
+  /// [session] kommt vom [PlatformSecurityService] und ist `0`, wenn gerade
+  /// nichts aufgenommen wird.
+  Future<void> reportScreenRecording(String chatId, int session) async {
+    if (!_recordingNotices.shouldAnnounce(chatId, session)) return;
+    await reportSystemEvent(chatId, SystemEventKind.screenRecording);
+  }
+
+  /// Die Gegenseite hat einen Screenshot gemacht oder nimmt auf.
+  void _applySystemEventFromPeer(
+      String chatId, Contact contact, SystemEventKind kind, String messageId) {
+    if (userId == null) return;
+    _appendSystemEvent(
+      chatId: chatId,
+      kind: kind,
+      senderId: contact.id,
+      recipientId: userId!,
+      messageId: messageId,
+    );
+  }
+
+  void _appendSystemEvent({
+    required String chatId,
+    required SystemEventKind kind,
+    required String senderId,
+    required String recipientId,
+    required String messageId,
+  }) {
+    if (_processedMessageIds.contains(messageId)) return;
+    _addMessageToChat(
+      chatId,
+      Message(
+        id: messageId,
+        chatId: chatId,
+        senderId: senderId,
+        recipientId: recipientId,
+        encryptedContent: '',
+        timestamp: DateTime.now(),
+        status: MessageStatus.delivered,
+        // Bewusst ohne Selbstzerstoerung und ohne Burn-after-Read: der Hinweis
+        // soll nicht ausgerechnet dann verschwinden, wenn man ihn braucht.
+        systemEvent: kind,
+      ),
+    );
+    notifyListeners();
+  }
+
   // ─── QR-Token: Zeigen heisst Zustimmen ──────────────────────────────
 
   /// Einmal-Token aus gerade angezeigten QR-Codes.
@@ -1312,6 +1415,12 @@ class MessengerProvider extends ChangeNotifier {
         _applyUnlockNotification(ctrl.messageId);
       case 'accepted':
         _applyContactAccepted(contact.id);
+      case 'screenshot':
+        _applySystemEventFromPeer(
+            chatId, contact, SystemEventKind.screenshot, ctrl.messageId);
+      case 'recording':
+        _applySystemEventFromPeer(
+            chatId, contact, SystemEventKind.screenRecording, ctrl.messageId);
       default:
         if (kDebugMode) debugPrint('Unknown control message type: ${ctrl.type}');
     }
@@ -3391,6 +3500,7 @@ class MessengerProvider extends ChangeNotifier {
     _typingStates.clear();
     _processedMessageIds.clear();
     _unlockAttempts.clear();
+    _recordingNotices.clear();
     _activeChatId = null;
     _deliveryToken = null;
     _isInitialized = false;

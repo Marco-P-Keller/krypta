@@ -81,12 +81,6 @@ class MainActivity : FlutterActivity() {
                     window.clearFlags(WindowManager.LayoutParams.FLAG_SECURE)
                     result.success(true)
                 }
-                "isScreenshotProtectionActive" -> {
-                    // Auf Android ist FLAG_SECURE eine echte Zusage des
-                    // Systems: gesetzt heisst geschuetzt. Anders als der
-                    // iOS-Layer-Trick gibt es hier nichts nachzupruefen.
-                    result.success(isSecureFlagEnabled)
-                }
                 "isScreenCaptured" -> {
                     // FLAG_SECURE blockiert Aufnahme und Spiegelung bereits.
                     // Eine Erkennung wie UIScreen.isCaptured auf iOS braucht

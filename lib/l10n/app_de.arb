@@ -1,13 +1,11 @@
 {
   "@@locale": "de",
   "appName": "Krypta ECC",
-
   "calculator": "Taschenrechner",
   "messenger": "Messenger",
   "settings": "Einstellungen",
   "chats": "Chats",
   "contacts": "Kontakte",
-
   "setupTitle": "Willkommen bei Krypta ECC",
   "setupSubtitle": "Richte deine Geheimcodes ein, um zu starten",
   "secretCodeLabel": "Geheimcode",
@@ -21,7 +19,6 @@
   "setupCodesInfo": "Alle Codes müssen unterschiedlich und mindestens 4 Ziffern lang sein",
   "back": "Zurück",
   "next": "Weiter",
-
   "newChat": "Neuer Chat",
   "typeMessage": "Nachricht eingeben...",
   "send": "Senden",
@@ -29,7 +26,6 @@
   "sent": "Gesendet",
   "read": "Gelesen",
   "typing": "tippt...",
-
   "selfDestructTimer": "Selbstzerstörungs-Timer",
   "seconds30": "30 Sekunden",
   "minutes5": "5 Minuten",
@@ -37,11 +33,9 @@
   "day1": "1 Tag",
   "week1": "1 Woche",
   "off": "Aus",
-
   "emergencyDelete": "Notfall-Löschung",
   "emergencyDeleteDescription": "Sofort alle Daten, Schlüssel löschen und abmelden",
   "allDataDeleted": "Alle Daten wurden gelöscht",
-
   "settingsTitle": "Einstellungen",
   "securitySettings": "Sicherheit",
   "changeSecretCode": "Geheimcode ändern",
@@ -49,8 +43,6 @@
   "changeDeleteCode": "Löschcode ändern",
   "biometricUnlock": "Biometrische Entsperrung",
   "biometricDescription": "Face ID oder Fingerabdruck nach Codeeingabe verlangen",
-  "screenshotProtection": "Screenshot-Schutz",
-  "screenshotDescription": "Screenshots im Messenger blockieren",
   "autoDeleteMessages": "Nachrichten automatisch löschen",
   "accountSection": "Konto",
   "privacySection": "Datenschutz",
@@ -58,10 +50,8 @@
   "deleteAccount": "Konto & Daten löschen",
   "about": "Über Krypta ECC",
   "version": "Version {version}",
-
   "noChats": "Noch keine Unterhaltungen",
   "noChatsSubtitle": "Starte einen neuen Chat für sichere Nachrichten",
-
   "decoyTitle": "Nachrichten",
   "encryptionInfo": "Nachrichten sind Ende-zu-Ende-verschlüsselt",
   "anonymousUser": "Anonymer Benutzer",
@@ -72,7 +62,6 @@
   "addContact": "Kontakt hinzufügen",
   "cannotAddYourself": "Du kannst dich nicht selbst hinzufügen",
   "userNotFound": "Benutzer nicht gefunden",
-
   "myQrCode": "Mein QR-Code",
   "scanQrCode": "QR-Code scannen",
   "scanQr": "QR scannen",
@@ -82,7 +71,6 @@
   "idCopied": "ID kopiert",
   "qrWebUnavailable": "QR-Scan ist im Web nicht verfügbar.\nVerwende ein Mobilgerät zum Scannen.",
   "thatsYourOwnId": "Das ist deine eigene ID",
-
   "renameChat": "Chat umbenennen",
   "chatName": "Chatname",
   "save": "Speichern",
@@ -97,15 +85,12 @@
   "chatDefaultWithTimer": "Chat-Standard ({timer})",
   "messagesAutoDelete": "Nachrichten löschen sich nach {timer}",
   "onlyVisibleToYou": "Nur für dich sichtbar",
-
   "burnAfterRead": "Nach dem Lesen löschen",
   "passwordProtected": "Passwortgeschützt",
-
   "lockMessage": "Nachricht sperren",
   "lockMessageHint": "Setze ein Passwort für die nächste Nachricht. Der Empfänger muss dieses Passwort eingeben.",
   "enterPassword": "Passwort eingeben",
   "setPassword": "Passwort setzen",
-
   "passwordRequired": "Passwort erforderlich",
   "passwordRequiredHint": "Gib das Passwort ein, um diese Nachricht zu entschlüsseln.",
   "password": "Passwort",
@@ -113,13 +98,10 @@
   "unlocked": "Entsperrt",
   "wrongPassword": "Falsches Passwort",
   "tapToUnlock": "Tippen zum Entsperren",
-
   "nameThisContact": "Kontakt benennen",
   "nameContactHint": "Gib diesem Kontakt einen Namen. Nur du kannst dieses Label sehen.",
   "nameContactPlaceholder": "z.B. Alex, Mama, Arbeit...",
-
   "selfDestructTimerLabel": "Selbstzerstörungs-Timer",
-
   "vaultPassword": "Tresor-Passwort",
   "vaultPasswordDescription": "Starkes Passwort nach Code-Eingabe vor dem Zugriff auf den Messenger verlangen",
   "vaultPasswordTitle": "Tresor gesperrt",
@@ -134,7 +116,6 @@
   "confirmPassword": "Passwort bestätigen",
   "passwordsDoNotMatch": "Passwörter stimmen nicht überein",
   "passwordTooWeak": "Passwort erfüllt die Anforderungen nicht",
-
   "copy": "Kopieren",
   "copied": "Kopiert",
   "delete": "Löschen",
@@ -143,7 +124,6 @@
   "deleteForMe": "Für mich löschen",
   "deleteForEveryone": "Für alle löschen",
   "deleteForEveryoneConfirm": "Diese Nachricht wird für dich und den Empfänger gelöscht.",
-
   "qrInvalidFormat": "Ungültiges QR-Code-Format. Nur Krypta-QR-Codes werden akzeptiert.",
   "qrUnsupportedVersion": "Nicht unterstützte QR-Code-Version. Bitte App aktualisieren.",
   "qrFingerprintMismatch": "Sicherheitswarnung: Der Fingerprint im QR-Code ist manipuliert. Vorgang abgebrochen.",
@@ -158,14 +138,21 @@
   "aboutClose": "Schließen",
   "confirm": "Bestätigen",
   "lockedForSeconds": "Gesperrt für {seconds} Sekunden.",
-  "@lockedForSeconds": {"placeholders": {"seconds": {"type": "int"}}},
+  "@lockedForSeconds": {
+    "placeholders": {
+      "seconds": {
+        "type": "int"
+      }
+    }
+  },
   "wrongPasswordWarning": "Falsches Passwort. Noch {remaining, plural, =1{1 Versuch} other{{remaining} Versuche}}, danach werden alle Daten gelöscht.",
-  "@wrongPasswordWarning": {"placeholders": {"remaining": {"type": "int"}}},
-  "screenshotAttemptBlocked": "Screenshot erkannt – der Chat-Inhalt wurde dabei geschützt und nicht aufgenommen",
-  "screenshotTaken": "Achtung: Screenshot gemacht – der Inhalt war nicht geschützt",
-  "screenCaptureWarning": "Bildschirmaufnahme erkannt – der Inhalt ist ausgeblendet",
-  "screenshotProtectionUnavailable": "Auf diesem Gerät nicht möglich – Screenshots zeigen den Inhalt",
-  "screenshotMaskDiagnostics": "Diagnose: Screenshot-Maske",
+  "@wrongPasswordWarning": {
+    "placeholders": {
+      "remaining": {
+        "type": "int"
+      }
+    }
+  },
   "keysNotPublishedDenied": "Deine Schlüssel wurden vom Server abgelehnt – andere können dir nicht schreiben.",
   "keysNotPublishedFailed": "Deine Schlüssel konnten nicht hinterlegt werden – andere können dir nicht schreiben.",
   "biometricUnlockReason": "Krypta Messenger entsperren",
@@ -173,7 +160,13 @@
   "deviceCompromisedDegraded": "Gerät möglicherweise kompromittiert. Hardware-Sicherheit deaktiviert.",
   "fieldRequired": "Erforderlich",
   "codeMinDigits": "Mindestens {count} Ziffern",
-  "@codeMinDigits": {"placeholders": {"count": {"type": "int"}}},
+  "@codeMinDigits": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "codeDigitsOnly": "Nur Ziffern",
   "deleteCodeMustDiffer": "Der Löschcode muss sich vom Geheimcode unterscheiden.",
   "setupFailed": "Einrichtung fehlgeschlagen. Bitte noch einmal versuchen.",
@@ -262,6 +255,12 @@
   "minute1": "1 Minute",
   "welcomeBack": "Willkommen zurück",
   "minutes30": "30 Minuten",
+  "screenshotByYou": "Du hast einen Screenshot vom Chat gemacht",
+  "screenshotByPeer": "{name} hat einen Screenshot vom Chat gemacht",
+  "recordingByYou": "Du nimmst den Bildschirm auf",
+  "recordingByPeer": "{name} nimmt den Bildschirm auf",
+  "screenshotNotice": "Screenshot-Hinweis",
+  "screenshotNoticeDescription": "Beide Seiten erfahren von Screenshots und Bildschirmaufnahmen",
   "privacyPolicy": "Datenschutzerklärung",
   "legalSection": "Rechtliches"
 }

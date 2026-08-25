@@ -7,7 +7,6 @@ import '../../../core/constants/app_constants.dart';
 import '../../../core/constants/storage_keys.dart';
 import '../../auth/presentation/tutorial_screen.dart';
 import 'language_screen.dart';
-import 'screenshot_diagnostics_screen.dart';
 import '../../../core/locale/locale_controller.dart';
 import '../../messenger/logic/messenger_provider.dart';
 import '../../../security/device/device_integrity_policy.dart';
@@ -36,20 +35,14 @@ class SettingsScreen extends StatefulWidget {
 
 class _SettingsScreenState extends State<SettingsScreen> {
   bool _biometricEnabled = false;
-  /// Der GEPRÜFTE Zustand, nicht der gewünschte.
+  /// Ob beide Seiten von Screenshots und Bildschirmaufnahmen erfahren.
   ///
-  /// Hier stand ein fest verdrahtetes `true`, das `_loadSettings` nie
-  /// angefasst hat. Der Schalter zeigte damit immer „an", auch wenn der
-  /// native Schutz gar nicht zustande kam — genau so sah Daniel beim Test von
-  /// Build 85 auf iOS 26.6 einen aktiven Schutz, während der Screenshot den
-  /// Inhalt zeigte. Eine App, die einen Schutz behauptet, den sie nicht hat,
-  /// ist schlechter als eine, die ehrlich sagt, dass sie ihn nicht hat.
-  bool _screenshotProtection = false;
-
-  /// Der Nutzer wollte den Schutz, das Betriebssystem gibt ihn nicht her.
-  /// Unterscheidet „aus, weil abgeschaltet" von „aus, weil unmöglich" — sonst
-  /// springt der Schalter kommentarlos zurück.
-  bool _screenshotProtectionRefused = false;
+  /// Hier stand einmal ein „Screenshot-Schutz". Der beruhte auf
+  /// undokumentiertem Verhalten, wirkte ab iOS 26 nicht mehr — und der
+  /// Schalter zeigte trotzdem „an". Eine App, die einen Schutz behauptet, den
+  /// sie nicht hat, ist schlechter als eine, die ehrlich ist. Verhindern
+  /// laesst sich ein Screenshot auf iOS ohnehin nicht; melden schon.
+  bool _screenshotNotice = true;
   bool _biometricAvailable = false;
   bool _vaultPasswordEnabled = false;
   bool _pushPrivacyEnabled = false;
@@ -84,9 +77,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final pushPrivacy = await storage.isPushPrivacyEnabled();
     final deliveryReceipts = await storage.isDeliveryReceiptsEnabled();
     final readReceipts = await storage.isReadReceiptsEnabled();
-    // Nativ nachfragen statt der eigenen Kopie glauben: der Watchdog auf iOS
-    // kann die Maske nach dem Einschalten jederzeit wieder abbauen.
-    final screenshotVerified = await platform.refreshScreenshotProtectionState();
+    final screenshotNotice = await storage.isScreenshotNoticeEnabled();
 
     if (mounted) {
       setState(() {
@@ -96,7 +87,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         _pushPrivacyEnabled = pushPrivacy;
         _deliveryReceiptsEnabled = deliveryReceipts;
         _readReceiptsEnabled = readReceipts;
-        _screenshotProtection = screenshotVerified;
+        _screenshotNotice = screenshotNotice;
         _deviceIntegrityLevel = integrity.lastResult?.level;
         _hardwareSecurityLevel = hardware.level;
         _isHardwareWrapped = localStore.isHardwareWrapped;
@@ -269,29 +260,22 @@ class _SettingsScreenState extends State<SettingsScreen> {
     if (mounted) setState(() => _readReceiptsEnabled = value);
   }
 
-  Future<void> _toggleScreenshotProtection(bool value) async {
+  /// Den Hinweis ein- oder ausschalten.
+  ///
+  /// Aus heisst: die Erkennung laeuft gar nicht erst, und niemand erfaehrt
+  /// etwas — auch die Gegenseite nicht. Screenshots sind damit nicht mehr
+  /// oder weniger moeglich als vorher.
+  Future<void> _toggleScreenshotNotice(bool value) async {
     final platform = context.read<PlatformSecurityService>();
-    final l10n = AppLocalizations.of(context)!;
-    // Reflect the VERIFIED state, not the requested one: on iOS the OS-level
-    // content mask can fail to install, in which case enable returns false
-    // and the switch must snap back instead of falsely showing "on".
-    bool effective = value;
+    final storage = context.read<SecureStorageService>();
+
     if (value) {
-      // Der Hinweistext für die native Aufnahme-Abdeckung wandert hier
-      // hinunter, damit die Übersetzung in den .arb-Dateien bleibt.
-      effective = await platform.enableScreenshotProtection(
-        captureNotice: l10n.screenCaptureWarning,
-      );
+      await platform.enableScreenshotProtection();
     } else {
       await platform.disableScreenshotProtection();
-      effective = false;
     }
-    if (mounted) {
-      setState(() {
-        _screenshotProtection = effective;
-        _screenshotProtectionRefused = value && !effective;
-      });
-    }
+    await storage.setScreenshotNoticeEnabled(value);
+    if (mounted) setState(() => _screenshotNotice = value);
   }
 
   void _showChangeCodeDialog(
@@ -834,31 +818,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ],
             _SwitchTile(
               icon: Icons.screenshot_monitor_outlined,
-              title: l10n.screenshotProtection,
-              // Sagt, WARUM der Schalter aus ist, wenn das Betriebssystem den
-              // Schutz verweigert hat. Ohne das springt er kommentarlos
-              // zurück und wirkt kaputt.
-              subtitle: _screenshotProtectionRefused
-                  ? l10n.screenshotProtectionUnavailable
-                  : l10n.screenshotDescription,
-              value: _screenshotProtection,
-              onChanged: _toggleScreenshotProtection,
+              title: l10n.screenshotNotice,
+              subtitle: l10n.screenshotNoticeDescription,
+              value: _screenshotNotice,
+              onChanged: _toggleScreenshotNotice,
               isDark: isDark,
             ),
             _Divider(isDark: isDark),
-            // Nur in Diagnose-Builds (--dart-define=KRYPTA_DIAG=true).
-            if (ScreenshotDiagnosticsScreen.enabled) ...[
-              _NavTile(
-                icon: Icons.bug_report_outlined,
-                title: l10n.screenshotMaskDiagnostics,
-                onTap: () => Navigator.of(context).push(
-                  MaterialPageRoute<void>(
-                    builder: (_) => const ScreenshotDiagnosticsScreen(),
-                  ),
-                ),
-              ),
-              _Divider(isDark: isDark),
-            ],
             _NavTile(
               icon: Icons.shield_rounded,
               title: l10n.vaultPassword,

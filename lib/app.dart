@@ -301,13 +301,7 @@ class _KryptaShellState extends State<KryptaShell> with WidgetsBindingObserver {
     // is unavailable (returns false), we continue in a degraded mode rather
     // than blocking the messenger — E2E encryption is the core guarantee and
     // the post-capture warning stays honest about the unprotected state.
-    //
-    // Der Hinweis für die native Aufnahme-Abdeckung wandert hier mit hinunter,
-    // damit die Übersetzung in den .arb-Dateien bleibt. Vor dem ersten await
-    // gelesen, deshalb ist der context hier unstrittig gültig.
-    await platform.enableScreenshotProtection(
-      captureNotice: AppLocalizations.of(context)!.screenCaptureWarning,
-    );
+    await platform.enableScreenshotProtection();
     await messenger.initialize();
 
     // C6: start periodic integrity monitoring while the messenger is unlocked

@@ -144,13 +144,6 @@ class AppLocalizationsEs extends AppLocalizations {
       'Exigir Face ID o huella tras introducir el código';
 
   @override
-  String get screenshotProtection => 'Protección contra capturas';
-
-  @override
-  String get screenshotDescription =>
-      'Bloquear capturas de pantalla en la mensajería';
-
-  @override
   String get autoDeleteMessages => 'Borrado automático de mensajes';
 
   @override
@@ -472,25 +465,6 @@ class AppLocalizationsEs extends AppLocalizations {
   }
 
   @override
-  String get screenshotAttemptBlocked =>
-      'Captura detectada: el contenido del chat estaba protegido y no se ha capturado';
-
-  @override
-  String get screenshotTaken =>
-      'Atención: se ha hecho una captura y el contenido no estaba protegido';
-
-  @override
-  String get screenCaptureWarning =>
-      'Grabación de pantalla detectada: contenido oculto';
-
-  @override
-  String get screenshotProtectionUnavailable =>
-      'No es posible en este dispositivo: las capturas muestran el contenido';
-
-  @override
-  String get screenshotMaskDiagnostics => 'Diagnóstico: máscara de capturas';
-
-  @override
   String get keysNotPublishedDenied =>
       'El servidor ha rechazado tus claves: nadie puede escribirte.';
 
@@ -810,6 +784,29 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get minutes30 => '30 minutos';
+
+  @override
+  String get screenshotByYou => 'Has hecho una captura del chat';
+
+  @override
+  String screenshotByPeer(String name) {
+    return '$name ha hecho una captura del chat';
+  }
+
+  @override
+  String get recordingByYou => 'Estás grabando la pantalla';
+
+  @override
+  String recordingByPeer(String name) {
+    return '$name está grabando la pantalla';
+  }
+
+  @override
+  String get screenshotNotice => 'Aviso de capturas';
+
+  @override
+  String get screenshotNoticeDescription =>
+      'Ambas partes son informadas de capturas y grabaciones';
 
   @override
   String get privacyPolicy => 'Política de privacidad';

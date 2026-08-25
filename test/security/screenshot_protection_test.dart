@@ -2,38 +2,32 @@ import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kryptaapp/services/platform/platform_security_service.dart';
 
-/// Der Gerätefund an Build 85 (iPhone, iOS 26.6): Screenshots im entsperrten
-/// Messenger zeigten den echten Inhalt, während in den Einstellungen der
-/// Schalter „Screenshot-Schutz" auf **an** stand.
+/// Die Erkennung von Screenshots und Bildschirmaufnahmen.
 ///
-/// Zwei getrennte Fehler steckten dahinter:
+/// Geschützt wird nichts mehr. Der frühere Versuch, den Inhalt zu schwärzen,
+/// beruhte auf undokumentiertem Verhalten von `isSecureTextEntry` und wirkte
+/// ab iOS 26 nicht mehr — die App behauptete einen Schutz, den sie nicht
+/// hatte, und der Schalter in den Einstellungen zeigte trotzdem „an".
 ///
-/// 1. Nativ schlägt die Installation der Maske auf iOS 26 fehl. Das ist
-///    fail-closed und insofern korrekt — es schützt nur nichts mehr.
-/// 2. Dart hielt den Zustand als Kopie vom letzten `enable`-Aufruf. Der
-///    native Watchdog kann die Maske danach abbauen, ohne dass Dart davon je
-///    erfährt; der Einstellungs-Schalter zeigte den Wert obendrein gar nicht
-///    an, sondern ein fest verdrahtetes `true`.
+/// Verhindern lässt sich ein Screenshot auf iOS ohnehin nicht: das System
+/// meldet ihn erst danach. Ehrlich ist deshalb, beiden Seiten Bescheid zu
+/// sagen — so machen es Snapchat und Signal auch.
 ///
-/// Fehler 2 ist der gefährlichere: eine App, die einen Schutz behauptet, den
-/// sie nicht hat, ist schlechter als eine, die ehrlich sagt, dass sie ihn
-/// nicht hat. Diese Tests decken ihn ab.
+/// Diese Tests decken die Plattformbrücke ab: was ein- und ausgeschaltet wird
+/// und was aus den Ereignisströmen herauskommt.
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   const securityChannel = MethodChannel('krypta/security');
+  const screenshotChannel = MethodChannel('krypta/screenshot_events');
   const captureChannel = MethodChannel('krypta/capture_events');
 
   final messenger =
       TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger;
 
   late List<MethodCall> calls;
-  late PlatformSecurityService service;
-
-  /// Antworten, die der native Teil geben soll. Pro Methodenname eine
-  /// Funktion, damit ein Test die Antwort mitten im Ablauf ändern kann —
-  /// genau das simuliert den Watchdog, der die Maske später abbaut.
   late Map<String, dynamic Function(MethodCall)> handlers;
+  late PlatformSecurityService service;
 
   setUp(() {
     calls = [];
@@ -47,86 +41,144 @@ void main() {
       }
       return handler(call);
     });
-    // Der EventChannel meldet sich über seinen eigenen MethodChannel an.
-    messenger.setMockMethodCallHandler(captureChannel, (call) async => null);
+    for (final c in [screenshotChannel, captureChannel]) {
+      messenger.setMockMethodCallHandler(c, (call) async => null);
+    }
   });
 
   tearDown(() {
-    messenger.setMockMethodCallHandler(securityChannel, null);
-    messenger.setMockMethodCallHandler(captureChannel, null);
+    for (final c in [securityChannel, screenshotChannel, captureChannel]) {
+      messenger.setMockMethodCallHandler(c, null);
+    }
   });
 
-  /// Ein Ereignis auf dem Aufnahme-EventChannel einspeisen.
-  Future<void> emitCapture(bool captured) async {
+  Future<void> sende(MethodChannel channel, bool wert) async {
     const codec = StandardMethodCodec();
     await messenger.handlePlatformMessage(
-      captureChannel.name,
-      codec.encodeSuccessEnvelope(captured),
+      channel.name,
+      codec.encodeSuccessEnvelope(wert),
       (_) {},
     );
   }
 
-  group('enableScreenshotProtection', () {
-    test('meldet den geprüften Zustand der nativen Seite, nicht den Wunsch',
-        () async {
+  group('Erkennung ein- und ausschalten', () {
+    test('einschalten meldet, ob die Plattform mitspielt', () async {
       handlers['enableSecureFlag'] = (_) => true;
       expect(await service.enableScreenshotProtection(), isTrue);
       expect(service.isScreenshotProtectionActive, isTrue);
     });
 
-    test('nativ fehlgeschlagen heißt aus — nicht optimistisch an', () async {
-      // Genau der iOS-26.6-Fall: die Maske lässt sich nicht installieren.
-      handlers['enableSecureFlag'] = (_) => false;
+    test('ohne native Antwort gilt: nicht aktiv', () async {
+      // handlers ist leer -> MissingPluginException. Lieber ehrlich „aus"
+      // als eine Zusage, die niemand geprüft hat.
       expect(await service.enableScreenshotProtection(), isFalse);
       expect(service.isScreenshotProtectionActive, isFalse);
     });
 
-    test('reicht den lokalisierten Hinweis für die Aufnahme-Abdeckung durch',
-        () async {
-      // Die Abdeckung wird nativ gezeichnet, der Text muss aber in den
-      // .arb-Dateien bleiben — sonst entsteht eine zweite Textquelle, die
-      // niemand nachpflegt.
-      handlers['enableSecureFlag'] = (_) => true;
-      await service.enableScreenshotProtection(
-        captureNotice: 'Bildschirmaufnahme erkannt',
-      );
-      final call = calls.firstWhere((c) => c.method == 'enableSecureFlag');
-      expect(
-        (call.arguments as Map)['captureNotice'],
-        'Bildschirmaufnahme erkannt',
-      );
-    });
-  });
-
-  group('refreshScreenshotProtectionState', () {
-    test('korrigiert eine veraltete Kopie, wenn die Maske abgebaut wurde',
-        () async {
-      // Das ist der Kern des Fehlers aus Build 85: erst klappt es, dann baut
-      // der Watchdog die Maske ab, und Dart glaubt weiter an den alten Wert.
+    test('einschalten reicht keine Argumente mehr durch', () async {
+      // Der Hinweistext für die frühere Abdeckung ist entfallen — es gibt
+      // keine Abdeckung mehr.
       handlers['enableSecureFlag'] = (_) => true;
       await service.enableScreenshotProtection();
-      expect(service.isScreenshotProtectionActive, isTrue);
-
-      handlers['isScreenshotProtectionActive'] = (_) => false;
-      expect(await service.refreshScreenshotProtectionState(), isFalse);
-      expect(service.isScreenshotProtectionActive, isFalse);
+      final call = calls.firstWhere((c) => c.method == 'enableSecureFlag');
+      expect(call.arguments, isNull);
     });
 
-    test('bestätigt einen weiterhin aktiven Schutz', () async {
-      handlers['isScreenshotProtectionActive'] = (_) => true;
-      expect(await service.refreshScreenshotProtectionState(), isTrue);
-      expect(service.isScreenshotProtectionActive, isTrue);
-    });
+    test('ausschalten setzt den Zustand zurück', () async {
+      handlers['enableSecureFlag'] = (_) => true;
+      handlers['disableSecureFlag'] = (_) => true;
+      await service.enableScreenshotProtection();
 
-    test('ohne native Antwort gilt: kein Schutz', () async {
-      // handlers ist leer -> MissingPluginException. Lieber ehrlich „aus"
-      // als eine Zusage, die niemand geprüft hat.
-      expect(await service.refreshScreenshotProtectionState(), isFalse);
+      await service.disableScreenshotProtection();
+
       expect(service.isScreenshotProtectionActive, isFalse);
+      expect(calls.map((c) => c.method), contains('disableSecureFlag'));
     });
   });
 
-  group('Bildschirmaufnahme und Spiegelung', () {
+  group('Screenshot-Ereignisse', () {
+    test('der Strom meldet jeden Screenshot', () async {
+      final gesehen = <bool>[];
+      final sub = service.onScreenshotDetected.listen(gesehen.add);
+      addTearDown(sub.cancel);
+
+      await sende(screenshotChannel, false);
+      await sende(screenshotChannel, false);
+      await Future<void>.delayed(Duration.zero);
+
+      // Zwei Ereignisse. Der Wert ist immer false — blockiert wurde nichts,
+      // das ist der Punkt. Das Ereignis selbst ist die Nachricht.
+      expect(gesehen, hasLength(2));
+      expect(gesehen.every((b) => b == false), isTrue);
+    });
+  });
+
+  group('Aufnahme-Sitzungen', () {
+    // Der Chat-Bildschirm wird beim Wechseln neu gebaut und horcht dann neu.
+    // Der Zustandsstrom meldet daraufhin die laufende Aufnahme erneut — ohne
+    // eine Kennung der Sitzung wuerde die Gegenseite fuer EINE Aufnahme
+    // mehrfach „Aufnahme gestartet" angezeigt bekommen. Deshalb beobachtet
+    // der Dienst durchgehend und vergibt je Aufnahme eine Nummer.
+    setUp(() async {
+      handlers['enableSecureFlag'] = (_) => true;
+      await service.enableScreenshotProtection();
+    });
+
+    test('ohne Aufnahme gibt es keine Sitzung', () {
+      expect(service.captureSession, 0);
+    });
+
+    test('dieselbe Aufnahme behaelt ihre Nummer', () async {
+      await sende(captureChannel, true);
+      final erste = service.captureSession;
+      expect(erste, isNonZero);
+
+      // Wieder derselbe Zustand — etwa weil ein neuer Horcher dazukommt.
+      await sende(captureChannel, true);
+
+      expect(service.captureSession, erste);
+    });
+
+    test('eine neue Aufnahme bekommt eine neue Nummer', () async {
+      await sende(captureChannel, true);
+      final erste = service.captureSession;
+
+      await sende(captureChannel, false);
+      expect(service.captureSession, 0);
+
+      await sende(captureChannel, true);
+
+      expect(service.captureSession, isNot(erste));
+      expect(service.captureSession, isNonZero);
+    });
+
+    test('onScreenRecordingStarted meldet nur den Beginn', () async {
+      final gemeldet = <int>[];
+      final sub = service.onScreenRecordingStarted.listen(gemeldet.add);
+      addTearDown(sub.cancel);
+
+      await sende(captureChannel, true);
+      await sende(captureChannel, true);
+      await sende(captureChannel, false);
+      await sende(captureChannel, true);
+      await Future<void>.delayed(Duration.zero);
+
+      expect(gemeldet, hasLength(2));
+      expect(gemeldet.first, isNot(gemeldet.last));
+    });
+
+    test('ausschalten beendet die Beobachtung', () async {
+      handlers['disableSecureFlag'] = (_) => true;
+      await sende(captureChannel, true);
+      expect(service.captureSession, isNonZero);
+
+      await service.disableScreenshotProtection();
+
+      expect(service.captureSession, 0);
+    });
+  });
+
+  group('Bildschirmaufnahme', () {
     test('isScreenCaptured gibt den nativen Zustand weiter', () async {
       handlers['isScreenCaptured'] = (_) => true;
       expect(await service.isScreenCaptured(), isTrue);
@@ -136,49 +188,21 @@ void main() {
     });
 
     test('ohne native Antwort wird keine Aufnahme behauptet', () async {
-      // Hier ist die sichere Richtung die andere herum: eine erfundene
-      // Aufnahme würde die App grundlos schwarz schalten.
+      // Eine erfundene Aufnahme würde der Gegenseite eine Meldung schicken,
+      // die nie passiert ist.
       expect(await service.isScreenCaptured(), isFalse);
     });
 
-    test('der Strom meldet Beginn und Ende einer Aufnahme', () async {
-      final seen = <bool>[];
-      final sub = service.onScreenCaptureChanged.listen(seen.add);
+    test('der Strom meldet Beginn und Ende', () async {
+      final gesehen = <bool>[];
+      final sub = service.onScreenCaptureChanged.listen(gesehen.add);
       addTearDown(sub.cancel);
 
-      await emitCapture(true);
-      await emitCapture(false);
+      await sende(captureChannel, true);
+      await sende(captureChannel, false);
       await Future<void>.delayed(Duration.zero);
 
-      expect(seen, [true, false]);
-    });
-  });
-
-  group('Diagnose', () {
-    test('reicht den nativen Bericht unverändert durch', () async {
-      handlers['diagnoseScreenshotMask'] = (_) => <Object?, Object?>{
-            'iosVersion': '26.6',
-            'sublayerCount': 2,
-            'candidates': <Object?>[
-              <Object?, Object?>{'index': 0, 'verifies': false},
-            ],
-          };
-      final report = await service.diagnoseScreenshotMask();
-      expect(report['iosVersion'], '26.6');
-      expect(report['sublayerCount'], 2);
-      expect((report['candidates'] as List), hasLength(1));
-    });
-
-    test('ohne native Antwort kommt ein leerer Bericht, kein Absturz',
-        () async {
-      expect(await service.diagnoseScreenshotMask(), isEmpty);
-    });
-
-    test('forceSecureMaskCandidate reicht den Index durch', () async {
-      handlers['forceSecureMaskCandidate'] = (call) =>
-          (call.arguments as Map)['index'] == 1;
-      expect(await service.forceSecureMaskCandidate(1), isTrue);
-      expect(await service.forceSecureMaskCandidate(0), isFalse);
+      expect(gesehen, [true, false]);
     });
   });
 }

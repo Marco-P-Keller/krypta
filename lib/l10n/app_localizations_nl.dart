@@ -141,13 +141,6 @@ class AppLocalizationsNl extends AppLocalizations {
       'Face ID of vingerafdruk vereisen na het invoeren van de code';
 
   @override
-  String get screenshotProtection => 'Schermafbeeldingsbeveiliging';
-
-  @override
-  String get screenshotDescription =>
-      'Schermafbeeldingen in de berichtenapp blokkeren';
-
-  @override
   String get autoDeleteMessages => 'Berichten automatisch wissen';
 
   @override
@@ -469,25 +462,6 @@ class AppLocalizationsNl extends AppLocalizations {
   }
 
   @override
-  String get screenshotAttemptBlocked =>
-      'Schermafbeelding gedetecteerd – de inhoud van het gesprek was beschermd en is niet vastgelegd';
-
-  @override
-  String get screenshotTaken =>
-      'Let op: er is een schermafbeelding gemaakt en de inhoud was niet beschermd';
-
-  @override
-  String get screenCaptureWarning =>
-      'Schermopname gedetecteerd – inhoud verborgen';
-
-  @override
-  String get screenshotProtectionUnavailable =>
-      'Niet mogelijk op dit apparaat – schermafbeeldingen tonen de inhoud';
-
-  @override
-  String get screenshotMaskDiagnostics => 'Diagnose: schermafbeeldingsmasker';
-
-  @override
   String get keysNotPublishedDenied =>
       'De server heeft je sleutels geweigerd – niemand kan je berichten sturen.';
 
@@ -807,6 +781,30 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get minutes30 => '30 minuten';
+
+  @override
+  String get screenshotByYou =>
+      'Je hebt een schermafbeelding van het gesprek gemaakt';
+
+  @override
+  String screenshotByPeer(String name) {
+    return '$name heeft een schermafbeelding van het gesprek gemaakt';
+  }
+
+  @override
+  String get recordingByYou => 'Je neemt het scherm op';
+
+  @override
+  String recordingByPeer(String name) {
+    return '$name neemt het scherm op';
+  }
+
+  @override
+  String get screenshotNotice => 'Melding bij schermafbeelding';
+
+  @override
+  String get screenshotNoticeDescription =>
+      'Beide kanten horen het bij schermafbeeldingen en opnames';
 
   @override
   String get privacyPolicy => 'Privacyverklaring';

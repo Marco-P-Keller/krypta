@@ -144,13 +144,6 @@ class AppLocalizationsIt extends AppLocalizations {
       'Richiedi Face ID o impronta dopo l’inserimento del codice';
 
   @override
-  String get screenshotProtection => 'Protezione dagli screenshot';
-
-  @override
-  String get screenshotDescription =>
-      'Blocca gli screenshot nella messaggistica';
-
-  @override
   String get autoDeleteMessages => 'Cancellazione automatica dei messaggi';
 
   @override
@@ -469,26 +462,6 @@ class AppLocalizationsIt extends AppLocalizations {
     );
     return 'Password errata. $_temp0 prima che tutti i dati vengano cancellati.';
   }
-
-  @override
-  String get screenshotAttemptBlocked =>
-      'Screenshot rilevato: il contenuto della chat era protetto e non è stato catturato';
-
-  @override
-  String get screenshotTaken =>
-      'Attenzione: è stato fatto uno screenshot e il contenuto non era protetto';
-
-  @override
-  String get screenCaptureWarning =>
-      'Registrazione dello schermo rilevata: contenuto nascosto';
-
-  @override
-  String get screenshotProtectionUnavailable =>
-      'Non possibile su questo dispositivo: gli screenshot mostrano il contenuto';
-
-  @override
-  String get screenshotMaskDiagnostics =>
-      'Diagnostica: maschera degli screenshot';
 
   @override
   String get keysNotPublishedDenied =>
@@ -813,6 +786,29 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get minutes30 => '30 minuti';
+
+  @override
+  String get screenshotByYou => 'Hai fatto uno screenshot della chat';
+
+  @override
+  String screenshotByPeer(String name) {
+    return '$name ha fatto uno screenshot della chat';
+  }
+
+  @override
+  String get recordingByYou => 'Stai registrando lo schermo';
+
+  @override
+  String recordingByPeer(String name) {
+    return '$name sta registrando lo schermo';
+  }
+
+  @override
+  String get screenshotNotice => 'Avviso screenshot';
+
+  @override
+  String get screenshotNoticeDescription =>
+      'Entrambe le parti vengono informate di screenshot e registrazioni';
 
   @override
   String get privacyPolicy => 'Informativa sulla privacy';

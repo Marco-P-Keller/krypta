@@ -14,13 +14,36 @@ class PlatformSecurityService {
   static const _screenshotEventChannel = EventChannel('krypta/screenshot_events');
   static const _captureEventChannel = EventChannel('krypta/capture_events');
 
-  /// Stream of screenshot events from the native platform.
-  /// Emits `true` when a screenshot was blocked (protection on),
-  /// emits `false` when a screenshot was taken (protection off).
+  /// Screenshot-Ereignisse von der Plattform. Der Wert ist immer `false` —
+  /// blockiert wurde nichts, das Ereignis selbst ist die Aussage.
   Stream<bool>? _screenshotStream;
 
-  /// Stream of screen-capture state changes (recording, AirPlay mirroring).
+  /// Zustandswechsel der Bildschirmaufnahme (Aufzeichnung, AirPlay).
   Stream<bool>? _captureStream;
+
+  /// Die durchgehende Beobachtung der Aufnahme.
+  ///
+  /// Sie laeuft, solange die Erkennung an ist — nicht nur, solange ein Chat
+  /// offen ist. Das hat zwei Gruende. Erstens haelt sie den nativen Kanal
+  /// offen, sodass ein spaeter hinzukommender Horcher nicht den bereits
+  /// bekannten Zustand erneut geliefert bekommt. Zweitens laesst sich nur mit
+  /// luekenloser Beobachtung „dieselbe Aufnahme wie eben" von „eine neue
+  /// Aufnahme" unterscheiden.
+  StreamSubscription<bool>? _captureWatch;
+  final _recordingStarted = StreamController<int>.broadcast();
+  int _captureCount = 0;
+  bool _capturing = false;
+
+  /// Nummer der laufenden Aufnahme, `0` wenn gerade keine laeuft.
+  ///
+  /// Der Chat-Bildschirm wird beim Wechseln neu gebaut. Ohne diese Nummer
+  /// wuerde er fuer EINE Aufnahme mehrfach melden — die Gegenseite saehe
+  /// „Bildschirmaufnahme gestartet" bei jedem Oeffnen des Chats erneut.
+  int get captureSession => _capturing ? _captureCount : 0;
+
+  /// Meldet den Beginn einer Aufnahme mit ihrer Nummer. Nur den Beginn: das
+  /// Ende ist nichts, was die Gegenseite erfahren muesste.
+  Stream<int> get onScreenRecordingStarted => _recordingStarted.stream;
 
   /// Whether screenshot protection is currently enabled.
   bool _screenshotProtectionActive = false;
@@ -69,67 +92,58 @@ class PlatformSecurityService {
   /// only blank its content). Reflects the honest state instead of optimism
   /// so callers/telemetry can react if the mask ever fails to install.
   ///
-  /// [captureNotice] ist der Text, den die native Abdeckung während einer
-  /// Bildschirmaufnahme trägt. Er wird hier durchgereicht, damit die
-  /// Übersetzung in den .arb-Dateien bleibt und nicht als zweite, separat zu
-  /// pflegende Textquelle in den Plattformcode wandert.
-  Future<bool> enableScreenshotProtection({String captureNotice = ''}) async {
+  /// Blockiert nichts mehr. Auf iOS liess sich ein Screenshot ohnehin nie
+  /// verhindern, und der Versuch, den Inhalt zu schwaerzen, beruhte auf
+  /// undokumentiertem Verhalten und wirkte ab iOS 26 nicht mehr — die App
+  /// behauptete einen Schutz, den sie nicht hatte. Was hier eingeschaltet
+  /// wird, ist die **Erkennung**: Screenshots und Bildschirmaufnahmen werden
+  /// gemeldet, und beide Seiten erfahren davon.
+  ///
+  /// Auf Android bleibt FLAG_SECURE aktiv — dort blockiert das System
+  /// wirklich, und echter Schutz ist besser als ein Hinweis.
+  Future<bool> enableScreenshotProtection() async {
     if (kIsWeb) {
       _screenshotProtectionActive = false;
       return false;
     }
     try {
-      final active = await _channel.invokeMethod<bool>(
-        'enableSecureFlag',
-        {'captureNotice': captureNotice},
-      );
+      final active = await _channel.invokeMethod<bool>('enableSecureFlag');
       _screenshotProtectionActive = active ?? false;
     } catch (_) {
       _screenshotProtectionActive = false;
     }
+    if (_screenshotProtectionActive) _watchCapture();
     return _screenshotProtectionActive;
   }
 
-  /// Den GEPRÜFTEN Zustand von der Plattform holen, statt der eigenen Kopie
-  /// zu glauben.
-  ///
-  /// [isScreenshotProtectionActive] ist nur ein Abbild des letzten
-  /// `enable`-Aufrufs. Auf iOS kann der native Watchdog die Maske danach
-  /// jederzeit abbauen — bei einer Drehung, einem Wechsel in Split View, beim
-  /// Zurückkommen aus dem Hintergrund. Dart erfährt davon nichts, und die
-  /// Kopie behauptet weiter einen Schutz, den es nicht mehr gibt.
-  ///
-  /// Genau das zeigte Build 85: der Schalter in den Einstellungen stand auf
-  /// „an", während Screenshots den Inhalt ungeschützt aufnahmen. Wer den
-  /// Zustand anzeigt, muss ihn vorher hier erfragen.
-  Future<bool> refreshScreenshotProtectionState() async {
-    if (kIsWeb) {
-      _screenshotProtectionActive = false;
-      return false;
-    }
-    try {
-      final active =
-          await _channel.invokeMethod<bool>('isScreenshotProtectionActive');
-      _screenshotProtectionActive = active ?? false;
-    } catch (_) {
-      // Keine Antwort heißt keine Zusage.
-      _screenshotProtectionActive = false;
-    }
-    return _screenshotProtectionActive;
+  void _watchCapture() {
+    _captureWatch ??= onScreenCaptureChanged.listen((laeuft) {
+      if (laeuft == _capturing) return;
+      _capturing = laeuft;
+      if (laeuft) {
+        _captureCount++;
+        _recordingStarted.add(_captureCount);
+      }
+    });
   }
 
   Future<void> disableScreenshotProtection() async {
     _screenshotProtectionActive = false;
+    // Aus heisst aus: keine Beobachtung, keine laufende Sitzung, und damit
+    // erfaehrt auch die Gegenseite nichts mehr.
+    _captureWatch?.cancel();
+    _captureWatch = null;
+    _capturing = false;
     if (kIsWeb) return;
     try {
       await _channel.invokeMethod('disableSecureFlag');
     } catch (_) {}
   }
 
-  // --- Screenshot Event Detection ---
-
-  /// Stream that emits when a screenshot event is detected.
-  /// Each event is a `Map` with `"blocked"` = true/false.
+  /// Meldet, dass ein Screenshot gemacht wurde.
+  ///
+  /// Der Wert ist immer `false`: verhindert wurde nichts, iOS meldet den
+  /// Screenshot erst danach. Der Strom selbst ist das Ereignis.
   Stream<bool> get onScreenshotDetected {
     _screenshotStream ??= _screenshotEventChannel
         .receiveBroadcastStream()
@@ -164,47 +178,6 @@ class PlatformSecurityService {
         .map((event) => event == true)
         .handleError((_) {});
     return _captureStream!;
-  }
-
-  // --- Diagnose der iOS-Maske ---
-
-  /// Die echte Struktur der geschützten Zeichenfläche vom Gerät melden.
-  ///
-  /// Der Layer-Trick sucht die Zeichenfläche über einen festen Index in
-  /// `sublayers`. Auf iOS 26.6 stimmt der nicht mehr, die Verifikation fällt
-  /// durch und der Schutz schaltet sich ab. Welcher Index dort richtig wäre —
-  /// oder ob Apple das Verhalten ganz abgestellt hat — lässt sich nur am
-  /// Gerät feststellen. Diese Abfrage liefert die Antwort, statt sie über je
-  /// einen Build von rund 45 Minuten zu erraten.
-  ///
-  /// Leere Map, wenn die Plattform nichts liefert (Android, Web, Fehler).
-  Future<Map<String, dynamic>> diagnoseScreenshotMask() async {
-    if (kIsWeb) return const {};
-    try {
-      final report =
-          await _channel.invokeMapMethod<String, dynamic>('diagnoseScreenshotMask');
-      return report ?? const {};
-    } catch (_) {
-      return const {};
-    }
-  }
-
-  /// Einen bestimmten Sublayer als Zeichenfläche erzwingen und melden, ob die
-  /// nativen Prüfungen ihn annehmen.
-  ///
-  /// Danach zeigt erst ein echter Screenshot, ob iOS den Inhalt tatsächlich
-  /// noch ausschließt — das kann keine Prüfung im Code beantworten.
-  Future<bool> forceSecureMaskCandidate(int index) async {
-    if (kIsWeb) return false;
-    try {
-      return await _channel.invokeMethod<bool>(
-            'forceSecureMaskCandidate',
-            {'index': index},
-          ) ??
-          false;
-    } catch (_) {
-      return false;
-    }
   }
 
   // --- Device Integrity Check ---

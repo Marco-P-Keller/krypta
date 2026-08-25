@@ -144,12 +144,6 @@ class AppLocalizationsPt extends AppLocalizations {
       'Exigir Face ID ou impressão digital após a introdução do código';
 
   @override
-  String get screenshotProtection => 'Proteção contra capturas de ecrã';
-
-  @override
-  String get screenshotDescription => 'Bloquear capturas de ecrã nas mensagens';
-
-  @override
   String get autoDeleteMessages => 'Eliminação automática de mensagens';
 
   @override
@@ -471,25 +465,6 @@ class AppLocalizationsPt extends AppLocalizations {
   }
 
   @override
-  String get screenshotAttemptBlocked =>
-      'Captura de ecrã detetada – o conteúdo da conversa estava protegido e não foi captado';
-
-  @override
-  String get screenshotTaken =>
-      'Atenção: foi feita uma captura de ecrã e o conteúdo não estava protegido';
-
-  @override
-  String get screenCaptureWarning =>
-      'Gravação de ecrã detetada – conteúdo ocultado';
-
-  @override
-  String get screenshotProtectionUnavailable =>
-      'Não é possível neste dispositivo – as capturas mostram o conteúdo';
-
-  @override
-  String get screenshotMaskDiagnostics => 'Diagnóstico: máscara de capturas';
-
-  @override
   String get keysNotPublishedDenied =>
       'O servidor recusou as suas chaves – ninguém lhe consegue escrever.';
 
@@ -809,6 +784,29 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get minutes30 => '30 minutos';
+
+  @override
+  String get screenshotByYou => 'Fez uma captura de ecrã da conversa';
+
+  @override
+  String screenshotByPeer(String name) {
+    return '$name fez uma captura de ecrã da conversa';
+  }
+
+  @override
+  String get recordingByYou => 'Está a gravar o ecrã';
+
+  @override
+  String recordingByPeer(String name) {
+    return '$name está a gravar o ecrã';
+  }
+
+  @override
+  String get screenshotNotice => 'Aviso de captura';
+
+  @override
+  String get screenshotNoticeDescription =>
+      'Ambas as partes são informadas de capturas e gravações';
 
   @override
   String get privacyPolicy => 'Política de privacidade';

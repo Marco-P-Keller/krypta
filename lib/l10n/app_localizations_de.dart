@@ -141,12 +141,6 @@ class AppLocalizationsDe extends AppLocalizations {
       'Face ID oder Fingerabdruck nach Codeeingabe verlangen';
 
   @override
-  String get screenshotProtection => 'Screenshot-Schutz';
-
-  @override
-  String get screenshotDescription => 'Screenshots im Messenger blockieren';
-
-  @override
   String get autoDeleteMessages => 'Nachrichten automatisch löschen';
 
   @override
@@ -469,25 +463,6 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
-  String get screenshotAttemptBlocked =>
-      'Screenshot erkannt – der Chat-Inhalt wurde dabei geschützt und nicht aufgenommen';
-
-  @override
-  String get screenshotTaken =>
-      'Achtung: Screenshot gemacht – der Inhalt war nicht geschützt';
-
-  @override
-  String get screenCaptureWarning =>
-      'Bildschirmaufnahme erkannt – der Inhalt ist ausgeblendet';
-
-  @override
-  String get screenshotProtectionUnavailable =>
-      'Auf diesem Gerät nicht möglich – Screenshots zeigen den Inhalt';
-
-  @override
-  String get screenshotMaskDiagnostics => 'Diagnose: Screenshot-Maske';
-
-  @override
   String get keysNotPublishedDenied =>
       'Deine Schlüssel wurden vom Server abgelehnt – andere können dir nicht schreiben.';
 
@@ -806,6 +781,29 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get minutes30 => '30 Minuten';
+
+  @override
+  String get screenshotByYou => 'Du hast einen Screenshot vom Chat gemacht';
+
+  @override
+  String screenshotByPeer(String name) {
+    return '$name hat einen Screenshot vom Chat gemacht';
+  }
+
+  @override
+  String get recordingByYou => 'Du nimmst den Bildschirm auf';
+
+  @override
+  String recordingByPeer(String name) {
+    return '$name nimmt den Bildschirm auf';
+  }
+
+  @override
+  String get screenshotNotice => 'Screenshot-Hinweis';
+
+  @override
+  String get screenshotNoticeDescription =>
+      'Beide Seiten erfahren von Screenshots und Bildschirmaufnahmen';
 
   @override
   String get privacyPolicy => 'Datenschutzerklärung';

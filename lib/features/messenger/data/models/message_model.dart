@@ -2,6 +2,21 @@ import 'package:equatable/equatable.dart';
 
 enum MessageStatus { sending, sent, delivered, read, failed }
 
+/// Ein Ereignis, das als Systemeintrag im Verlauf steht — keine Nachricht,
+/// sondern ein Hinweis.
+///
+/// Der Screenshot-Schutz wurde entfernt: er beruhte auf undokumentiertem
+/// Verhalten und wirkte auf iOS 26.6 nicht mehr. Screenshots lassen sich auf
+/// iOS ohnehin nicht verhindern. Statt einen Schutz zu behaupten, den es nicht
+/// gibt, sagt die App jetzt beiden Seiten Bescheid.
+enum SystemEventKind {
+  /// Jemand hat einen Screenshot des Chats gemacht.
+  screenshot,
+
+  /// Jemand nimmt den Bildschirm auf oder spiegelt ihn.
+  screenRecording,
+}
+
 class Message extends Equatable {
   final String id;
   final String chatId;
@@ -22,6 +37,16 @@ class Message extends Equatable {
   final bool isPasswordProtected;
   final bool passwordUnlocked;
 
+  /// Gesetzt, wenn dieser Eintrag ein Hinweis ist und keine Nachricht.
+  ///
+  /// Bewusst nur die **Art** des Ereignisses, kein Text: `decryptedContent`
+  /// wird nie gespeichert, und ein festgeschriebener deutscher Satz bliebe
+  /// nach einem Sprachwechsel deutsch. Der Text entsteht deshalb erst beim
+  /// Anzeigen. Wer es ausgelöst hat, steht in [senderId].
+  final SystemEventKind? systemEvent;
+
+  bool get isSystemEvent => systemEvent != null;
+
   const Message({
     required this.id,
     required this.chatId,
@@ -36,6 +61,7 @@ class Message extends Equatable {
     this.burnAfterRead = false,
     this.isPasswordProtected = false,
     this.passwordUnlocked = false,
+    this.systemEvent,
   });
 
   bool get isExpired {
@@ -90,6 +116,7 @@ class Message extends Equatable {
         'burnAfterRead': burnAfterRead ? 1 : 0,
         'pwProtected': isPasswordProtected ? 1 : 0,
         'pwUnlocked': passwordUnlocked ? 1 : 0,
+        if (systemEvent != null) 'sysEvent': systemEvent!.index,
       };
 
   factory Message.fromMap(Map<String, dynamic> map) {
@@ -113,6 +140,11 @@ class Message extends Equatable {
       burnAfterRead: (map['burnAfterRead'] as int?) == 1,
       isPasswordProtected: (map['pwProtected'] as int?) == 1,
       passwordUnlocked: (map['pwUnlocked'] as int?) == 1,
+      // Fehlt das Feld, stammt der Eintrag aus der Zeit vor den
+      // Systemhinweisen — dann ist es eine gewöhnliche Nachricht.
+      systemEvent: map['sysEvent'] != null
+          ? SystemEventKind.values[map['sysEvent'] as int]
+          : null,
     );
   }
 

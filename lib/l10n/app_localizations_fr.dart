@@ -144,13 +144,6 @@ class AppLocalizationsFr extends AppLocalizations {
       'Exiger Face ID ou l’empreinte après la saisie du code';
 
   @override
-  String get screenshotProtection => 'Protection contre les captures';
-
-  @override
-  String get screenshotDescription =>
-      'Bloquer les captures d’écran dans la messagerie';
-
-  @override
   String get autoDeleteMessages => 'Effacement automatique des messages';
 
   @override
@@ -469,25 +462,6 @@ class AppLocalizationsFr extends AppLocalizations {
     );
     return 'Mot de passe incorrect. $_temp0 avant l’effacement de toutes les données.';
   }
-
-  @override
-  String get screenshotAttemptBlocked =>
-      'Capture détectée – le contenu de la discussion était protégé et n’a pas été capturé';
-
-  @override
-  String get screenshotTaken =>
-      'Attention : une capture a été prise et le contenu n’était pas protégé';
-
-  @override
-  String get screenCaptureWarning =>
-      'Enregistrement de l’écran détecté – contenu masqué';
-
-  @override
-  String get screenshotProtectionUnavailable =>
-      'Impossible sur cet appareil – les captures montrent le contenu';
-
-  @override
-  String get screenshotMaskDiagnostics => 'Diagnostic : masque de capture';
 
   @override
   String get keysNotPublishedDenied =>
@@ -811,6 +785,29 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get minutes30 => '30 minutes';
+
+  @override
+  String get screenshotByYou => 'Vous avez fait une capture de la discussion';
+
+  @override
+  String screenshotByPeer(String name) {
+    return '$name a fait une capture de la discussion';
+  }
+
+  @override
+  String get recordingByYou => 'Vous enregistrez l’écran';
+
+  @override
+  String recordingByPeer(String name) {
+    return '$name enregistre l’écran';
+  }
+
+  @override
+  String get screenshotNotice => 'Avis de capture';
+
+  @override
+  String get screenshotNoticeDescription =>
+      'Les deux parties sont informées des captures et enregistrements';
 
   @override
   String get privacyPolicy => 'Politique de confidentialité';

@@ -366,18 +366,6 @@ abstract class AppLocalizations {
   /// **'Require Face ID or fingerprint after code entry'**
   String get biometricDescription;
 
-  /// No description provided for @screenshotProtection.
-  ///
-  /// In en, this message translates to:
-  /// **'Screenshot Protection'**
-  String get screenshotProtection;
-
-  /// No description provided for @screenshotDescription.
-  ///
-  /// In en, this message translates to:
-  /// **'Block screenshots in the messenger'**
-  String get screenshotDescription;
-
   /// No description provided for @autoDeleteMessages.
   ///
   /// In en, this message translates to:
@@ -954,36 +942,6 @@ abstract class AppLocalizations {
   /// **'Wrong password. {remaining, plural, =1{1 attempt left} other{{remaining} attempts left}} before all data is wiped.'**
   String wrongPasswordWarning(int remaining);
 
-  /// No description provided for @screenshotAttemptBlocked.
-  ///
-  /// In en, this message translates to:
-  /// **'Screenshot detected – the chat content was protected and not captured'**
-  String get screenshotAttemptBlocked;
-
-  /// No description provided for @screenshotTaken.
-  ///
-  /// In en, this message translates to:
-  /// **'Warning: screenshot taken – the content was not protected'**
-  String get screenshotTaken;
-
-  /// No description provided for @screenCaptureWarning.
-  ///
-  /// In en, this message translates to:
-  /// **'Screen recording detected – content hidden'**
-  String get screenCaptureWarning;
-
-  /// No description provided for @screenshotProtectionUnavailable.
-  ///
-  /// In en, this message translates to:
-  /// **'Not possible on this device – screenshots show the content'**
-  String get screenshotProtectionUnavailable;
-
-  /// No description provided for @screenshotMaskDiagnostics.
-  ///
-  /// In en, this message translates to:
-  /// **'Diagnostics: screenshot mask'**
-  String get screenshotMaskDiagnostics;
-
   /// No description provided for @keysNotPublishedDenied.
   ///
   /// In en, this message translates to:
@@ -1553,6 +1511,42 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'30 minutes'**
   String get minutes30;
+
+  /// No description provided for @screenshotByYou.
+  ///
+  /// In en, this message translates to:
+  /// **'You took a screenshot of the chat'**
+  String get screenshotByYou;
+
+  /// No description provided for @screenshotByPeer.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} took a screenshot of the chat'**
+  String screenshotByPeer(String name);
+
+  /// No description provided for @recordingByYou.
+  ///
+  /// In en, this message translates to:
+  /// **'You are recording the screen'**
+  String get recordingByYou;
+
+  /// No description provided for @recordingByPeer.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} is recording the screen'**
+  String recordingByPeer(String name);
+
+  /// No description provided for @screenshotNotice.
+  ///
+  /// In en, this message translates to:
+  /// **'Screenshot notice'**
+  String get screenshotNotice;
+
+  /// No description provided for @screenshotNoticeDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Both sides are told when a screenshot or recording is made'**
+  String get screenshotNoticeDescription;
 
   /// No description provided for @privacyPolicy.
   ///

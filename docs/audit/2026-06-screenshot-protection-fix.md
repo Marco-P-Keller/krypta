@@ -1,3 +1,22 @@
+> ## ÜBERHOLT (2026-08-25)
+>
+> **Der hier beschriebene iOS-Schutz existiert nicht mehr.** Er beruhte auf
+> undokumentiertem Verhalten der „secure canvas" von `isSecureTextEntry` und
+> wirkte ab **iOS 26** nicht mehr — der Screenshot zeigte den Chat wieder, der
+> Schalter in den Einstellungen zeigte trotzdem „an". Eine App, die einen Schutz
+> behauptet, den sie nicht hat, ist schlechter als eine, die ehrlich ist.
+>
+> Ersetzt durch einen **Hinweis an beide Seiten**, wie bei Snapchat und Signal:
+> siehe [`2026-08-screenshot-hinweis.md`](2026-08-screenshot-hinweis.md).
+>
+> **Android ist nicht betroffen** — `FLAG_SECURE` blockiert dort weiterhin real
+> und bleibt aktiv. Echter Schutz ist besser als ein Hinweis.
+>
+> Das Dokument bleibt als Protokoll stehen: es erklärt, warum der Weg damals
+> richtig schien und woran er gescheitert ist.
+
+---
+
 # Screenshot-Schutz — Fix (2026-06-11)
 
 **Branch:** `fix/build61-delivery` (zusammen mit dem Build-61-Delivery-Fix → Build 62)

@@ -1,14 +1,14 @@
 {
   "@@locale": "en",
   "appName": "Krypta ECC",
-  "@appName": { "description": "Application name" },
-
+  "@appName": {
+    "description": "Application name"
+  },
   "calculator": "Calculator",
   "messenger": "Messenger",
   "settings": "Settings",
   "chats": "Chats",
   "contacts": "Contacts",
-
   "setupTitle": "Welcome to Krypta ECC",
   "setupSubtitle": "Set up your secret codes to get started",
   "secretCodeLabel": "Secret Code",
@@ -22,7 +22,6 @@
   "setupCodesInfo": "All codes must be different and at least 4 digits",
   "back": "Back",
   "next": "Next",
-
   "newChat": "New Chat",
   "typeMessage": "Type a message...",
   "send": "Send",
@@ -30,7 +29,6 @@
   "sent": "Sent",
   "read": "Read",
   "typing": "typing...",
-
   "selfDestructTimer": "Self-destruct timer",
   "seconds30": "30 seconds",
   "minutes5": "5 minutes",
@@ -38,11 +36,9 @@
   "day1": "1 day",
   "week1": "1 week",
   "off": "Off",
-
   "emergencyDelete": "Emergency Delete",
   "emergencyDeleteDescription": "Immediately wipe all data, keys, and sign out",
   "allDataDeleted": "All data has been wiped",
-
   "settingsTitle": "Settings",
   "securitySettings": "Security",
   "changeSecretCode": "Change Secret Code",
@@ -50,8 +46,6 @@
   "changeDeleteCode": "Change Delete Code",
   "biometricUnlock": "Biometric Unlock",
   "biometricDescription": "Require Face ID or fingerprint after code entry",
-  "screenshotProtection": "Screenshot Protection",
-  "screenshotDescription": "Block screenshots in the messenger",
   "autoDeleteMessages": "Auto-delete Messages",
   "accountSection": "Account",
   "privacySection": "Privacy",
@@ -61,13 +55,13 @@
   "version": "Version {version}",
   "@version": {
     "placeholders": {
-      "version": { "type": "String" }
+      "version": {
+        "type": "String"
+      }
     }
   },
-
   "noChats": "No conversations yet",
   "noChatsSubtitle": "Start a new chat to begin messaging securely",
-
   "decoyTitle": "Messages",
   "encryptionInfo": "Messages are end-to-end encrypted",
   "anonymousUser": "Anonymous User",
@@ -78,7 +72,6 @@
   "addContact": "Add Contact",
   "cannotAddYourself": "Cannot add yourself",
   "userNotFound": "User not found",
-
   "myQrCode": "My QR Code",
   "scanQrCode": "Scan QR Code",
   "scanQr": "Scan QR",
@@ -88,7 +81,6 @@
   "idCopied": "ID copied",
   "qrWebUnavailable": "QR scanning is not available on web.\nUse a mobile device to scan QR codes.",
   "thatsYourOwnId": "That's your own ID",
-
   "renameChat": "Rename Chat",
   "chatName": "Chat name",
   "save": "Save",
@@ -103,25 +95,26 @@
   "chatDefaultWithTimer": "Chat default ({timer})",
   "@chatDefaultWithTimer": {
     "placeholders": {
-      "timer": { "type": "String" }
+      "timer": {
+        "type": "String"
+      }
     }
   },
   "messagesAutoDelete": "Messages auto-delete after {timer}",
   "@messagesAutoDelete": {
     "placeholders": {
-      "timer": { "type": "String" }
+      "timer": {
+        "type": "String"
+      }
     }
   },
   "onlyVisibleToYou": "Only visible to you",
-
   "burnAfterRead": "Burn after read",
   "passwordProtected": "Password protected",
-
   "lockMessage": "Lock Message",
   "lockMessageHint": "Set a password for the next message. The recipient must enter this password to read it.",
   "enterPassword": "Enter password",
   "setPassword": "Set Password",
-
   "passwordRequired": "Password Required",
   "passwordRequiredHint": "Enter the password to decrypt this message.",
   "password": "Password",
@@ -129,13 +122,10 @@
   "unlocked": "Unlocked",
   "wrongPassword": "Wrong password",
   "tapToUnlock": "Tap to unlock",
-
   "nameThisContact": "Name this contact",
   "nameContactHint": "Give this contact a name so you know who it is. Only you can see this label.",
   "nameContactPlaceholder": "e.g. Alex, Mom, Work...",
-
   "selfDestructTimerLabel": "Self-Destruct Timer",
-
   "vaultPassword": "Vault Password",
   "vaultPasswordDescription": "Require a strong password after code entry before accessing the messenger",
   "vaultPasswordTitle": "Vault Locked",
@@ -150,7 +140,6 @@
   "confirmPassword": "Confirm password",
   "passwordsDoNotMatch": "Passwords do not match",
   "passwordTooWeak": "Password does not meet the requirements",
-
   "copy": "Copy",
   "copied": "Copied",
   "delete": "Delete",
@@ -159,7 +148,6 @@
   "deleteForMe": "Delete for me",
   "deleteForEveryone": "Delete for everyone",
   "deleteForEveryoneConfirm": "This message will be deleted for both you and the recipient.",
-
   "qrInvalidFormat": "Invalid QR code format. Only Krypta QR codes are accepted.",
   "qrUnsupportedVersion": "Unsupported QR code version. Please update the app.",
   "qrFingerprintMismatch": "Security warning: QR code fingerprint is tampered. Operation aborted.",
@@ -174,14 +162,21 @@
   "aboutClose": "Close",
   "confirm": "Confirm",
   "lockedForSeconds": "Locked for {seconds} seconds.",
-  "@lockedForSeconds": {"placeholders": {"seconds": {"type": "int"}}},
+  "@lockedForSeconds": {
+    "placeholders": {
+      "seconds": {
+        "type": "int"
+      }
+    }
+  },
   "wrongPasswordWarning": "Wrong password. {remaining, plural, =1{1 attempt left} other{{remaining} attempts left}} before all data is wiped.",
-  "@wrongPasswordWarning": {"placeholders": {"remaining": {"type": "int"}}},
-  "screenshotAttemptBlocked": "Screenshot detected – the chat content was protected and not captured",
-  "screenshotTaken": "Warning: screenshot taken – the content was not protected",
-  "screenCaptureWarning": "Screen recording detected – content hidden",
-  "screenshotProtectionUnavailable": "Not possible on this device – screenshots show the content",
-  "screenshotMaskDiagnostics": "Diagnostics: screenshot mask",
+  "@wrongPasswordWarning": {
+    "placeholders": {
+      "remaining": {
+        "type": "int"
+      }
+    }
+  },
   "keysNotPublishedDenied": "The server rejected your keys – others cannot message you.",
   "keysNotPublishedFailed": "Your keys could not be published – others cannot message you.",
   "biometricUnlockReason": "Unlock Krypta Messenger",
@@ -189,7 +184,13 @@
   "deviceCompromisedDegraded": "Device may be compromised. Hardware security disabled.",
   "fieldRequired": "Required",
   "codeMinDigits": "At least {count} digits",
-  "@codeMinDigits": {"placeholders": {"count": {"type": "int"}}},
+  "@codeMinDigits": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "codeDigitsOnly": "Digits only",
   "deleteCodeMustDiffer": "The delete code must differ from your secret code.",
   "setupFailed": "Setup failed. Please try again.",
@@ -278,6 +279,26 @@
   "minute1": "1 minute",
   "welcomeBack": "Welcome back",
   "minutes30": "30 minutes",
+  "screenshotByYou": "You took a screenshot of the chat",
+  "screenshotByPeer": "{name} took a screenshot of the chat",
+  "@screenshotByPeer": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "recordingByYou": "You are recording the screen",
+  "recordingByPeer": "{name} is recording the screen",
+  "@recordingByPeer": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "screenshotNotice": "Screenshot notice",
+  "screenshotNoticeDescription": "Both sides are told when a screenshot or recording is made",
   "privacyPolicy": "Privacy Policy",
   "legalSection": "Legal"
 }

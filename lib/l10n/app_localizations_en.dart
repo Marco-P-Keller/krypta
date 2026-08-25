@@ -141,12 +141,6 @@ class AppLocalizationsEn extends AppLocalizations {
       'Require Face ID or fingerprint after code entry';
 
   @override
-  String get screenshotProtection => 'Screenshot Protection';
-
-  @override
-  String get screenshotDescription => 'Block screenshots in the messenger';
-
-  @override
   String get autoDeleteMessages => 'Auto-delete Messages';
 
   @override
@@ -466,25 +460,6 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get screenshotAttemptBlocked =>
-      'Screenshot detected – the chat content was protected and not captured';
-
-  @override
-  String get screenshotTaken =>
-      'Warning: screenshot taken – the content was not protected';
-
-  @override
-  String get screenCaptureWarning =>
-      'Screen recording detected – content hidden';
-
-  @override
-  String get screenshotProtectionUnavailable =>
-      'Not possible on this device – screenshots show the content';
-
-  @override
-  String get screenshotMaskDiagnostics => 'Diagnostics: screenshot mask';
-
-  @override
   String get keysNotPublishedDenied =>
       'The server rejected your keys – others cannot message you.';
 
@@ -799,6 +774,29 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get minutes30 => '30 minutes';
+
+  @override
+  String get screenshotByYou => 'You took a screenshot of the chat';
+
+  @override
+  String screenshotByPeer(String name) {
+    return '$name took a screenshot of the chat';
+  }
+
+  @override
+  String get recordingByYou => 'You are recording the screen';
+
+  @override
+  String recordingByPeer(String name) {
+    return '$name is recording the screen';
+  }
+
+  @override
+  String get screenshotNotice => 'Screenshot notice';
+
+  @override
+  String get screenshotNoticeDescription =>
+      'Both sides are told when a screenshot or recording is made';
 
   @override
   String get privacyPolicy => 'Privacy Policy';
