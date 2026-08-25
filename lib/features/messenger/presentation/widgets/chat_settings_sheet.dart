@@ -4,6 +4,8 @@ import 'package:provider/provider.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../../../security/verification/safety_number.dart';
+import '../../../../security/verification/safety_number_check.dart';
+import '../safety_number_scanner_screen.dart';
 import '../../../../theme/app_colors.dart';
 import '../../../../theme/app_spacing.dart';
 import '../../data/models/contact_model.dart';
@@ -187,117 +189,6 @@ class _ChatSettingsSheetState extends State<ChatSettingsSheet> {
             ),
           ),
 
-          const SizedBox(height: 24),
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(18),
-            decoration: BoxDecoration(
-              color: isDark
-                  ? AppColors.surfaceElevatedDark
-                  : AppColors.surfaceElevatedLight,
-              borderRadius: BorderRadius.circular(18),
-              border: Border.all(
-                color: isDark
-                    ? AppColors.dividerDark.withValues(alpha: 0.3)
-                    : AppColors.dividerLight.withValues(alpha: 0.5),
-                width: 0.5,
-              ),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    const Icon(Icons.timer_outlined, size: 16, color: AppColors.primary),
-                    const SizedBox(width: 8),
-                    Text(
-                      l10n.autoDeleteTimer,
-                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                            fontWeight: FontWeight.w600,
-                            letterSpacing: -0.1,
-                          ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  l10n.autoDeleteHint,
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: isDark
-                            ? AppColors.textSecondaryDark
-                            : AppColors.textSecondaryLight,
-                        height: 1.4,
-                      ),
-                ),
-                const SizedBox(height: 14),
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: _timerOptions.map((duration) {
-                    final isSelected = chat.defaultSelfDestruct == duration;
-                    return GestureDetector(
-                      onTap: () => _onTimerChanged(duration),
-                      child: AnimatedContainer(
-                        duration: const Duration(milliseconds: 200),
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 14,
-                          vertical: 8,
-                        ),
-                        decoration: BoxDecoration(
-                          gradient: isSelected
-                              ? const LinearGradient(
-                                  colors: [
-                                    AppColors.messageSentStart,
-                                    AppColors.messageSentEnd,
-                                  ],
-                                  begin: Alignment.topLeft,
-                                  end: Alignment.bottomRight,
-                                )
-                              : null,
-                          color: isSelected
-                              ? null
-                              : (isDark
-                                  ? AppColors.surfaceDark
-                                  : AppColors.surfaceLight),
-                          borderRadius: BorderRadius.circular(12),
-                          border: isSelected
-                              ? null
-                              : Border.all(
-                                  color: isDark
-                                      ? AppColors.dividerDark
-                                      : AppColors.dividerLight,
-                                  width: 0.5,
-                                ),
-                          boxShadow: isSelected
-                              ? [
-                                  BoxShadow(
-                                    color: AppColors.primary.withValues(alpha: 0.2),
-                                    blurRadius: 8,
-                                    offset: const Offset(0, 2),
-                                  ),
-                                ]
-                              : null,
-                        ),
-                        child: Text(
-                          _durationLabel(duration),
-                          style: TextStyle(
-                            color: isSelected
-                                ? Colors.white
-                                : (isDark
-                                    ? AppColors.textSecondaryDark
-                                    : AppColors.textSecondaryLight),
-                            fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
-                            fontSize: 13,
-                          ),
-                        ),
-                      ),
-                    );
-                  }).toList(),
-                ),
-              ],
-            ),
-          ),
-
           // ── Key Change Warning ──
           Builder(builder: (_) {
             final contact = messenger.contactForId(chat.recipientId);
@@ -379,30 +270,141 @@ class _ChatSettingsSheetState extends State<ChatSettingsSheet> {
             );
           }),
 
-          // ── Safety Number / Verification ──
-          Builder(builder: (_) {
+          const SizedBox(height: 24),
+
+          // ── Ein Bereich: Löschtimer und Identität ──
+          //
+          // Vorher zwei graue Kästen untereinander, mit dem Warnblock
+          // dazwischen. Beides beantwortet dieselbe Frage — wie sicher ist
+          // dieses Gespräch —, also steht es jetzt in einem Kasten mit einer
+          // Trennlinie statt in zweien mit einer Lücke.
+          Builder(builder: (context) {
             final contact = messenger.contactForId(chat.recipientId);
-            if (contact == null) return const SizedBox.shrink();
-            return Padding(
-              padding: const EdgeInsets.only(bottom: 12),
-              child: Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(18),
-                decoration: BoxDecoration(
+            return Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(18),
+              decoration: BoxDecoration(
+                color: isDark
+                    ? AppColors.surfaceElevatedDark
+                    : AppColors.surfaceElevatedLight,
+                borderRadius: BorderRadius.circular(18),
+                border: Border.all(
                   color: isDark
-                      ? AppColors.surfaceElevatedDark
-                      : AppColors.surfaceElevatedLight,
-                  borderRadius: BorderRadius.circular(18),
-                  border: Border.all(
-                    color: isDark
-                        ? AppColors.dividerDark.withValues(alpha: 0.3)
-                        : AppColors.dividerLight.withValues(alpha: 0.5),
-                    width: 0.5,
-                  ),
+                      ? AppColors.dividerDark.withValues(alpha: 0.3)
+                      : AppColors.dividerLight.withValues(alpha: 0.5),
+                  width: 0.5,
                 ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // — Löschtimer —
+                  Row(
+                    children: [
+                      const Icon(Icons.timer_outlined,
+                          size: 16, color: AppColors.primary),
+                      const SizedBox(width: 8),
+                      Text(
+                        l10n.autoDeleteTimer,
+                        style:
+                            Theme.of(context).textTheme.titleSmall?.copyWith(
+                                  fontWeight: FontWeight.w600,
+                                  letterSpacing: -0.1,
+                                ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    l10n.autoDeleteHint,
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: isDark
+                              ? AppColors.textSecondaryDark
+                              : AppColors.textSecondaryLight,
+                          height: 1.4,
+                        ),
+                  ),
+                  const SizedBox(height: 14),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: _timerOptions.map((duration) {
+                      final isSelected = chat.defaultSelfDestruct == duration;
+                      return GestureDetector(
+                        onTap: () => _onTimerChanged(duration),
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 200),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 14,
+                            vertical: 8,
+                          ),
+                          decoration: BoxDecoration(
+                            gradient: isSelected
+                                ? const LinearGradient(
+                                    colors: [
+                                      AppColors.messageSentStart,
+                                      AppColors.messageSentEnd,
+                                    ],
+                                    begin: Alignment.topLeft,
+                                    end: Alignment.bottomRight,
+                                  )
+                                : null,
+                            color: isSelected
+                                ? null
+                                : (isDark
+                                    ? AppColors.surfaceDark
+                                    : AppColors.surfaceLight),
+                            borderRadius: BorderRadius.circular(12),
+                            border: isSelected
+                                ? null
+                                : Border.all(
+                                    color: isDark
+                                        ? AppColors.dividerDark
+                                        : AppColors.dividerLight,
+                                    width: 0.5,
+                                  ),
+                            boxShadow: isSelected
+                                ? [
+                                    BoxShadow(
+                                      color: AppColors.primary
+                                          .withValues(alpha: 0.2),
+                                      blurRadius: 8,
+                                      offset: const Offset(0, 2),
+                                    ),
+                                  ]
+                                : null,
+                          ),
+                          child: Text(
+                            _durationLabel(duration),
+                            style: TextStyle(
+                              color: isSelected
+                                  ? Colors.white
+                                  : (isDark
+                                      ? AppColors.textSecondaryDark
+                                      : AppColors.textSecondaryLight),
+                              fontWeight: isSelected
+                                  ? FontWeight.w600
+                                  : FontWeight.w400,
+                              fontSize: 13,
+                            ),
+                          ),
+                        ),
+                      );
+                    }).toList(),
+                  ),
+
+                  // — Identität —
+                  if (contact != null) ...[
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 18),
+                      child: Divider(
+                        height: 0.5,
+                        thickness: 0.5,
+                        color: isDark
+                            ? AppColors.dividerDark.withValues(alpha: 0.5)
+                            : AppColors.dividerLight,
+                      ),
+                    ),
                     Row(
                       children: [
                         Icon(
@@ -416,12 +418,16 @@ class _ChatSettingsSheetState extends State<ChatSettingsSheet> {
                         ),
                         const SizedBox(width: 8),
                         Text(
-                          contact.isVerified ? 'Verified' : 'Identity',
-                          style:
-                              Theme.of(context).textTheme.titleSmall?.copyWith(
-                                    fontWeight: FontWeight.w600,
-                                    letterSpacing: -0.1,
-                                  ),
+                          contact.isVerified
+                              ? l10n.identityVerified
+                              : l10n.identityTitle,
+                          style: Theme.of(context)
+                              .textTheme
+                              .titleSmall
+                              ?.copyWith(
+                                fontWeight: FontWeight.w600,
+                                letterSpacing: -0.1,
+                              ),
                         ),
                         const Spacer(),
                         if (contact.isVerified)
@@ -432,9 +438,9 @@ class _ChatSettingsSheetState extends State<ChatSettingsSheet> {
                               color: AppColors.success.withValues(alpha: 0.12),
                               borderRadius: BorderRadius.circular(8),
                             ),
-                            child: const Text(
-                              'Secure',
-                              style: TextStyle(
+                            child: Text(
+                              l10n.identityBadge,
+                              style: const TextStyle(
                                   color: AppColors.success,
                                   fontSize: 11,
                                   fontWeight: FontWeight.w600),
@@ -471,7 +477,7 @@ class _ChatSettingsSheetState extends State<ChatSettingsSheet> {
                       ),
                     ),
                   ],
-                ),
+                ],
               ),
             );
           }),
@@ -752,6 +758,19 @@ class _ChatSettingsSheetState extends State<ChatSettingsSheet> {
                 ),
               ),
             ),
+            const SizedBox(height: 12),
+            // Der Hinweis versprach das Scannen schon immer — jetzt gibt es
+            // die Taste dazu. 60 Ziffern mit dem Auge zu vergleichen macht
+            // niemand zuverlaessig; die Kamera vergleicht sie alle.
+            SizedBox(
+              width: double.infinity,
+              child: FilledButton.icon(
+                onPressed: () => _scanUndPruefen(
+                    ctx, messenger, contact, safetyNumber),
+                icon: const Icon(Icons.qr_code_scanner_rounded, size: 18),
+                label: Text(l10n.scanSafetyNumber),
+              ),
+            ),
             const SizedBox(height: 8),
             Text(
               l10n.safetyNumberMatchHint,
@@ -797,6 +816,84 @@ class _ChatSettingsSheetState extends State<ChatSettingsSheet> {
                 foregroundColor: Colors.white,
               ),
             ),
+        ],
+      ),
+    );
+  }
+
+  /// Den Code der Gegenseite scannen und gegen die eigene Nummer halten.
+  ///
+  /// Beide Seiten rechnen aus denselben Identitaetsschluesseln dieselben 60
+  /// Ziffern aus. Zeigt das andere Geraet dieselbe Zahl, hat niemand
+  /// dazwischengefunkt — derselbe Nachweis wie das Vergleichen mit dem Auge,
+  /// nur ohne 60 Ziffern abzulesen.
+  Future<void> _scanUndPruefen(
+    BuildContext ctx,
+    MessengerProvider messenger,
+    Contact contact,
+    String eigeneNummer,
+  ) async {
+    // Vor dem ersten await greifen: nach dem Schliessen des Dialogs ist
+    // dessen Kontext hin, und der eigene ist dann ueber eine asynchrone
+    // Luecke hinweg gefasst.
+    final meldungen = ScaffoldMessenger.of(context);
+
+    final gescannt = await Navigator.of(ctx).push<String>(
+      MaterialPageRoute(builder: (_) => const SafetyNumberScannerScreen()),
+    );
+    if (gescannt == null || !ctx.mounted) return;
+
+    final l10n = AppLocalizations.of(ctx)!;
+    switch (checkScannedSafetyNumber(
+        scanned: gescannt, expected: eigeneNummer)) {
+      case SafetyNumberVerdict.matches:
+        final ok = await messenger.markContactVerified(
+          contact.id,
+          method: VerificationMethod.qrCode,
+          verifiedPublicKey: contact.publicKey,
+        );
+        if (!ctx.mounted) return;
+        if (!ok) {
+          // Der Schluessel hat sich zwischen Anzeige und Bestaetigung
+          // geaendert. Dann ist die gescannte Nummer nichts mehr wert.
+          _warnung(ctx, l10n.verificationFailedKeyMismatch, null);
+          return;
+        }
+        Navigator.of(ctx).pop();
+        meldungen.showSnackBar(
+          SnackBar(
+            content: Text(l10n.safetyNumberMatches(contact.displayName)),
+            backgroundColor: AppColors.success,
+          ),
+        );
+
+      case SafetyNumberVerdict.differs:
+        // Kein SnackBar: das hier ist der Fall, fuer den es die Nummer
+        // ueberhaupt gibt. Er gehoert nicht in eine Meldung, die nach drei
+        // Sekunden verschwindet.
+        _warnung(ctx, l10n.safetyNumberDiffers, l10n.safetyNumberDiffersHint);
+
+      case SafetyNumberVerdict.notASafetyNumber:
+        meldungen.showSnackBar(
+          SnackBar(content: Text(l10n.safetyNumberNotRecognised)),
+        );
+    }
+  }
+
+  void _warnung(BuildContext ctx, String titel, String? text) {
+    final l10n = AppLocalizations.of(ctx)!;
+    showDialog<void>(
+      context: ctx,
+      builder: (dialog) => AlertDialog(
+        icon: const Icon(Icons.gpp_bad_rounded,
+            color: AppColors.destructive, size: 32),
+        title: Text(titel, textAlign: TextAlign.center),
+        content: text == null ? null : Text(text),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialog).pop(),
+            child: Text(l10n.aboutClose),
+          ),
         ],
       ),
     );

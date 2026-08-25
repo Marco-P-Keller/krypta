@@ -330,6 +330,9 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
           final chat = messenger.chatById(widget.chat.id);
           final name = chat?.recipientName ?? widget.chat.recipientName;
           final isTyping = messenger.isTyping(widget.chat.recipientId);
+          final istBestaetigt =
+              messenger.contactForId(widget.chat.recipientId)?.isVerified ??
+                  false;
           final colors = _avatarGradient(name);
 
           return GestureDetector(
@@ -371,6 +374,8 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
                               fontWeight: FontWeight.w600,
                             ),
                       ),
+                      // „schreibt…" verdraengt den Hinweis, solange es
+                      // laeuft — sonst springt die Zeile hin und her.
                       if (isTyping)
                         Text(
                           l10n.typing,
@@ -378,6 +383,26 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
                             color: AppColors.accent,
                             fontSize: 12,
                           ),
+                        )
+                      else if (istBestaetigt)
+                        // Klein und beilaeufig: es ist eine Feststellung,
+                        // keine Werbung. Wer nicht bestaetigt hat, sieht
+                        // hier nichts — eine Abwesenheit ist keine Warnung.
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(Icons.verified_rounded,
+                                size: 11, color: AppColors.success),
+                            const SizedBox(width: 3),
+                            Text(
+                              l10n.verifiedContact,
+                              style: const TextStyle(
+                                color: AppColors.success,
+                                fontSize: 11,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
                         ),
                     ],
                   ),

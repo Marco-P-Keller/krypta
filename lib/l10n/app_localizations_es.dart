@@ -813,4 +813,39 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get legalSection => 'Aspectos legales';
+
+  @override
+  String get identityTitle => 'Identidad';
+
+  @override
+  String get identityVerified => 'Verificado';
+
+  @override
+  String get identityBadge => 'Seguro';
+
+  @override
+  String get scanSafetyNumber => 'Escanear código';
+
+  @override
+  String get safetyNumberScanHint =>
+      'Apunta la cámara al número de seguridad de tu contacto';
+
+  @override
+  String safetyNumberMatches(String name) {
+    return 'Los números coinciden: $name está verificado.';
+  }
+
+  @override
+  String get safetyNumberDiffers => 'Los números no coinciden.';
+
+  @override
+  String get safetyNumberDiffersHint =>
+      'Puede que alguien esté interceptando esta conversación. No envíes nada confidencial hasta comprobarlo en persona.';
+
+  @override
+  String get safetyNumberNotRecognised =>
+      'Eso no es un número de seguridad. Escanea el código que aparece bajo el número de seguridad de tu contacto.';
+
+  @override
+  String get verifiedContact => 'verificado';
 }

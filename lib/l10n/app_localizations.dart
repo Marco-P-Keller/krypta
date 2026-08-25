@@ -1559,6 +1559,66 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Legal'**
   String get legalSection;
+
+  /// Ueberschrift des Identitaets-Bereichs in den Chat-Einstellungen
+  ///
+  /// In en, this message translates to:
+  /// **'Identity'**
+  String get identityTitle;
+
+  /// Ueberschrift desselben Bereichs, wenn der Kontakt bestaetigt ist
+  ///
+  /// In en, this message translates to:
+  /// **'Verified'**
+  String get identityVerified;
+
+  /// Kurzes Abzeichen neben der Ueberschrift, wenn bestaetigt
+  ///
+  /// In en, this message translates to:
+  /// **'Secure'**
+  String get identityBadge;
+
+  /// Knopf: den QR-Code der Gegenseite scannen
+  ///
+  /// In en, this message translates to:
+  /// **'Scan code'**
+  String get scanSafetyNumber;
+
+  /// Hinweis im Scanner
+  ///
+  /// In en, this message translates to:
+  /// **'Point the camera at your contact\'s safety number'**
+  String get safetyNumberScanHint;
+
+  /// Erfolg nach dem Scannen; {name} ist der Kontaktname
+  ///
+  /// In en, this message translates to:
+  /// **'The numbers match — {name} is verified.'**
+  String safetyNumberMatches(String name);
+
+  /// Die gescannte Nummer weicht ab
+  ///
+  /// In en, this message translates to:
+  /// **'The numbers do not match.'**
+  String get safetyNumberDiffers;
+
+  /// Was das bedeutet und was zu tun ist
+  ///
+  /// In en, this message translates to:
+  /// **'Someone may be intercepting this conversation. Don\'t send anything sensitive until you have checked in person.'**
+  String get safetyNumberDiffersHint;
+
+  /// Der gescannte Code ist keine Sicherheitsnummer
+  ///
+  /// In en, this message translates to:
+  /// **'That is not a safety number. Scan the code shown under your contact\'s safety number.'**
+  String get safetyNumberNotRecognised;
+
+  /// Steht im Chat klein unter dem Namen
+  ///
+  /// In en, this message translates to:
+  /// **'verified'**
+  String get verifiedContact;
 }
 
 class _AppLocalizationsDelegate

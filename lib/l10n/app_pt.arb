@@ -241,5 +241,15 @@
   "screenshotNotice": "Aviso de captura",
   "screenshotNoticeDescription": "Ambas as partes são informadas de capturas e gravações",
   "privacyPolicy": "Política de privacidade",
-  "legalSection": "Informação legal"
+  "legalSection": "Informação legal",
+  "identityTitle": "Identidade",
+  "identityVerified": "Verificado",
+  "identityBadge": "Seguro",
+  "scanSafetyNumber": "Ler código",
+  "safetyNumberScanHint": "Aponta a câmara para o número de segurança do teu contacto",
+  "safetyNumberMatches": "Os números coincidem — {name} está verificado.",
+  "safetyNumberDiffers": "Os números não coincidem.",
+  "safetyNumberDiffersHint": "Alguém pode estar a intercetar esta conversa. Não envies nada confidencial até confirmarem pessoalmente.",
+  "safetyNumberNotRecognised": "Isto não é um número de segurança. Lê o código que aparece no teu contacto por baixo do número de segurança.",
+  "verifiedContact": "verificado"
 }

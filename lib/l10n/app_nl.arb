@@ -241,5 +241,15 @@
   "screenshotNotice": "Melding bij schermafbeelding",
   "screenshotNoticeDescription": "Beide kanten horen het bij schermafbeeldingen en opnames",
   "privacyPolicy": "Privacyverklaring",
-  "legalSection": "Juridisch"
+  "legalSection": "Juridisch",
+  "identityTitle": "Identiteit",
+  "identityVerified": "Geverifieerd",
+  "identityBadge": "Veilig",
+  "scanSafetyNumber": "Code scannen",
+  "safetyNumberScanHint": "Richt de camera op het veiligheidsnummer van je contact",
+  "safetyNumberMatches": "De nummers komen overeen — {name} is geverifieerd.",
+  "safetyNumberDiffers": "De nummers komen niet overeen.",
+  "safetyNumberDiffersHint": "Mogelijk luistert iemand mee. Stuur niets vertrouwelijks totdat je dit persoonlijk hebt nagegaan.",
+  "safetyNumberNotRecognised": "Dat is geen veiligheidsnummer. Scan de code die bij je contact onder het veiligheidsnummer staat.",
+  "verifiedContact": "geverifieerd"
 }

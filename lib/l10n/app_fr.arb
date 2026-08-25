@@ -241,5 +241,15 @@
   "screenshotNotice": "Avis de capture",
   "screenshotNoticeDescription": "Les deux parties sont informées des captures et enregistrements",
   "privacyPolicy": "Politique de confidentialité",
-  "legalSection": "Mentions légales"
+  "legalSection": "Mentions légales",
+  "identityTitle": "Identité",
+  "identityVerified": "Vérifié",
+  "identityBadge": "Sécurisé",
+  "scanSafetyNumber": "Scanner le code",
+  "safetyNumberScanHint": "Dirige la caméra vers le numéro de sécurité de ton contact",
+  "safetyNumberMatches": "Les numéros correspondent — {name} est vérifié.",
+  "safetyNumberDiffers": "Les numéros ne correspondent pas.",
+  "safetyNumberDiffersHint": "Quelqu'un intercepte peut-être cette conversation. N'envoie rien de confidentiel avant d'avoir vérifié en personne.",
+  "safetyNumberNotRecognised": "Ce n'est pas un numéro de sécurité. Scanne le code affiché sous le numéro de sécurité de ton contact.",
+  "verifiedContact": "vérifié"
 }

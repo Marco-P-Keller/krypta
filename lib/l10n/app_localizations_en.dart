@@ -803,4 +803,39 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get legalSection => 'Legal';
+
+  @override
+  String get identityTitle => 'Identity';
+
+  @override
+  String get identityVerified => 'Verified';
+
+  @override
+  String get identityBadge => 'Secure';
+
+  @override
+  String get scanSafetyNumber => 'Scan code';
+
+  @override
+  String get safetyNumberScanHint =>
+      'Point the camera at your contact\'s safety number';
+
+  @override
+  String safetyNumberMatches(String name) {
+    return 'The numbers match — $name is verified.';
+  }
+
+  @override
+  String get safetyNumberDiffers => 'The numbers do not match.';
+
+  @override
+  String get safetyNumberDiffersHint =>
+      'Someone may be intercepting this conversation. Don\'t send anything sensitive until you have checked in person.';
+
+  @override
+  String get safetyNumberNotRecognised =>
+      'That is not a safety number. Scan the code shown under your contact\'s safety number.';
+
+  @override
+  String get verifiedContact => 'verified';
 }

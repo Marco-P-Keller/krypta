@@ -300,5 +300,50 @@
   "screenshotNotice": "Screenshot notice",
   "screenshotNoticeDescription": "Both sides are told when a screenshot or recording is made",
   "privacyPolicy": "Privacy Policy",
-  "legalSection": "Legal"
+  "legalSection": "Legal",
+  "identityTitle": "Identity",
+  "@identityTitle": {
+    "description": "Ueberschrift des Identitaets-Bereichs in den Chat-Einstellungen"
+  },
+  "identityVerified": "Verified",
+  "@identityVerified": {
+    "description": "Ueberschrift desselben Bereichs, wenn der Kontakt bestaetigt ist"
+  },
+  "identityBadge": "Secure",
+  "@identityBadge": {
+    "description": "Kurzes Abzeichen neben der Ueberschrift, wenn bestaetigt"
+  },
+  "scanSafetyNumber": "Scan code",
+  "@scanSafetyNumber": {
+    "description": "Knopf: den QR-Code der Gegenseite scannen"
+  },
+  "safetyNumberScanHint": "Point the camera at your contact's safety number",
+  "@safetyNumberScanHint": {
+    "description": "Hinweis im Scanner"
+  },
+  "safetyNumberMatches": "The numbers match — {name} is verified.",
+  "@safetyNumberMatches": {
+    "description": "Erfolg nach dem Scannen; {name} ist der Kontaktname",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "safetyNumberDiffers": "The numbers do not match.",
+  "@safetyNumberDiffers": {
+    "description": "Die gescannte Nummer weicht ab"
+  },
+  "safetyNumberDiffersHint": "Someone may be intercepting this conversation. Don't send anything sensitive until you have checked in person.",
+  "@safetyNumberDiffersHint": {
+    "description": "Was das bedeutet und was zu tun ist"
+  },
+  "safetyNumberNotRecognised": "That is not a safety number. Scan the code shown under your contact's safety number.",
+  "@safetyNumberNotRecognised": {
+    "description": "Der gescannte Code ist keine Sicherheitsnummer"
+  },
+  "verifiedContact": "verified",
+  "@verifiedContact": {
+    "description": "Steht im Chat klein unter dem Namen"
+  }
 }

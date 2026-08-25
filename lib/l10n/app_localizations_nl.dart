@@ -811,4 +811,39 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get legalSection => 'Juridisch';
+
+  @override
+  String get identityTitle => 'Identiteit';
+
+  @override
+  String get identityVerified => 'Geverifieerd';
+
+  @override
+  String get identityBadge => 'Veilig';
+
+  @override
+  String get scanSafetyNumber => 'Code scannen';
+
+  @override
+  String get safetyNumberScanHint =>
+      'Richt de camera op het veiligheidsnummer van je contact';
+
+  @override
+  String safetyNumberMatches(String name) {
+    return 'De nummers komen overeen — $name is geverifieerd.';
+  }
+
+  @override
+  String get safetyNumberDiffers => 'De nummers komen niet overeen.';
+
+  @override
+  String get safetyNumberDiffersHint =>
+      'Mogelijk luistert iemand mee. Stuur niets vertrouwelijks totdat je dit persoonlijk hebt nagegaan.';
+
+  @override
+  String get safetyNumberNotRecognised =>
+      'Dat is geen veiligheidsnummer. Scan de code die bij je contact onder het veiligheidsnummer staat.';
+
+  @override
+  String get verifiedContact => 'geverifieerd';
 }

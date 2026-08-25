@@ -262,5 +262,15 @@
   "screenshotNotice": "Screenshot-Hinweis",
   "screenshotNoticeDescription": "Beide Seiten erfahren von Screenshots und Bildschirmaufnahmen",
   "privacyPolicy": "Datenschutzerklärung",
-  "legalSection": "Rechtliches"
+  "legalSection": "Rechtliches",
+  "identityTitle": "Identität",
+  "identityVerified": "Bestätigt",
+  "identityBadge": "Sicher",
+  "scanSafetyNumber": "Code scannen",
+  "safetyNumberScanHint": "Richte die Kamera auf die Sicherheitsnummer deines Kontakts",
+  "safetyNumberMatches": "Die Nummern stimmen überein — {name} ist bestätigt.",
+  "safetyNumberDiffers": "Die Nummern stimmen nicht überein.",
+  "safetyNumberDiffersHint": "Möglicherweise hört jemand mit. Schick nichts Vertrauliches, bis ihr das persönlich geklärt habt.",
+  "safetyNumberNotRecognised": "Das ist keine Sicherheitsnummer. Scanne den Code, der bei deinem Kontakt unter der Sicherheitsnummer steht.",
+  "verifiedContact": "bestätigt"
 }
