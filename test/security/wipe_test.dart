@@ -155,9 +155,14 @@ void main() {
       expect(restored.chatId, original.chatId);
       expect(restored.senderId, original.senderId);
       expect(restored.recipientId, original.recipientId);
-      // decryptedContent is intentionally null after roundtrip for
-      // burn-after-read / self-destruct messages (not persisted to disk)
-      expect(restored.decryptedContent, isNull);
+      // Der Klartext wird seit Build 91 mitgeschrieben — sonst zeigte der
+      // Verlauf nach dem Schliessen der App nur noch „••••••". Hier ist die
+      // Nachricht passwortgeschuetzt und noch GESPERRT: dann steht in
+      // decryptedContent der verschluesselte Block, und der muss bleiben,
+      // sonst liesse sie sich nach einem Neustart nie wieder oeffnen.
+      // Der Klartext einer entsperrten bleibt draussen — siehe
+      // test/core/message_persistence_test.dart.
+      expect(restored.decryptedContent, original.decryptedContent);
       expect(restored.status, original.status);
       expect(restored.selfDestructDuration, original.selfDestructDuration);
       expect(restored.burnAfterRead, original.burnAfterRead);

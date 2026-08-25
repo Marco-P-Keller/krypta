@@ -111,9 +111,24 @@ class Message extends Equatable {
         'senderId': senderId,
         'recipientId': recipientId,
         'encryptedContent': encryptedContent,
-        // decryptedContent is NEVER persisted to disk.
-        // Plaintext exists only in RAM for UI display and is cleared
-        // on chat switch, memory scrub, or app restart.
+        // Der Klartext wird mitgeschrieben — sonst zeigt der Verlauf nach
+        // dem Schliessen der App nur noch „••••••", und ein Messenger, der
+        // seine eigene Geschichte vergisst, ist keiner.
+        //
+        // Der Schutz liegt nicht im Wegwerfen, sondern im Ort: der
+        // EncryptedLocalStore verschluesselt mit XChaCha20-Poly1305 unter
+        // einem Schluessel aus dem Schluesselbund, nach Moeglichkeit in der
+        // Secure Enclave verpackt und erst nach der ersten Entsperrung des
+        // Geraets lesbar. Denselben Schluessel haelt die App ohnehin im
+        // Arbeitsspeicher.
+        //
+        // Ausgenommen: der Klartext einer passwortgeschuetzten Nachricht.
+        // Der gehoert hinter das Passwort. Solange sie gesperrt ist, steht
+        // hier ohnehin nur der verschluesselte Block — der bleibt, sonst
+        // liesse sie sich nach einem Neustart nie wieder oeffnen.
+        if (!(isPasswordProtected && passwordUnlocked) &&
+            decryptedContent != null)
+          'decryptedContent': decryptedContent,
         'timestamp': timestamp.millisecondsSinceEpoch,
         'status': status.index,
         'selfDestructMs': selfDestructDuration?.inMilliseconds,
@@ -131,9 +146,7 @@ class Message extends Equatable {
       senderId: map['senderId'] as String,
       recipientId: map['recipientId'] as String,
       encryptedContent: map['encryptedContent'] as String,
-      // decryptedContent never loaded from disk — RAM-only field.
-      // After app restart, messages appear without content (maximum security).
-      // Password-protected messages can be re-unlocked from encryptedContent.
+      decryptedContent: map['decryptedContent'] as String?,
       timestamp: DateTime.fromMillisecondsSinceEpoch(map['timestamp'] as int),
       status: MessageStatus.values[map['status'] as int],
       // A2: clamp stored milliseconds — non-positive → no self-destruct,

@@ -173,7 +173,6 @@ class MessengerProvider extends ChangeNotifier {
   StreamSubscription? _inboxSub;
   Timer? _inboxReconnectTimer;
   Timer? _selfDestructTimer;
-  Timer? _memoryScrubTimer;
   bool _isSyncing = false;
   bool _isInitialized = false;
 
@@ -438,7 +437,6 @@ class MessengerProvider extends ChangeNotifier {
     // Clean up expired messages BEFORE starting timer to avoid concurrent modification
     _cleanupExpiredMessages();
     _startSelfDestructTimer();
-    _startMemoryScrubTimer();
     _isInitialized = true;
     notifyListeners();
   }
@@ -1657,11 +1655,12 @@ class MessengerProvider extends ChangeNotifier {
   }
 
   void setActiveChat(String? chatId) {
-    // Clear decrypted content from the previous active chat (memory hygiene)
-    if (_activeChatId != null && _activeChatId != chatId) {
-      _clearDecryptedContent(_activeChatId!);
-    }
-
+    // Hier wurde frueher der Klartext des verlassenen Chats aus dem Speicher
+    // geraeumt. Das darf nicht mehr sein: der Klartext liegt jetzt auch im
+    // verschluesselten Speicher, und jeder folgende Statuswechsel schreibt
+    // die Liste zurueck — ein geraeumter Eintrag wuerde die gespeicherte
+    // Fassung mit null ueberschreiben und die Nachricht dauerhaft
+    // unleserlich machen.
     _activeChatId = chatId;
     if (chatId != null) {
       final idx = _chats.indexWhere((c) => c.id == chatId);
@@ -2918,26 +2917,6 @@ class MessengerProvider extends ChangeNotifier {
     });
   }
 
-  /// Periodically clear decrypted content from inactive chat messages.
-  ///
-  /// Plaintext should not linger in RAM longer than necessary. Messages
-  /// in the active chat are kept readable; all other chats have their
-  /// decrypted content scrubbed every 2 minutes.
-  void _startMemoryScrubTimer() {
-    _memoryScrubTimer?.cancel();
-    _memoryScrubTimer = Timer.periodic(const Duration(minutes: 2), (_) {
-      _scrubInactiveDecryptedContent();
-    });
-  }
-
-  /// Clear decrypted content from all chats except the active one.
-  void _scrubInactiveDecryptedContent() {
-    for (final chatId in _messagesByChat.keys) {
-      if (chatId == _activeChatId) continue;
-      _clearDecryptedContent(chatId);
-    }
-  }
-
   Future<void> burnReadMessages(String chatId) async {
     final messages = _messagesByChat[chatId];
     if (messages == null) return;
@@ -3520,7 +3499,6 @@ class MessengerProvider extends ChangeNotifier {
     _privacyPolling?.stop();
     _privacyPolling = null;
     _selfDestructTimer?.cancel();
-    _memoryScrubTimer?.cancel();
     // Cancel all pending jitter timers (control messages, read receipts)
     for (final timer in _pendingJitterTimers) {
       timer.cancel();

@@ -115,8 +115,8 @@ class _KryptaShellState extends State<KryptaShell> with WidgetsBindingObserver {
   /// Only `paused` / `hidden` triggers the lock — `inactive` fires for
   /// transient interruptions (screenshot, permission prompt, control-center
   /// peek, incoming call overlay) which should NOT count as backgrounding.
-  /// Screenshot protection stays active throughout the messenger session,
-  /// so the app-switcher snapshot is already covered by the OS privacy mask.
+  /// Die Vorschau im App-Umschalter deckt ein eigener Mechanismus ab, der
+  /// unabhaengig vom Screenshot-Hinweis laeuft.
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     final isBackgrounded = state == AppLifecycleState.paused ||
