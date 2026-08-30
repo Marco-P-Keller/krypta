@@ -319,6 +319,32 @@ class SecureStorageService {
     return remaining.isNegative ? Duration.zero : remaining;
   }
 
+  // --- Reste einer frueheren Installation ---
+
+  /// Ob im Schluesselbund noch irgendetwas von Krypta liegt.
+  ///
+  /// Auf iOS gehoert der Schluesselbund dem System, nicht der App: Codes,
+  /// Tresor-Passwort und Identitaetsschluessel ueberstehen das Loeschen der
+  /// App. Findet sich hier etwas, obwohl der Installationsmerker fehlt, wurde
+  /// Krypta geloescht und neu geladen.
+  ///
+  /// Bei einem Fehler `false` - lieber Reste stehen lassen als aus Versehen
+  /// raeumen. `readAll()` kann an einem einzelnen unlesbaren Eintrag
+  /// scheitern; dann wird Schluessel fuer Schluessel nachgesehen.
+  Future<bool> hasResidualData() async {
+    try {
+      final all = await _storage.readAll();
+      return all.keys.any((k) => k.startsWith(StorageKeys.prefix));
+    } catch (_) {
+      for (final key in StorageKeys.all) {
+        try {
+          if (await _storage.read(key: key) != null) return true;
+        } catch (_) {}
+      }
+      return false;
+    }
+  }
+
   // --- Wipe ---
 
   Future<void> deleteAll() async {

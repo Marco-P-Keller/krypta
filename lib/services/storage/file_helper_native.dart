@@ -3,14 +3,35 @@ import 'dart:typed_data';
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as p;
 
+const _storeDirName = 'krypta_store';
+
 Future<String?> getStorageBasePath() async {
   try {
     final dir = await getApplicationDocumentsDirectory();
-    final path = p.join(dir.path, 'krypta_store');
+    final path = p.join(dir.path, _storeDirName);
     await Directory(path).create(recursive: true);
     return path;
   } catch (_) {
     return null;
+  }
+}
+
+/// Ob der Datenordner dieser Installation schon da ist - ohne ihn dabei
+/// anzulegen.
+///
+/// Er verschwindet mit der App und ist deshalb der zweite Beleg dafuer, dass
+/// eine Installation nicht neu ist. Gebraucht wird er fuer Bestandsnutzer:
+/// deren Fassung kannte den Installationsmerker noch nicht, also fehlt er
+/// ihnen nach dem Update. Ohne diese Ruecksicht raeumte genau dieses Update
+/// jedem von ihnen das Konto weg.
+///
+/// Bei einem Fehler `true` - im Zweifel wird nichts geraeumt.
+Future<bool> localStoreExists() async {
+  try {
+    final dir = await getApplicationDocumentsDirectory();
+    return await Directory(p.join(dir.path, _storeDirName)).exists();
+  } catch (_) {
+    return true;
   }
 }
 
@@ -81,6 +102,43 @@ Future<void> clearWipeMarker() async {
     final file = await _wipeMarkerFile();
     if (await file.exists()) await file.delete();
   } catch (_) {}
+}
+
+// --- Merker: diese Installation lief schon einmal ---
+//
+// Eine 0-Byte-Datei neben dem Wipe-Merker, im App-Support-Ordner. Der Ordner
+// gehoert zur Installation: er verschwindet, wenn jemand Krypta loescht, und
+// er bleibt stehen, wenn nur die App aktualisiert wird. Genau diese
+// Unterscheidung braucht der FreshInstallGuard.
+//
+// Der Schluesselbund taugt dafuer nicht - auf iOS ueberlebt er beides.
+
+Future<File> _installMarkerFile() async {
+  final dir = await getApplicationSupportDirectory();
+  await Directory(dir.path).create(recursive: true);
+  return File(p.join(dir.path, '.krypta_installed'));
+}
+
+/// Ob der Merker liegt. Bei einem Fehler `true` - dann passiert nichts.
+/// Ein falsches `false` wuerde Daten loeschen, die es noch geben soll; ein
+/// falsches `true` laesst nur Reste liegen. Der Irrtum in diese Richtung ist
+/// der billigere.
+Future<bool> isInstallMarkerSet() async {
+  try {
+    final file = await _installMarkerFile();
+    return await file.exists();
+  } catch (_) {
+    return true;
+  }
+}
+
+/// Setzt den Merker. Wirft, wenn der Ordner nicht beschreibbar ist - der
+/// Aufrufer raeumt dann nicht, sonst raeumte er bei jedem Start erneut.
+Future<void> setInstallMarker() async {
+  final file = await _installMarkerFile();
+  if (!await file.exists()) {
+    await file.create(recursive: true);
+  }
 }
 
 /// Wipe all application cache and temp directories.

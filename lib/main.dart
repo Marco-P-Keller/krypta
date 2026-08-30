@@ -14,6 +14,7 @@ import 'security/hardware/hardware_security_binding.dart';
 import 'security/key_management/key_manager.dart';
 import 'security/prekey/prekey_manager.dart';
 import 'services/emergency/emergency_wipe_service.dart';
+import 'services/emergency/fresh_install_guard.dart';
 import 'services/firebase/auth_service.dart';
 import 'services/firebase/firestore_service.dart';
 import 'services/notification/notification_service.dart';
@@ -104,6 +105,44 @@ Future<void> main() async {
   }
   localStore.setHardwareBinding(hardwareBinding);
 
+  final preKeyManager = PreKeyManager(localStore: localStore);
+
+  final emergencyWipeService = EmergencyWipeService(
+    secureStorage: secureStorage,
+    keyManager: keyManager,
+    localStore: localStore,
+    firestore: firestoreService,
+    preKeyManager: preKeyManager,
+  );
+
+  // Wer Krypta loescht und neu laedt, soll ein leeres Krypta vorfinden - wie
+  // nach der Notfall-Loeschung. Auf iOS ueberlebt der Schluesselbund das
+  // Loeschen der App, der Verlauf nicht; ohne diesen Schritt bliebe ein
+  // halber Zustand stehen. Ein Software-Update laesst den Merker liegen und
+  // aendert damit nichts.
+  //
+  // Steht hier und nicht weiter oben, weil das Raeumen ueber `localStore`
+  // laeuft und dort den Hardware-Schluessel mit erwischen soll. Bis hierhin
+  // hat noch nichts in den Schluesselbund geschrieben.
+  final installGuard = FreshInstallGuard(
+    installMarkerSet: file_helper.isInstallMarkerSet,
+    writeInstallMarker: file_helper.setInstallMarker,
+    appDataPresent: file_helper.localStoreExists,
+    hasResidue: secureStorage.hasResidualData,
+    wipe: emergencyWipeService.wipeEverything,
+    identityKeysPresent: keyManager.hasIdentityKeys,
+  );
+  final installOutcome = await installGuard.run();
+  if (installOutcome == FreshInstallOutcome.reinstallWiped ||
+      installOutcome == FreshInstallOutcome.reinstallIncomplete) {
+    // Das Raeumen hat den Enklavenschluessel mitgenommen. Die frische
+    // Installation braucht einen neuen, sonst liegt der Datenbankschluessel
+    // ungewrappt im Schluesselbund.
+    if (hardwareBinding.isHardwareBindingAvailable) {
+      await hardwareBinding.createHardwareKey();
+    }
+  }
+
   // Key Transparency: hash-chained commitment log for MITM detection.
   // Must be set up before KeyManager so key creation publishes commitments.
   final transparencyLog = KeyTransparencyLog(store: localStore);
@@ -120,16 +159,6 @@ Future<void> main() async {
         );
       }
     },
-  );
-
-  final preKeyManager = PreKeyManager(localStore: localStore);
-
-  final emergencyWipeService = EmergencyWipeService(
-    secureStorage: secureStorage,
-    keyManager: keyManager,
-    localStore: localStore,
-    firestore: firestoreService,
-    preKeyManager: preKeyManager,
   );
 
   final messengerProvider = MessengerProvider(

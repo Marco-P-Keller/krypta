@@ -12,3 +12,9 @@ Future<void> setWipeMarker() async {}
 Future<bool> isWipeMarkerSet() async => false;
 Future<void> clearWipeMarker() async {}
 Future<void> wipeCacheAndTemp() async {}
+/// Web hat keinen App-Ordner, der mit der Installation verschwindet - hier
+/// gibt es nichts zu erkennen und nichts zu raeumen.
+Future<bool> isInstallMarkerSet() async => true;
+Future<bool> localStoreExists() async => true;
+Future<void> setInstallMarker() async {}
+

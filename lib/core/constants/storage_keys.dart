@@ -69,4 +69,38 @@ abstract final class StorageKeys {
   // ── Vault fail tracking (persistent brute-force protection) ─────────────
   static const String vaultFailCount      = 'krypta_vault_fails';
   static const String vaultLastFailTime   = 'krypta_vault_lastfail';
+
+  // -- Gemeinsames Praefix -------------------------------------------------
+
+  /// Alles, was Krypta im Schluesselbund ablegt, faengt damit an.
+  /// [SecureStorageService.hasResidualData] erkennt daran Reste einer
+  /// frueheren Installation.
+  static const String prefix = 'krypta_';
+
+  /// Jeder Schluessel einzeln - Rueckfallebene, wenn `readAll()` scheitert.
+  /// Neue Schluessel gehoeren hier mit hinein, sonst uebersieht die
+  /// Rueckfallebene sie.
+  static const List<String> all = [
+    identityPrivateKey,
+    identityPublicKey,
+    preKeyPrivate,
+    preKeyPublic,
+    secretCode,
+    legacyDecoyCode,
+    deleteCode,
+    vaultPassword,
+    vaultPasswordEnabled,
+    databaseKey,
+    databaseKeyWrapped,
+    setupComplete,
+    biometricEnabled,
+    screenshotProtection,
+    userId,
+    pushPrivacyMode,
+    languageCode,
+    deliveryReceiptsEnabled,
+    readReceiptsEnabled,
+    vaultFailCount,
+    vaultLastFailTime,
+  ];
 }

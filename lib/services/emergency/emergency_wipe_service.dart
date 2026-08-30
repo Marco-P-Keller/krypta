@@ -49,7 +49,12 @@ class EmergencyWipeService {
         _auth = auth ?? FirebaseAuth.instance;
 
   Future<void> wipeEverything() async {
-    final userId = _auth.currentUser?.uid;
+    // Beide Angaben JETZT festhalten. Wer die Loeschung mit einer Frist
+    // aufruft und danach weitergeht, laesst den Rest im Hintergrund
+    // weiterlaufen - meldet sich bis dahin ein neues anonymes Konto an,
+    // wuerde ein spaeter gelesenes `currentUser` genau dieses treffen.
+    final user = _auth.currentUser;
+    final userId = user?.uid;
 
     // H3: set a wipe-in-progress marker BEFORE any destructive step so an
     // interrupt (crash, kill, power loss) is detectable on next startup.
@@ -66,7 +71,7 @@ class EmergencyWipeService {
     await _wipeServer(userId);
 
     // Phase 3: Auth cleanup
-    await _wipeAuth();
+    await _wipeAuth(user);
 
     // H3: only clear the marker if identity keys are really gone. If
     // deleteAllKeys / secure_storage.deleteAll failed or were interrupted,
@@ -114,9 +119,9 @@ class EmergencyWipeService {
     try { await _firestore.deleteAllUserData(userId); } catch (_) {}
   }
 
-  Future<void> _wipeAuth() async {
+  Future<void> _wipeAuth(User? user) async {
     try {
-      await _auth.currentUser?.delete();
+      await user?.delete();
     } catch (_) {}
     try {
       await _auth.signOut();
