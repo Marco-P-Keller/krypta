@@ -154,23 +154,19 @@ class ChatTile extends StatelessWidget {
                           ),
                         )
                       else
+                      // Hier stand einmal der Klartext der letzten Nachricht.
+                      // Die Chatliste ist die eine Ansicht, die jemand sieht,
+                      // ohne einen Chat zu oeffnen — ueber die Schulter, oder
+                      // weil das entsperrte Telefon kurz aus der Hand gegeben
+                      // wurde. Was noetig ist, sagt der Ballon rechts: dass
+                      // etwas da ist, und wie viel. Nicht, was drinsteht.
+                      //
+                      // Die Zeile bleibt, weil die Anfrage-Markierung und die
+                      // Tipp-Anzeige darin sitzen.
                       Expanded(
                         child: chat.isTyping
                             ? _TypingIndicator(isDark: isDark)
-                            : Text(
-                                chat.lastMessagePreview ?? '',
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .bodyMedium
-                                    ?.copyWith(
-                                      color: isDark
-                                          ? AppColors.textSecondaryDark
-                                          : AppColors.textSecondaryLight,
-                                      fontSize: 14,
-                                    ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
+                            : const SizedBox.shrink(),
                       ),
                       if (hasUnread) ...[
                         const SizedBox(width: 8),

@@ -1712,7 +1712,7 @@ class MessengerProvider extends ChangeNotifier {
     await _pruneUnlockAttempts([messageId]);
     if (messages.isNotEmpty) {
       final last = messages.last;
-      _updateChatPreview(chatId, last.decryptedContent ?? '', last.timestamp);
+      _touchChat(chatId, last.timestamp);
     }
     notifyListeners();
   }
@@ -1751,7 +1751,7 @@ class MessengerProvider extends ChangeNotifier {
     await _pruneUnlockAttempts([messageId]);
     if (messages.isNotEmpty) {
       final last = messages.last;
-      _updateChatPreview(chatId, last.decryptedContent ?? '', last.timestamp);
+      _touchChat(chatId, last.timestamp);
     }
     notifyListeners();
   }
@@ -1800,14 +1800,13 @@ class MessengerProvider extends ChangeNotifier {
       final idx = _chats.indexWhere((c) => c.id == chatId);
       if (idx != -1) {
         _chats[idx] = _chats[idx].copyWith(
-          lastMessagePreview: null,
           lastMessageTime: null,
         );
         _localStore.saveChats(_chats);
       }
     } else {
       final last = messages.last;
-      _updateChatPreview(chatId, last.decryptedContent ?? '', last.timestamp);
+      _touchChat(chatId, last.timestamp);
     }
     notifyListeners();
   }
@@ -1888,7 +1887,6 @@ class MessengerProvider extends ChangeNotifier {
     final idx = _chats.indexWhere((c) => c.id == chatId);
     if (idx != -1) {
       _chats[idx] = _chats[idx].copyWith(
-        lastMessagePreview: null,
         lastMessageTime: null,
         unreadCount: 0,
       );
@@ -2154,7 +2152,7 @@ class MessengerProvider extends ChangeNotifier {
 
     if (!asContactRequest) {
       _addMessageToChat(chatId, message);
-      _updateChatPreview(chatId, hasPassword ? '🔒 Password message' : text, now);
+      _touchChat(chatId, now);
       notifyListeners();
     }
 
@@ -2767,9 +2765,8 @@ class MessengerProvider extends ChangeNotifier {
         );
 
         _addMessageToChat(chat.id, message);
-        final preview = isPasswordProtected ? '🔒 Password message' : messageContent;
-        _updateChatPreview(
-          chat.id, preview, message.timestamp,
+        _touchChat(
+          chat.id, message.timestamp,
           incrementUnread: _activeChatId != chat.id,
         );
 
@@ -3012,9 +3009,8 @@ class MessengerProvider extends ChangeNotifier {
       );
 
       _addMessageToChat(chat.id, message);
-      final preview = isPasswordProtected ? '🔒 Password message' : messageContent;
-      _updateChatPreview(
-        chat.id, preview, message.timestamp,
+      _touchChat(
+        chat.id, message.timestamp,
         incrementUnread: _activeChatId != chat.id,
       );
 
@@ -3595,12 +3591,16 @@ class MessengerProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  void _updateChatPreview(String chatId, String preview, DateTime time,
+  /// Zeitstempel nachziehen, Chat nach oben, ggf. den Zaehler hochsetzen.
+  ///
+  /// Hiess `_updateChatPreview` und schrieb den Klartext der Nachricht in die
+  /// Chatliste. Der steht jetzt nur noch im Nachrichtenspeicher; nach aussen
+  /// sagt allein der Zaehler, dass etwas da ist.
+  void _touchChat(String chatId, DateTime time,
       {bool incrementUnread = false}) {
     final idx = _chats.indexWhere((c) => c.id == chatId);
     if (idx == -1) return;
     _chats[idx] = _chats[idx].copyWith(
-      lastMessagePreview: preview,
       lastMessageTime: time,
       unreadCount: incrementUnread ? _chats[idx].unreadCount + 1 : _chats[idx].unreadCount,
     );

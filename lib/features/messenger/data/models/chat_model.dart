@@ -4,7 +4,11 @@ class Chat extends Equatable {
   final String id;
   final String recipientId;
   final String recipientName;
-  final String? lastMessagePreview;
+  /// Kein `lastMessagePreview` mehr. Der Klartext der letzten Nachricht stand
+  /// hier — und damit ein zweites Mal auf der Platte, in `chats.enc`, neben
+  /// dem Nachrichtenspeicher. Angezeigt wurde er in der Chatliste, der einen
+  /// Ansicht, die jemand ohne Oeffnen eines Chats zu sehen bekommt. Beides
+  /// ist weg; was noetig ist, sagt `unreadCount`.
   final DateTime? lastMessageTime;
   final int unreadCount;
   final bool isTyping;
@@ -14,7 +18,6 @@ class Chat extends Equatable {
     required this.id,
     required this.recipientId,
     required this.recipientName,
-    this.lastMessagePreview,
     this.lastMessageTime,
     this.unreadCount = 0,
     this.isTyping = false,
@@ -23,7 +26,6 @@ class Chat extends Equatable {
 
   Chat copyWith({
     String? recipientName,
-    Object? lastMessagePreview = _sentinel,
     Object? lastMessageTime = _sentinel,
     int? unreadCount,
     bool? isTyping,
@@ -33,9 +35,6 @@ class Chat extends Equatable {
       id: id,
       recipientId: recipientId,
       recipientName: recipientName ?? this.recipientName,
-      lastMessagePreview: lastMessagePreview == _sentinel
-          ? this.lastMessagePreview
-          : lastMessagePreview as String?,
       lastMessageTime: lastMessageTime == _sentinel
           ? this.lastMessageTime
           : lastMessageTime as DateTime?,
@@ -51,7 +50,6 @@ class Chat extends Equatable {
         'id': id,
         'recipientId': recipientId,
         'recipientName': recipientName,
-        'lastMessagePreview': lastMessagePreview,
         'lastMessageTime': lastMessageTime?.millisecondsSinceEpoch,
         'unreadCount': unreadCount,
         'defaultSelfDestructMs': defaultSelfDestruct?.inMilliseconds,
@@ -62,7 +60,8 @@ class Chat extends Equatable {
       id: map['id'] as String,
       recipientId: map['recipientId'] as String,
       recipientName: map['recipientName'] as String,
-      lastMessagePreview: map['lastMessagePreview'] as String?,
+      // `lastMessagePreview` aus dem Bestand wird bewusst nicht gelesen. Beim
+      // naechsten Schreiben faellt es damit aus der Datei.
       lastMessageTime: map['lastMessageTime'] != null
           ? DateTime.fromMillisecondsSinceEpoch(map['lastMessageTime'] as int)
           : null,
