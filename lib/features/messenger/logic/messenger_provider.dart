@@ -524,7 +524,7 @@ class MessengerProvider extends ChangeNotifier {
       // Die Anfrage abschicken. Ohne sie erfaehrt die Gegenseite nichts und
       // beide warten auf den jeweils anderen — genau der Zustand, den dieser
       // Umbau beseitigt.
-      await _sendRequestTo(contact);
+      await _sendRequestTo(contact, preverifiedServerKey: publicKeyBase64);
 
       return contact;
     } catch (e) {
@@ -617,7 +617,11 @@ class MessengerProvider extends ChangeNotifier {
         await _localStore.saveContacts(_contacts);
         notifyListeners();
         if (_contacts[idx].isOutgoingRequest) {
-          await _sendRequestTo(_contacts[idx], qrToken: qrToken);
+          await _sendRequestTo(
+            _contacts[idx],
+            qrToken: qrToken,
+            preverifiedServerKey: serverKeyBase64,
+          );
         }
         return (_contacts[idx], QrContactResult.verified);
       }
@@ -643,7 +647,11 @@ class MessengerProvider extends ChangeNotifier {
       _contacts.add(contact);
       await _localStore.saveContacts(_contacts);
       notifyListeners();
-      await _sendRequestTo(contact, qrToken: qrToken);
+      await _sendRequestTo(
+        contact,
+        qrToken: qrToken,
+        preverifiedServerKey: serverKeyBase64,
+      );
       return (contact, QrContactResult.verified);
     } catch (e) {
       if (kDebugMode) debugPrint('QR contact add failed: $e');
@@ -963,13 +971,18 @@ class MessengerProvider extends ChangeNotifier {
   /// Die Kontaktanfrage an [contact] verschicken.
   ///
   /// Eigener Weg, damit der ID-Pfad und der QR-Pfad dieselbe Regel benutzen.
-  Future<void> _sendRequestTo(Contact contact, {String? qrToken}) async {
+  Future<void> _sendRequestTo(
+    Contact contact, {
+    String? qrToken,
+    String? preverifiedServerKey,
+  }) async {
     final chat = getOrCreateChat(contact);
     await sendMessage(
       chatId: chat.id,
       text: '',
       asContactRequest: true,
       qrToken: qrToken,
+      preverifiedServerKey: preverifiedServerKey,
     );
   }
 
@@ -1965,6 +1978,26 @@ class MessengerProvider extends ChangeNotifier {
   /// [asContactRequest] schickt eine Kontaktanfrage statt einer Nachricht:
   /// ohne Text, ohne sichtbare Blase, und an der Sendesperre vorbei — sie ist
   /// der einzige Weg, diese Sperre überhaupt aufzulösen.
+  /// Ob vor dem Senden noch einmal beim Server nach dem Schluessel des
+  /// Empfaengers gefragt werden muss.
+  ///
+  /// Die Vorab-Pruefung faengt einen Schluesselwechsel ab, der zwischen zwei
+  /// Posteingaengen passiert ist. Ueberspringen darf sie nur, wer denselben
+  /// Schluessel gerade selbst geholt hat und den Kontakt aus genau dieser
+  /// Antwort gebaut hat — dann kann das Nachfragen nichts liefern, was die
+  /// erste Antwort nicht schon enthielt.
+  ///
+  /// Bedingung ist die Gleichheit der Bytes, kein Zeitfenster: wer sich irrt,
+  /// fragt nach. Ein stiller Verzicht auf die Pruefung ist so nicht moeglich.
+  @visibleForTesting
+  static bool needsServerKeyCheck({
+    required String? preverified,
+    required String contactKey,
+  }) =>
+      preverified == null ||
+      preverified.isEmpty ||
+      preverified != contactKey;
+
   Future<void> sendMessage({
     required String chatId,
     required String text,
@@ -1973,6 +2006,7 @@ class MessengerProvider extends ChangeNotifier {
     String? password,
     bool asContactRequest = false,
     String? qrToken,
+    String? preverifiedServerKey,
   }) async {
     // H1-Proto: serialize concurrent sendMessage calls per chat so the
     // ratchet-encrypt + globalSendSeqNo update happens atomically. Without
@@ -1987,6 +2021,7 @@ class MessengerProvider extends ChangeNotifier {
           password: password,
           asContactRequest: asContactRequest,
           qrToken: qrToken,
+          preverifiedServerKey: preverifiedServerKey,
         ));
   }
 
@@ -1998,6 +2033,7 @@ class MessengerProvider extends ChangeNotifier {
     String? password,
     bool asContactRequest = false,
     String? qrToken,
+    String? preverifiedServerKey,
   }) async {
     // A3: bail out if a deleteChat is already tearing this chat down. Without
     // this, a send started during the delete window can still hit Firestore
@@ -2028,21 +2064,34 @@ class MessengerProvider extends ChangeNotifier {
     // we last fetched it. This catches key changes that happen between
     // inbox notifications, preventing messages encrypted to a stale key.
     // Fail-closed: if we can't verify the key, don't send.
-    try {
-      final serverKeyBase64 = await _firestore.getPublicKey(contact.id);
-      if (serverKeyBase64 != null &&
-          serverKeyBase64 != base64Encode(contact.publicKey)) {
-        // Key changed on server — trigger key change flow and abort send.
-        await addContact(contact.id);
-        if (kDebugMode) debugPrint('Send aborted: server key changed');
+    //
+    // Uebersprungen wird sie nur, wenn der Aufrufer den Schluessel gerade
+    // selbst geholt hat und der Kontakt aus dieser Antwort gebaut wurde
+    // (Hinzufuegen und QR-Scan). Dort war es dieselbe Abfrage im Abstand von
+    // Millisekunden — zweimal fragen sagt dem Server nur ein zweites Mal, wer
+    // sich fuer wen interessiert, und liefert sonst nichts.
+    if (needsServerKeyCheck(
+      preverified: preverifiedServerKey,
+      contactKey: base64Encode(contact.publicKey),
+    )) {
+      try {
+        final serverKeyBase64 = await _firestore.getPublicKey(contact.id);
+        if (serverKeyBase64 != null &&
+            serverKeyBase64 != base64Encode(contact.publicKey)) {
+          // Key changed on server — trigger key change flow and abort send.
+          await addContact(contact.id);
+          if (kDebugMode) debugPrint('Send aborted: server key changed');
+          return;
+        }
+      } catch (e) {
+        // Fail-closed: if we cannot verify the recipient's key is still
+        // valid, refuse to send. A malicious server could return errors
+        // to prevent key change detection while the key is compromised.
+        if (kDebugMode) {
+          debugPrint('Send aborted: key verification failed: $e');
+        }
         return;
       }
-    } catch (e) {
-      // Fail-closed: if we cannot verify the recipient's key is still
-      // valid, refuse to send. A malicious server could return errors
-      // to prevent key change detection while the key is compromised.
-      if (kDebugMode) debugPrint('Send aborted: key verification failed: $e');
-      return;
     }
 
     // Rotate our own delivery token if expired (24h max age).
