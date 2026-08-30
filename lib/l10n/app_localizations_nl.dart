@@ -39,12 +39,6 @@ class AppLocalizationsNl extends AppLocalizations {
   String get secretCodeHint => 'Voer de code in die je berichten ontgrendelt';
 
   @override
-  String get decoyCodeLabel => 'Lokcode';
-
-  @override
-  String get decoyCodeHint => 'Voer een code in die een nepberichtenapp opent';
-
-  @override
   String get deleteCodeLabel => 'Wiscode';
 
   @override
@@ -128,9 +122,6 @@ class AppLocalizationsNl extends AppLocalizations {
   String get changeSecretCode => 'Geheime code wijzigen';
 
   @override
-  String get changeDecoyCode => 'Lokcode wijzigen';
-
-  @override
   String get changeDeleteCode => 'Wiscode wijzigen';
 
   @override
@@ -169,9 +160,6 @@ class AppLocalizationsNl extends AppLocalizations {
   @override
   String get noChatsSubtitle =>
       'Begin een nieuw gesprek om veilig te berichten';
-
-  @override
-  String get decoyTitle => 'Berichten';
 
   @override
   String get encryptionInfo => 'Berichten zijn end-to-end versleuteld';

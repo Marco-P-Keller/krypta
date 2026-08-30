@@ -19,8 +19,16 @@ abstract final class StorageKeys {
 
   // ── Access codes (Argon2id hashed — CodeStorage) ─────────────────────────
   static const String secretCode = 'krypta_code_secret';
-  static const String decoyCode  = 'krypta_code_decoy';
   static const String deleteCode = 'krypta_code_delete';
+
+  /// Altlast: der Code des ausgebauten Tarn-Messengers.
+  ///
+  /// Es gibt keinen Weg mehr, ihn zu setzen oder zu pruefen. Der Name steht
+  /// nur noch hier, weil man einen Schluessel benennen koennen muss, um ihn zu
+  /// loeschen — [LegacyCleanup] raeumt ihn beim ersten Start weg. Er bleibt
+  /// ausserdem in [all], damit eine Notfall-Loeschung ihn auf einem Geraet
+  /// erwischt, das noch nicht aufgeraeumt hat.
+  static const String legacyDecoyCode = 'krypta_code_decoy';
 
   // ── Vault password (Argon2id hashed — VaultStorage) ──────────────────────
   static const String vaultPassword        = 'krypta_vault_hash';
@@ -41,6 +49,13 @@ abstract final class StorageKeys {
 
   // ── Privacy mode (push vs polling) ──────────────────────────────────────
   static const String pushPrivacyMode = 'krypta_cfg_push_privacy';
+
+  /// Ob das einmalige Aufraeumen der Altlasten gelaufen ist.
+  ///
+  /// Bewusst neutral benannt: ein Schluessel namens `..._decoy_purged` wuerde
+  /// jedem, der den Schluesselbund liest, erzaehlen, dass diese App einmal
+  /// einen Tarnmodus hatte — genau der Hinweis, den das Aufraeumen beseitigt.
+  static const String legacyCleanupDone = 'krypta_cfg_legacy_cleanup';
 
   /// Die gewaehlte Anzeigesprache als reiner Sprachcode ('en', 'de', ...).
   static const String languageCode = 'krypta_cfg_language';

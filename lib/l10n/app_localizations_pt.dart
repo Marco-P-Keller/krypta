@@ -40,13 +40,6 @@ class AppLocalizationsPt extends AppLocalizations {
       'Introduza o código que desbloqueia as suas mensagens';
 
   @override
-  String get decoyCodeLabel => 'Código de disfarce';
-
-  @override
-  String get decoyCodeHint =>
-      'Introduza um código que abre uma aplicação de mensagens falsa';
-
-  @override
   String get deleteCodeLabel => 'Código de eliminação';
 
   @override
@@ -131,9 +124,6 @@ class AppLocalizationsPt extends AppLocalizations {
   String get changeSecretCode => 'Alterar o código secreto';
 
   @override
-  String get changeDecoyCode => 'Alterar o código de disfarce';
-
-  @override
   String get changeDeleteCode => 'Alterar o código de eliminação';
 
   @override
@@ -172,9 +162,6 @@ class AppLocalizationsPt extends AppLocalizations {
   @override
   String get noChatsSubtitle =>
       'Inicie uma nova conversa para trocar mensagens em segurança';
-
-  @override
-  String get decoyTitle => 'Mensagens';
 
   @override
   String get encryptionInfo => 'As mensagens são cifradas de ponta a ponta';

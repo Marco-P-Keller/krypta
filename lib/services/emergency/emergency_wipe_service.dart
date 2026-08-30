@@ -13,7 +13,7 @@ import '../../security/prekey/prekey_manager.dart';
 /// Wipe matrix — every item is wiped in priority order:
 ///
 /// Phase 1 — Local (no network, highest priority):
-///   [x] Encrypted local store (chats, messages, contacts, ratchet states, decoy data)
+///   [x] Encrypted local store (chats, messages, contacts, ratchet states)
 ///   [x] All encryption keys (identity, prekeys, database key)
 ///   [x] PreKey material (signed prekeys, one-time prekeys)
 ///   [x] Secure storage (codes, vault password, settings flags, fail counters)
@@ -82,7 +82,7 @@ class EmergencyWipeService {
   }
 
   Future<void> _wipeLocal() async {
-    // 1. Encrypted local files (chats, messages, contacts, ratchet states, decoy data)
+    // 1. Encrypted local files (chats, messages, contacts, ratchet states)
     try { await _localStore.wipeAll(); } catch (_) {}
 
     // 2. All cryptographic keys (identity, prekeys, database key)

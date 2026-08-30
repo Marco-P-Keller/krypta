@@ -1,6 +1,6 @@
 import '../../../services/storage/secure_storage_service.dart';
 
-enum CodeResult { none, secret, decoy, delete }
+enum CodeResult { none, secret, delete }
 
 /// Detects if the user has entered a special code on the calculator.
 ///
@@ -19,27 +19,27 @@ class CodeDetector {
   /// Called when the user presses "=" on the calculator.
   /// Returns the matched CodeResult, or [CodeResult.none].
   ///
-  /// Security: All three codes are ALWAYS verified regardless of matches.
+  /// Security: EVERY code is ALWAYS verified regardless of matches.
   /// This prevents timing side-channels — an observer cannot determine
-  /// which code position matched by measuring response time.
-  /// Priority is preserved: delete > secret > decoy.
+  /// which code position matched by measuring response time. Entscheidend
+  /// ist, dass alle Pruefungen laufen, nicht wie viele es sind: mit dem
+  /// Ausbau des Tarn-Codes sind es zwei statt drei, die Eigenschaft bleibt.
+  /// Priority is preserved: delete > secret.
   Future<CodeResult> checkCode(String displayValue) async {
     final cleaned = displayValue.replaceAll(RegExp(r'[^0-9]'), '');
     if (cleaned.isEmpty) return CodeResult.none;
 
-    // Always run all three verifications to normalize timing.
+    // Always run every verification to normalize timing.
     // Each Argon2id hash takes ~200ms+ so timing differences would be
     // observable without this constant-work approach.
     final results = await Future.wait([
       _storage.verifyDeleteCode(cleaned),
       _storage.verifySecretCode(cleaned),
-      _storage.verifyDecoyCode(cleaned),
     ]);
 
-    // Priority: delete > secret > decoy
+    // Priority: delete > secret
     if (results[0]) return CodeResult.delete;
     if (results[1]) return CodeResult.secret;
-    if (results[2]) return CodeResult.decoy;
 
     return CodeResult.none;
   }

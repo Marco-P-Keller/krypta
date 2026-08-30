@@ -40,13 +40,6 @@ class AppLocalizationsFr extends AppLocalizations {
       'Saisissez le code qui déverrouille votre messagerie';
 
   @override
-  String get decoyCodeLabel => 'Code leurre';
-
-  @override
-  String get decoyCodeHint =>
-      'Saisissez un code qui ouvre une fausse messagerie';
-
-  @override
   String get deleteCodeLabel => 'Code d’effacement';
 
   @override
@@ -131,9 +124,6 @@ class AppLocalizationsFr extends AppLocalizations {
   String get changeSecretCode => 'Changer le code secret';
 
   @override
-  String get changeDecoyCode => 'Changer le code leurre';
-
-  @override
   String get changeDeleteCode => 'Changer le code d’effacement';
 
   @override
@@ -172,9 +162,6 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get noChatsSubtitle =>
       'Démarrez une discussion pour échanger en toute sécurité';
-
-  @override
-  String get decoyTitle => 'Messages';
 
   @override
   String get encryptionInfo => 'Les messages sont chiffrés de bout en bout';

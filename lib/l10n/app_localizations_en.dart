@@ -39,12 +39,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get secretCodeHint => 'Enter the code that unlocks your messenger';
 
   @override
-  String get decoyCodeLabel => 'Decoy Code';
-
-  @override
-  String get decoyCodeHint => 'Enter a code that opens a fake messenger';
-
-  @override
   String get deleteCodeLabel => 'Delete Code';
 
   @override
@@ -128,9 +122,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get changeSecretCode => 'Change Secret Code';
 
   @override
-  String get changeDecoyCode => 'Change Decoy Code';
-
-  @override
   String get changeDeleteCode => 'Change Delete Code';
 
   @override
@@ -168,9 +159,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get noChatsSubtitle => 'Start a new chat to begin messaging securely';
-
-  @override
-  String get decoyTitle => 'Messages';
 
   @override
   String get encryptionInfo => 'Messages are end-to-end encrypted';

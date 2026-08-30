@@ -40,13 +40,6 @@ class AppLocalizationsIt extends AppLocalizations {
       'Inserisci il codice che sblocca la messaggistica';
 
   @override
-  String get decoyCodeLabel => 'Codice esca';
-
-  @override
-  String get decoyCodeHint =>
-      'Inserisci un codice che apre una messaggistica finta';
-
-  @override
   String get deleteCodeLabel => 'Codice di cancellazione';
 
   @override
@@ -131,9 +124,6 @@ class AppLocalizationsIt extends AppLocalizations {
   String get changeSecretCode => 'Cambia il codice segreto';
 
   @override
-  String get changeDecoyCode => 'Cambia il codice esca';
-
-  @override
   String get changeDeleteCode => 'Cambia il codice di cancellazione';
 
   @override
@@ -172,9 +162,6 @@ class AppLocalizationsIt extends AppLocalizations {
   @override
   String get noChatsSubtitle =>
       'Avvia una nuova chat per scrivere in sicurezza';
-
-  @override
-  String get decoyTitle => 'Messaggi';
 
   @override
   String get encryptionInfo => 'I messaggi sono cifrati end-to-end';

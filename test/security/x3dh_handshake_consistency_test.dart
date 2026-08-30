@@ -33,12 +33,12 @@ class _MemStore extends EncryptedLocalStore {
   final Map<String, dynamic> _data = {};
 
   @override
-  Future<void> saveDecoyData(String key, dynamic data) async {
+  Future<void> saveData(String key, dynamic data) async {
     _data[key] = jsonDecode(jsonEncode(data));
   }
 
   @override
-  Future<dynamic> loadDecoyData(String key) async => _data[key];
+  Future<dynamic> loadData(String key) async => _data[key];
 }
 
 Future<KryptaKeyPair> _newX25519Pair() async {

@@ -39,7 +39,7 @@ import 'package:kryptaapp/services/storage/encrypted_local_store.dart';
 /// Minimal in-memory subclass of EncryptedLocalStore for unit tests.
 ///
 /// Overrides only the two methods KeyTransparencyLog actually uses
-/// (`saveData` / `loadData` → both delegate to *DecoyData). All other
+/// (`saveData` / `loadData` — der allgemeine Schluessel-Wert-Speicher). All other
 /// store APIs throw if accidentally called — keeps the fake honest.
 class _InMemoryStore extends EncryptedLocalStore {
   _InMemoryStore() : super(encryption: EncryptionService());
@@ -47,10 +47,10 @@ class _InMemoryStore extends EncryptedLocalStore {
   final Map<String, dynamic> _mem = {};
 
   @override
-  Future<dynamic> loadDecoyData(String key) async => _mem[key];
+  Future<dynamic> loadData(String key) async => _mem[key];
 
   @override
-  Future<void> saveDecoyData(String key, dynamic data) async {
+  Future<void> saveData(String key, dynamic data) async {
     if (data == null) {
       _mem.remove(key);
     } else {
@@ -256,7 +256,7 @@ void main() {
       expect(r0, CommitmentVerifyResult.valid);
 
       // Wipe the pin file to simulate a pre-pin upgrade. Chain stays.
-      await store.saveDecoyData('kt_pin_$userId', null);
+      await store.saveData('kt_pin_$userId', null);
 
       // New log instance — fresh in-memory caches. This is the post-upgrade
       // boot.

@@ -85,22 +85,12 @@ class SecureStorageService {
     await _storage.write(key: StorageKeys.secretCode, value: await _hashSecret(code));
   }
 
-  Future<void> saveDecoyCode(String code) async {
-    await _storage.write(key: StorageKeys.decoyCode, value: await _hashSecret(code));
-  }
-
   Future<void> saveDeleteCode(String code) async {
     await _storage.write(key: StorageKeys.deleteCode, value: await _hashSecret(code));
   }
 
   Future<bool> verifySecretCode(String code) async {
     final stored = await _storage.read(key: StorageKeys.secretCode);
-    if (stored == null) return false;
-    return _verifySecret(code, stored);
-  }
-
-  Future<bool> verifyDecoyCode(String code) async {
-    final stored = await _storage.read(key: StorageKeys.decoyCode);
     if (stored == null) return false;
     return _verifySecret(code, stored);
   }
@@ -114,12 +104,12 @@ class SecureStorageService {
   /// Check if a proposed code collides with any existing stored codes.
   ///
   /// Returns true if the candidate exactly matches an existing code.
-  /// Prevents identical codes (e.g., secret == decoy would always trigger the
+  /// Prevents identical codes (secret == delete would always trigger the
   /// wrong action). Note: prefix detection (e.g., "1234" vs "12345") is not
   /// possible with Argon2id hashing — the CodeDetector must enforce minimum
   /// code lengths to mitigate prefix overlap risk.
   Future<bool> codeCollides(String candidate, {String? excludeKey}) async {
-    final keys = [StorageKeys.secretCode, StorageKeys.decoyCode, StorageKeys.deleteCode];
+    final keys = [StorageKeys.secretCode, StorageKeys.deleteCode];
     for (final key in keys) {
       if (key == excludeKey) continue;
       final stored = await _storage.read(key: key);
@@ -128,6 +118,21 @@ class SecureStorageService {
       if (await _verifySecret(candidate, stored)) return true;
     }
     return false;
+  }
+
+  // --- Altlasten des ausgebauten Tarn-Messengers ---
+
+  /// Ob auf diesem Geraet schon aufgeraeumt wurde.
+  Future<bool> isLegacyCleanupDone() async =>
+      await _storage.read(key: StorageKeys.legacyCleanupDone) == 'true';
+
+  Future<void> markLegacyCleanupDone() async {
+    await _storage.write(key: StorageKeys.legacyCleanupDone, value: 'true');
+  }
+
+  /// Loescht die Schluesselbund-Eintraege, zu denen es keinen Code mehr gibt.
+  Future<void> deleteLegacyKeys() async {
+    await _storage.delete(key: StorageKeys.legacyDecoyCode);
   }
 
   // --- User ID ---

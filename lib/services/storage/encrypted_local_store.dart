@@ -291,9 +291,15 @@ class EncryptedLocalStore {
     }
   }
 
-  // --- Decoy Data (separate namespace for fake messenger) ---
+  // --- Generic Key-Value (PreKey-Zustand, Key-Transparency-Pins, ...) ---
+  //
+  // Hiess einmal `loadDecoyData`/`saveDecoyData` und trug damit den Namen des
+  // Tarn-Messengers, obwohl darueber laengst der PreKey-Zustand und die
+  // Key-Transparency-Pins liefen. Beim Ausbau des Tarnmodus stand genau
+  // deshalb die Falle im Weg, das hier mitzuloeschen.
 
-  Future<dynamic> loadDecoyData(String key) async {
+  /// Load generic encrypted data by key.
+  Future<dynamic> loadData(String key) async {
     final data = _cache[key];
     if (data == null) return null;
     try {
@@ -303,20 +309,41 @@ class EncryptedLocalStore {
     }
   }
 
-  Future<void> saveDecoyData(String key, dynamic data) async {
+  /// Save generic encrypted data by key.
+  Future<void> saveData(String key, dynamic data) async {
     final json = jsonEncode(data);
     _cache[key] = json;
     await _encryptAndWrite(key, json);
   }
 
-  // --- Generic Key-Value (used by Key Transparency logs, etc.) ---
-
-  /// Load generic encrypted data by key.
-  Future<dynamic> loadData(String key) async => loadDecoyData(key);
-
-  /// Save generic encrypted data by key.
-  Future<void> saveData(String key, dynamic data) async =>
-      saveDecoyData(key, data);
+  /// Loescht die Dateien des ausgebauten Tarn-Messengers: `decoy_chats` und
+  /// jede `decoy_msg_*`-Datei. Gibt zurueck, wie viele weg sind.
+  ///
+  /// Gefiltert wird ueber das Praefix `decoy_` im Dateinamen. Der allgemeine
+  /// Schluessel-Wert-Speicher ist davon nicht betroffen: dessen Schluessel
+  /// heissen `prekey_state`, `kt_pin_*` und dergleichen — die Aehnlichkeit lag
+  /// nur im frueheren Methodennamen, nie in den Dateien.
+  Future<int> purgeLegacyDecoyFiles() async {
+    // Kein stilles 0: waere der Speicher noch nicht bereit, wuerde der
+    // Aufraeumlauf "nichts gefunden" melden, sich das merken und die Reste
+    // fuer immer liegen lassen. Werfen heisst: naechster Start versucht es.
+    if (_basePath == null) {
+      throw StateError('purgeLegacyDecoyFiles vor der Initialisierung');
+    }
+    var geloescht = 0;
+    final enc = await io.listEncFiles(_basePath!);
+    for (final filePath in enc) {
+      final name = filePath.split(RegExp(r'[\/]')).last;
+      if (!name.endsWith('.enc')) continue;
+      final base = name.substring(0, name.length - 4);
+      if (!base.startsWith('decoy_')) continue;
+      _cache.remove(base);
+      _cacheAccessTime.remove(base);
+      await io.deleteFileAt(filePath);
+      geloescht++;
+    }
+    return geloescht;
+  }
 
   // --- Ratchet State (Double Ratchet per chat) ---
 

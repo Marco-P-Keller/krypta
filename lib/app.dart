@@ -12,7 +12,6 @@ import 'features/auth/presentation/setup_screen.dart';
 import 'features/auth/presentation/tutorial_screen.dart';
 import 'features/auth/presentation/vault_password_screen.dart';
 import 'features/calculator/presentation/calculator_screen.dart';
-import 'features/decoy/decoy_provider.dart';
 import 'features/messenger/data/models/chat_model.dart';
 import 'features/messenger/logic/messenger_provider.dart';
 import 'features/messenger/presentation/chat_list_screen.dart';
@@ -27,6 +26,7 @@ import 'services/platform/biometric_outcome.dart';
 import 'services/platform/platform_security_service.dart';
 import 'services/storage/encrypted_local_store.dart';
 import 'services/storage/secure_storage_service.dart';
+import 'services/storage/legacy_cleanup.dart';
 import 'theme/app_theme.dart';
 
 class KryptaApp extends StatelessWidget {
@@ -180,7 +180,7 @@ class _KryptaShellState extends State<KryptaShell> with WidgetsBindingObserver {
     // Capture context references before async gaps.
     final integrity = context.read<DeviceIntegrityPolicyService>();
     final storage = context.read<SecureStorageService>();
-    final decoy = context.read<DecoyProvider>();
+    final store = context.read<EncryptedLocalStore>();
 
     // Device integrity check — enforce configured policy.
     await integrity.checkIntegrity();
@@ -214,11 +214,16 @@ class _KryptaShellState extends State<KryptaShell> with WidgetsBindingObserver {
       return;
     }
 
-    // Ensure decoy files always exist on disk — prevents forensic
-    // distinction based on file existence patterns.
-    try {
-      await decoy.ensureDecoyFilesExist();
-    } catch (_) {}
+    // Einmalig die Reste des ausgebauten Tarn-Messengers wegraeumen. Nur
+    // eingerichtete Installationen koennen welche haben — ein frisches Geraet
+    // hat den Modus nie gesehen. Scheitert der Lauf, bleibt der Merker aus
+    // und der naechste Start holt es nach.
+    await LegacyCleanup(
+      markerSet: storage.isLegacyCleanupDone,
+      setMarker: storage.markLegacyCleanupDone,
+      purgeFiles: store.purgeLegacyDecoyFiles,
+      deleteLegacyKeys: storage.deleteLegacyKeys,
+    ).run();
 
     if (!mounted) return;
     setState(() {

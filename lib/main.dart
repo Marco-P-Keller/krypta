@@ -7,7 +7,6 @@ import 'package:provider/provider.dart';
 import 'app.dart';
 import 'firebase_options.dart';
 import 'features/calculator/logic/code_detector.dart';
-import 'features/decoy/decoy_provider.dart';
 import 'features/messenger/logic/messenger_provider.dart';
 import 'security/device/device_integrity_policy.dart';
 import 'security/encryption/encryption_service.dart';
@@ -133,8 +132,6 @@ Future<void> main() async {
     preKeyManager: preKeyManager,
   );
 
-  final decoyProvider = DecoyProvider(store: localStore);
-
   final messengerProvider = MessengerProvider(
     encryption: encryptionService,
     keyManager: keyManager,
@@ -176,7 +173,6 @@ Future<void> main() async {
         Provider<ConsistencyChecker>.value(value: consistencyChecker),
         Provider<NotificationService>.value(value: notificationService),
         Provider<EmergencyWipeService>.value(value: emergencyWipeService),
-        ChangeNotifierProvider<DecoyProvider>.value(value: decoyProvider),
         ChangeNotifierProvider<MessengerProvider>.value(value: messengerProvider),
       ],
       child: const KryptaApp(),

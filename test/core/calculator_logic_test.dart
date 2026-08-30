@@ -167,7 +167,7 @@ void main() {
     // Regression: 5+5+5 ergab vor dem 2026-08-24 genau 10. inputOperator setzte
     // den ersten Operanden bedingungslos auf den Anzeigewert und warf die noch
     // offene Rechnung weg. Ein Taschenrechner, der falsch rechnet, faellt auf —
-    // fuer eine getarnte App ist das mehr als ein Schoenheitsfehler.
+    // und er ist die Zugangssperre, die jeder Nutzer taeglich sieht.
     test('5+5+5 ergibt 15', () {
       logic.inputDigit('5');
       logic.inputOperator('+');

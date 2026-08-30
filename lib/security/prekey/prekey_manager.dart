@@ -220,12 +220,12 @@ class PreKeyManager {
       'prevSpks': _previousSignedPreKeys.map((k) => k.toMap()).toList(),
       'opks': _oneTimePreKeys.map((k) => k.toMap()).toList(),
     };
-    await _localStore.saveDecoyData('prekey_state', data);
+    await _localStore.saveData('prekey_state', data);
   }
 
   Future<void> _loadFromStore() async {
     try {
-      final data = await _localStore.loadDecoyData('prekey_state');
+      final data = await _localStore.loadData('prekey_state');
       if (data == null) return;
       final map = data as Map<String, dynamic>;
       _nextPreKeyId = (map['nextId'] as int?) ?? 0;

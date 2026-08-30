@@ -71,9 +71,6 @@ class _CalculatorScreenState extends State<CalculatorScreen> {
         _logic.clear();
         widget.onSecretCode();
         return;
-      case CodeResult.decoy:
-        // Decoy mode removed — treat as no match
-        break;
       case CodeResult.none:
         if (!stillMounted) return;
         _logic.calculate();

@@ -168,18 +168,6 @@ abstract class AppLocalizations {
   /// **'Enter the code that unlocks your messenger'**
   String get secretCodeHint;
 
-  /// No description provided for @decoyCodeLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'Decoy Code'**
-  String get decoyCodeLabel;
-
-  /// No description provided for @decoyCodeHint.
-  ///
-  /// In en, this message translates to:
-  /// **'Enter a code that opens a fake messenger'**
-  String get decoyCodeHint;
-
   /// No description provided for @deleteCodeLabel.
   ///
   /// In en, this message translates to:
@@ -342,12 +330,6 @@ abstract class AppLocalizations {
   /// **'Change Secret Code'**
   String get changeSecretCode;
 
-  /// No description provided for @changeDecoyCode.
-  ///
-  /// In en, this message translates to:
-  /// **'Change Decoy Code'**
-  String get changeDecoyCode;
-
   /// No description provided for @changeDeleteCode.
   ///
   /// In en, this message translates to:
@@ -419,12 +401,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Start a new chat to begin messaging securely'**
   String get noChatsSubtitle;
-
-  /// No description provided for @decoyTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Messages'**
-  String get decoyTitle;
 
   /// No description provided for @encryptionInfo.
   ///
