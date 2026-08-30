@@ -24,6 +24,7 @@ import 'services/emergency/emergency_wipe_service.dart';
 import 'services/platform/clipboard_helper.dart';
 import 'services/platform/biometric_outcome.dart';
 import 'services/platform/platform_security_service.dart';
+import 'services/platform/privacy_cover.dart';
 import 'services/storage/encrypted_local_store.dart';
 import 'services/storage/secure_storage_service.dart';
 import 'services/storage/legacy_cleanup.dart';
@@ -90,6 +91,11 @@ enum _AppScreen {
 class _KryptaShellState extends State<KryptaShell> with WidgetsBindingObserver {
   _AppScreen _currentScreen = _AppScreen.calculator;
   bool _isInitialized = false;
+
+  /// Nimmt die Abdeckung des App-Umschalters erst ab, wenn ein Bild steht.
+  late final PrivacyCover _privacyCover =
+      PrivacyCover(context.read<PlatformSecurityService>());
+
   DeviceIntegrityAction _deviceAction = DeviceIntegrityAction.allow;
   Chat? _selectedChat;
 
@@ -165,14 +171,26 @@ class _KryptaShellState extends State<KryptaShell> with WidgetsBindingObserver {
     // On resume, re-validate device integrity and evict stale cache entries.
     if (state == AppLifecycleState.resumed) {
       final integrity = context.read<DeviceIntegrityPolicyService>();
-      integrity.recheck().then((_) {
+      final store = context.read<EncryptedLocalStore>();
+
+      // Die Abdeckung faellt erst, wenn ein Bild steht — und die Pruefungen
+      // laufen erst danach. Beide gehoeren zusammen: `recheck` tastet das
+      // Dateisystem synchron ab (vierzehn Pfade und ein Schreibversuch, den
+      // die Sandbox ablehnt) und blockiert dabei genau den Faden, der das
+      // Bild bauen soll. Frueher stand das vor dem ersten Bild und die
+      // Abdeckung fiel nach Zeit — wer beides verlor, sah den Messenger
+      // aufblitzen.
+      _privacyCover.dismissWhenPainted(afterwards: () {
         if (!mounted) return;
-        final action = integrity.enforce();
-        if (action != _deviceAction) {
-          setState(() => _deviceAction = action);
-        }
+        integrity.recheck().then((_) {
+          if (!mounted) return;
+          final action = integrity.enforce();
+          if (action != _deviceAction) {
+            setState(() => _deviceAction = action);
+          }
+        });
+        store.evictStaleCacheEntries();
       });
-      context.read<EncryptedLocalStore>().evictStaleCacheEntries();
     }
   }
 

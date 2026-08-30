@@ -69,6 +69,17 @@ import Security
       stopCaptureMonitoring()
       stopScreenshotDetection()
       result(true)
+    case "dismissPrivacyCover":
+      // Flutter meldet: es steht wieder ein Bild. Vorher darf die Abdeckung
+      // nicht fallen — darunter liegt noch das letzte Bild von vor der Pause.
+      //
+      // Nur solange die App wirklich vorn ist. Wer sie sofort wieder verlaesst,
+      // bekaeme sonst eine Abdeckung abgenommen, die schon fuer die naechste
+      // Pause liegt — und damit den Messenger in die Vorschau.
+      if UIApplication.shared.applicationState == .active {
+        removeSnapshotMasks()
+      }
+      result(true)
     case "isScreenCaptured":
       result(isScreenBeingCaptured)
     case "isStrongBoxAvailable":
@@ -315,6 +326,15 @@ import Security
   /// Tag of the opaque cover used for app-switcher snapshots.
   private static let snapshotMaskTag = 9999
 
+  /// Wachhund fuer den Fall, dass Flutter sich nicht meldet.
+  ///
+  /// Die Abdeckung faellt normalerweise auf Zuruf aus Dart. Bliebe dieser
+  /// Zuruf aus — haengender oder abgestuerzter Dart-Teil —, waere die App
+  /// dauerhaft schwarz. Drei Sekunden sind grosszuegig gegenueber den
+  /// wenigen Bildern, die das Aufwachen normalerweise braucht, und immer
+  /// noch kurz genug, dass niemand die App fuer tot haelt.
+  private var maskWatchdog: DispatchWorkItem?
+
   /// Take every snapshot mask off the window.
   ///
   /// `viewWithTag` returns only the first match, so removing one view per
@@ -324,6 +344,8 @@ import Security
   /// another cover, one resume removed one, and the leftovers stayed on top —
   /// a permanently black app with no way back. Idempotent by construction.
   private func removeSnapshotMasks() {
+    maskWatchdog?.cancel()
+    maskWatchdog = nil
     guard let window = window else { return }
     for view in window.subviews where view.tag == AppDelegate.snapshotMaskTag {
       view.removeFromSuperview()
@@ -332,12 +354,22 @@ import Security
 
   override func applicationDidBecomeActive(_ application: UIApplication) {
     super.applicationDidBecomeActive(application)
-    // Keep the black mask one runloop tick longer than strictly needed,
-    // so Flutter has time to render the Calculator frame after our
-    // background-lock logic in app.dart resets the route. This avoids a
-    // flash of the previous (now stale) screen content during resume.
+    // Die Abdeckung faellt hier NICHT. Sie faellt, wenn Flutter meldet, dass
+    // wieder ein Bild steht (`dismissPrivacyCover`).
+    //
+    // Frueher fiel sie einen Runloop-Durchlauf nach diesem Aufruf. Das ging
+    // meistens gut, weil Flutter das Bild mit dem Taschenrechner waehrend der
+    // Umschalt-Animation schon gezeichnet hatte — aber eben nur meistens. War
+    // der Dart-Faden beschaeftigt, lag darunter noch das letzte Bild von vor
+    // der Pause: der Messenger. Genau das hat aufgeblitzt.
+    maskWatchdog?.cancel()
+    let watchdog = DispatchWorkItem { [weak self] in
+      self?.removeSnapshotMasks()
+    }
+    maskWatchdog = watchdog
+    DispatchQueue.main.asyncAfter(deadline: .now() + 3.0, execute: watchdog)
+
     DispatchQueue.main.async {
-      self.removeSnapshotMasks()
       // Eine Aufnahme kann waehrend der Pause gestartet oder beendet worden
       // sein; im Hintergrund kommt die Benachrichtigung nicht zuverlaessig an.
       if self.captureObserverInstalled { self.reportCaptureState() }

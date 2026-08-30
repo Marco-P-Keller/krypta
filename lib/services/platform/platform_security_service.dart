@@ -161,6 +161,22 @@ class PlatformSecurityService {
     } catch (_) {}
   }
 
+  /// Nimmt die schwarze Abdeckung ab, die beim Verlassen der App ueber das
+  /// Fenster gelegt wurde.
+  ///
+  /// Nicht nach Zeit rufen, sondern erst wenn wirklich ein Bild steht —
+  /// darunter liegt sonst noch das letzte Bild von vor der Pause. Den
+  /// richtigen Zeitpunkt kennt `PrivacyCover`.
+  ///
+  /// Auf Android gibt es die Gegenstelle nicht; der Aufruf laeuft dort ins
+  /// Leere und wird geschluckt.
+  Future<void> dismissPrivacyCover() async {
+    if (kIsWeb) return;
+    try {
+      await _channel.invokeMethod('dismissPrivacyCover');
+    } catch (_) {}
+  }
+
   /// Meldet, dass ein Screenshot gemacht wurde.
   ///
   /// Der Wert ist immer `false`: verhindert wurde nichts, iOS meldet den
