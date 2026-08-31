@@ -111,6 +111,10 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
     return chat?.defaultSelfDestruct;
   }
 
+  /// Ob der Timer dieser Nachricht vom Chat kommt und damit ab dem **Senden**
+  /// laeuft statt ab dem Lesen. Ein eigener Timer der Nachricht schlaegt ihn.
+  bool get _timerVomChat => !_burnAfterRead && !_hasPerMessageOverride;
+
   void _markVisibleMessagesAsRead(MessengerProvider messenger) {
     final messages = messenger.messagesForChat(widget.chat.id);
     for (final msg in messages) {
@@ -136,6 +140,7 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
       chatId: widget.chat.id,
       text: text,
       selfDestruct: _effectiveTimer,
+      selfDestructFromSend: _timerVomChat,
       burnAfterRead: _burnAfterRead,
       password: _messagePassword,
     );

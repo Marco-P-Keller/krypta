@@ -2131,7 +2131,12 @@ class MessengerProvider extends ChangeNotifier {
   Future<void> setChatSelfDestruct(String chatId, Duration? duration) async {
     final idx = _chats.indexWhere((c) => c.id == chatId);
     if (idx == -1) return;
-    _chats[idx] = _chats[idx].copyWith(defaultSelfDestruct: duration);
+    // Den Einschaltzeitpunkt mitschreiben: der Timer gilt auch fuer das,
+    // was schon dasteht, aber erst ab jetzt. Beim Ausschalten faellt er weg.
+    _chats[idx] = _chats[idx].copyWith(
+      defaultSelfDestruct: duration,
+      defaultSelfDestructSetAt: duration == null ? null : DateTime.now(),
+    );
     await _localStore.saveChats(_chats);
     notifyListeners();
   }
@@ -2174,6 +2179,7 @@ class MessengerProvider extends ChangeNotifier {
     Duration? selfDestruct,
     bool burnAfterRead = false,
     String? password,
+    bool selfDestructFromSend = false,
     bool asContactRequest = false,
     String? qrToken,
     String? preverifiedServerKey,
@@ -2188,6 +2194,7 @@ class MessengerProvider extends ChangeNotifier {
           text: text,
           selfDestruct: selfDestruct,
           burnAfterRead: burnAfterRead,
+          selfDestructFromSend: selfDestructFromSend,
           password: password,
           asContactRequest: asContactRequest,
           qrToken: qrToken,
@@ -2201,6 +2208,7 @@ class MessengerProvider extends ChangeNotifier {
     Duration? selfDestruct,
     bool burnAfterRead = false,
     String? password,
+    bool selfDestructFromSend = false,
     bool asContactRequest = false,
     String? qrToken,
     String? preverifiedServerKey,
@@ -2317,6 +2325,7 @@ class MessengerProvider extends ChangeNotifier {
       timestamp: now,
       status: MessageStatus.sending,
       selfDestructDuration: selfDestruct,
+      selfDestructFromSend: selfDestructFromSend,
       burnAfterRead: burnAfterRead,
       isPasswordProtected: hasPassword,
       passwordUnlocked: !hasPassword, // Both sides start locked
@@ -2365,6 +2374,10 @@ class MessengerProvider extends ChangeNotifier {
         innerPayload['_psid'] = state.previousSessionId;
       }
       if (selfDestruct != null) innerPayload['_sd'] = selfDestruct.inMilliseconds;
+      // Der Chat-Timer laeuft ab dem Senden. Ohne diese Markierung wuerde
+      // die Gegenseite ihn als lesegebunden behandeln, und er liefe bei ihr
+      // gar nicht, solange sie nicht hinsieht.
+      if (selfDestructFromSend) innerPayload['_sdf'] = true;
       if (burnAfterRead) innerPayload['_bar'] = true;
       if (hasPassword) innerPayload['_pw'] = true;
 
@@ -2951,6 +2964,7 @@ class MessengerProvider extends ChangeNotifier {
           status: MessageStatus.delivered,
           selfDestructDuration:
               selfDestructMs != null ? Duration(milliseconds: selfDestructMs) : null,
+          selfDestructFromSend: innerPayload['_sdf'] == true,
           burnAfterRead: burnAfterRead,
           isPasswordProtected: isPasswordProtected,
           passwordUnlocked: !isPasswordProtected,
@@ -3195,6 +3209,7 @@ class MessengerProvider extends ChangeNotifier {
         status: MessageStatus.delivered,
         selfDestructDuration:
             selfDestructMs != null ? Duration(milliseconds: selfDestructMs) : null,
+          selfDestructFromSend: innerPayload['_sdf'] == true,
         burnAfterRead: burnAfterRead,
         isPasswordProtected: isPasswordProtected,
         passwordUnlocked: !isPasswordProtected,
@@ -3273,12 +3288,19 @@ class MessengerProvider extends ChangeNotifier {
 
     for (final chatId in _messagesByChat.keys) {
       final messages = _messagesByChat[chatId]!;
+      // Der Chat-Timer wird bei jeder Runde neu gelesen — deshalb wirkt er
+      // auch auf Nachrichten, die es schon vor dem Einschalten gab.
+      final ci = _chats.indexWhere((c) => c.id == chatId);
+      final chatTimer = ci == -1 ? null : _chats[ci].defaultSelfDestruct;
+      final chatTimerSetAt =
+          ci == -1 ? null : _chats[ci].defaultSelfDestructSetAt;
       // Nur zeitgesteuerte Selbstzerstoerung. Burn-after-Read laeuft sonst
       // beim Verlassen des Chats (burnReadMessages); beim Start wird es hier
       // mit erledigt.
       final faellig = messages
           .where((m) =>
-              SelfDestructPolicy.expired(m, jetzt) ||
+              SelfDestructPolicy.expired(m, jetzt,
+                  chatTimer: chatTimer, chatTimerSetAt: chatTimerSetAt) ||
               (auchVerbrannte && m.shouldBurn))
           .toList();
       if (faellig.isEmpty) continue;

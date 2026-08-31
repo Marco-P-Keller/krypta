@@ -25,6 +25,13 @@ class Chat extends Equatable {
   final bool isTyping;
   final Duration? defaultSelfDestruct;
 
+  /// Wann [defaultSelfDestruct] eingeschaltet wurde.
+  ///
+  /// Der Chat-Timer gilt auch fuer das, was schon dasteht — aber erst ab
+  /// dem Einschalten. Ohne diesen Zeitpunkt waere mit einem Tipp der halbe
+  /// Verlauf im selben Moment weg.
+  final DateTime? defaultSelfDestructSetAt;
+
   const Chat({
     required this.id,
     required this.recipientId,
@@ -34,6 +41,7 @@ class Chat extends Equatable {
     this.firstUnreadAt,
     this.isTyping = false,
     this.defaultSelfDestruct,
+    this.defaultSelfDestructSetAt,
   });
 
   Chat copyWith({
@@ -43,6 +51,7 @@ class Chat extends Equatable {
     Object? firstUnreadAt = _sentinel,
     bool? isTyping,
     Object? defaultSelfDestruct = _sentinel,
+    Object? defaultSelfDestructSetAt = _sentinel,
   }) {
     return Chat(
       id: id,
@@ -59,6 +68,9 @@ class Chat extends Equatable {
       defaultSelfDestruct: defaultSelfDestruct == _sentinel
           ? this.defaultSelfDestruct
           : defaultSelfDestruct as Duration?,
+      defaultSelfDestructSetAt: defaultSelfDestructSetAt == _sentinel
+          ? this.defaultSelfDestructSetAt
+          : defaultSelfDestructSetAt as DateTime?,
     );
   }
 
@@ -70,6 +82,8 @@ class Chat extends Equatable {
         'unreadCount': unreadCount,
         'firstUnreadAt': firstUnreadAt?.millisecondsSinceEpoch,
         'defaultSelfDestructMs': defaultSelfDestruct?.inMilliseconds,
+        'defaultSelfDestructSetAt':
+            defaultSelfDestructSetAt?.millisecondsSinceEpoch,
       };
 
   factory Chat.fromMap(Map<String, dynamic> map) {
@@ -89,6 +103,10 @@ class Chat extends Equatable {
       // A2: clamp persisted self-destruct values so corrupted / migrated
       // state cannot reintroduce negative or overlong durations.
       defaultSelfDestruct: _decodeSelfDestruct(map['defaultSelfDestructMs']),
+      defaultSelfDestructSetAt: map['defaultSelfDestructSetAt'] is int
+          ? DateTime.fromMillisecondsSinceEpoch(
+              map['defaultSelfDestructSetAt'] as int)
+          : null,
     );
   }
 
