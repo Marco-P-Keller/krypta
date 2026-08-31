@@ -45,6 +45,12 @@ abstract final class SelfDestructPolicy {
     Duration? chatTimer,
     DateTime? chatTimerSetAt,
   }) {
+    // Ein Hinweis im Verlauf laeuft nie ab. Die Dauer steht bei einem
+    // Fristwechsel am Hinweis, damit der Text sie nennen kann — sie darf ihn
+    // aber nicht selbst wegraeumen. Ein Hinweis, der ausgerechnet dann
+    // verschwindet, wenn man ihn braucht, waere sinnlos.
+    if (m.isSystemEvent) return null;
+
     final eigener = m.selfDestructDuration;
 
     // Eigener Timer: ab der **Zustellung**. Er soll auch ablaufen, wenn die
@@ -121,5 +127,37 @@ abstract final class SelfDestructPolicy {
   /// Schranke koennte sie mit erfundenen Meldungen beliebige Nachrichten von
   /// meinem Geraet raeumen.
   static bool _vergaenglich(Message m) =>
-      m.selfDestructDuration != null || m.burnAfterRead;
+      !m.isSystemEvent &&
+      (m.selfDestructDuration != null || m.burnAfterRead);
+
+  // ─── Der Hinweis bei einer geaenderten Chat-Frist ──────────────────────
+
+  /// Der Anfang der Art, unter der eine geaenderte Chat-Frist reist.
+  static const String artChatFrist = 'sdChanged';
+
+  /// Die Art fuer eine Kontrollnachricht, die eine neue Chat-Frist meldet.
+  ///
+  /// Die Zahl steckt **in der Art**. Ihr ein eigenes Feld zu geben haette
+  /// jede Signatur veraendert — ein Geraet mit einer aelteren Fassung wuerde
+  /// danach auch Screenshot-Hinweise verwerfen. Die Art ist ohnehin Teil der
+  /// Signatur, also faelschungssicher, und eine unbekannte Art wird von
+  /// aelteren Fassungen schlicht ignoriert.
+  static String artFuerChatFrist(Duration? dauer) =>
+      dauer == null ? '$artChatFrist:off' : '$artChatFrist:${dauer.inMilliseconds}';
+
+  /// Ob diese Art eine geaenderte Chat-Frist meldet.
+  static bool istChatFristAenderung(String art) =>
+      art.startsWith('$artChatFrist:');
+
+  /// Die Frist aus der Art herauslesen. `null` heisst ausgeschaltet.
+  ///
+  /// Fail-closed: was sich nicht als positive Zahl lesen laesst, gilt als
+  /// ausgeschaltet. Lieber keine Frist als eine erfundene.
+  static Duration? chatFristAusArt(String art) {
+    if (!istChatFristAenderung(art)) return null;
+    final roh = art.substring(artChatFrist.length + 1);
+    final ms = int.tryParse(roh);
+    if (ms == null || ms <= 0) return null;
+    return clampFremdeFrist(ms);
+  }
 }

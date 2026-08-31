@@ -44,13 +44,28 @@ class SystemEventRow extends StatelessWidget {
         // den eigenen Verlauf ab, ein Hinweis an mich selbst hätte niemanden,
         // der ihn liest.
         return l10n.accountGone(peerName);
+      case SystemEventKind.selfDestructChanged:
+        final dauer = message.selfDestructDuration;
+        return dauer == null
+            ? l10n.selfDestructTurnedOff
+            : l10n.selfDestructSetTo(_knapp(dauer));
     }
+  }
+
+  /// Knapp und ohne Uebersetzung: die Einheiten sind in allen sieben Sprachen
+  /// dieselben Kuerzel.
+  static String _knapp(Duration d) {
+    if (d.inSeconds < 60) return '${d.inSeconds} s';
+    if (d.inMinutes < 60) return '${d.inMinutes} min';
+    if (d.inHours < 24) return '${d.inHours} h';
+    return '${d.inDays} d';
   }
 
   IconData get _icon => switch (message.systemEvent!) {
         SystemEventKind.screenshot => Icons.screenshot_rounded,
         SystemEventKind.screenRecording => Icons.videocam_rounded,
         SystemEventKind.accountDeleted => Icons.person_off_rounded,
+        SystemEventKind.selfDestructChanged => Icons.timer_outlined,
       };
 
   @override

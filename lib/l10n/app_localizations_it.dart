@@ -315,6 +315,14 @@ class AppLocalizationsIt extends AppLocalizations {
   String get unblockToSend => 'Sblocca questo contatto per inviare messaggi.';
 
   @override
+  String selfDestructSetTo(String dauer) {
+    return 'Autodistruzione impostata su $dauer';
+  }
+
+  @override
+  String get selfDestructTurnedOff => 'Autodistruzione disattivata';
+
+  @override
   String get nameThisContact => 'Dai un nome a questo contatto';
 
   @override

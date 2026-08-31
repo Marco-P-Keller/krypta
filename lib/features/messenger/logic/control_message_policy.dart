@@ -49,5 +49,7 @@ abstract final class ControlMessagePolicy {
   ///
   /// Fail-closed: was diese Fassung nicht kennt, bekommt das enge Fenster.
   static Duration maxAge(String type) =>
-      zustandsaendernd.contains(type) ? lang : kurz;
+      zustandsaendernd.contains(type) || type.startsWith('sdChanged:')
+          ? lang
+          : kurz;
 }

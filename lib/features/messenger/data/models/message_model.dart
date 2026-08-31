@@ -19,6 +19,10 @@ enum SystemEventKind {
   /// Die Gegenseite hat die Notfall-Löschung ausgelöst. Das Konto gibt es
   /// nicht mehr — eine Nachricht dorthin käme nie an.
   accountDeleted,
+
+  /// Die Löschdauer des Chats wurde geändert. Die neue Dauer steht am
+  /// Hinweis selbst in `selfDestructDuration`; `null` heißt ausgeschaltet.
+  selfDestructChanged,
 }
 
 class Message extends Equatable {

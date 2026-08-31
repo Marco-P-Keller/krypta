@@ -890,6 +890,7 @@ class MessengerProvider extends ChangeNotifier {
     required String senderId,
     required String recipientId,
     required String messageId,
+    Duration? dauer,
   }) {
     if (_processedMessageIds.contains(messageId)) return;
     _addMessageToChat(
@@ -902,8 +903,11 @@ class MessengerProvider extends ChangeNotifier {
         encryptedContent: '',
         timestamp: DateTime.now(),
         status: MessageStatus.delivered,
-        // Bewusst ohne Selbstzerstoerung und ohne Burn-after-Read: der Hinweis
-        // soll nicht ausgerechnet dann verschwinden, wenn man ihn braucht.
+        // Die Dauer steht nur bei einem Fristwechsel hier, damit der Text
+        // sie nennen kann. Sie raeumt den Hinweis NICHT weg: ein Hinweis, der
+        // ausgerechnet dann verschwindet, wenn man ihn braucht, waere sinnlos
+        // — siehe SelfDestructPolicy.deadline.
+        selfDestructDuration: dauer,
         systemEvent: kind,
       ),
     );
@@ -1514,6 +1518,20 @@ class MessengerProvider extends ChangeNotifier {
         _applySystemEventFromPeer(
             chatId, contact, SystemEventKind.screenRecording, ctrl.messageId);
       default:
+        if (SelfDestructPolicy.istChatFristAenderung(ctrl.type)) {
+          // Die Frist der Gegenseite aendert meine eigene nicht — sie ist
+          // Hausordnung, jede Seite stellt sie fuer sich. Der Hinweis sagt
+          // nur, dass drueben etwas anders ist.
+          _appendSystemEvent(
+            chatId: chatId,
+            kind: SystemEventKind.selfDestructChanged,
+            senderId: contact.id,
+            recipientId: userId ?? '',
+            messageId: ctrl.messageId,
+            dauer: SelfDestructPolicy.chatFristAusArt(ctrl.type),
+          );
+          break;
+        }
         if (kDebugMode) debugPrint('Unknown control message type: ${ctrl.type}');
     }
     return true;
@@ -2267,6 +2285,30 @@ class MessengerProvider extends ChangeNotifier {
       defaultSelfDestructSetAt: duration == null ? null : DateTime.now(),
     );
     await _localStore.saveChats(_chats);
+
+    // Ein Hinweis im Verlauf, den beide sehen — wie bei Screenshots. Ohne ihn
+    // aendert sich die Frist fuer die Gegenseite lautlos, und sie wundert
+    // sich, wo ihre Nachrichten hin sind.
+    final hinweisId = _uuid.v4();
+    _appendSystemEvent(
+      chatId: chatId,
+      kind: SystemEventKind.selfDestructChanged,
+      senderId: userId ?? '',
+      recipientId: _chats[idx].recipientId,
+      messageId: hinweisId,
+      dauer: duration,
+    );
+
+    final contact = contactForId(_chats[idx].recipientId);
+    if (contact != null) {
+      unawaited(_sendControlMessage(
+        chatId: chatId,
+        contact: contact,
+        type: SelfDestructPolicy.artFuerChatFrist(duration),
+        messageId: hinweisId,
+      ).catchError((_) {}));
+    }
+
     notifyListeners();
   }
 

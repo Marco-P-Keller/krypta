@@ -120,6 +120,19 @@
   "tapToUnlock": "Tap to unlock",
   "awaitingUnlock": "Visible once unlocked",
   "unblockToSend": "Unblock this contact to send messages.",
+  "selfDestructSetTo": "Self-delete set to {dauer}",
+  "@selfDestructSetTo": {
+    "description": "System notice in the chat when the chat-wide delete timer was changed. Both sides see it.",
+    "placeholders": {
+      "dauer": {
+        "type": "String"
+      }
+    }
+  },
+  "selfDestructTurnedOff": "Self-delete turned off",
+  "@selfDestructTurnedOff": {
+    "description": "System notice in the chat when the chat-wide delete timer was switched off."
+  },
   "@unblockToSend": {
     "description": "Shown when the user tries to send to a contact they have blocked themselves. The text stays in the input field."
   },

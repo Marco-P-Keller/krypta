@@ -315,6 +315,14 @@ class AppLocalizationsDe extends AppLocalizations {
       'Hebe die Blockierung dieses Nutzers auf, um Nachrichten senden zu können.';
 
   @override
+  String selfDestructSetTo(String dauer) {
+    return 'Self-Delete wurde auf $dauer gesetzt';
+  }
+
+  @override
+  String get selfDestructTurnedOff => 'Self-Delete wurde ausgeschaltet';
+
+  @override
   String get nameThisContact => 'Kontakt benennen';
 
   @override

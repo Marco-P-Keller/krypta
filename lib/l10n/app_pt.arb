@@ -96,6 +96,8 @@
   "tapToUnlock": "Toque para desbloquear",
   "awaitingUnlock": "Visível após o desbloqueio",
   "unblockToSend": "Desbloqueia este contacto para enviar mensagens.",
+  "selfDestructSetTo": "Autodestruição definida para {dauer}",
+  "selfDestructTurnedOff": "Autodestruição desativada",
   "nameThisContact": "Dê um nome a este contacto",
   "nameContactHint": "Atribua um nome a este contacto para saber quem é. Só você vê esta etiqueta.",
   "nameContactPlaceholder": "p. ex. Alex, mãe, trabalho...",

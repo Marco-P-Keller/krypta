@@ -684,6 +684,18 @@ abstract class AppLocalizations {
   /// **'Unblock this contact to send messages.'**
   String get unblockToSend;
 
+  /// System notice in the chat when the chat-wide delete timer was changed. Both sides see it.
+  ///
+  /// In en, this message translates to:
+  /// **'Self-delete set to {dauer}'**
+  String selfDestructSetTo(String dauer);
+
+  /// System notice in the chat when the chat-wide delete timer was switched off.
+  ///
+  /// In en, this message translates to:
+  /// **'Self-delete turned off'**
+  String get selfDestructTurnedOff;
+
   /// No description provided for @nameThisContact.
   ///
   /// In en, this message translates to:

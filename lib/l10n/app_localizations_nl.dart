@@ -313,6 +313,14 @@ class AppLocalizationsNl extends AppLocalizations {
   String get unblockToSend => 'Deblokkeer dit contact om berichten te sturen.';
 
   @override
+  String selfDestructSetTo(String dauer) {
+    return 'Zelfvernietiging ingesteld op $dauer';
+  }
+
+  @override
+  String get selfDestructTurnedOff => 'Zelfvernietiging uitgeschakeld';
+
+  @override
   String get nameThisContact => 'Geef dit contact een naam';
 
   @override
