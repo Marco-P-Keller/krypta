@@ -18,6 +18,7 @@ import '../../../security/ratchet/replay_guard.dart';
 import 'recording_notice_policy.dart';
 import 'remote_clear_policy.dart';
 import 'contact_request_policy.dart';
+import 'inbox_reconnect_backoff.dart';
 import 'key_publish_status.dart';
 import '../../../security/session/session_errors.dart';
 import '../../../security/session/session_handshake_service.dart';
@@ -173,6 +174,7 @@ class MessengerProvider extends ChangeNotifier {
 
   StreamSubscription? _inboxSub;
   Timer? _inboxReconnectTimer;
+  final InboxReconnectBackoff _inboxBackoff = InboxReconnectBackoff();
   Timer? _selfDestructTimer;
   bool _isSyncing = false;
   bool _isInitialized = false;
@@ -2525,22 +2527,32 @@ class MessengerProvider extends ChangeNotifier {
   /// the stream dead — a transient permission or network error would stop
   /// message delivery for the rest of the session with no UI signal.
   /// Exponential backoff prevents tight reconnect loops if the error
-  /// recurs (e.g., permissions revoked).
-  void _startInboxListenerWithReconnect({int attempt = 0}) {
+  /// recurs (e.g., permissions revoked). Die Treppe selbst steht in
+  /// [InboxReconnectBackoff] — samt der Regel, dass ein angekommener
+  /// Snapshot sie zurücksetzt.
+  void _startInboxListenerWithReconnect() {
     if (userId == null) return;
     _inboxSub?.cancel();
     _inboxSub = _firestore.listenForMessages(userId!).listen(
-      _handleInbox,
+      (snapshot) {
+        // Ein Snapshot heisst: die Verbindung steht wieder. Ohne diese
+        // Zeile schleppt der Zähler eine überstandene Nacht im Hintergrund
+        // als Fehlversuche mit sich herum, und der erste Anlauf nach dem
+        // Aufwachen kostet eine volle Minute Stille.
+        _inboxBackoff.angekommen();
+        unawaited(_handleInbox(snapshot));
+      },
       onError: (e) {
-        if (kDebugMode) debugPrint('Inbox error (attempt $attempt): $e');
-        // Exponential backoff capped at 60s: 1, 2, 4, 8, 16, 32, 60, 60, ...
-        final delaySec = attempt >= 6 ? 60 : (1 << attempt);
+        final wartezeit = _inboxBackoff.nachFehlversuch();
+        if (kDebugMode) {
+          debugPrint('Inbox error (Versuch ${_inboxBackoff.fehlversuche}): $e');
+        }
         _inboxReconnectTimer?.cancel();
-        _inboxReconnectTimer = Timer(Duration(seconds: delaySec), () {
+        _inboxReconnectTimer = Timer(wartezeit, () {
           // Also guard on _isSyncing — a teardown (wipe/logout) between the
           // error and the timer firing must not resurrect the listener.
           if (!_isSyncing || userId == null) return;
-          _startInboxListenerWithReconnect(attempt: attempt + 1);
+          _startInboxListenerWithReconnect();
         });
       },
       // B2: reconnect on clean completion while sync is still active. A
@@ -2553,7 +2565,7 @@ class MessengerProvider extends ChangeNotifier {
         if (!_isSyncing || userId == null) return;
         _inboxReconnectTimer = Timer(const Duration(seconds: 1), () {
           if (!_isSyncing || userId == null) return;
-          _startInboxListenerWithReconnect(attempt: 0);
+          _startInboxListenerWithReconnect();
         });
       },
     );
@@ -3669,6 +3681,29 @@ class MessengerProvider extends ChangeNotifier {
     }
     await _localStore.wipeAll();
     notifyListeners();
+  }
+
+  /// Den Empfang abbauen, solange die App im Hintergrund liegt.
+  ///
+  /// Vorher lief der Listener dort einfach weiter. Gekappt wurde die
+  /// Verbindung trotzdem — das Betriebssystem friert den Prozess ein —, nur
+  /// blieb der Wiederanlauf einer Wartetreppe überlassen, die vom Aufwachen
+  /// nichts weiß. Welche Zustände hier zählen, steht in
+  /// [SyncLifecyclePolicy]; ein flüchtiges `inactive` gehört ausdrücklich
+  /// nicht dazu.
+  void pauseSync() {
+    if (!_isSyncing) return;
+    _stopSync();
+  }
+
+  /// Nach dem Aufwachen frisch anhängen.
+  ///
+  /// Der Gegenpart zu [pauseSync] und damit der eine definierte
+  /// Einstiegspunkt zurück in den Empfang. Vor der Einrichtung ist das ein
+  /// No-op — ohne `userId` gibt es keinen Posteingang.
+  void resumeSync() {
+    if (!_isInitialized || userId == null) return;
+    _startSync();
   }
 
   void _stopSync() {

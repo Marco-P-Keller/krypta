@@ -14,6 +14,7 @@ import 'features/auth/presentation/vault_password_screen.dart';
 import 'features/calculator/presentation/calculator_screen.dart';
 import 'features/messenger/data/models/chat_model.dart';
 import 'features/messenger/logic/messenger_provider.dart';
+import 'features/messenger/logic/sync_lifecycle_policy.dart';
 import 'features/messenger/presentation/chat_list_screen.dart';
 import 'features/messenger/presentation/chat_screen.dart';
 import 'features/messenger/presentation/new_chat_screen.dart';
@@ -126,6 +127,18 @@ class _KryptaShellState extends State<KryptaShell> with WidgetsBindingObserver {
   /// unabhaengig vom Screenshot-Hinweis laeuft.
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
+    // Der Empfang zuerst, vor allem anderen. Er hing bisher an gar nichts:
+    // im Hintergrund lief der Listener gegen eine gekappte Verbindung
+    // weiter, und beim Aufwachen holte ihn niemand zurueck — eine
+    // Kontaktanfrage vom Vormittag lag deshalb nach dem Oeffnen noch eine
+    // Minute herum, obwohl die Chatliste laengst stand.
+    final messenger = context.read<MessengerProvider>();
+    if (SyncLifecyclePolicy.shouldPause(state)) {
+      messenger.pauseSync();
+    } else if (SyncLifecyclePolicy.shouldResume(state)) {
+      messenger.resumeSync();
+    }
+
     final isBackgrounded = state == AppLifecycleState.paused ||
         state == AppLifecycleState.hidden;
     if (isBackgrounded) {
