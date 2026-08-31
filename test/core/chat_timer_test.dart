@@ -2,63 +2,92 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:kryptaapp/features/messenger/data/models/message_model.dart';
 import 'package:kryptaapp/features/messenger/logic/self_destruct_policy.dart';
 
-/// Die zwei Loeschtimer und wie sie sich vertragen.
+/// Die zwei Loeschtimer und wann ihre Uhr startet.
 ///
-/// **Beide laufen ab dem Lesen.** Ein Timer, der abliefe, bevor die Nachricht
-/// ueberhaupt jemand gesehen hat, haette sie nie zugestellt — das gilt fuer
-/// den Timer einer einzelnen Nachricht wie fuer den des ganzen Chats.
+/// **Der Timer einer einzelnen Nachricht laeuft ab der Zustellung.** Nicht ab
+/// dem Lesen: er soll auch ablaufen, wenn die Nachricht nie geoeffnet wird.
+/// Stellt jemand dreissig Sekunden ein und der Empfaenger schaut erst nach
+/// zwanzig hinein, bleiben ihm zehn.
 ///
-/// Der Preis, offen benannt: **Ungelesenes laeuft nie ab.** Ein Chat mit
-/// 24-Stunden-Regel raeumt nichts weg, was niemand geoeffnet hat. Das war
-/// Daniels Entscheidung am 31.08., nachdem der Chat-Timer einen Tag lang ab
-/// dem Senden lief.
+/// **Der Chat-Timer laeuft ab dem Lesen.** Er ist Hausordnung, kein
+/// Versprechen, und gilt auch fuer das, was schon dasteht — dann ab dem
+/// Einschalten, damit nicht mit einem Tipp der halbe Verlauf verschwindet.
 ///
-/// Der Unterschied zwischen den beiden liegt woanders: der Chat-Timer gilt
-/// auch fuer das, was schon dasteht — dann ab dem **Einschalten**, damit nicht
-/// mit einem Tipp der halbe Verlauf im selben Moment verschwindet. Und ein
-/// eigener Timer der Nachricht schlaegt ihn, in beide Richtungen.
+/// Ein eigener Timer der Nachricht schlaegt den Chat-Timer, in beide
+/// Richtungen.
+///
+/// Auf dem Geraet des Empfaengers ist `timestamp` der **Zustellzeitpunkt** —
+/// er wird beim Verarbeiten gesetzt. Beim Absender ist er der Sendezeitpunkt;
+/// dessen Fassung raeumt deshalb nicht die eigene Uhr weg, sondern die
+/// Ablaufmeldung der Gegenseite (siehe [SelfDestructPolicy.announceBurn]).
 void main() {
-  final gesendet = DateTime(2026, 8, 31, 12, 0, 0);
-  final gelesen = DateTime(2026, 8, 31, 12, 30, 0);
+  final zugestellt = DateTime(2026, 8, 31, 12, 0, 0);
+  final gelesen = DateTime(2026, 8, 31, 12, 0, 20);
 
-  Message nachricht({Duration? eigenerTimer, DateTime? gelesenAm}) => Message(
+  Message nachricht({
+    Duration? timer,
+    bool vomChat = false,
+    DateTime? gelesenAm,
+  }) =>
+      Message(
         id: 'm1',
         chatId: 'c1',
         senderId: 'marco',
         recipientId: 'ich',
         encryptedContent: 'x',
-        timestamp: gesendet,
-        selfDestructDuration: eigenerTimer,
+        timestamp: zugestellt,
+        selfDestructDuration: timer,
+        selfDestructFromChat: vomChat,
         readAt: gelesenAm,
       );
 
-  group('Eigener Timer', () {
-    test('vor dem Lesen laeuft nichts', () {
+  group('Eigener Timer — ab der Zustellung', () {
+    test('dreissig Sekunden nach der Zustellung ist sie faellig', () {
+      final m = nachricht(timer: const Duration(seconds: 30));
       expect(
-        SelfDestructPolicy.expired(
-          nachricht(eigenerTimer: const Duration(minutes: 10)),
-          gesendet.add(const Duration(hours: 5)),
-        ),
-        isFalse,
+          SelfDestructPolicy.expired(
+              m, zugestellt.add(const Duration(seconds: 29))),
+          isFalse);
+      expect(
+          SelfDestructPolicy.expired(
+              m, zugestellt.add(const Duration(seconds: 31))),
+          isTrue);
+    });
+
+    test('sie laeuft auch ab, wenn sie nie gelesen wurde', () {
+      // Der Kern des Punktes: Ungelesenes bleibt nicht liegen.
+      expect(
+        SelfDestructPolicy.expired(nachricht(timer: const Duration(seconds: 30)),
+            zugestellt.add(const Duration(minutes: 5))),
+        isTrue,
       );
     });
 
-    test('zehn Minuten nach dem Lesen ist sie faellig', () {
+    test('spaeter Lesen verlaengert nichts', () {
+      // Nach zwanzig Sekunden geoeffnet: es bleiben zehn, nicht dreissig.
       final m = nachricht(
-          eigenerTimer: const Duration(minutes: 10), gelesenAm: gelesen);
+          timer: const Duration(seconds: 30), gelesenAm: gelesen);
       expect(
-          SelfDestructPolicy.expired(m, gelesen.add(const Duration(minutes: 9))),
-          isFalse);
-      expect(
-          SelfDestructPolicy.expired(m, gelesen.add(const Duration(minutes: 11))),
+          SelfDestructPolicy.expired(
+              m, zugestellt.add(const Duration(seconds: 31))),
           isTrue);
     });
   });
 
-  group('Chat-Timer', () {
+  group('Chat-Timer — ab dem Lesen', () {
     final eingeschaltet = DateTime(2026, 8, 31, 11, 0, 0);
 
-    test('laeuft ebenfalls ab dem Lesen', () {
+    test('ungelesen laeuft er nicht', () {
+      expect(
+        SelfDestructPolicy.expired(
+            nachricht(), zugestellt.add(const Duration(days: 365)),
+            chatTimer: const Duration(minutes: 10),
+            chatTimerSetAt: eingeschaltet),
+        isFalse,
+      );
+    });
+
+    test('gelesen laeuft er ab dem Lesen', () {
       final m = nachricht(gelesenAm: gelesen);
       expect(
         SelfDestructPolicy.expired(m, gelesen.add(const Duration(minutes: 9)),
@@ -74,58 +103,29 @@ void main() {
       );
     });
 
-    test('Ungelesenes laeuft nie ab', () {
-      // Der Preis der Entscheidung, und er gehoert festgehalten: ein Chat mit
-      // Frist raeumt nichts weg, was niemand geoeffnet hat.
-      expect(
-        SelfDestructPolicy.expired(nachricht(), gesendet.add(const Duration(days: 365)),
-            chatTimer: const Duration(minutes: 10),
-            chatTimerSetAt: eingeschaltet),
-        isFalse,
-      );
-    });
-
-    test('ohne Chat-Timer bleibt alles stehen', () {
-      expect(
-        SelfDestructPolicy.expired(
-            nachricht(gelesenAm: gelesen), gelesen.add(const Duration(days: 30))),
-        isFalse,
-      );
-    });
-  });
-
-  group('Nachtraeglich eingeschaltet', () {
-    test('laenger Gelesenes bekommt die volle Frist ab dem Einschalten', () {
-      // Gelesen um 12:30, Timer erst um 14:00 eingeschaltet: die Nachricht
-      // darf nicht im selben Moment verschwinden.
-      final eingeschaltet = DateTime(2026, 8, 31, 14, 0, 0);
+    test('nachtraeglich eingeschaltet: volle Frist ab dem Einschalten', () {
+      final spaeter = DateTime(2026, 8, 31, 14, 0, 0);
       final m = nachricht(gelesenAm: gelesen);
-
       expect(
-        SelfDestructPolicy.expired(
-            m, eingeschaltet.add(const Duration(minutes: 9)),
-            chatTimer: const Duration(minutes: 10),
-            chatTimerSetAt: eingeschaltet),
+        SelfDestructPolicy.expired(m, spaeter.add(const Duration(minutes: 9)),
+            chatTimer: const Duration(minutes: 10), chatTimerSetAt: spaeter),
         isFalse,
       );
       expect(
-        SelfDestructPolicy.expired(
-            m, eingeschaltet.add(const Duration(minutes: 11)),
-            chatTimer: const Duration(minutes: 10),
-            chatTimerSetAt: eingeschaltet),
+        SelfDestructPolicy.expired(m, spaeter.add(const Duration(minutes: 11)),
+            chatTimer: const Duration(minutes: 10), chatTimerSetAt: spaeter),
         isTrue,
       );
     });
 
-    test('spaeter Gelesenes laeuft ab seinem eigenen Lesezeitpunkt', () {
-      final eingeschaltet = DateTime(2026, 8, 31, 11, 0, 0);
-      final m = nachricht(gelesenAm: gelesen);
-
+    test('eine Nachricht MIT Chat-Frist laeuft ebenfalls ab dem Lesen', () {
+      // Die Frist reist mit, damit beide Seiten sie kennen — die Herkunft auch,
+      // sonst wuerde sie beim Empfaenger als eigener Timer ab Zustellung laufen.
+      final m = nachricht(timer: const Duration(minutes: 10), vomChat: true);
       expect(
-        SelfDestructPolicy.expired(m, gelesen.add(const Duration(minutes: 11)),
-            chatTimer: const Duration(minutes: 10),
-            chatTimerSetAt: eingeschaltet),
-        isTrue,
+        SelfDestructPolicy.expired(m, zugestellt.add(const Duration(hours: 5))),
+        isFalse,
+        reason: 'ungelesen laeuft der Chat-Timer nicht',
       );
     });
   });
@@ -133,28 +133,20 @@ void main() {
   group('Eigener Timer schlaegt den Chat-Timer', () {
     final eingeschaltet = DateTime(2026, 8, 31, 11, 0, 0);
 
-    test('laenger: Chat 10 Min., Nachricht 24 Std. — sie bleibt 24 Std.', () {
-      final m =
-          nachricht(eigenerTimer: const Duration(hours: 24), gelesenAm: gelesen);
+    test('laenger', () {
+      final m = nachricht(timer: const Duration(hours: 24));
       expect(
-        SelfDestructPolicy.expired(m, gelesen.add(const Duration(hours: 23)),
+        SelfDestructPolicy.expired(m, zugestellt.add(const Duration(hours: 23)),
             chatTimer: const Duration(minutes: 10),
             chatTimerSetAt: eingeschaltet),
         isFalse,
       );
-      expect(
-        SelfDestructPolicy.expired(m, gelesen.add(const Duration(hours: 25)),
-            chatTimer: const Duration(minutes: 10),
-            chatTimerSetAt: eingeschaltet),
-        isTrue,
-      );
     });
 
-    test('kuerzer: Chat 24 Std., Nachricht 5 Min. — sie geht nach 5 Min.', () {
-      final m =
-          nachricht(eigenerTimer: const Duration(minutes: 5), gelesenAm: gelesen);
+    test('kuerzer', () {
+      final m = nachricht(timer: const Duration(minutes: 5));
       expect(
-        SelfDestructPolicy.expired(m, gelesen.add(const Duration(minutes: 6)),
+        SelfDestructPolicy.expired(m, zugestellt.add(const Duration(minutes: 6)),
             chatTimer: const Duration(hours: 24),
             chatTimerSetAt: eingeschaltet),
         isTrue,
@@ -162,15 +154,24 @@ void main() {
     });
   });
 
-  group('Wer sagt Bescheid', () {
-    test('der Empfaenger meldet jeden Ablauf, den nur er kennen kann', () {
-      // Beide Timer haengen jetzt am Lesen, und `readAt` hat nur der
-      // Empfaenger. Also meldet er beide.
-      expect(
-        SelfDestructPolicy.announceBurn(
-            nachricht(eigenerTimer: const Duration(minutes: 10)), 'ich'),
-        isTrue,
-      );
+  group('Speichern und Laden', () {
+    test('die Herkunft des Timers ueberlebt den Rundlauf', () {
+      final m = nachricht(timer: const Duration(minutes: 10), vomChat: true);
+      expect(Message.fromMap(m.toMap()).selfDestructFromChat, isTrue);
+    });
+
+    test('ein Bestandsdatensatz gilt als eigener Timer', () {
+      final alt = Message.fromMap({
+        'id': 'm3',
+        'chatId': 'c1',
+        'senderId': 'marco',
+        'recipientId': 'ich',
+        'encryptedContent': 'x',
+        'timestamp': zugestellt.millisecondsSinceEpoch,
+        'status': 0,
+        'selfDestructMs': const Duration(minutes: 10).inMilliseconds,
+      });
+      expect(alt.selfDestructFromChat, isFalse);
     });
   });
 }

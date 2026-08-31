@@ -2303,6 +2303,7 @@ class MessengerProvider extends ChangeNotifier {
     Duration? selfDestruct,
     bool burnAfterRead = false,
     String? password,
+    bool selfDestructFromChat = false,
     bool asContactRequest = false,
     String? qrToken,
     String? preverifiedServerKey,
@@ -2317,6 +2318,7 @@ class MessengerProvider extends ChangeNotifier {
           text: text,
           selfDestruct: selfDestruct,
           burnAfterRead: burnAfterRead,
+          selfDestructFromChat: selfDestructFromChat,
           password: password,
           asContactRequest: asContactRequest,
           qrToken: qrToken,
@@ -2330,6 +2332,7 @@ class MessengerProvider extends ChangeNotifier {
     Duration? selfDestruct,
     bool burnAfterRead = false,
     String? password,
+    bool selfDestructFromChat = false,
     bool asContactRequest = false,
     String? qrToken,
     String? preverifiedServerKey,
@@ -2446,6 +2449,7 @@ class MessengerProvider extends ChangeNotifier {
       timestamp: now,
       status: MessageStatus.sending,
       selfDestructDuration: selfDestruct,
+      selfDestructFromChat: selfDestructFromChat,
       burnAfterRead: burnAfterRead,
       isPasswordProtected: hasPassword,
       passwordUnlocked: !hasPassword, // Both sides start locked
@@ -2494,6 +2498,9 @@ class MessengerProvider extends ChangeNotifier {
         innerPayload['_psid'] = state.previousSessionId;
       }
       if (selfDestruct != null) innerPayload['_sd'] = selfDestruct.inMilliseconds;
+      // Die Herkunft muss mit: ohne sie liefe eine Chat-Frist beim
+      // Empfaenger als eigener Timer ab der Zustellung statt ab dem Lesen.
+      if (selfDestructFromChat) innerPayload['_sdc'] = true;
       if (burnAfterRead) innerPayload['_bar'] = true;
       if (hasPassword) innerPayload['_pw'] = true;
 
@@ -3079,6 +3086,7 @@ class MessengerProvider extends ChangeNotifier {
           decryptedContent: messageContent,
           timestamp: DateTime.now(),
           status: MessageStatus.delivered,
+          selfDestructFromChat: innerPayload['_sdc'] == true,
           selfDestructDuration:
               selfDestructMs != null ? Duration(milliseconds: selfDestructMs) : null,
           burnAfterRead: burnAfterRead,
@@ -3323,6 +3331,7 @@ class MessengerProvider extends ChangeNotifier {
         decryptedContent: messageContent,
         timestamp: DateTime.now(),
         status: MessageStatus.delivered,
+        selfDestructFromChat: innerPayload['_sdc'] == true,
         selfDestructDuration:
             selfDestructMs != null ? Duration(milliseconds: selfDestructMs) : null,
         burnAfterRead: burnAfterRead,

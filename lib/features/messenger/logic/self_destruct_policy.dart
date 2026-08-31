@@ -2,21 +2,21 @@ import '../data/models/message_model.dart';
 
 /// Wann eine Nachricht verschwindet — und bei wem.
 ///
-/// Es gibt zwei Timer, und **beide laufen ab dem Lesen**. Ein Timer, der
-/// abliefe, bevor die Nachricht ueberhaupt jemand gesehen hat, haette sie nie
-/// zugestellt.
+/// Es gibt zwei Timer, und sie starten verschieden.
 ///
-/// Der Preis davon, offen benannt: **Ungelesenes laeuft nie ab.** Ein Chat
-/// mit 24-Stunden-Regel raeumt nichts weg, was niemand geoeffnet hat. Der
-/// Chat-Timer lief einen Tag lang ab dem Senden und haette das erledigt;
-/// Daniel wollte am 31.08. das eine Modell fuer beide Timer.
+/// **Der Timer einer einzelnen Nachricht laeuft ab der Zustellung.** Er soll
+/// auch ablaufen, wenn die Nachricht nie geoeffnet wird: dreissig Sekunden
+/// heissen dreissig Sekunden. Wer erst nach zwanzig hineinschaut, hat noch
+/// zehn.
 ///
-/// `readAt` setzt nur der Empfaenger. Beim Absender bleibt es leer, solange
-/// keine Lesebestaetigung kommt, und die ist standardmaessig aus — seine
-/// Fassung lief deshalb nie ab: beim Empfaenger vernichtet, bei ihm noch da.
-/// Darum meldet der Empfaenger den Ablauf, siehe [announceBurn].
+/// **Der Chat-Timer laeuft ab dem Lesen.** Er ist Hausordnung fuer den Chat,
+/// kein Versprechen an die Gegenseite; Ungelesenes bleibt darunter liegen.
 ///
-/// Der Unterschied zwischen den beiden liegt woanders: der **Chat-Timer**
+/// `readAt` setzt nur der Empfaenger, und den Zustellzeitpunkt kennt auch nur
+/// er — beim Absender ist `timestamp` der Sendezeitpunkt. Seine Fassung
+/// raeumt deshalb keine eigene Uhr weg, sondern die Ablaufmeldung der
+/// Gegenseite, siehe [announceBurn].
+////// Der Unterschied zwischen den beiden liegt woanders: der **Chat-Timer**
 /// gilt auch fuer das, was schon dasteht — dann ab dem **Einschalten**, damit
 /// nicht mit einem Tipp der halbe Verlauf im selben Moment verschwindet. Und
 /// ein eigener Timer der Nachricht schlaegt ihn, in beide Richtungen.
@@ -45,11 +45,24 @@ abstract final class SelfDestructPolicy {
     Duration? chatTimer,
     DateTime? chatTimerSetAt,
   }) {
-    final gelesen = m.readAt;
-    // Ungelesen laeuft keine Uhr. Gilt fuer beide Timer.
-    if (gelesen == null) return null;
-
     final eigener = m.selfDestructDuration;
+
+    // Eigener Timer: ab der **Zustellung**. Er soll auch ablaufen, wenn die
+    // Nachricht nie geoeffnet wird — dreissig Sekunden heissen dreissig
+    // Sekunden, nicht „dreissig Sekunden ab irgendwann".
+    //
+    // Auf dem Geraet des Empfaengers ist `timestamp` der Zustellzeitpunkt.
+    // Beim Absender ist es der Sendezeitpunkt, und dessen Fassung raeumt
+    // deshalb nicht die eigene Uhr weg, sondern die Ablaufmeldung der
+    // Gegenseite — siehe [announceBurn].
+    if (eigener != null && !m.selfDestructFromChat) {
+      return m.timestamp.add(eigener);
+    }
+
+    // Alles Weitere haengt am Lesen. Ungelesen laeuft der Chat-Timer nicht:
+    // er ist Hausordnung, kein Versprechen an die Gegenseite.
+    final gelesen = m.readAt;
+    if (gelesen == null) return null;
     if (eigener != null) return gelesen.add(eigener);
 
     if (chatTimer == null) return null;

@@ -14,6 +14,7 @@ void main() {
         selfDestructDuration: const Duration(seconds: 30),
         readAt: null,
       );
+      // Frisch zugestellt: die halbe Minute laeuft gerade erst an.
       expect(msg.isExpired, false);
     });
 
@@ -38,9 +39,11 @@ void main() {
         senderId: 's1',
         recipientId: 'r1',
         encryptedContent: '',
-        timestamp: DateTime.now(),
+        // Der Timer einer einzelnen Nachricht laeuft ab der Zustellung; auf
+        // dem Geraet des Empfaengers ist das genau dieser Zeitstempel.
+        timestamp: DateTime.now().subtract(const Duration(seconds: 5)),
         selfDestructDuration: const Duration(seconds: 1),
-        readAt: DateTime.now().subtract(const Duration(seconds: 5)),
+        readAt: null,
       );
       expect(msg.isExpired, true);
     });

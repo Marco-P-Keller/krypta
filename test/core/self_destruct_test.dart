@@ -38,22 +38,24 @@ void main() {
       );
     });
 
-    test('ungelesen laeuft die Uhr nicht — sie startet beim Lesen', () {
+    test('ungelesen laeuft die Uhr trotzdem — sie startet bei der Zustellung',
+        () {
+      // Umgekehrt zum Stand von heute Mittag: der Timer einer einzelnen
+      // Nachricht soll auch ablaufen, wenn sie nie geoeffnet wird.
       expect(
         SelfDestructPolicy.expired(
           nachricht(timer: const Duration(seconds: 30)),
           gelesen.add(const Duration(days: 1)),
         ),
-        isFalse,
+        isTrue,
       );
     });
 
     test('vor Ablauf bleibt sie stehen', () {
+      final m = nachricht(timer: const Duration(seconds: 30));
       expect(
         SelfDestructPolicy.expired(
-          nachricht(timer: const Duration(seconds: 30), gelesenAm: gelesen),
-          gelesen.add(const Duration(seconds: 29)),
-        ),
+            m, m.timestamp.add(const Duration(seconds: 29))),
         isFalse,
       );
     });

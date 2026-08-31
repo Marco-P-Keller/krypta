@@ -32,6 +32,21 @@ class Message extends Equatable {
   final MessageStatus status;
   final Duration? selfDestructDuration;
 
+  /// Ob [selfDestructDuration] vom **Chat-Timer** stammt.
+  ///
+  /// Die beiden Timer starten verschieden. Der Timer einer einzelnen
+  /// Nachricht laeuft ab der **Zustellung** — er soll auch ablaufen, wenn
+  /// die Nachricht nie geoeffnet wird. Der Chat-Timer laeuft ab dem
+  /// **Lesen**; er ist Hausordnung, kein Versprechen.
+  ///
+  /// Die Frist reist in beiden Faellen mit, damit beide Seiten dieselbe
+  /// kennen. Ohne diese Markierung wuerde eine Chat-Frist beim Empfaenger
+  /// als eigener Timer gelten und ab der Zustellung laufen.
+  ///
+  /// `false` ist der sichere Vorgabewert: alles, was vor dieser
+  /// Unterscheidung gespeichert wurde, war ein eigener Timer.
+  final bool selfDestructFromChat;
+
   final DateTime? readAt;
   final bool burnAfterRead;
 
@@ -62,6 +77,7 @@ class Message extends Equatable {
     required this.timestamp,
     this.status = MessageStatus.sending,
     this.selfDestructDuration,
+    this.selfDestructFromChat = false,
     this.readAt,
     this.burnAfterRead = false,
     this.isPasswordProtected = false,
@@ -77,11 +93,15 @@ class Message extends Equatable {
   bool get isExpired {
     final dauer = selfDestructDuration;
     if (dauer == null) return false;
+    // Eigener Timer: ab der Zustellung. Auf dem Geraet des Empfaengers ist
+    // `timestamp` genau das.
+    if (!selfDestructFromChat) {
+      return DateTime.now().isAfter(timestamp.add(dauer));
+    }
     final gelesen = readAt;
     if (gelesen == null) return false;
     return DateTime.now().isAfter(gelesen.add(dauer));
   }
-
   bool get shouldBurn => burnAfterRead && readAt != null;
 
   /// True when the message is locked and the recipient hasn't entered the password yet.
@@ -92,6 +112,7 @@ class Message extends Equatable {
     MessageStatus? status,
     DateTime? readAt,
     bool? passwordUnlocked,
+    bool? selfDestructFromChat,
   }) {
     return Message(
       id: id,
@@ -105,6 +126,7 @@ class Message extends Equatable {
       timestamp: timestamp,
       status: status ?? this.status,
       selfDestructDuration: selfDestructDuration,
+      selfDestructFromChat: selfDestructFromChat ?? this.selfDestructFromChat,
       readAt: readAt ?? this.readAt,
       burnAfterRead: burnAfterRead,
       isPasswordProtected: isPasswordProtected,
@@ -144,6 +166,7 @@ class Message extends Equatable {
         'timestamp': timestamp.millisecondsSinceEpoch,
         'status': status.index,
         'selfDestructMs': selfDestructDuration?.inMilliseconds,
+        'sdFromChat': selfDestructFromChat,
         'readAt': readAt?.millisecondsSinceEpoch,
         'burnAfterRead': burnAfterRead ? 1 : 0,
         'pwProtected': isPasswordProtected ? 1 : 0,
@@ -164,6 +187,7 @@ class Message extends Equatable {
       // A2: clamp stored milliseconds — non-positive → no self-destruct,
       // cap at 30 days to prevent Duration overflow in downstream timers.
       selfDestructDuration: _decodeSelfDestruct(map['selfDestructMs']),
+      selfDestructFromChat: map['sdFromChat'] == true,
       readAt: map['readAt'] != null
           ? DateTime.fromMillisecondsSinceEpoch(map['readAt'] as int)
           : null,
