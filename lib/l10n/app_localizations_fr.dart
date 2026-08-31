@@ -312,6 +312,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String get awaitingUnlock => 'Visible une fois déverrouillé';
 
   @override
+  String get unblockToSend => 'Débloque ce contact pour envoyer des messages.';
+
+  @override
   String get nameThisContact => 'Nommez ce contact';
 
   @override

@@ -313,6 +313,10 @@ class AppLocalizationsEs extends AppLocalizations {
   String get awaitingUnlock => 'Visible una vez desbloqueado';
 
   @override
+  String get unblockToSend =>
+      'Desbloquea a este contacto para enviar mensajes.';
+
+  @override
   String get nameThisContact => 'Ponle nombre a este contacto';
 
   @override

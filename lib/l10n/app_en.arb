@@ -119,6 +119,10 @@
   "wrongPassword": "Wrong password",
   "tapToUnlock": "Tap to unlock",
   "awaitingUnlock": "Visible once unlocked",
+  "unblockToSend": "Unblock this contact to send messages.",
+  "@unblockToSend": {
+    "description": "Shown when the user tries to send to a contact they have blocked themselves. The text stays in the input field."
+  },
   "@awaitingUnlock": {
     "description": "Shown on the sender own password-protected message. The sender cannot unlock it themselves: their copy holds the plaintext, not the password-encrypted blob. It becomes readable once the recipient unlocks it."
   },

@@ -312,6 +312,9 @@ class AppLocalizationsIt extends AppLocalizations {
   String get awaitingUnlock => 'Visibile una volta sbloccato';
 
   @override
+  String get unblockToSend => 'Sblocca questo contatto per inviare messaggi.';
+
+  @override
   String get nameThisContact => 'Dai un nome a questo contatto';
 
   @override

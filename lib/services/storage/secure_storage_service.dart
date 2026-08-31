@@ -179,24 +179,6 @@ class SecureStorageService {
 
   // --- Screenshot-Hinweis ---
 
-  /// Ob beide Seiten von Screenshots und Aufnahmen erfahren. Standard: an.
-  ///
-  /// Der Schluessel heisst historisch `screenshotProtection` — dahinter stand
-  /// einmal ein Schutz, den es nicht mehr gibt. Umbenennen wuerde die
-  /// Einstellung bestehender Nutzer zuruecksetzen, das waere der schlechtere
-  /// Tausch.
-  Future<bool> isScreenshotNoticeEnabled() async {
-    final value = await _storage.read(key: StorageKeys.screenshotProtection);
-    return value != 'false';
-  }
-
-  Future<void> setScreenshotNoticeEnabled(bool enabled) async {
-    await _storage.write(
-      key: StorageKeys.screenshotProtection,
-      value: enabled.toString(),
-    );
-  }
-
   // --- Anzeigesprache ---
 
   /// Die gewaehlte Sprache als Code ('en', 'de', 'es', 'it', 'pt', 'fr').

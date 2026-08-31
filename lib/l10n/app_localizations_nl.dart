@@ -310,6 +310,9 @@ class AppLocalizationsNl extends AppLocalizations {
   String get awaitingUnlock => 'Zichtbaar zodra ontgrendeld';
 
   @override
+  String get unblockToSend => 'Deblokkeer dit contact om berichten te sturen.';
+
+  @override
   String get nameThisContact => 'Geef dit contact een naam';
 
   @override

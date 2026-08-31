@@ -309,6 +309,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get awaitingUnlock => 'Visible once unlocked';
 
   @override
+  String get unblockToSend => 'Unblock this contact to send messages.';
+
+  @override
   String get nameThisContact => 'Name this contact';
 
   @override

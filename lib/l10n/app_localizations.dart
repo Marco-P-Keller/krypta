@@ -678,6 +678,12 @@ abstract class AppLocalizations {
   /// **'Visible once unlocked'**
   String get awaitingUnlock;
 
+  /// Shown when the user tries to send to a contact they have blocked themselves. The text stays in the input field.
+  ///
+  /// In en, this message translates to:
+  /// **'Unblock this contact to send messages.'**
+  String get unblockToSend;
+
   /// No description provided for @nameThisContact.
   ///
   /// In en, this message translates to:

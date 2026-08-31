@@ -311,6 +311,10 @@ class AppLocalizationsDe extends AppLocalizations {
   String get awaitingUnlock => 'Sichtbar, sobald entsperrt';
 
   @override
+  String get unblockToSend =>
+      'Hebe die Blockierung dieses Nutzers auf, um Nachrichten senden zu können.';
+
+  @override
   String get nameThisContact => 'Kontakt benennen';
 
   @override

@@ -42,7 +42,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
   /// Schalter zeigte trotzdem „an". Eine App, die einen Schutz behauptet, den
   /// sie nicht hat, ist schlechter als eine, die ehrlich ist. Verhindern
   /// laesst sich ein Screenshot auf iOS ohnehin nicht; melden schon.
-  bool _screenshotNotice = true;
   bool _biometricAvailable = false;
   bool _vaultPasswordEnabled = false;
   bool _pushPrivacyEnabled = false;
@@ -77,7 +76,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final pushPrivacy = await storage.isPushPrivacyEnabled();
     final deliveryReceipts = await storage.isDeliveryReceiptsEnabled();
     final readReceipts = await storage.isReadReceiptsEnabled();
-    final screenshotNotice = await storage.isScreenshotNoticeEnabled();
 
     if (mounted) {
       setState(() {
@@ -87,7 +85,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
         _pushPrivacyEnabled = pushPrivacy;
         _deliveryReceiptsEnabled = deliveryReceipts;
         _readReceiptsEnabled = readReceipts;
-        _screenshotNotice = screenshotNotice;
         _deviceIntegrityLevel = integrity.lastResult?.level;
         _hardwareSecurityLevel = hardware.level;
         _isHardwareWrapped = localStore.isHardwareWrapped;
@@ -258,24 +255,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final messenger = context.read<MessengerProvider>();
     await messenger.setReadReceiptsEnabled(value);
     if (mounted) setState(() => _readReceiptsEnabled = value);
-  }
-
-  /// Den Hinweis ein- oder ausschalten.
-  ///
-  /// Aus heisst: die Erkennung laeuft gar nicht erst, und niemand erfaehrt
-  /// etwas — auch die Gegenseite nicht. Screenshots sind damit nicht mehr
-  /// oder weniger moeglich als vorher.
-  Future<void> _toggleScreenshotNotice(bool value) async {
-    final platform = context.read<PlatformSecurityService>();
-    final storage = context.read<SecureStorageService>();
-
-    if (value) {
-      await platform.enableScreenshotProtection();
-    } else {
-      await platform.disableScreenshotProtection();
-    }
-    await storage.setScreenshotNoticeEnabled(value);
-    if (mounted) setState(() => _screenshotNotice = value);
   }
 
   void _showChangeCodeDialog(
@@ -816,15 +795,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ),
               _Divider(isDark: isDark),
             ],
-            _SwitchTile(
-              icon: Icons.screenshot_monitor_outlined,
-              title: l10n.screenshotNotice,
-              subtitle: l10n.screenshotNoticeDescription,
-              value: _screenshotNotice,
-              onChanged: _toggleScreenshotNotice,
-              isDark: isDark,
-            ),
-            _Divider(isDark: isDark),
             _NavTile(
               icon: Icons.shield_rounded,
               title: l10n.vaultPassword,

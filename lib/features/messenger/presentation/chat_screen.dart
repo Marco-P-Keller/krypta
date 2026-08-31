@@ -1,4 +1,7 @@
 import 'dart:async';
+import 'dart:math' as math;
+
+import 'package:flutter/services.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../l10n/app_localizations.dart';
@@ -29,7 +32,17 @@ class ChatScreen extends StatefulWidget {
   State<ChatScreen> createState() => _ChatScreenState();
 }
 
-class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
+class _ChatScreenState extends State<ChatScreen>
+    with WidgetsBindingObserver, SingleTickerProviderStateMixin {
+  /// Laesst die Eingabezeile kurz wackeln.
+  ///
+  /// Fuer den Fall, dass gar nicht gesendet werden kann. Vorher
+  /// verschwand der Text wortlos aus dem Feld und nichts ging raus — das
+  /// sah aus wie ein verschlucktes Senden.
+  late final AnimationController _wackeln = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 400),
+  );
   final _controller = TextEditingController();
   final _scrollController = ScrollController();
   final _focusNode = FocusNode();
@@ -52,6 +65,7 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
 
   @override
   void dispose() {
+    _wackeln.dispose();
     _screenshotSub?.cancel();
     _captureSub?.cancel();
     // Clear sensitive state from memory immediately on screen exit.
@@ -127,9 +141,29 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
     }
   }
 
+  /// Kurz wackeln und sagen, warum nichts rausging.
+  void _abgelehnt(String hinweis) {
+    HapticFeedback.heavyImpact();
+    _wackeln.forward(from: 0);
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(SnackBar(content: Text(hinweis)));
+  }
+
   void _sendMessage() {
     final text = _controller.text.trim();
     if (text.isEmpty) return;
+
+    // Blockiert: der Text bleibt stehen. Ihn zu leeren und nichts zu
+    // senden ist das Schlechteste von beidem — es sieht aus, als waere die
+    // Nachricht raus.
+    final kontakt = context
+        .read<MessengerProvider>()
+        .contactForId(widget.chat.recipientId);
+    if (kontakt != null && kontakt.isBlocked) {
+      _abgelehnt(AppLocalizations.of(context)!.unblockToSend);
+      return;
+    }
 
     // Für das Passwort einer einzelnen Nachricht gelten bewusst keine Regeln
      // mehr. Es schützt eine Nachricht in einem ohnehin Ende-zu-Ende
@@ -773,6 +807,22 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
   }
 
   Widget _buildMessageInput(BuildContext context, AppLocalizations l10n, bool isDark) {
+    return AnimatedBuilder(
+      animation: _wackeln,
+      builder: (context, kind) {
+        // Drei Ausschlaege, abklingend.
+        final t = _wackeln.value;
+        final weg = t == 0
+            ? 0.0
+            : 8 * (1 - t) * math.sin(t * math.pi * 6);
+        return Transform.translate(offset: Offset(weg, 0), child: kind);
+      },
+      child: _buildMessageInputInner(context, l10n, isDark),
+    );
+  }
+
+  Widget _buildMessageInputInner(
+      BuildContext context, AppLocalizations l10n, bool isDark) {
     final dimColor = isDark
         ? AppColors.textTertiaryDark
         : AppColors.textTertiaryLight;
