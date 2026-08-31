@@ -47,9 +47,18 @@ abstract final class SelfDestructPolicy {
   }) {
     final eigener = m.selfDestructDuration;
     if (eigener != null) {
-      // Der Chat-Timer wird beim Senden mit hineingeschrieben, damit beide
-      // Seiten auf dieselbe Frist kommen. Nur traegt er dann diese Markierung
-      // und laeuft ab dem Senden, nicht ab dem Lesen.
+      // Der Chat-Timer wird beim Senden mit hineingeschrieben, damit er auf
+      // beiden Seiten ueberhaupt greift. Er laeuft ab dem Senden, nicht ab
+      // dem Lesen.
+      //
+      // Die beiden Fristen sind **nicht auf die Sekunde gleich**: der
+      // Empfaenger setzt den Zeitstempel beim Verarbeiten, nicht beim
+      // Absenden. War er zwei Tage offline, behaelt er die Nachricht ab
+      // Zustellung noch die volle Frist, waehrend sie beim Absender laengst
+      // weg ist. Die Abweichung geht also immer in die harmlose Richtung —
+      // nichts verschwindet frueher als zugesagt. Sie ganz auszuraeumen
+      // hiesse, die Absenderzeit mitzuschicken und ihr zu trauen; das waere
+      // ein Knopf, mit dem die Gegenseite meine Fassung vorzeitig raeumt.
       if (m.selfDestructFromSend) return m.timestamp.add(eigener);
       final gelesen = m.readAt;
       // Ungelesen laeuft die Uhr nicht. Ein Timer, der abliefe, bevor die
@@ -78,6 +87,27 @@ abstract final class SelfDestructPolicy {
       !m.selfDestructFromSend &&
       m.senderId != myId;
 
+  /// Die kuerzeste Frist, die eine Gegenseite mir vorgeben darf.
+  ///
+  /// Die Frist steht in ihrer Nachricht. Ohne Untergrenze koennte sie eine
+  /// schicken, die nach einer Millisekunde verschwindet — bei einem
+  /// sendegebundenen Timer sogar, bevor ich sie ueberhaupt gesehen habe.
+  /// Ihre Nachricht zurueckzunehmen ist ihr gutes Recht; mir die Gelegenheit
+  /// zum Lesen zu stehlen nicht.
+  static const Duration mindestFrist = Duration(seconds: 10);
+
+  /// Die laengste Frist. Laenger liegt ohnehin nichts auf dem Server.
+  static const Duration maximalFrist = Duration(days: 30);
+
+  /// Eine von der Gegenseite vorgegebene Frist in vertretbare Grenzen
+  /// bringen. `null` heisst: kein Timer.
+  static Duration? clampFremdeFrist(int rohMs) {
+    if (rohMs <= 0) return null;
+    if (rohMs < mindestFrist.inMilliseconds) return mindestFrist;
+    if (rohMs > maximalFrist.inMilliseconds) return maximalFrist;
+    return Duration(milliseconds: rohMs);
+  }
+
   /// Ob eine Ablaufmeldung der Gegenseite diese Nachricht entfernen darf.
   ///
   /// Zwei Bedingungen, und beide muessen halten: es muss **meine** Nachricht
@@ -86,6 +116,13 @@ abstract final class SelfDestructPolicy {
   /// eine Gegenseite mit erfundenen Ablaufmeldungen beliebige Nachrichten von
   /// meinem Geraet raeumen. Entfernt werden darf nur, was ich selbst als
   /// vergaenglich markiert habe.
+  /// **Sendegebundene sind ausgenommen.** Deren Frist kenne ich selbst, mein
+  /// eigener Takt raeumt sie weg, und eine Meldung dafuer gibt es gar nicht
+  /// ([announceBurn] verschickt keine). Sie anzunehmen hiesse nur, der
+  /// Gegenseite einen Knopf zu geben, mit dem sie meine Fassung vorzeitig
+  /// loeschen kann.
   static bool acceptBurn(Message m, String myId) =>
-      m.senderId == myId && m.selfDestructDuration != null;
+      m.senderId == myId &&
+      m.selfDestructDuration != null &&
+      !m.selfDestructFromSend;
 }

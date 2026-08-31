@@ -21,6 +21,7 @@ import 'control_message_policy.dart';
 import 'contact_request_policy.dart';
 import 'inbox_reconnect_backoff.dart';
 import 'self_destruct_policy.dart';
+import 'unread_policy.dart';
 import 'session_reset_policy.dart';
 import 'key_publish_status.dart';
 import '../../../security/session/session_errors.dart';
@@ -1400,6 +1401,7 @@ class MessengerProvider extends ChangeNotifier {
         messageId: _uuid.v4(),
         encryptedPayload: payloadMap,
       );
+      _handschlagVerbraucht(chatId);
     } finally {
       SensitiveBuffer.zeroBytes(hmacKey);
     }
@@ -1899,6 +1901,7 @@ class MessengerProvider extends ChangeNotifier {
       final last = messages.last;
       _touchChat(chatId, last.timestamp);
     }
+    _standNachrechnen(chatId);
     notifyListeners();
   }
 
@@ -1939,6 +1942,24 @@ class MessengerProvider extends ChangeNotifier {
 
   static const Duration _wipeAnnounceTimeout = Duration(seconds: 3);
 
+  /// Zaehler und Uhrzeit der Chatliste aus dem neu rechnen, was noch da ist.
+  ///
+  /// Immer dann noetig, wenn Nachrichten verschwinden, ohne dass jemand den
+  /// Chat geoeffnet hat: ein abgelaufener Loeschtimer, eine Gegenseite, die
+  /// ihren Chat wegwirft oder leert. Sonst stuende in der Liste weiter
+  /// „3 neue" fuer einen Chat, in dem nichts mehr liegt.
+  void _standNachrechnen(String chatId) {
+    final idx = _chats.indexWhere((c) => c.id == chatId);
+    if (idx == -1) return;
+    final messages = _messagesByChat[chatId] ?? const <Message>[];
+    final stand = UnreadPolicy.zaehle(messages, userId ?? '');
+    _chats[idx] = _chats[idx].copyWith(
+      unreadCount: stand.anzahl,
+      firstUnreadAt: stand.ersteNeue,
+      lastMessageTime: messages.isEmpty ? null : _chats[idx].lastMessageTime,
+    );
+  }
+
   /// Die eigene Sitzung mit diesem Kontakt verwerfen.
   ///
   /// Danach traegt die naechste Nachricht wieder einen Handschlag. Chat und
@@ -1950,21 +1971,45 @@ class MessengerProvider extends ChangeNotifier {
     }
   }
 
+  /// Unter welchem Schluessel die Spur liegt: die **Kennung der Person**,
+  /// nicht die des Chats.
+  ///
+  /// Eine Chat-Kennung ist eine lokale UUID. Wird der Chat geloescht und
+  /// spaeter neu angelegt, ist sie eine andere — und die Rueckrollsperre
+  /// waere genau bei dem Vorgang weg, bei dem sie am meisten zaehlt. Die
+  /// Person bleibt dieselbe.
+  String _spurSchluessel(String chatId) {
+    final idx = _chats.indexWhere((c) => c.id == chatId);
+    return idx == -1 ? chatId : _chats[idx].recipientId;
+  }
+
   /// Die Spur fuer diesen Chat: was in der alten Sitzung stand, vereint mit
   /// dem, was ein frueheres Verwerfen aufgehoben hat.
   Set<String> _spurFuer(String chatId, RatchetState? oldState) =>
       SessionResetPolicy.mergeLineage(
-        _peerPsidLineage[chatId] ?? const <String>[],
+        _peerPsidLineage[_spurSchluessel(chatId)] ?? const <String>[],
         oldState?.peerSeenPsids ?? const <String>{},
       ).toSet();
 
   Future<void> _merkeSpur(String chatId, RatchetState? state) async {
     final spur = SessionResetPolicy.mergeLineage(
-      _peerPsidLineage[chatId] ?? const <String>[],
+      _peerPsidLineage[_spurSchluessel(chatId)] ?? const <String>[],
       state?.peerSeenPsids ?? const <String>{},
     );
     if (spur.isEmpty) return;
-    _peerPsidLineage[chatId] = spur;
+
+    // Nur schreiben, wenn sich wirklich etwas geaendert hat. Eine Gegenseite,
+    // die chatGone im Sekundentakt schickt, findet sonst nichts zu
+    // verwerfen und loest trotzdem jedes Mal einen Plattenschreibvorgang aus.
+    final schluessel = _spurSchluessel(chatId);
+    final bisher = _peerPsidLineage[schluessel];
+    if (bisher != null &&
+        bisher.length == spur.length &&
+        List.generate(spur.length, (i) => bisher[i] == spur[i])
+            .every((gleich) => gleich)) {
+      return;
+    }
+    _peerPsidLineage[schluessel] = spur;
     try {
       await _localStore.saveData(_psidLineageStoreKey, _peerPsidLineage);
     } catch (_) {
@@ -2071,17 +2116,17 @@ class MessengerProvider extends ChangeNotifier {
   }
 
   Future<void> deleteChat(String chatId, {bool announce = true}) async {
-    // Erst ansagen, dann abreissen: die Ansage braucht die Sitzung, die
-    // gleich faellt — und sie muss vor `_deletingChats` laufen, sonst
-    // stolpert der Sendeweg ueber seine eigene Abrisssperre.
+    // Die Abrisssperre gilt ab hier, VOR der Ansage. Sonst konnte waehrend
+    // des Netzaufenthalts noch eine Nachricht in die Warteschlange rutschen,
+    // unter der alten Sitzung verschluesselt werden und ohne Handschlag bei
+    // einer Gegenseite landen, die ihre Sitzung wegen `chatGone` gerade
+    // verworfen hat — unentschluesselbar, stumm verloren.
+    if (!_deletingChats.add(chatId)) return; // laeuft schon
+
+    // Die Ansage selbst muss an der Sperre vorbei: sie braucht die Sitzung,
+    // die gleich faellt.
     if (announce) await _announceChatGone(chatId);
 
-    // A3: mark the chat as deleting before the teardown starts. Concurrent
-    // send/receive paths test this set synchronously and drop work for a
-    // dying chat, closing the race where an inbound message could be
-    // appended between saveChats and the later file delete. The announce
-    // above runs deliberately *before* this: it still needs the session.
-    if (!_deletingChats.add(chatId)) return; // already deleting — no-op
 
     try {
       final removedMessageIds =
@@ -2117,13 +2162,10 @@ class MessengerProvider extends ChangeNotifier {
       ]);
       await _pruneUnlockAttempts(removedMessageIds);
       _pendingHealCommits.removeWhere((key, _) => key.startsWith('$chatId|'));
-      // Der Chat ist fort, nicht nur die Sitzung: die Spur hat keinen
-      // Bezugspunkt mehr.
-      if (_peerPsidLineage.remove(chatId) != null) {
-        try {
-          await _localStore.saveData(_psidLineageStoreKey, _peerPsidLineage);
-        } catch (_) {}
-      }
+      // Die Spur bleibt: sie haengt an der Person, und die gibt es weiter.
+      // Sie wegzuwerfen hiesse, die Rueckrollsperre ausgerechnet beim
+      // Loeschen zu verlieren — dem Vorgang, nach dem ein Server am
+      // ehesten einen alten Handschlag erneut einspielen wuerde.
       if (_acceptedHandshakeEks.remove(chatId) != null) {
         try {
           await _localStore.saveData(
@@ -2450,6 +2492,7 @@ class MessengerProvider extends ChangeNotifier {
         messageId: messageId,
         encryptedPayload: payloadMap,
       );
+      _handschlagVerbraucht(chatId);
 
       _updateMessageStatus(chatId, messageId, MessageStatus.sent);
     } on HandshakeException catch (e) {
@@ -2972,7 +3015,7 @@ class MessengerProvider extends ChangeNotifier {
         var selfDestructMs = innerPayload['_sd'] as int? ??
             (innerPayload['sd'] as int?); // v2 compat
         if (selfDestructMs != null) {
-          selfDestructMs = _clampSelfDestructMs(selfDestructMs);
+          selfDestructMs = SelfDestructPolicy.clampFremdeFrist(selfDestructMs)?.inMilliseconds;
         }
         final burnAfterRead = innerPayload['_bar'] == true ||
             innerPayload['_bar'] == 'true' ||
@@ -3217,7 +3260,7 @@ class MessengerProvider extends ChangeNotifier {
       var selfDestructMs = innerPayload['_sd'] as int? ??
           (innerPayload['sd'] as int?);
       if (selfDestructMs != null) {
-        selfDestructMs = _clampSelfDestructMs(selfDestructMs);
+          selfDestructMs = SelfDestructPolicy.clampFremdeFrist(selfDestructMs)?.inMilliseconds;
       }
       final burnAfterRead = innerPayload['_bar'] == true ||
           innerPayload['_bar'] == 'true' ||
@@ -3344,6 +3387,7 @@ class MessengerProvider extends ChangeNotifier {
       final weg = faellig.map((m) => m.id).toSet();
       messages.removeWhere((m) => weg.contains(m.id));
       _localStore.saveMessages(chatId, messages);
+      _standNachrechnen(chatId);
       geaendert = true;
     }
     return geaendert;
@@ -3606,13 +3650,28 @@ class MessengerProvider extends ChangeNotifier {
     await _localStore.saveRatchetState(chatId, newState.toMap());
 
     final map = ratchetMsg.toPayloadMap();
-    // Include X3DH session header in the first message so the receiver
-    // can derive the same shared secret (contains our ephemeral public key).
-    final sessionHeader = _pendingSessionHeaders.remove(chatId);
+    // Der X3DH-Kopf gehoert in die erste Nachricht einer Sitzung, damit die
+    // Gegenseite dasselbe Geheimnis ableiten kann.
+    //
+    // Hier wird er nur gelesen, nicht verbraucht. Verbraucht ist er erst,
+    // wenn der Server die Nachricht angenommen hat — siehe
+    // [_handschlagVerbraucht]. Vorher gestrichen hiess: schlaegt das Senden
+    // fehl, ist der Kopf weg, die naechste Nachricht geht ohne ihn raus, und
+    // die Gegenseite kann von da an gar nichts mehr entschluesseln. Still.
+    final sessionHeader = _pendingSessionHeaders[chatId];
     if (sessionHeader != null) {
       map.addAll(sessionHeader);
     }
     return map;
+  }
+
+  /// Den Handschlag-Kopf als verbraucht abhaken.
+  ///
+  /// Erst wenn der Server die Nachricht angenommen hat. Bis dahin bleibt er
+  /// liegen, damit ein fehlgeschlagener Versuch nicht die ganze Sitzung
+  /// unbrauchbar macht.
+  void _handschlagVerbraucht(String chatId) {
+    _pendingSessionHeaders.remove(chatId);
   }
 
   /// Decrypt using Double Ratchet. Returns plaintext string.
@@ -3794,16 +3853,6 @@ class MessengerProvider extends ChangeNotifier {
     _pendingHealCommits.remove(_healKey(chatId, messageId));
   }
 
-  /// A2: sanitize self-destruct milliseconds from an untrusted inner payload.
-  /// - Returns null (no self-destruct) for non-positive values; a negative
-  ///   Duration would expire the message the moment it lands and hide it
-  ///   from the UI before the user sees it.
-  /// - Caps at 30 days so an adversarial sender cannot overflow timers.
-  static int? _clampSelfDestructMs(int raw) {
-    if (raw <= 0) return null;
-    const maxMs = 30 * 24 * 60 * 60 * 1000; // 30 days
-    return raw > maxMs ? maxMs : raw;
-  }
 
   /// C4+C5: replay (_seq) + rollback (_psid) enforcement for v3 payloads.
   ///

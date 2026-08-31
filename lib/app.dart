@@ -489,7 +489,24 @@ class _KryptaShellState extends State<KryptaShell> with WidgetsBindingObserver {
     });
   }
 
-  void _navigateTo(_AppScreen screen) => setState(() => _currentScreen = screen);
+  /// Zwischen den Bildschirmen wechseln.
+  ///
+  /// **Vom Taschenrechner fuehrt hier kein Weg weg.** Nach dem Sperren
+  /// treffen noch Rueckrufe ein, die vorher losgeschickt wurden: ein
+  /// Benenn-Dialog etwa, den `popUntil` beim Sperren weggeraeumt hat, laeuft
+  /// danach weiter und wuerde den frisch angelegten Chat oeffnen. Damit
+  /// stuende der Messenger wieder da, ohne dass je ein Code eingegeben
+  /// wurde.
+  ///
+  /// Der einzige Weg heraus ist [_unlockMessenger], und der setzt den
+  /// Bildschirm selbst.
+  void _navigateTo(_AppScreen screen) {
+    if (_currentScreen == _AppScreen.calculator &&
+        screen != _AppScreen.calculator) {
+      return;
+    }
+    setState(() => _currentScreen = screen);
+  }
 
   @override
   Widget build(BuildContext context) {

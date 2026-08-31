@@ -95,6 +95,45 @@ void main() {
     });
   });
 
+  group('Wie kurz eine fremde Frist sein darf', () {
+    // Die Frist kommt aus der Nachricht der Gegenseite. Ohne Untergrenze
+    // koennte sie eine Nachricht schicken, die nach einer Millisekunde
+    // verschwindet — bei einem sendegebundenen Timer sogar, bevor ich sie
+    // ueberhaupt gesehen habe. Ihre Nachricht zurueckzunehmen ist ihr Recht,
+    // aber sie soll mir nicht die Gelegenheit zum Lesen stehlen koennen.
+
+    test('null und negativ heisst: kein Timer', () {
+      expect(SelfDestructPolicy.clampFremdeFrist(0), isNull);
+      expect(SelfDestructPolicy.clampFremdeFrist(-5), isNull);
+    });
+
+    test('eine Millisekunde wird auf die Untergrenze angehoben', () {
+      expect(SelfDestructPolicy.clampFremdeFrist(1),
+          SelfDestructPolicy.mindestFrist);
+    });
+
+    test('die Untergrenze ist nicht laenger als eine halbe Minute', () {
+      // Lang genug zum Lesen, kurz genug, um die Funktion nicht zu
+      // entwerten.
+      expect(SelfDestructPolicy.mindestFrist,
+          lessThanOrEqualTo(const Duration(seconds: 30)));
+      expect(SelfDestructPolicy.mindestFrist,
+          greaterThanOrEqualTo(const Duration(seconds: 5)));
+    });
+
+    test('ein vernuenftiger Wert bleibt unveraendert', () {
+      expect(SelfDestructPolicy.clampFremdeFrist(
+              const Duration(minutes: 10).inMilliseconds),
+          const Duration(minutes: 10));
+    });
+
+    test('gedeckelt bei dreissig Tagen', () {
+      expect(SelfDestructPolicy.clampFremdeFrist(
+              const Duration(days: 400).inMilliseconds),
+          const Duration(days: 30));
+    });
+  });
+
   group('Was eine Ablaufmeldung entfernen darf', () {
     test('meine eigene Nachricht mit Timer', () {
       expect(
@@ -110,6 +149,20 @@ void main() {
       // ich selbst als vergaenglich markiert habe.
       expect(
         SelfDestructPolicy.acceptBurn(nachricht(von: 'ich'), 'ich'),
+        isFalse,
+      );
+    });
+
+    test('eine sendegebundene Nachricht nicht', () {
+      // Bei einem sendegebundenen Timer kenne ich die Frist selbst — mein
+      // eigener Takt raeumt sie weg. Eine Meldung dafuer gibt es gar nicht;
+      // sie anzunehmen hiesse nur, der Gegenseite einen Knopf zu geben, mit
+      // dem sie meine Fassung vorzeitig loeschen kann.
+      expect(
+        SelfDestructPolicy.acceptBurn(
+            nachricht(timer: const Duration(minutes: 10), von: 'ich')
+                .copyWith(selfDestructFromSend: true),
+            'ich'),
         isFalse,
       );
     });
