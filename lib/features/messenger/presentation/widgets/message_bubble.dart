@@ -131,9 +131,13 @@ class MessageBubble extends StatelessWidget {
   }
 }
 
+/// Der Radius sitzt bewusst unter [AppSpacing.radiusLg]: eine kompakte Blase
+/// ist nur noch gut dreissig Pixel hoch, und zwanzig Pixel Radius machten
+/// daraus eine Pille. Vierzehn ist der Wert, den das Gestaltungsraster ohnehin
+/// kennt.
 BorderRadius _bubbleRadius(bool isMine, bool isLast) {
-  const r = Radius.circular(20);
-  const tail = Radius.circular(5);
+  const r = Radius.circular(AppSpacing.radiusMd);
+  const tail = Radius.circular(4);
   if (isMine) {
     return BorderRadius.only(
       topLeft: r,
@@ -171,8 +175,10 @@ class _UnlockedBubble extends StatelessWidget {
         ? AppColors.messageSent
         : (isDark ? AppColors.messageReceived : AppColors.messageReceivedLight);
 
+    final meta = _Meta(message: message, isMine: isMine, isDark: isDark);
+
     return Container(
-      padding: const EdgeInsets.fromLTRB(14, 10, 14, 8),
+      padding: const EdgeInsets.fromLTRB(12, 7, 12, 7),
       decoration: BoxDecoration(
         color: bg,
         borderRadius: _bubbleRadius(isMine, isLast),
@@ -206,23 +212,51 @@ class _UnlockedBubble extends StatelessWidget {
                 ],
               ),
             ),
-          Text(
-            message.decryptedContent ?? '••••••',
-            style: TextStyle(
-              color: isMine
-                  ? Colors.white
-                  : (isDark
-                      ? AppColors.textPrimaryDark
-                      : AppColors.textPrimaryLight),
-              fontSize: 16,
-              height: 1.4,
-              letterSpacing: -0.1,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Align(
-            alignment: Alignment.bottomRight,
-            child: _Meta(message: message, isMine: isMine, isDark: isDark),
+          // Die Uhrzeit gehoert ans Ende der letzten Textzeile, nicht in eine
+          // eigene Zeile darunter. Vorher kostete ein blosses „ok" sechzig
+          // Pixel Hoehe, obwohl eine Zeile Text zwanzig braucht.
+          //
+          // Der Platzhalter im Text haelt am Ende genau so viel Raum frei, wie
+          // die Uhrzeit breit ist; darueber liegt sie dann unten rechts.
+          // Passt sie auf der letzten Zeile nicht mehr hin, bricht der
+          // Platzhalter um und nimmt sie mit auf die naechste — dasselbe
+          // Verhalten wie bei WhatsApp.
+          Stack(
+            children: [
+              Text.rich(
+                TextSpan(
+                  children: [
+                    TextSpan(text: message.decryptedContent ?? '••••••'),
+                    WidgetSpan(
+                      child: SizedBox(
+                        width: _Meta.breite(context, message, isMine),
+                        height: 1,
+                      ),
+                    ),
+                  ],
+                ),
+                style: TextStyle(
+                  color: isMine
+                      ? Colors.white
+                      : (isDark
+                          ? AppColors.textPrimaryDark
+                          : AppColors.textPrimaryLight),
+                  fontSize: 16,
+                  height: 1.25,
+                  letterSpacing: -0.1,
+                ),
+              ),
+              Positioned.fill(
+                // bottomEnd, nicht bottomRight: der freigehaltene Platz haengt am
+                // logischen Ende des Textes. Fest nach rechts gelegt laegen die
+                // beiden bei einer Schrift von rechts nach links auf verschiedenen
+                // Seiten, und die Uhrzeit schoebe sich ueber den Text.
+                child: Align(
+                  alignment: AlignmentDirectional.bottomEnd,
+                  child: meta,
+                ),
+              ),
+            ],
           ),
         ],
       ),
@@ -346,7 +380,9 @@ class _LockedBubble extends StatelessWidget {
     return GestureDetector(
       onTap: () => _showPasswordDialog(context),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+        // Mitgezogen mit der normalen Blase: stuende die geschuetzte weiter
+        // in alter Groesse daneben, saehe sie wie ein Fehler aus.
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
         decoration: BoxDecoration(
           color: bg,
           borderRadius: _bubbleRadius(isMine, isLast),
@@ -355,7 +391,7 @@ class _LockedBubble extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             Container(
-              padding: const EdgeInsets.all(10),
+              padding: const EdgeInsets.all(7),
               decoration: BoxDecoration(
                 color: isMine
                     ? Colors.white.withValues(alpha: 0.15)
@@ -363,9 +399,9 @@ class _LockedBubble extends StatelessWidget {
                 shape: BoxShape.circle,
               ),
               child: Icon(Icons.lock_rounded,
-                  color: isMine ? Colors.white : AppColors.accent, size: 20),
+                  color: isMine ? Colors.white : AppColors.accent, size: 16),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 6),
             Text(
               l10n.passwordProtected,
               style: TextStyle(
@@ -388,7 +424,7 @@ class _LockedBubble extends StatelessWidget {
                 fontSize: 12,
               ),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 6),
             _Meta(message: message, isMine: isMine, isDark: isDark),
           ],
         ),
@@ -396,6 +432,9 @@ class _LockedBubble extends StatelessWidget {
     );
   }
 }
+
+String _fmtZeit(DateTime t) =>
+    '${t.hour.toString().padLeft(2, '0')}:${t.minute.toString().padLeft(2, '0')}';
 
 class _Meta extends StatelessWidget {
   final Message message;
@@ -407,6 +446,51 @@ class _Meta extends StatelessWidget {
     required this.isMine,
     required this.isDark,
   });
+
+  static const double _schriftgroesse = 11;
+  static const double _symbolgroesse = 13;
+
+  /// Wie breit diese Zeile baut.
+  ///
+  /// Gebraucht, um im Nachrichtentext am Ende genau so viel Platz
+  /// freizuhalten — die Uhrzeit liegt darueber, nicht darunter.
+  ///
+  /// **Muss mit [build] mitwandern.** Kommt dort ein Symbol dazu, gehoert es
+  /// auch in diese Rechnung; sonst schiebt sich die Uhrzeit ueber den Text.
+  ///
+  /// Der Rueckgabewert ist **unskaliert**: den Platzhalter im Text rechnet
+  /// Flutter selbst hoch.
+  static double breite(BuildContext context, Message message, bool isMine) {
+    final skalierer = MediaQuery.textScalerOf(context);
+
+    final maler = TextPainter(
+      text: TextSpan(
+        text: _fmtZeit(message.timestamp),
+        // Gemessen werden muss dieselbe Schrift, die spaeter gezeichnet wird:
+        // die Uhrzeit erbt Schriftart, Schnitt und Laufweite vom Umfeld. Gegen
+        // eine nackte Schrift gemessen faellt der Platz je nach Thema zu klein
+        // aus, und die Uhrzeit legt sich ueber den Text.
+        style: DefaultTextStyle.of(context)
+            .style
+            .merge(const TextStyle(fontSize: _schriftgroesse)),
+      ),
+      textDirection: Directionality.of(context),
+      textScaler: skalierer,
+    )..layout();
+
+    var breite = maler.width;
+    if (message.selfDestructDuration != null) breite += 11 + 3; // Sanduhr
+    if (isMine) breite += 3 + _symbolgroesse; // Haken
+    breite += 8; // Luft zwischen Text und Uhrzeit
+
+    // Und wieder herunter: den Platzhalter im Text skaliert Flutter selbst mit
+    // der Systemschrift. Ohne diese Gegenrechnung wuerde die Uhrzeit zweimal
+    // hochgerechnet — bei doppelter Schrift hielt die Blase gut hundert Pixel
+    // zu viel frei, und genau die Kompaktheit, um die es hier geht, waere bei
+    // grosser Schrift wieder weg.
+    final faktor = skalierer.scale(_schriftgroesse) / _schriftgroesse;
+    return faktor > 0 ? breite / faktor : breite;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -423,7 +507,7 @@ class _Meta extends StatelessWidget {
             child: Icon(Icons.timer_outlined, size: 11, color: color),
           ),
         Text(
-          _fmt(message.timestamp),
+          _fmtZeit(message.timestamp),
           style: TextStyle(fontSize: 11, color: color),
         ),
         if (isMine) ...[
@@ -434,8 +518,6 @@ class _Meta extends StatelessWidget {
     );
   }
 
-  String _fmt(DateTime t) =>
-      '${t.hour.toString().padLeft(2, '0')}:${t.minute.toString().padLeft(2, '0')}';
 }
 
 class _StatusIcon extends StatelessWidget {
