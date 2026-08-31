@@ -161,6 +161,16 @@ class _KryptaShellState extends State<KryptaShell> with WidgetsBindingObserver {
     } else if (ScreenLockPolicy.shouldRestore(state,
         wasBackgrounded: _warImHintergrund)) {
       _holeBildschirmZurueck();
+    } else if (state == AppLifecycleState.resumed) {
+      // Die App war wirklich weg: der gemerkte Bildschirm ist verfallen.
+      //
+      // Ohne diese Zeilen bliebe er liegen. _sperreAufRechner steigt naemlich
+      // frueh aus, wenn schon der Taschenrechner steht, und ruehrt den Merker
+      // dann nicht an. Der naechste Screenshot auf dem Taschenrechner —
+      // inactive, dann resumed, ohne Hintergrund dazwischen — haette den
+      // Messenger zurueckgeholt, ohne dass je ein Code eingegeben wurde.
+      _vorSperre = null;
+      _chatVorSperre = null;
     }
     if (state == AppLifecycleState.resumed) _warImHintergrund = false;
 
