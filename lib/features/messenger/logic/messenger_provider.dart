@@ -2123,12 +2123,17 @@ class MessengerProvider extends ChangeNotifier {
     // verworfen hat — unentschluesselbar, stumm verloren.
     if (!_deletingChats.add(chatId)) return; // laeuft schon
 
-    // Die Ansage selbst muss an der Sperre vorbei: sie braucht die Sitzung,
-    // die gleich faellt.
-    if (announce) await _announceChatGone(chatId);
-
-
     try {
+      // Die Ansage steht INNERHALB des try, damit das finally die Markierung
+      // in jedem Fall wieder loest. Bliebe sie haengen, waere dieser Chat den
+      // Rest der Sitzung stumm: jeder Sendeversuch prueft sie und steigt
+      // wortlos aus.
+      //
+      // An der Sperre vorbei darf die Ansage trotzdem — sie braucht die
+      // Sitzung, die gleich faellt, und _sendControlMessage prueft die
+      // Markierung nicht.
+      if (announce) await _announceChatGone(chatId);
+
       final removedMessageIds =
           (_messagesByChat[chatId] ?? const []).map((m) => m.id).toList();
 
