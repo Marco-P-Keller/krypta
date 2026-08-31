@@ -105,9 +105,9 @@ class ChatTile extends StatelessWidget {
                           overflow: TextOverflow.ellipsis,
                         ),
                       ),
-                      if (chat.lastMessageTime != null)
+                      if (chat.displayTime != null)
                         Text(
-                          _formatTimestamp(chat.lastMessageTime!),
+                          _formatTimestamp(chat.displayTime!),
                           style:
                               Theme.of(context).textTheme.bodySmall?.copyWith(
                                     color: hasUnread

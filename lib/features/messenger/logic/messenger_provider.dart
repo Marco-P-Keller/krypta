@@ -1733,7 +1733,7 @@ class MessengerProvider extends ChangeNotifier {
     if (chatId != null) {
       final idx = _chats.indexWhere((c) => c.id == chatId);
       if (idx != -1 && _chats[idx].unreadCount > 0) {
-        _chats[idx] = _chats[idx].copyWith(unreadCount: 0);
+        _chats[idx] = _chats[idx].copyWith(unreadCount: 0, firstUnreadAt: null);
         _localStore.saveChats(_chats);
         notifyListeners();
       }
@@ -2047,6 +2047,7 @@ class MessengerProvider extends ChangeNotifier {
       _chats[idx] = _chats[idx].copyWith(
         lastMessageTime: null,
         unreadCount: 0,
+        firstUnreadAt: null,
       );
       await _localStore.saveChats(_chats);
     }
@@ -2540,10 +2541,20 @@ class MessengerProvider extends ChangeNotifier {
       await _localStore.saveMessages(chatId, messages);
       notifyListeners();
 
-      // Notify the sender that we unlocked their message (with jitter).
-      // Only if delivery receipts are enabled — unlock is a form of delivery
-      // confirmation.
-      if (_deliveryReceiptsEnabled && msg.senderId != userId && userId != null) {
+      // Dem Absender sagen, dass wir seine Nachricht entsperrt haben.
+      //
+      // Haengt bewusst NICHT mehr an den Empfangsbestaetigungen. Die sind
+      // standardmaessig aus, und damit blieb die Nachricht beim Absender
+      // fuer immer als Passwort-Platzhalter stehen — obwohl er den Klartext
+      // selbst geschrieben hat und ihn auf seinem Geraet auch liegen hat.
+      // Er kann ihn dort auch nicht von Hand aufschliessen: seine Fassung
+      // traegt den Klartext, nicht den passwortverschluesselten Block, und
+      // sein eigenes Passwort passt darauf nicht.
+      //
+      // Der Preis: er erfaehrt damit, dass entsperrt wurde — das ist eine
+      // Form von Lesebestaetigung. Sie geht mit derselben zeitlichen
+      // Streuung raus wie die uebrigen.
+      if (msg.senderId != userId && userId != null) {
         final contact = contactForId(msg.senderId);
         if (contact != null) {
           _pendingJitterTimers.add(
@@ -3824,9 +3835,19 @@ class MessengerProvider extends ChangeNotifier {
       {bool incrementUnread = false}) {
     final idx = _chats.indexWhere((c) => c.id == chatId);
     if (idx == -1) return;
-    _chats[idx] = _chats[idx].copyWith(
+    final vorher = _chats[idx];
+    // Die Uhrzeit der ERSTEN ungelesenen Nachricht festhalten. Sie bleibt
+    // stehen, bis der Chat geoeffnet wird — sonst wanderte sie mit jeder
+    // weiteren Nachricht mit, und der Moment, an dem etwas Neues anfing,
+    // waere nicht mehr abzulesen.
+    final ersteNeue = incrementUnread && vorher.unreadCount == 0
+        ? time
+        : vorher.firstUnreadAt;
+    _chats[idx] = vorher.copyWith(
       lastMessageTime: time,
-      unreadCount: incrementUnread ? _chats[idx].unreadCount + 1 : _chats[idx].unreadCount,
+      unreadCount:
+          incrementUnread ? vorher.unreadCount + 1 : vorher.unreadCount,
+      firstUnreadAt: ersteNeue,
     );
     final chat = _chats.removeAt(idx);
     _chats.insert(0, chat);

@@ -11,6 +11,17 @@ class Chat extends Equatable {
   /// ist weg; was noetig ist, sagt `unreadCount`.
   final DateTime? lastMessageTime;
   final int unreadCount;
+
+  /// Wann die erste noch ungelesene Nachricht kam.
+  ///
+  /// In der Chatliste stand die Uhrzeit der **letzten** Nachricht. Kamen
+  /// mehrere neue herein, wanderte sie mit, und der Zeitpunkt, an dem etwas
+  /// Neues anfing, war nicht mehr abzulesen. Solange etwas ungelesen ist,
+  /// gehoert dort die erste davon hin — siehe [displayTime].
+  ///
+  /// `null` heisst: nichts ungelesen, oder ein Bestandsdatensatz von vor
+  /// dieser Aenderung.
+  final DateTime? firstUnreadAt;
   final bool isTyping;
   final Duration? defaultSelfDestruct;
 
@@ -20,6 +31,7 @@ class Chat extends Equatable {
     required this.recipientName,
     this.lastMessageTime,
     this.unreadCount = 0,
+    this.firstUnreadAt,
     this.isTyping = false,
     this.defaultSelfDestruct,
   });
@@ -28,6 +40,7 @@ class Chat extends Equatable {
     String? recipientName,
     Object? lastMessageTime = _sentinel,
     int? unreadCount,
+    Object? firstUnreadAt = _sentinel,
     bool? isTyping,
     Object? defaultSelfDestruct = _sentinel,
   }) {
@@ -39,6 +52,9 @@ class Chat extends Equatable {
           ? this.lastMessageTime
           : lastMessageTime as DateTime?,
       unreadCount: unreadCount ?? this.unreadCount,
+      firstUnreadAt: firstUnreadAt == _sentinel
+          ? this.firstUnreadAt
+          : firstUnreadAt as DateTime?,
       isTyping: isTyping ?? this.isTyping,
       defaultSelfDestruct: defaultSelfDestruct == _sentinel
           ? this.defaultSelfDestruct
@@ -52,6 +68,7 @@ class Chat extends Equatable {
         'recipientName': recipientName,
         'lastMessageTime': lastMessageTime?.millisecondsSinceEpoch,
         'unreadCount': unreadCount,
+        'firstUnreadAt': firstUnreadAt?.millisecondsSinceEpoch,
         'defaultSelfDestructMs': defaultSelfDestruct?.inMilliseconds,
       };
 
@@ -66,6 +83,9 @@ class Chat extends Equatable {
           ? DateTime.fromMillisecondsSinceEpoch(map['lastMessageTime'] as int)
           : null,
       unreadCount: (map['unreadCount'] as int?) ?? 0,
+      firstUnreadAt: map['firstUnreadAt'] is int
+          ? DateTime.fromMillisecondsSinceEpoch(map['firstUnreadAt'] as int)
+          : null,
       // A2: clamp persisted self-destruct values so corrupted / migrated
       // state cannot reintroduce negative or overlong durations.
       defaultSelfDestruct: _decodeSelfDestruct(map['defaultSelfDestructMs']),
@@ -81,6 +101,15 @@ class Chat extends Equatable {
     const maxMs = 30 * 24 * 60 * 60 * 1000;
     return Duration(milliseconds: raw > maxMs ? maxMs : raw);
   }
+
+  /// Die Uhrzeit, die in der Chatliste steht.
+  ///
+  /// Solange etwas ungelesen ist, bleibt sie bei der **ersten** neuen
+  /// Nachricht stehen — auch wenn danach weitere hereinkommen. Sonst zeigt
+  /// sie die letzte. Fehlt der Vermerk (Bestandsdatensatz), faellt sie auf
+  /// die letzte zurueck: lieber die alte Uhrzeit als gar keine.
+  DateTime? get displayTime =>
+      unreadCount > 0 ? (firstUnreadAt ?? lastMessageTime) : lastMessageTime;
 
   @override
   List<Object?> get props => [id, recipientId];
