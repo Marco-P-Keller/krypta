@@ -136,6 +136,42 @@ void main() {
     });
   });
 
+  group('Burn after read zaehlt mit', () {
+    // Auch eine Nachricht, die nach dem Lesen verbrennt, ist vergaenglich —
+    // und auch bei ihr weiss nur der Empfaenger, wann es soweit ist.
+
+    Message verbrennt({String von = 'marco'}) => Message(
+          id: 'b1',
+          chatId: 'c1',
+          senderId: von,
+          recipientId: von == 'ich' ? 'marco' : 'ich',
+          encryptedContent: 'x',
+          timestamp: DateTime(2026, 8, 31, 11, 0),
+          burnAfterRead: true,
+        );
+
+    test('der Empfaenger meldet auch das Verbrennen', () {
+      expect(SelfDestructPolicy.announceBurn(verbrennt(), 'ich'), isTrue);
+    });
+
+    test('meine eigene verbrennende Nachricht darf die Meldung raeumen', () {
+      expect(SelfDestructPolicy.acceptBurn(verbrennt(von: 'ich'), 'ich'),
+          isTrue);
+    });
+
+    test('eine ganz gewoehnliche Nachricht weiterhin nicht', () {
+      final schlicht = Message(
+        id: 'n1',
+        chatId: 'c1',
+        senderId: 'ich',
+        recipientId: 'marco',
+        encryptedContent: 'x',
+        timestamp: DateTime(2026, 8, 31, 11, 0),
+      );
+      expect(SelfDestructPolicy.acceptBurn(schlicht, 'ich'), isFalse);
+    });
+  });
+
   group('Was eine Ablaufmeldung entfernen darf', () {
     test('meine eigene Nachricht mit Timer', () {
       expect(

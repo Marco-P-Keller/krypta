@@ -18,6 +18,7 @@ import '../../../security/ratchet/replay_guard.dart';
 import 'recording_notice_policy.dart';
 import 'remote_clear_policy.dart';
 import 'control_message_policy.dart';
+import 'block_policy.dart';
 import 'contact_request_policy.dart';
 import 'inbox_reconnect_backoff.dart';
 import 'self_destruct_policy.dart';
@@ -770,32 +771,36 @@ class MessengerProvider extends ChangeNotifier {
   }
 
   /// Block a contact — no messages can be sent or received.
+  ///
+  /// Merkt sich, wie es vorher stand: beim Aufheben soll genau das
+  /// zurueckkommen und nicht pauschal eine Bestaetigungspflicht.
   Future<void> blockContact(String contactId) async {
     final idx = _contacts.indexWhere((c) => c.id == contactId);
     if (idx == -1) return;
+    if (_contacts[idx].trustState == TrustState.blocked) return;
     _contacts[idx] = _contacts[idx].copyWith(
+      trustBeforeBlock: _contacts[idx].trustState,
       trustState: TrustState.blocked,
     );
     await _localStore.saveContacts(_contacts);
     notifyListeners();
   }
 
-  /// Unblock a contact — returns to keyChanged state (requires re-verification).
+  /// Blockierung aufheben — der Zustand von vor der Sperre kommt zurueck.
   ///
-  /// DOES NOT re-enable messaging. After unblocking, the contact must be
-  /// re-verified via QR or safety number before messages can flow.
-  /// This prevents the block → unblock path from being used to bypass
-  /// the key-change verification requirement.
+  /// Wer wegen eines Schluesselwechsels blockiert wurde, muss weiterhin
+  /// bestaetigen; wer ganz normal war, kann sofort wieder schreiben. Welche
+  /// Regel dahintersteht, sagt [BlockPolicy.afterUnblock].
   Future<void> unblockContact(String contactId) async {
     final idx = _contacts.indexWhere((c) => c.id == contactId);
     if (idx == -1) return;
     _contacts[idx] = _contacts[idx].copyWith(
-      trustState: TrustState.keyChanged,
+      trustState: BlockPolicy.afterUnblock(_contacts[idx]),
+      trustBeforeBlock: null,
     );
     await _localStore.saveContacts(_contacts);
     notifyListeners();
   }
-
   /// Constant-time byte comparison to prevent timing attacks.
   static bool _constantTimeEquals(Uint8List a, Uint8List b) {
     if (a.length != b.length) return false;
@@ -3113,8 +3118,15 @@ class MessengerProvider extends ChangeNotifier {
           );
         }
 
-        await _firestore.deleteRelayedMessage(userId!, change.doc.id);
+        // Erst die Oberflaeche, dann der Server.
+        //
+        // Umgekehrt wartete die Chatliste auf einen Netz-Roundtrip, bevor
+        // sie ueberhaupt erfuhr, dass etwas angekommen ist — die Nachricht
+        // lag da laengst auf der Platte. Bei langsamer Verbindung sah man
+        // den Zaehler deshalb erst nach einem Neustart, weil er dann von
+        // der Platte gelesen wurde.
         notifyListeners();
+        await _firestore.deleteRelayedMessage(userId!, change.doc.id);
       } on SessionError catch (e) {
         if (pendingHealKey != null) _pendingHealCommits.remove(pendingHealKey);
         switch (e.policy) {
@@ -3357,8 +3369,9 @@ class MessengerProvider extends ChangeNotifier {
         );
       }
 
-      await _firestore.deleteRelayedMessage(userId!, doc.id);
+      // Erst die Oberflaeche, dann der Server — siehe _handleInbox.
       notifyListeners();
+      await _firestore.deleteRelayedMessage(userId!, doc.id);
     } on SessionError catch (e) {
       if (pendingHealKey != null) _pendingHealCommits.remove(pendingHealKey);
       switch (e.policy) {
@@ -3472,17 +3485,31 @@ class MessengerProvider extends ChangeNotifier {
     });
   }
 
+  /// Beim Verlassen des Chats aufraeumen, was nach dem Lesen verbrennen
+  /// soll.
+  ///
+  /// Und der Gegenseite Bescheid sagen. Ohne die Meldung verschwand die
+  /// Nachricht nur beim Empfaenger und blieb beim Absender stehen — die
+  /// Funktion verspricht aber, dass sie weg ist.
   Future<void> burnReadMessages(String chatId) async {
     final messages = _messagesByChat[chatId];
     if (messages == null) return;
-    final before = messages.length;
-    messages.removeWhere((m) => m.burnAfterRead && m.readAt != null);
-    if (messages.length != before) {
-      await _localStore.saveMessages(chatId, messages);
-      notifyListeners();
-    }
-  }
+    final ich = userId ?? '';
 
+    final verbrannt =
+        messages.where((m) => m.burnAfterRead && m.readAt != null).toList();
+    if (verbrannt.isEmpty) return;
+
+    for (final m in verbrannt) {
+      if (SelfDestructPolicy.announceBurn(m, ich)) _meldeAblauf(chatId, m.id);
+    }
+
+    final weg = verbrannt.map((m) => m.id).toSet();
+    messages.removeWhere((m) => weg.contains(m.id));
+    await _localStore.saveMessages(chatId, messages);
+    _standNachrechnen(chatId);
+    notifyListeners();
+  }
   // --- Double Ratchet Helpers ---
 
   /// Initialize a ratchet session as sender using X3DH handshake.

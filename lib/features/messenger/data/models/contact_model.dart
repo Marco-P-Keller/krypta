@@ -58,6 +58,19 @@ class Contact extends Equatable {
   /// Cryptographic trust state — determines if sending is allowed.
   final TrustState trustState;
 
+  /// Wie es vor einer Blockierung stand.
+  ///
+  /// Beim Aufheben wird genau das wiederhergestellt. Ohne die Erinnerung
+  /// landete jeder entblockte Kontakt auf `keyChanged` und musste erst wieder
+  /// bestaetigt werden — auch ein ganz normaler, den man nur kurz gesperrt
+  /// hatte. Wer wegen eines Schluesselwechsels blockiert wurde, kommt damit
+  /// trotzdem nicht an der Bestaetigung vorbei: dann steht hier eben
+  /// `keyChanged`.
+  ///
+  /// `null` heisst: nicht blockiert, oder ein Bestandsdatensatz von vor dieser
+  /// Aenderung. Siehe [BlockPolicy.afterUnblock].
+  final TrustState? trustBeforeBlock;
+
   /// Ob dieses Konto gelöscht wurde.
   ///
   /// Gesetzt, wenn die Gegenseite die Notfall-Löschung ausgelöst hat. Danach
@@ -124,6 +137,7 @@ class Contact extends Equatable {
     required this.publicKey,
     required this.addedAt,
     this.trustState = TrustState.unverified,
+    this.trustBeforeBlock,
     // Wer selbst hinzufügt, hat zugestimmt — der Standard ist deshalb
     // `established`, nicht „offene Anfrage".
     this.requestState = ContactRequestState.established,
@@ -148,6 +162,7 @@ class Contact extends Equatable {
     required this.publicKey,
     required this.addedAt,
     required this.trustState,
+    this.trustBeforeBlock,
     required this.keyFingerprint,
     this.requestState = ContactRequestState.established,
     this.declineCount = 0,
@@ -216,6 +231,7 @@ class Contact extends Equatable {
   Contact copyWith({
     String? displayName,
     Uint8List? publicKey,
+    Object? trustBeforeBlock = _sentinel,
     TrustState? trustState,
     ContactRequestState? requestState,
     int? declineCount,
@@ -238,6 +254,9 @@ class Contact extends Equatable {
       publicKey: newPublicKey,
       addedAt: addedAt,
       trustState: trustState ?? this.trustState,
+      trustBeforeBlock: trustBeforeBlock == _sentinel
+          ? this.trustBeforeBlock
+          : trustBeforeBlock as TrustState?,
       requestState: requestState ?? this.requestState,
       declineCount: declineCount ?? this.declineCount,
       keyFingerprint: publicKey != null
@@ -280,6 +299,7 @@ class Contact extends Equatable {
         'publicKey': base64Encode(publicKey),
         'addedAt': addedAt.millisecondsSinceEpoch,
         'trustState': trustState.index,
+        'trustBeforeBlock': trustBeforeBlock?.index,
         'requestState': requestState.index,
         'declineCount': declineCount,
         if (verifiedAt != null)
@@ -328,6 +348,9 @@ class Contact extends Equatable {
       publicKey: base64Decode(map['publicKey'] as String),
       addedAt: DateTime.fromMillisecondsSinceEpoch(map['addedAt'] as int),
       trustState: state,
+      trustBeforeBlock: map['trustBeforeBlock'] is int
+          ? TrustState.values[map['trustBeforeBlock'] as int]
+          : null,
       requestState: requestState,
       declineCount: (map['declineCount'] as int?) ?? 0,
       verifiedAt: map['verifiedAt'] != null

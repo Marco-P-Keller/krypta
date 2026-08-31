@@ -78,8 +78,10 @@ abstract final class SelfDestructPolicy {
   ///
   /// Nur der Empfaenger hat `readAt` und weiss damit ueberhaupt, wann die Uhr
   /// abgelaufen ist.
+  /// Burn-after-Read zaehlt mit: auch dort weiss nur der Empfaenger, wann es
+  /// soweit ist — naemlich wenn er den Chat verlaesst.
   static bool announceBurn(Message m, String myId) =>
-      m.selfDestructDuration != null && m.senderId != myId;
+      _vergaenglich(m) && m.senderId != myId;
 
   /// Die kuerzeste Frist, die eine Gegenseite mir vorgeben darf.
   ///
@@ -111,5 +113,13 @@ abstract final class SelfDestructPolicy {
   /// meinem Geraet raeumen. Entfernt werden darf nur, was ich selbst als
   /// vergaenglich markiert habe.
   static bool acceptBurn(Message m, String myId) =>
-      m.senderId == myId && m.selfDestructDuration != null;
+      m.senderId == myId && _vergaenglich(m);
+
+  /// Ob ich diese Nachricht selbst als vergaenglich markiert habe.
+  ///
+  /// Nur solche darf eine Ablaufmeldung der Gegenseite entfernen. Ohne diese
+  /// Schranke koennte sie mit erfundenen Meldungen beliebige Nachrichten von
+  /// meinem Geraet raeumen.
+  static bool _vergaenglich(Message m) =>
+      m.selfDestructDuration != null || m.burnAfterRead;
 }
