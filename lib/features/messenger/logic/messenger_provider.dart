@@ -2303,7 +2303,6 @@ class MessengerProvider extends ChangeNotifier {
     Duration? selfDestruct,
     bool burnAfterRead = false,
     String? password,
-    bool selfDestructFromSend = false,
     bool asContactRequest = false,
     String? qrToken,
     String? preverifiedServerKey,
@@ -2318,7 +2317,6 @@ class MessengerProvider extends ChangeNotifier {
           text: text,
           selfDestruct: selfDestruct,
           burnAfterRead: burnAfterRead,
-          selfDestructFromSend: selfDestructFromSend,
           password: password,
           asContactRequest: asContactRequest,
           qrToken: qrToken,
@@ -2332,7 +2330,6 @@ class MessengerProvider extends ChangeNotifier {
     Duration? selfDestruct,
     bool burnAfterRead = false,
     String? password,
-    bool selfDestructFromSend = false,
     bool asContactRequest = false,
     String? qrToken,
     String? preverifiedServerKey,
@@ -2449,7 +2446,6 @@ class MessengerProvider extends ChangeNotifier {
       timestamp: now,
       status: MessageStatus.sending,
       selfDestructDuration: selfDestruct,
-      selfDestructFromSend: selfDestructFromSend,
       burnAfterRead: burnAfterRead,
       isPasswordProtected: hasPassword,
       passwordUnlocked: !hasPassword, // Both sides start locked
@@ -2498,10 +2494,6 @@ class MessengerProvider extends ChangeNotifier {
         innerPayload['_psid'] = state.previousSessionId;
       }
       if (selfDestruct != null) innerPayload['_sd'] = selfDestruct.inMilliseconds;
-      // Der Chat-Timer laeuft ab dem Senden. Ohne diese Markierung wuerde
-      // die Gegenseite ihn als lesegebunden behandeln, und er liefe bei ihr
-      // gar nicht, solange sie nicht hinsieht.
-      if (selfDestructFromSend) innerPayload['_sdf'] = true;
       if (burnAfterRead) innerPayload['_bar'] = true;
       if (hasPassword) innerPayload['_pw'] = true;
 
@@ -3089,7 +3081,6 @@ class MessengerProvider extends ChangeNotifier {
           status: MessageStatus.delivered,
           selfDestructDuration:
               selfDestructMs != null ? Duration(milliseconds: selfDestructMs) : null,
-          selfDestructFromSend: innerPayload['_sdf'] == true,
           burnAfterRead: burnAfterRead,
           isPasswordProtected: isPasswordProtected,
           passwordUnlocked: !isPasswordProtected,
@@ -3334,7 +3325,6 @@ class MessengerProvider extends ChangeNotifier {
         status: MessageStatus.delivered,
         selfDestructDuration:
             selfDestructMs != null ? Duration(milliseconds: selfDestructMs) : null,
-          selfDestructFromSend: innerPayload['_sdf'] == true,
         burnAfterRead: burnAfterRead,
         isPasswordProtected: isPasswordProtected,
         passwordUnlocked: !isPasswordProtected,

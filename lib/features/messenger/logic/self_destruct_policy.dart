@@ -2,24 +2,24 @@ import '../data/models/message_model.dart';
 
 /// Wann eine Nachricht verschwindet — und bei wem.
 ///
-/// Es gibt **zwei** Timer, und sie bedeuten Verschiedenes.
+/// Es gibt zwei Timer, und **beide laufen ab dem Lesen**. Ein Timer, der
+/// abliefe, bevor die Nachricht ueberhaupt jemand gesehen hat, haette sie nie
+/// zugestellt.
 ///
-/// **Der Timer einer einzelnen Nachricht** ist ein Versprechen an die
-/// Gegenseite. Er laeuft ab dem **Lesen** — vorher hat sie die Nachricht ja
-/// noch nicht gesehen — und raeumt auf beiden Geraeten auf. `readAt` setzt
-/// dabei nur der Empfaenger; beim Absender bleibt es leer, solange keine
-/// Lesebestaetigung kommt, und die ist standardmaessig aus. Seine Fassung lief
-/// deshalb nie ab: beim Empfaenger vernichtet, bei ihm noch da. Darum meldet
-/// der Empfaenger den Ablauf — siehe [announceBurn].
+/// Der Preis davon, offen benannt: **Ungelesenes laeuft nie ab.** Ein Chat
+/// mit 24-Stunden-Regel raeumt nichts weg, was niemand geoeffnet hat. Der
+/// Chat-Timer lief einen Tag lang ab dem Senden und haette das erledigt;
+/// Daniel wollte am 31.08. das eine Modell fuer beide Timer.
 ///
-/// **Der Chat-Timer** ist Hausordnung fuer diesen Chat. Er laeuft ab dem
-/// **Senden** und raeumt auch auf, wenn nie jemand hinsieht. Wird er
-/// nachtraeglich eingeschaltet, gilt er auch fuer das, was schon dasteht —
-/// dann ab dem Einschalten, damit nicht mit einem Tipp der halbe Verlauf im
-/// selben Moment verschwindet.
+/// `readAt` setzt nur der Empfaenger. Beim Absender bleibt es leer, solange
+/// keine Lesebestaetigung kommt, und die ist standardmaessig aus — seine
+/// Fassung lief deshalb nie ab: beim Empfaenger vernichtet, bei ihm noch da.
+/// Darum meldet der Empfaenger den Ablauf, siehe [announceBurn].
 ///
-/// Hat eine Nachricht einen eigenen Timer, schlaegt der den Chat-Timer, in
-/// beide Richtungen: laenger wie kuerzer.
+/// Der Unterschied zwischen den beiden liegt woanders: der **Chat-Timer**
+/// gilt auch fuer das, was schon dasteht — dann ab dem **Einschalten**, damit
+/// nicht mit einem Tipp der halbe Verlauf im selben Moment verschwindet. Und
+/// ein eigener Timer der Nachricht schlaegt ihn, in beide Richtungen.
 abstract final class SelfDestructPolicy {
   /// Ob diese Nachricht abgelaufen ist.
   ///
@@ -45,47 +45,28 @@ abstract final class SelfDestructPolicy {
     Duration? chatTimer,
     DateTime? chatTimerSetAt,
   }) {
+    final gelesen = m.readAt;
+    // Ungelesen laeuft keine Uhr. Gilt fuer beide Timer.
+    if (gelesen == null) return null;
+
     final eigener = m.selfDestructDuration;
-    if (eigener != null) {
-      // Der Chat-Timer wird beim Senden mit hineingeschrieben, damit er auf
-      // beiden Seiten ueberhaupt greift. Er laeuft ab dem Senden, nicht ab
-      // dem Lesen.
-      //
-      // Die beiden Fristen sind **nicht auf die Sekunde gleich**: der
-      // Empfaenger setzt den Zeitstempel beim Verarbeiten, nicht beim
-      // Absenden. War er zwei Tage offline, behaelt er die Nachricht ab
-      // Zustellung noch die volle Frist, waehrend sie beim Absender laengst
-      // weg ist. Die Abweichung geht also immer in die harmlose Richtung —
-      // nichts verschwindet frueher als zugesagt. Sie ganz auszuraeumen
-      // hiesse, die Absenderzeit mitzuschicken und ihr zu trauen; das waere
-      // ein Knopf, mit dem die Gegenseite meine Fassung vorzeitig raeumt.
-      if (m.selfDestructFromSend) return m.timestamp.add(eigener);
-      final gelesen = m.readAt;
-      // Ungelesen laeuft die Uhr nicht. Ein Timer, der abliefe, bevor die
-      // Nachricht ueberhaupt jemand gesehen hat, haette sie nie zugestellt.
-      if (gelesen == null) return null;
-      return gelesen.add(eigener);
-    }
+    if (eigener != null) return gelesen.add(eigener);
 
     if (chatTimer == null) return null;
-    // Nachtraeglich eingeschaltet: was aelter ist als das Einschalten, bekommt
-    // die volle Frist ab dem Einschalten.
-    final start = chatTimerSetAt != null && chatTimerSetAt.isAfter(m.timestamp)
+    // Nachtraeglich eingeschaltet: was schon gelesen war, bekommt die volle
+    // Frist ab dem Einschalten.
+    final start = chatTimerSetAt != null && chatTimerSetAt.isAfter(gelesen)
         ? chatTimerSetAt
-        : m.timestamp;
+        : gelesen;
     return start.add(chatTimer);
   }
 
   /// Ob der Ablauf dieser Nachricht der Gegenseite mitzuteilen ist.
   ///
-  /// Nur beim **lesegebundenen** Timer: dort weiss allein der Empfaenger, wann
-  /// die Uhr abgelaufen ist. Ein sendegebundener Timer laeuft auf beiden
-  /// Geraeten aus derselben Rechnung ab — da ist nichts mitzuteilen, und eine
-  /// Meldung waere nur zusaetzliche Spur.
+  /// Nur der Empfaenger hat `readAt` und weiss damit ueberhaupt, wann die Uhr
+  /// abgelaufen ist.
   static bool announceBurn(Message m, String myId) =>
-      m.selfDestructDuration != null &&
-      !m.selfDestructFromSend &&
-      m.senderId != myId;
+      m.selfDestructDuration != null && m.senderId != myId;
 
   /// Die kuerzeste Frist, die eine Gegenseite mir vorgeben darf.
   ///
@@ -116,13 +97,6 @@ abstract final class SelfDestructPolicy {
   /// eine Gegenseite mit erfundenen Ablaufmeldungen beliebige Nachrichten von
   /// meinem Geraet raeumen. Entfernt werden darf nur, was ich selbst als
   /// vergaenglich markiert habe.
-  /// **Sendegebundene sind ausgenommen.** Deren Frist kenne ich selbst, mein
-  /// eigener Takt raeumt sie weg, und eine Meldung dafuer gibt es gar nicht
-  /// ([announceBurn] verschickt keine). Sie anzunehmen hiesse nur, der
-  /// Gegenseite einen Knopf zu geben, mit dem sie meine Fassung vorzeitig
-  /// loeschen kann.
   static bool acceptBurn(Message m, String myId) =>
-      m.senderId == myId &&
-      m.selfDestructDuration != null &&
-      !m.selfDestructFromSend;
+      m.senderId == myId && m.selfDestructDuration != null;
 }

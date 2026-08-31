@@ -153,20 +153,6 @@ void main() {
       );
     });
 
-    test('eine sendegebundene Nachricht nicht', () {
-      // Bei einem sendegebundenen Timer kenne ich die Frist selbst — mein
-      // eigener Takt raeumt sie weg. Eine Meldung dafuer gibt es gar nicht;
-      // sie anzunehmen hiesse nur, der Gegenseite einen Knopf zu geben, mit
-      // dem sie meine Fassung vorzeitig loeschen kann.
-      expect(
-        SelfDestructPolicy.acceptBurn(
-            nachricht(timer: const Duration(minutes: 10), von: 'ich')
-                .copyWith(selfDestructFromSend: true),
-            'ich'),
-        isFalse,
-      );
-    });
-
     test('eine Nachricht der Gegenseite nicht', () {
       // Ihre eigene abzuraeumen ist Sache ihres eigenen Ablaufs, nicht meiner.
       expect(
