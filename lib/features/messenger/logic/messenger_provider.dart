@@ -19,6 +19,7 @@ import 'recording_notice_policy.dart';
 import 'remote_clear_policy.dart';
 import 'contact_request_policy.dart';
 import 'inbox_reconnect_backoff.dart';
+import 'session_reset_policy.dart';
 import 'key_publish_status.dart';
 import '../../../security/session/session_errors.dart';
 import '../../../security/session/session_handshake_service.dart';
@@ -84,6 +85,17 @@ class MessengerProvider extends ChangeNotifier {
   final Map<String, List<String>> _acceptedHandshakeEks = {};
   static const int _maxAcceptedEksPerChat = 100;
   static const String _acceptedEksStoreKey = 'hs_accepted_eks';
+
+  /// Die gesehenen Sitzungskennungen der Gegenseite, getrennt vom
+  /// Sitzungszustand aufgehoben.
+  ///
+  /// `peerSeenPsids` lebt sonst im Ratchet-Zustand und wird beim Neuaufbau
+  /// von dort uebernommen (C5). Wird die Sitzung aber **verworfen** — nach
+  /// `chatGone` oder beim erneuten Hinzufuegen —, faellt der Zustand weg und
+  /// die Spur mit ihm; ein alter Handschlag der Gegenseite koennte danach ein
+  /// zweites Mal durchgehen. Deshalb ueberlebt sie hier.
+  final Map<String, List<String>> _peerPsidLineage = {};
+  static const String _psidLineageStoreKey = 'peer_psid_lineage';
 
   /// Healed sessions awaiting commit (Codex review 2026-06, P1): a session
   /// re-derived by [_tryHealSession] must not replace the live one until the
@@ -312,6 +324,18 @@ class MessengerProvider extends ChangeNotifier {
       }
     } catch (_) {}
 
+    // Die Spur der Sitzungskennungen, die ein Verwerfen ueberlebt hat.
+    try {
+      final spuren = await _localStore.loadData(_psidLineageStoreKey);
+      if (spuren is Map) {
+        spuren.forEach((key, value) {
+          if (key is String && value is List) {
+            _peerPsidLineage[key] = value.whereType<String>().toList();
+          }
+        });
+      }
+    } catch (_) {}
+
     for (final chat in _chats) {
       _messagesByChat[chat.id] = await _localStore.loadMessages(chat.id);
       // Load ratchet state for each chat
@@ -468,6 +492,14 @@ class MessengerProvider extends ChangeNotifier {
           notifyListeners();
           await _announceRequestTransition(existing, moved);
         }
+        // Erneut hinzufuegen heisst „fang mit dem von vorn an". Ohne das
+        // Verwerfen der Sitzung passierte hier gar nichts: der Zustand eines
+        // angenommenen Kontakts aendert sich nicht, und die naechste Nachricht
+        // traegt weiter keinen Handschlag — die Gegenseite, die ihre Haelfte
+        // verloren hat, kann sie also weiterhin nicht entschluesseln.
+        if (SessionResetPolicy.onReAdd(existing)) {
+          await _verwerfeSitzung(contactId);
+        }
         // Key change detection: if the public key changed, block sending until re-verified.
         // Also invalidate existing ratchet sessions (compromised key = untrusted session).
         if (base64Encode(existing.publicKey) != publicKeyBase64) {
@@ -618,6 +650,12 @@ class MessengerProvider extends ChangeNotifier {
         );
         await _localStore.saveContacts(_contacts);
         notifyListeners();
+        // Wie im ID-Pfad: der Scan ist die Geste „von vorn". Vorher meldete
+        // er „verifiziert" und tat sonst nichts, wenn der Kontakt schon
+        // angenommen war.
+        if (SessionResetPolicy.onReAdd(_contacts[idx])) {
+          await _verwerfeSitzung(contactId);
+        }
         if (_contacts[idx].isOutgoingRequest) {
           await _sendRequestTo(
             _contacts[idx],
@@ -936,7 +974,11 @@ class MessengerProvider extends ChangeNotifier {
     // Der Chat verschwindet — es steht ohnehin nichts drin, eine Anfrage
     // trägt keinen Inhalt.
     final chat = chatForContact(contactId);
-    if (chat != null) await deleteChat(chat.id);
+    // Ohne Ansage: der Gegenseite mitzuteilen „du wurdest abgelehnt" verraet
+    // genau die Entscheidung, die sie nichts angeht. Sie braucht sie auch
+    // nicht — von einem abgelehnten Kontakt wird ohnehin nichts angenommen,
+    // und eine erneute Anfrage erzwingt eine frische Sitzung.
+    if (chat != null) await deleteChat(chat.id, announce: false);
 
     notifyListeners();
   }
@@ -1432,6 +1474,8 @@ class MessengerProvider extends ChangeNotifier {
         _applyContactAccepted(contact.id);
       case 'clearMine':
         _applyPeerClear(chatId, contact.id);
+      case 'chatGone':
+        await _applyPeerChatGone(chatId);
       case 'gone':
         await _applyPeerGone(chatId, contact.id);
       case 'screenshot':
@@ -1764,6 +1808,15 @@ class MessengerProvider extends ChangeNotifier {
   /// geschrieben werden kann nicht mehr: Schluessel und Konto sind auf dem
   /// Server geloescht, eine Nachricht kaeme nie an. Der Chat bleibt lesbar —
   /// was ich geschrieben habe, gehoert weiterhin mir.
+  /// Die Gegenseite hat ihren Chat weggeworfen.
+  ///
+  /// Nur die Sitzung faellt. Anders als bei „Chat leeren" wird hier nichts
+  /// geloescht — was in meinem Verlauf steht, gehoert mir. Verworfen wird die
+  /// Sitzung, damit meine naechste Nachricht wieder einen Handschlag traegt;
+  /// ohne den koennte die Gegenseite sie nicht entschluesseln.
+  Future<void> _applyPeerChatGone(String chatId) =>
+      _verwerfeSitzungFuerChat(chatId);
+
   Future<void> _applyPeerGone(String chatId, String peerId) async {
     _applyPeerClear(chatId, peerId);
 
@@ -1850,6 +1903,88 @@ class MessengerProvider extends ChangeNotifier {
 
   static const Duration _wipeAnnounceTimeout = Duration(seconds: 3);
 
+  /// Die eigene Sitzung mit diesem Kontakt verwerfen.
+  ///
+  /// Danach traegt die naechste Nachricht wieder einen Handschlag. Chat und
+  /// Verlauf bleiben unangetastet — verworfen wird nur Sitzungsmaterial.
+  Future<void> _verwerfeSitzung(String contactId) async {
+    for (final chat in List<Chat>.from(_chats)) {
+      if (chat.recipientId != contactId) continue;
+      await _verwerfeSitzungFuerChat(chat.id);
+    }
+  }
+
+  /// Die Spur fuer diesen Chat: was in der alten Sitzung stand, vereint mit
+  /// dem, was ein frueheres Verwerfen aufgehoben hat.
+  Set<String> _spurFuer(String chatId, RatchetState? oldState) =>
+      SessionResetPolicy.mergeLineage(
+        _peerPsidLineage[chatId] ?? const <String>[],
+        oldState?.peerSeenPsids ?? const <String>{},
+      ).toSet();
+
+  Future<void> _merkeSpur(String chatId, RatchetState? state) async {
+    final spur = SessionResetPolicy.mergeLineage(
+      _peerPsidLineage[chatId] ?? const <String>[],
+      state?.peerSeenPsids ?? const <String>{},
+    );
+    if (spur.isEmpty) return;
+    _peerPsidLineage[chatId] = spur;
+    try {
+      await _localStore.saveData(_psidLineageStoreKey, _peerPsidLineage);
+    } catch (_) {
+      // Faellt auf reinen Arbeitsspeicher zurueck, wie bei den Ephemerals.
+    }
+  }
+
+  Future<void> _verwerfeSitzungFuerChat(String chatId) async {
+    // Die Spur muss das Verwerfen ueberleben — sonst faellt mit der Sitzung
+    // auch die Rueckrollsperre fuer diesen Chat weg.
+    await _merkeSpur(chatId, _ratchetStates[chatId]);
+    _ratchetStates.remove(chatId);
+    // Muss mit: _finalizeAcceptedMessage laeuft NACH der Kontrollnachricht
+    // und schreibt einen geparkten Heal-Zustand fest. Ohne diese Zeile
+    // stuende die eben verworfene Sitzung Sekundenbruchteile spaeter wieder
+    // da, und die Ansage haette nichts bewirkt.
+    _pendingHealCommits.removeWhere((key, _) => key.startsWith('$chatId|'));
+    try {
+      await _localStore.deleteRatchetState(chatId);
+    } catch (_) {}
+  }
+
+  /// Der Gegenseite sagen, dass ich diesen Chat weggeworfen habe.
+  ///
+  /// Nicht aus Hoeflichkeit: mit dem Chat faellt meine Haelfte der Sitzung,
+  /// und der Handschlag-Kopf `ek` geht nur mit der **ersten** Nachricht einer
+  /// Sitzung mit. Ohne diese Ansage traegt alles, was die Gegenseite mir
+  /// danach schreibt, keinen Handschlag mehr — ich koennte es nicht
+  /// entschluesseln, es verschwaende stumm, und von allein heilen wuerde das
+  /// nie: ihre Sitzung lebt ja.
+  ///
+  /// Sichtbar wird davon bei ihr nichts. Ihr Geraet verwirft die Sitzung, ihr
+  /// Verlauf bleibt stehen, im Chat erscheint kein Hinweis. Die Ansage laeuft
+  /// ueber denselben verschluesselten Kanal wie „Chat leeren" und die
+  /// Notfall-Loeschung.
+  Future<void> _announceChatGone(String chatId) async {
+    if (userId == null) return;
+    if (!_ratchetStates.containsKey(chatId)) return;
+    final idx = _chats.indexWhere((c) => c.id == chatId);
+    if (idx == -1) return;
+    final contact = contactForId(_chats[idx].recipientId);
+    if (contact == null || contact.isGone) return;
+    try {
+      await _sendControlMessage(
+        chatId: chatId,
+        contact: contact,
+        type: 'chatGone',
+        messageId: _uuid.v4(),
+      ).timeout(_wipeAnnounceTimeout);
+    } catch (_) {
+      // Kein Netz, Zeit abgelaufen, Gegenseite gesperrt: geloescht wird
+      // trotzdem. Dann bleibt drueben der alte Zustand stehen, und es faellt
+      // erst auf, wenn einer von beiden den Kontakt erneut hinzufuegt.
+    }
+  }
+
   /// Den Chat leeren — auf beiden Geraeten.
   ///
   /// Hier verschwindet alles. Bei der Gegenseite nur, was ich selbst
@@ -1897,11 +2032,17 @@ class MessengerProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> deleteChat(String chatId) async {
-    // A3: mark the chat as deleting BEFORE any await. Concurrent send/receive
-    // paths test this set synchronously and drop work for a dying chat,
-    // closing the race where an inbound message could be appended between
-    // saveChats and the later file delete.
+  Future<void> deleteChat(String chatId, {bool announce = true}) async {
+    // Erst ansagen, dann abreissen: die Ansage braucht die Sitzung, die
+    // gleich faellt — und sie muss vor `_deletingChats` laufen, sonst
+    // stolpert der Sendeweg ueber seine eigene Abrisssperre.
+    if (announce) await _announceChatGone(chatId);
+
+    // A3: mark the chat as deleting before the teardown starts. Concurrent
+    // send/receive paths test this set synchronously and drop work for a
+    // dying chat, closing the race where an inbound message could be
+    // appended between saveChats and the later file delete. The announce
+    // above runs deliberately *before* this: it still needs the session.
     if (!_deletingChats.add(chatId)) return; // already deleting — no-op
 
     try {
@@ -1938,6 +2079,13 @@ class MessengerProvider extends ChangeNotifier {
       ]);
       await _pruneUnlockAttempts(removedMessageIds);
       _pendingHealCommits.removeWhere((key, _) => key.startsWith('$chatId|'));
+      // Der Chat ist fort, nicht nur die Sitzung: die Spur hat keinen
+      // Bezugspunkt mehr.
+      if (_peerPsidLineage.remove(chatId) != null) {
+        try {
+          await _localStore.saveData(_psidLineageStoreKey, _peerPsidLineage);
+        } catch (_) {}
+      }
       if (_acceptedHandshakeEks.remove(chatId) != null) {
         try {
           await _localStore.saveData(
@@ -3152,7 +3300,7 @@ class MessengerProvider extends ChangeNotifier {
       final oldSessionId = oldState?.sessionId;
       // C5: carry forward the set of peer _psid values we've already seen,
       // so a re-handshake doesn't reset our rollback memory.
-      final preservedSeenPsids = oldState?.peerSeenPsids ?? const <String>{};
+      final preservedSeenPsids = _spurFuer(chatId, oldState);
       final newState = session.ratchetState.copyWith(
         sessionId: const Uuid().v4(),
         previousSessionId: oldSessionId,
@@ -3191,7 +3339,7 @@ class MessengerProvider extends ChangeNotifier {
 
     final oldState = _ratchetStates[chatId];
     final oldSessionId = oldState?.sessionId;
-    final preservedSeenPsids = oldState?.peerSeenPsids ?? const <String>{};
+    final preservedSeenPsids = _spurFuer(chatId, oldState);
     final state = rawState.copyWith(
       sessionId: const Uuid().v4(),
       previousSessionId: oldSessionId,
@@ -3276,7 +3424,7 @@ class MessengerProvider extends ChangeNotifier {
     final oldSessionId = oldState?.sessionId;
     // C5: preserve peerSeenPsids across re-init so a forged first-message
     // with a stale _psid cannot pass after the state gets rebuilt.
-    final preservedSeenPsids = oldState?.peerSeenPsids ?? const <String>{};
+    final preservedSeenPsids = _spurFuer(chatId, oldState);
     return rawState.copyWith(
       sessionId: const Uuid().v4(),
       previousSessionId: oldSessionId,
