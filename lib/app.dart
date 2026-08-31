@@ -14,6 +14,7 @@ import 'features/auth/presentation/vault_password_screen.dart';
 import 'features/calculator/presentation/calculator_screen.dart';
 import 'features/messenger/data/models/chat_model.dart';
 import 'features/messenger/logic/messenger_provider.dart';
+import 'features/messenger/logic/screen_lock_policy.dart';
 import 'features/messenger/logic/sync_lifecycle_policy.dart';
 import 'features/messenger/presentation/chat_list_screen.dart';
 import 'features/messenger/presentation/chat_screen.dart';
@@ -100,6 +101,17 @@ class _KryptaShellState extends State<KryptaShell> with WidgetsBindingObserver {
   DeviceIntegrityAction _deviceAction = DeviceIntegrityAction.allow;
   Chat? _selectedChat;
 
+  /// Wohin zurueck, falls die App gar nicht wirklich weg war.
+  ///
+  /// Gesperrt wird jetzt schon beim kurzen Wegschalten — sichtbar ist davon
+  /// nichts, die Abdeckung liegt zu dem Zeitpunkt ohnehin ueber dem Fenster.
+  /// Stellt sich beim Aufwachen heraus, dass die App nie im Hintergrund war
+  /// (Screenshot, Kontrollzentrum, Anruf-Banner), wird das hier wieder
+  /// hervorgeholt.
+  _AppScreen? _vorSperre;
+  Chat? _chatVorSperre;
+  bool _warImHintergrund = false;
+
   @override
   void initState() {
     super.initState();
@@ -120,9 +132,13 @@ class _KryptaShellState extends State<KryptaShell> with WidgetsBindingObserver {
   /// When app goes to background, always lock back to calculator.
   /// This ensures the messenger is never visible when returning to the app.
   ///
-  /// Only `paused` / `hidden` triggers the lock — `inactive` fires for
-  /// transient interruptions (screenshot, permission prompt, control-center
-  /// peek, incoming call overlay) which should NOT count as backgrounding.
+  /// Gesperrt wird schon beim kurzen Wegschalten (`inactive`) — sichtbar ist
+  /// davon nichts, die Abdeckung liegt zu dem Zeitpunkt ohnehin ueber dem
+  /// Fenster. Denn `inactive` ist oft das Einzige, was ein sehr schneller
+  /// Wechsel erzeugt; wer erst bei `paused` sperrt, laesst genau dann den
+  /// Chat stehen. War die App nachher nie wirklich weg — Screenshot,
+  /// Kontrollzentrum, Anruf-Banner —, wird der Bildschirm beim Aufwachen
+  /// wieder hervorgeholt, und der Nutzer merkt von alldem nichts.
   /// Die Vorschau im App-Umschalter deckt ein eigener Mechanismus ab, der
   /// unabhaengig vom Screenshot-Hinweis laeuft.
   @override
@@ -139,6 +155,15 @@ class _KryptaShellState extends State<KryptaShell> with WidgetsBindingObserver {
       messenger.resumeSync();
     }
 
+    if (ScreenLockPolicy.marksBackgrounded(state)) _warImHintergrund = true;
+    if (ScreenLockPolicy.shouldLock(state)) {
+      _sperreAufRechner();
+    } else if (ScreenLockPolicy.shouldRestore(state,
+        wasBackgrounded: _warImHintergrund)) {
+      _holeBildschirmZurueck();
+    }
+    if (state == AppLifecycleState.resumed) _warImHintergrund = false;
+
     final isBackgrounded = state == AppLifecycleState.paused ||
         state == AppLifecycleState.hidden;
     if (isBackgrounded) {
@@ -154,31 +179,6 @@ class _KryptaShellState extends State<KryptaShell> with WidgetsBindingObserver {
       // something else themselves.
       unawaited(ClipboardHelper.clearEphemeralNow());
 
-      // Die Einrichtung ist ausgenommen: wer beim ersten Start kurz die App
-      // verlässt, soll nicht auf dem Rechner landen, ohne je einen Code
-      // vergeben zu haben. Der Willkommens-Übergang ist NICHT ausgenommen —
-      // dahinter liegt bereits der entsperrte Messenger.
-      if (_currentScreen != _AppScreen.calculator &&
-          _currentScreen != _AppScreen.setup &&
-          _currentScreen != _AppScreen.language &&
-          _currentScreen != _AppScreen.tutorial) {
-        // Do NOT disable screenshot protection here — keep it active
-        // until the calculator screen is fully visible.
-        if (mounted) {
-          setState(() {
-            _currentScreen = _AppScreen.calculator;
-            _selectedChat = null;
-          });
-          // Disable screenshot protection AFTER state change, so the
-          // calculator is rendered before the secure flag is removed.
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            if (mounted) {
-              final platform = context.read<PlatformSecurityService>();
-              platform.disableScreenshotProtection();
-            }
-          });
-        }
-      }
     }
 
     // On resume, re-validate device integrity and evict stale cache entries.
@@ -328,6 +328,67 @@ class _KryptaShellState extends State<KryptaShell> with WidgetsBindingObserver {
   /// unruhiger wirkt als gar kein Übergang. Dauert das Laden länger, bleibt
   /// er entsprechend länger stehen — er ist auch der Ladebildschirm.
   static const _welcomeBackMinimum = Duration(milliseconds: 900);
+
+  /// Auf den Taschenrechner zurueckfallen.
+  ///
+  /// Die Einrichtung ist ausgenommen: wer beim ersten Start kurz die App
+  /// verlaesst, soll nicht auf dem Rechner landen, ohne je einen Code
+  /// vergeben zu haben. Der Willkommens-Uebergang ist NICHT ausgenommen —
+  /// dahinter liegt bereits der entsperrte Messenger.
+  void _sperreAufRechner() {
+    if (!mounted) return;
+    if (_currentScreen == _AppScreen.calculator ||
+        _currentScreen == _AppScreen.setup ||
+        _currentScreen == _AppScreen.language ||
+        _currentScreen == _AppScreen.tutorial) {
+      return;
+    }
+
+    // Offene Sheets und Dialoge liegen als eigene Route UEBER allem. Nur
+    // `_currentScreen` umzuschalten laesst sie stehen — samt ihrer
+    // Abdunklung, die dann als milchiger Schleier ueber dem Taschenrechner
+    // liegt, mit dem Messenger noch sichtbar darunter. Ohne Neustart war das
+    // nicht mehr wegzubekommen.
+    Navigator.of(context).popUntil((route) => route.isFirst);
+
+    _vorSperre = _currentScreen;
+    _chatVorSperre = _selectedChat;
+
+    // Do NOT disable screenshot protection here — keep it active until the
+    // calculator screen is fully visible.
+    setState(() {
+      _currentScreen = _AppScreen.calculator;
+      _selectedChat = null;
+    });
+    // Disable screenshot protection AFTER state change, so the calculator is
+    // rendered before the secure flag is removed.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      // Nicht abschalten, wenn inzwischen wieder entsperrt wurde: ein kurzes
+      // Wegschalten sperrt und holt gleich wieder zurueck.
+      if (_currentScreen != _AppScreen.calculator) return;
+      context.read<PlatformSecurityService>().disableScreenshotProtection();
+    });
+  }
+
+  /// Den Bildschirm zurueckholen, von dem aus gesperrt wurde.
+  ///
+  /// Nur wenn die App nie wirklich im Hintergrund war. Alles laeuft unter der
+  /// Abdeckung ab, der Nutzer sieht weder das Sperren noch das Zurueckholen.
+  void _holeBildschirmZurueck() {
+    final zurueck = _vorSperre;
+    final chat = _chatVorSperre;
+    _vorSperre = null;
+    _chatVorSperre = null;
+    if (zurueck == null || !mounted) return;
+
+    unawaited(context.read<PlatformSecurityService>()
+        .enableScreenshotProtection());
+    setState(() {
+      _currentScreen = zurueck;
+      _selectedChat = chat;
+    });
+  }
 
   Future<void> _unlockMessenger() async {
     final platform = context.read<PlatformSecurityService>();
