@@ -7,6 +7,10 @@ import 'package:kryptaapp/features/messenger/logic/remote_clear_policy.dart';
 /// Wer seinen Chat leert, nimmt seine eigenen Nachrichten zurück — auf beiden
 /// Geräten. Meine eigenen bleiben: sonst könnte mir jeder Kontakt jederzeit
 /// meinen halben Verlauf löschen, ohne dass ich zustimme.
+///
+/// Dieselbe Regel gilt seit dem 31.08. auch, wenn die Gegenseite den ganzen
+/// Chat **löscht** (Kontrollnachricht "chatGone"): auch dann nimmt sie nur
+/// das Eigene zurück. Diese Datei trägt also zwei Wege, nicht mehr nur einen.
 void main() {
   const marco = 'marco';
   const ich = 'ich';

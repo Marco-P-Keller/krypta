@@ -1478,7 +1478,7 @@ class MessengerProvider extends ChangeNotifier {
       case 'burned':
         _applyBurned(chatId, ctrl.messageId);
       case 'chatGone':
-        await _applyPeerChatGone(chatId);
+        await _applyPeerChatGone(chatId, contact.id);
       case 'gone':
         await _applyPeerGone(chatId, contact.id);
       case 'screenshot':
@@ -1831,12 +1831,20 @@ class MessengerProvider extends ChangeNotifier {
 
   /// Die Gegenseite hat ihren Chat weggeworfen.
   ///
-  /// Nur die Sitzung faellt. Anders als bei „Chat leeren" wird hier nichts
-  /// geloescht — was in meinem Verlauf steht, gehoert mir. Verworfen wird die
-  /// Sitzung, damit meine naechste Nachricht wieder einen Handschlag traegt;
-  /// ohne den koennte die Gegenseite sie nicht entschluesseln.
-  Future<void> _applyPeerChatGone(String chatId) =>
-      _verwerfeSitzungFuerChat(chatId);
+  /// Zwei Dinge folgen daraus. **Ihre Nachrichten verschwinden auch bei mir**
+  /// — wer seinen Chat wegwirft, nimmt das Geschriebene zurueck, wie bei
+  /// „Chat leeren". Was ich selbst geschrieben habe, bleibt; Hinweise auf
+  /// Screenshots und Aufnahmen ebenfalls, sonst waere das Loeschen ein Weg,
+  /// die eigene Spur zu verwischen. Die Regel dafuer steht in
+  /// [removedByPeerClear] und ist dieselbe wie beim Leeren.
+  ///
+  /// Und **die Sitzung faellt**, damit meine naechste Nachricht wieder einen
+  /// Handschlag traegt — ohne den koennte die Gegenseite sie nicht
+  /// entschluesseln, ihre Haelfte ist ja weg.
+  Future<void> _applyPeerChatGone(String chatId, String peerId) async {
+    _applyPeerClear(chatId, peerId);
+    await _verwerfeSitzungFuerChat(chatId);
+  }
 
   Future<void> _applyPeerGone(String chatId, String peerId) async {
     _applyPeerClear(chatId, peerId);
@@ -1981,10 +1989,11 @@ class MessengerProvider extends ChangeNotifier {
   /// entschluesseln, es verschwaende stumm, und von allein heilen wuerde das
   /// nie: ihre Sitzung lebt ja.
   ///
-  /// Sichtbar wird davon bei ihr nichts. Ihr Geraet verwirft die Sitzung, ihr
-  /// Verlauf bleibt stehen, im Chat erscheint kein Hinweis. Die Ansage laeuft
-  /// ueber denselben verschluesselten Kanal wie „Chat leeren" und die
-  /// Notfall-Loeschung.
+  /// Sichtbar ist die Ansage sehr wohl: mit ihr verschwinden drueben auch
+  /// meine Nachrichten aus diesem Chat, so wie bei „Chat leeren". Ihre
+  /// eigenen bleiben. Das ist so gewollt — wer seinen Chat wegwirft, nimmt
+  /// das Geschriebene zurueck. Die Ansage laeuft ueber denselben
+  /// verschluesselten Kanal wie „Chat leeren" und die Notfall-Loeschung.
   Future<void> _announceChatGone(String chatId) async {
     if (userId == null) return;
     if (!_ratchetStates.containsKey(chatId)) return;
@@ -2120,10 +2129,24 @@ class MessengerProvider extends ChangeNotifier {
     }
   }
 
+  /// Den Chat umbenennen.
+  ///
+  /// Der Name wandert **auch auf den Kontakt**. Ein Chat kann verschwinden —
+  /// die Gegenseite loescht ihn, oder man loescht ihn selbst und die naechste
+  /// Nachricht legt ihn neu an. `getOrCreateChat` nimmt den Namen dann vom
+  /// Kontakt, und ein nur am Chat vermerkter Name waere weg. Es gibt ohnehin
+  /// einen Chat je Person; zwei Namen dafuer waeren einer zu viel.
   Future<void> renameChat(String chatId, String newName) async {
     final idx = _chats.indexWhere((c) => c.id == chatId);
     if (idx == -1) return;
     _chats[idx] = _chats[idx].copyWith(recipientName: newName);
+
+    final kIdx = _contacts.indexWhere((c) => c.id == _chats[idx].recipientId);
+    if (kIdx != -1 && _contacts[kIdx].displayName != newName) {
+      _contacts[kIdx] = _contacts[kIdx].copyWith(displayName: newName);
+      await _localStore.saveContacts(_contacts);
+    }
+
     await _localStore.saveChats(_chats);
     notifyListeners();
   }
