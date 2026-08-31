@@ -98,6 +98,10 @@ class MessengerProvider extends ChangeNotifier {
   /// die Spur mit ihm; ein alter Handschlag der Gegenseite koennte danach ein
   /// zweites Mal durchgehen. Deshalb ueberlebt sie hier.
   final Map<String, List<String>> _peerPsidLineage = {};
+
+  /// Wann zuletzt eine `chatGone`-Meldung dieser Person angenommen wurde.
+  final Map<String, DateTime> _letzteChatGone = {};
+  static const Duration _chatGoneBremse = Duration(minutes: 1);
   static const String _psidLineageStoreKey = 'peer_psid_lineage';
 
   /// Healed sessions awaiting commit (Codex review 2026-06, P1): a session
@@ -332,9 +336,17 @@ class MessengerProvider extends ChangeNotifier {
       final spuren = await _localStore.loadData(_psidLineageStoreKey);
       if (spuren is Map) {
         spuren.forEach((key, value) {
-          if (key is String && value is List) {
-            _peerPsidLineage[key] = value.whereType<String>().toList();
-          }
+          if (key is! String || value is! List) return;
+          final eintrag = value.whereType<String>().toList();
+          // Bestand: bis zum 31.08. lag die Spur unter der Chat-Kennung.
+          // Passt der Schluessel auf einen bekannten Chat, wandert sie auf
+          // dessen Person — sonst bliebe sie liegen und die
+          // Rueckrollsperre finge nach einem Loeschen bei null an.
+          final person = _spurSchluessel(key) ?? key;
+          _peerPsidLineage[person] = SessionResetPolicy.mergeLineage(
+            _peerPsidLineage[person] ?? const <String>[],
+            eintrag,
+          );
         });
       }
     } catch (_) {}
@@ -1550,6 +1562,7 @@ class MessengerProvider extends ChangeNotifier {
         if (msg.senderId == userId) break;
         messages.removeAt(idx);
         _localStore.saveMessages(chatId, messages);
+        _standNachrechnen(chatId);
         notifyListeners();
         break;
       }
@@ -1851,6 +1864,18 @@ class MessengerProvider extends ChangeNotifier {
   /// Handschlag traegt — ohne den koennte die Gegenseite sie nicht
   /// entschluesseln, ihre Haelfte ist ja weg.
   Future<void> _applyPeerChatGone(String chatId, String peerId) async {
+    // Bremse. Eine Gegenseite kann jeder Meldung einen frischen
+    // Handschlag-Kopf beilegen; ohne Bremse zwingt sie mich damit
+    // beliebig oft zu X3DH samt Platten-Schreiben und -Loeschen. Einen
+    // Chat wegzuwerfen ist nichts, was im Sekundentakt passiert.
+    final zuletzt = _letzteChatGone[peerId];
+    final jetzt = DateTime.now();
+    if (zuletzt != null && jetzt.difference(zuletzt) < _chatGoneBremse) {
+      if (kDebugMode) debugPrint('chatGone zu dicht hintereinander');
+      return;
+    }
+    _letzteChatGone[peerId] = jetzt;
+
     _applyPeerClear(chatId, peerId);
     await _verwerfeSitzungFuerChat(chatId);
   }
@@ -1953,11 +1978,23 @@ class MessengerProvider extends ChangeNotifier {
     if (idx == -1) return;
     final messages = _messagesByChat[chatId] ?? const <Message>[];
     final stand = UnreadPolicy.zaehle(messages, userId ?? '');
+
+    // Auch die Uhrzeit der letzten Nachricht neu bestimmen. War gerade die
+    // neueste dabei, die verschwunden ist, zeigte die Liste sonst weiter
+    // auf einen Zeitpunkt, zu dem nichts mehr steht.
+    DateTime? letzte;
+    for (final m in messages) {
+      if (letzte == null || m.timestamp.isAfter(letzte)) letzte = m.timestamp;
+    }
+
     _chats[idx] = _chats[idx].copyWith(
       unreadCount: stand.anzahl,
       firstUnreadAt: stand.ersteNeue,
-      lastMessageTime: messages.isEmpty ? null : _chats[idx].lastMessageTime,
+      lastMessageTime: letzte,
     );
+    // Und festschreiben: sonst steht nach dem naechsten Start wieder der
+    // alte Zaehler da.
+    _localStore.saveChats(_chats);
   }
 
   /// Die eigene Sitzung mit diesem Kontakt verwerfen.
@@ -1978,9 +2015,9 @@ class MessengerProvider extends ChangeNotifier {
   /// spaeter neu angelegt, ist sie eine andere — und die Rueckrollsperre
   /// waere genau bei dem Vorgang weg, bei dem sie am meisten zaehlt. Die
   /// Person bleibt dieselbe.
-  String _spurSchluessel(String chatId) {
+  String? _spurSchluessel(String chatId) {
     final idx = _chats.indexWhere((c) => c.id == chatId);
-    return idx == -1 ? chatId : _chats[idx].recipientId;
+    return idx == -1 ? null : _chats[idx].recipientId;
   }
 
   /// Die Spur fuer diesen Chat: was in der alten Sitzung stand, vereint mit
@@ -2001,7 +2038,10 @@ class MessengerProvider extends ChangeNotifier {
     // Nur schreiben, wenn sich wirklich etwas geaendert hat. Eine Gegenseite,
     // die chatGone im Sekundentakt schickt, findet sonst nichts zu
     // verwerfen und loest trotzdem jedes Mal einen Plattenschreibvorgang aus.
+    // Ohne Person kein Eintrag: unter einer Chat-Kennung abgelegt waere er
+    // ein Waisenkind, das nie wieder jemand findet.
     final schluessel = _spurSchluessel(chatId);
+    if (schluessel == null) return;
     final bisher = _peerPsidLineage[schluessel];
     if (bisher != null &&
         bisher.length == spur.length &&
@@ -2133,6 +2173,13 @@ class MessengerProvider extends ChangeNotifier {
       // Sitzung, die gleich faellt, und _sendControlMessage prueft die
       // Markierung nicht.
       if (announce) await _announceChatGone(chatId);
+
+      // Die Spur der gesehenen Sitzungskennungen sichern, solange es den
+      // Chat noch gibt — gleich faellt er aus `_chats`, und dann findet
+      // `_spurSchluessel` die Person nicht mehr. Nur die alte Spur stehen
+      // zu lassen genuegt nicht: was die laufende Sitzung gelernt hat,
+      // steckt in ihrem Zustand und ginge mit ihm verloren.
+      await _merkeSpur(chatId, _ratchetStates[chatId]);
 
       final removedMessageIds =
           (_messagesByChat[chatId] ?? const []).map((m) => m.id).toList();

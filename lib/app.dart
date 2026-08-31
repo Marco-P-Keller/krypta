@@ -122,6 +122,12 @@ class _KryptaShellState extends State<KryptaShell> with WidgetsBindingObserver {
   /// zwischendurch gesperrt wurde.
   int _sperrZaehler = 0;
 
+  /// Der Stand des Sperrzaehlers, als die laufende Anmeldung begann.
+  int _anmeldungBegonnenBei = 0;
+
+  /// Ob seit dem Beginn der Anmeldung nicht gesperrt wurde.
+  bool get _anmeldungGiltNoch => _sperrZaehler == _anmeldungBegonnenBei;
+
   @override
   void initState() {
     super.initState();
@@ -287,6 +293,12 @@ class _KryptaShellState extends State<KryptaShell> with WidgetsBindingObserver {
     // Defense-in-depth: block messenger access on compromised devices.
     if (_deviceAction == DeviceIntegrityAction.block) return;
 
+    // Der Stand VOR dem ersten await. Face ID, das Nachschlagen der
+    // Tresor-Einstellung und die Passwortpruefung dauern; wer die App in
+    // dieser Zeit weglegt, wird gesperrt. Ohne diesen Stand liefe die
+    // Anmeldung danach einfach weiter und haette die Sperre umgangen.
+    _anmeldungBegonnenBei = _sperrZaehler;
+
     final storage = context.read<SecureStorageService>();
     final platform = context.read<PlatformSecurityService>();
     // Vor dem ersten await gelesen: danach ist der context nicht mehr
@@ -330,10 +342,11 @@ class _KryptaShellState extends State<KryptaShell> with WidgetsBindingObserver {
       }
       // Biometric success — reset counter so one bad taps don't linger.
       await storage.resetVaultFailCount();
+      if (!_anmeldungGiltNoch) return;
     }
 
     final vaultEnabled = await storage.isVaultPasswordEnabled();
-    if (!mounted) return;
+    if (!mounted || !_anmeldungGiltNoch) return;
     if (vaultEnabled) {
       setState(() => _currentScreen = _AppScreen.vaultPassword);
       return;
@@ -374,8 +387,15 @@ class _KryptaShellState extends State<KryptaShell> with WidgetsBindingObserver {
     // nicht mehr wegzubekommen.
     Navigator.of(context).popUntil((route) => route.isFirst);
 
-    _vorSperre = _currentScreen;
-    _chatVorSperre = _selectedChat;
+    // Nur ein *fertiger* Bildschirm wird gemerkt. Die Uebergaenge der
+    // Anmeldung gehoeren nicht dazu: wird waehrend „Willkommen zurueck"
+    // oder der Tresor-Abfrage gesperrt, ist die Anmeldung verfallen, und
+    // sie zurueckzuholen liesse den Nutzer auf einem Bildschirm sitzen,
+    // den niemand mehr weiterschaltet.
+    final merkbar = _currentScreen != _AppScreen.welcomeBack &&
+        _currentScreen != _AppScreen.vaultPassword;
+    _vorSperre = merkbar ? _currentScreen : null;
+    _chatVorSperre = merkbar ? _selectedChat : null;
 
     // Do NOT disable screenshot protection here — keep it active until the
     // calculator screen is fully visible.
@@ -423,7 +443,7 @@ class _KryptaShellState extends State<KryptaShell> with WidgetsBindingObserver {
     // stehenbleiben, als wäre der Code nicht angekommen.
     if (mounted) setState(() => _currentScreen = _AppScreen.welcomeBack);
     final gezeigtSeit = DateTime.now();
-    final zaehlerBeimStart = _sperrZaehler;
+
 
     // Enable screenshot/recording protection BEFORE rendering the messenger.
     // Awaited so the native content mask is installed first. If the OS mask
@@ -453,7 +473,8 @@ class _KryptaShellState extends State<KryptaShell> with WidgetsBindingObserver {
 
     // Wurde zwischendurch gesperrt, ist diese Anmeldung verfallen. Sonst
     // schaltete ein spaet fertig gewordenes Entsperren an der Sperre vorbei.
-    if (!mounted || _sperrZaehler != zaehlerBeimStart) return;
+    // Wurde zwischendurch gesperrt, ist diese Anmeldung verfallen.
+    if (!mounted || !_anmeldungGiltNoch) return;
     setState(() => _currentScreen = _AppScreen.messenger);
   }
 
@@ -638,9 +659,12 @@ class _KryptaShellState extends State<KryptaShell> with WidgetsBindingObserver {
         return VaultPasswordScreen(
           key: const ValueKey('vault_password'),
           onVerify: (password) async {
+            // Jede Pruefung ist ein eigener Anlauf: wer waehrend der
+            // Pruefung die App weglegt, kommt danach nicht durch.
+            _anmeldungBegonnenBei = _sperrZaehler;
             final storage = context.read<SecureStorageService>();
             final ok = await storage.verifyVaultPassword(password);
-            if (ok) await _unlockMessenger();
+            if (ok && _anmeldungGiltNoch) await _unlockMessenger();
             return ok;
           },
           onCancel: () => _navigateTo(_AppScreen.calculator),
