@@ -19,6 +19,7 @@ import 'recording_notice_policy.dart';
 import 'remote_clear_policy.dart';
 import 'contact_request_policy.dart';
 import 'inbox_reconnect_backoff.dart';
+import 'self_destruct_policy.dart';
 import 'session_reset_policy.dart';
 import 'key_publish_status.dart';
 import '../../../security/session/session_errors.dart';
@@ -1474,6 +1475,8 @@ class MessengerProvider extends ChangeNotifier {
         _applyContactAccepted(contact.id);
       case 'clearMine':
         _applyPeerClear(chatId, contact.id);
+      case 'burned':
+        _applyBurned(chatId, ctrl.messageId);
       case 'chatGone':
         await _applyPeerChatGone(chatId);
       case 'gone':
@@ -1808,6 +1811,24 @@ class MessengerProvider extends ChangeNotifier {
   /// geschrieben werden kann nicht mehr: Schluessel und Konto sind auf dem
   /// Server geloescht, eine Nachricht kaeme nie an. Der Chat bleibt lesbar —
   /// was ich geschrieben habe, gehoert weiterhin mir.
+  /// Die Gegenseite meldet, dass eine Nachricht mit Loeschtimer bei ihr
+  /// abgelaufen ist. Meine Fassung geht mit.
+  ///
+  /// Was eine solche Meldung entfernen darf, ist eng gefasst — siehe
+  /// [SelfDestructPolicy.acceptBurn]. Ohne die Einschraenkung koennte eine
+  /// Gegenseite mit erfundenen Ablaufmeldungen beliebige Nachrichten von
+  /// meinem Geraet raeumen.
+  void _applyBurned(String chatId, String messageId) {
+    final messages = _messagesByChat[chatId];
+    if (messages == null) return;
+    final idx = messages.indexWhere((m) => m.id == messageId);
+    if (idx == -1) return;
+    if (!SelfDestructPolicy.acceptBurn(messages[idx], userId ?? '')) return;
+    messages.removeAt(idx);
+    _localStore.saveMessages(chatId, messages);
+    notifyListeners();
+  }
+
   /// Die Gegenseite hat ihren Chat weggeworfen.
   ///
   /// Nur die Sitzung faellt. Anders als bei „Chat leeren" wird hier nichts
@@ -3220,33 +3241,76 @@ class MessengerProvider extends ChangeNotifier {
 
   // --- Self-Destruct ---
 
-  /// Remove all expired/burnt messages immediately (called on init).
+  /// Alles Abgelaufene und Verbrannte sofort raeumen (beim Start gerufen).
   void _cleanupExpiredMessages() {
+    _raeumeAbgelaufene(auchVerbrannte: true);
+  }
+
+  /// Abgelaufene Nachrichten entfernen — und der Gegenseite den Ablauf melden.
+  ///
+  /// Die Meldung ist der eigentliche Punkt. Die Uhr laeuft ab dem Lesen, und
+  /// `readAt` setzt nur der Empfaenger; beim Absender bleibt es leer, solange
+  /// keine Lesebestaetigung kommt — und die ist standardmaessig aus. Seine
+  /// Fassung lief deshalb nie ab: beim Empfaenger vernichtet, bei ihm noch da.
+  ///
+  /// Wer meldet und was eine Meldung entfernen darf, steht in
+  /// [SelfDestructPolicy].
+  bool _raeumeAbgelaufene({bool auchVerbrannte = false}) {
+    final jetzt = DateTime.now();
+    final ich = userId ?? '';
+    var geaendert = false;
+
     for (final chatId in _messagesByChat.keys) {
       final messages = _messagesByChat[chatId]!;
-      final before = messages.length;
-      messages.removeWhere((m) => m.isExpired || m.shouldBurn);
-      if (messages.length != before) {
-        _localStore.saveMessages(chatId, messages);
+      // Nur zeitgesteuerte Selbstzerstoerung. Burn-after-Read laeuft sonst
+      // beim Verlassen des Chats (burnReadMessages); beim Start wird es hier
+      // mit erledigt.
+      final faellig = messages
+          .where((m) =>
+              SelfDestructPolicy.expired(m, jetzt) ||
+              (auchVerbrannte && m.shouldBurn))
+          .toList();
+      if (faellig.isEmpty) continue;
+
+      for (final m in faellig) {
+        if (SelfDestructPolicy.announceBurn(m, ich)) {
+          _meldeAblauf(chatId, m.id);
+        }
       }
+
+      final weg = faellig.map((m) => m.id).toSet();
+      messages.removeWhere((m) => weg.contains(m.id));
+      _localStore.saveMessages(chatId, messages);
+      geaendert = true;
     }
+    return geaendert;
+  }
+
+  /// Der Gegenseite melden, dass ihre Nachricht bei mir abgelaufen ist.
+  ///
+  /// Mit derselben zeitlichen Streuung wie die Empfangsbestaetigungen: der
+  /// Ablaufzeitpunkt verraet den Lesezeitpunkt, und der soll nicht auf die
+  /// Sekunde genau ablesbar sein.
+  void _meldeAblauf(String chatId, String messageId) {
+    final idx = _chats.indexWhere((c) => c.id == chatId);
+    if (idx == -1) return;
+    final contact = contactForId(_chats[idx].recipientId);
+    if (contact == null) return;
+    _pendingJitterTimers.add(
+      TimingProtection.sendDeliveryAckWithJitter(
+        () => _sendControlMessage(
+          chatId: chatId,
+          contact: contact,
+          type: 'burned',
+          messageId: messageId,
+        ),
+      ),
+    );
   }
 
   void _startSelfDestructTimer() {
     _selfDestructTimer = Timer.periodic(const Duration(seconds: 1), (_) {
-      bool changed = false;
-      for (final chatId in _messagesByChat.keys) {
-        final messages = _messagesByChat[chatId]!;
-        final before = messages.length;
-        // Only time-based self-destruct here.
-        // Burn-after-read is handled on chat exit (burnReadMessages).
-        messages.removeWhere((m) => m.isExpired);
-        if (messages.length != before) {
-          _localStore.saveMessages(chatId, messages);
-          changed = true;
-        }
-      }
-      if (changed) notifyListeners();
+      if (_raeumeAbgelaufene()) notifyListeners();
     });
   }
 
