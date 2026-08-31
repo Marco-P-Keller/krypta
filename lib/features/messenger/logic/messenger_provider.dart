@@ -4078,7 +4078,7 @@ class MessengerProvider extends ChangeNotifier {
   /// nicht dazu.
   void pauseSync() {
     if (!_isSyncing) return;
-    _stopSync();
+    _stopSync(behalteWartendeMeldungen: true);
   }
 
   /// Nach dem Aufwachen frisch anhängen.
@@ -4091,17 +4091,33 @@ class MessengerProvider extends ChangeNotifier {
     _startSync();
   }
 
-  void _stopSync() {
+  /// Den Empfang abbauen.
+  ///
+  /// [behalteWartendeMeldungen] entscheidet ueber die gestreuten
+  /// Kontrollnachrichten — Entsperr-, Ablauf- und Lesemeldungen warten 0,5
+  /// bis 5 Sekunden, bevor sie rausgehen, damit ihr Zeitpunkt nichts
+  /// verraet.
+  ///
+  /// Beim **Hintergrundwechsel** muessen sie bleiben. Sonst verliert jeder,
+  /// der die App gleich nach dem Entsperren einer geschuetzten Nachricht
+  /// weglegt, genau diese Meldung — und beim Absender stuende fuer immer
+  /// der Platzhalter. Die Zeitgeber ueberstehen das Einfrieren und feuern
+  /// beim Aufwachen.
+  ///
+  /// Beim **Loeschen und Abraeumen** muessen sie weg: dort gibt es die
+  /// Sitzung nicht mehr, gegen die sie signiert wuerden.
+  void _stopSync({bool behalteWartendeMeldungen = false}) {
     _inboxSub?.cancel();
     _inboxReconnectTimer?.cancel(); // B2: kill any pending reconnect
     _privacyPolling?.stop();
     _privacyPolling = null;
     _selfDestructTimer?.cancel();
-    // Cancel all pending jitter timers (control messages, read receipts)
-    for (final timer in _pendingJitterTimers) {
-      timer.cancel();
+    if (!behalteWartendeMeldungen) {
+      for (final timer in _pendingJitterTimers) {
+        timer.cancel();
+      }
+      _pendingJitterTimers.clear();
     }
-    _pendingJitterTimers.clear();
     _isSyncing = false;
   }
 

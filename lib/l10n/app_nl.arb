@@ -94,6 +94,7 @@
   "unlocked": "Ontgrendeld",
   "wrongPassword": "Onjuist wachtwoord",
   "tapToUnlock": "Tik om te ontgrendelen",
+  "awaitingUnlock": "Zichtbaar zodra ontgrendeld",
   "nameThisContact": "Geef dit contact een naam",
   "nameContactHint": "Geef dit contact een naam zodat je weet wie het is. Alleen jij ziet dit label.",
   "nameContactPlaceholder": "bijv. Alex, mama, werk...",

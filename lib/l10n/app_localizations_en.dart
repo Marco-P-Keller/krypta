@@ -306,6 +306,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get tapToUnlock => 'Tap to unlock';
 
   @override
+  String get awaitingUnlock => 'Visible once unlocked';
+
+  @override
   String get nameThisContact => 'Name this contact';
 
   @override

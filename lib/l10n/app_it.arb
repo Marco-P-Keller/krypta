@@ -94,6 +94,7 @@
   "unlocked": "Sbloccato",
   "wrongPassword": "Password errata",
   "tapToUnlock": "Tocca per sbloccare",
+  "awaitingUnlock": "Visibile una volta sbloccato",
   "nameThisContact": "Dai un nome a questo contatto",
   "nameContactHint": "Assegna un nome a questo contatto per sapere di chi si tratta. Questa etichetta la vedi solo tu.",
   "nameContactPlaceholder": "es. Alex, mamma, lavoro...",

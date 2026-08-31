@@ -377,8 +377,15 @@ class _LockedBubble extends StatelessWidget {
         ? AppColors.messageSent
         : (isDark ? AppColors.messageReceived : AppColors.messageReceivedLight);
 
+    // Kein Passwortdialog fuer die eigene Nachricht.
+    //
+    // Der Absender kann sie gar nicht aufschliessen: seine Fassung traegt
+    // den Klartext, nicht den passwortverschluesselten Block, und sein
+    // eigenes Passwort passt darauf nicht. Die Abfrage meldete deshalb
+    // ausnahmslos „Falsches Passwort" — egal was man eintippte. Sie war
+    // schlicht nie fuer ihn gedacht.
     return GestureDetector(
-      onTap: () => _showPasswordDialog(context),
+      onTap: isMine ? null : () => _showPasswordDialog(context),
       child: Container(
         // Mitgezogen mit der normalen Blase: stuende die geschuetzte weiter
         // in alter Groesse daneben, saehe sie wie ein Fehler aus.
@@ -416,7 +423,8 @@ class _LockedBubble extends StatelessWidget {
             ),
             const SizedBox(height: 2),
             Text(
-              l10n.tapToUnlock,
+              // Der Absender wartet, der Empfaenger tippt.
+              isMine ? l10n.awaitingUnlock : l10n.tapToUnlock,
               style: TextStyle(
                 color: isMine
                     ? Colors.white.withValues(alpha: 0.55)

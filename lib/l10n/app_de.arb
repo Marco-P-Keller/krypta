@@ -94,6 +94,7 @@
   "unlocked": "Entsperrt",
   "wrongPassword": "Falsches Passwort",
   "tapToUnlock": "Tippen zum Entsperren",
+  "awaitingUnlock": "Sichtbar, sobald entsperrt",
   "nameThisContact": "Kontakt benennen",
   "nameContactHint": "Gib diesem Kontakt einen Namen. Nur du kannst dieses Label sehen.",
   "nameContactPlaceholder": "z.B. Alex, Mama, Arbeit...",

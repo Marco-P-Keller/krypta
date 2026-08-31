@@ -118,6 +118,10 @@
   "unlocked": "Unlocked",
   "wrongPassword": "Wrong password",
   "tapToUnlock": "Tap to unlock",
+  "awaitingUnlock": "Visible once unlocked",
+  "@awaitingUnlock": {
+    "description": "Shown on the sender own password-protected message. The sender cannot unlock it themselves: their copy holds the plaintext, not the password-encrypted blob. It becomes readable once the recipient unlocks it."
+  },
   "nameThisContact": "Name this contact",
   "nameContactHint": "Give this contact a name so you know who it is. Only you can see this label.",
   "nameContactPlaceholder": "e.g. Alex, Mom, Work...",

@@ -94,6 +94,7 @@
   "unlocked": "Déverrouillé",
   "wrongPassword": "Mot de passe incorrect",
   "tapToUnlock": "Touchez pour déverrouiller",
+  "awaitingUnlock": "Visible une fois déverrouillé",
   "nameThisContact": "Nommez ce contact",
   "nameContactHint": "Donnez un nom à ce contact pour savoir de qui il s’agit. Vous seul voyez cette étiquette.",
   "nameContactPlaceholder": "p. ex. Alex, maman, travail...",

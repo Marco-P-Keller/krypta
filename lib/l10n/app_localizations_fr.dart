@@ -309,6 +309,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String get tapToUnlock => 'Touchez pour déverrouiller';
 
   @override
+  String get awaitingUnlock => 'Visible une fois déverrouillé';
+
+  @override
   String get nameThisContact => 'Nommez ce contact';
 
   @override

@@ -308,6 +308,9 @@ class AppLocalizationsDe extends AppLocalizations {
   String get tapToUnlock => 'Tippen zum Entsperren';
 
   @override
+  String get awaitingUnlock => 'Sichtbar, sobald entsperrt';
+
+  @override
   String get nameThisContact => 'Kontakt benennen';
 
   @override

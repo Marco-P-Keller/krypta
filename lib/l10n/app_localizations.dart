@@ -672,6 +672,12 @@ abstract class AppLocalizations {
   /// **'Tap to unlock'**
   String get tapToUnlock;
 
+  /// Shown on the sender own password-protected message. The sender cannot unlock it themselves: their copy holds the plaintext, not the password-encrypted blob. It becomes readable once the recipient unlocks it.
+  ///
+  /// In en, this message translates to:
+  /// **'Visible once unlocked'**
+  String get awaitingUnlock;
+
   /// No description provided for @nameThisContact.
   ///
   /// In en, this message translates to:

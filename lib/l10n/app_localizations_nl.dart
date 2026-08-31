@@ -307,6 +307,9 @@ class AppLocalizationsNl extends AppLocalizations {
   String get tapToUnlock => 'Tik om te ontgrendelen';
 
   @override
+  String get awaitingUnlock => 'Zichtbaar zodra ontgrendeld';
+
+  @override
   String get nameThisContact => 'Geef dit contact een naam';
 
   @override
