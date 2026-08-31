@@ -1,44 +1,31 @@
 import 'package:flutter/widgets.dart';
 
-/// Wann die App auf den Taschenrechner zurueckfaellt — und wann sie den Chat
-/// wieder hervorholt.
+/// Wann die App auf den Taschenrechner zurueckfaellt.
 ///
-/// Bisher wurde nur bei `paused`/`hidden` gesperrt. Ein sehr schneller Wechsel
-/// erzeugt auf iOS aber oft nur `inactive`: die Abdeckung ging hoch und wieder
-/// runter, umgeschaltet wurde nie — und man landete zurueck im offenen Chat.
-/// Eine Sperre, die davon abhaengt, wie lange jemand weg war, ist keine.
+/// **Nur wenn sie wirklich im Hintergrund war.** Ein `inactive` allein zaehlt
+/// nicht: dasselbe Ereignis feuert beim Screenshot, beim Blick ins
+/// Kontrollzentrum, bei einem eingehenden Anruf — und beim Face-ID-Dialog.
 ///
-/// Einfach bei `inactive` mitzusperren geht aber auch nicht. Dasselbe Ereignis
-/// feuert beim Screenshot, bei der Berechtigungsabfrage, beim Blick ins
-/// Kontrollzentrum und bei einem eingehenden Anruf. Wer nur die Helligkeit
-/// nachsieht, will nicht auf dem Taschenrechner landen.
+/// Am 31.08. war das kurzzeitig anders. Da wurde schon bei `inactive` gesperrt
+/// und beim Aufwachen zurueckgeholt, um auch den sehr schnellen App-Wechsel zu
+/// erwischen. Auf dem Geraet hat das zwei Dinge kaputtgemacht: der
+/// Taschenrechner blitzte bei jedem Screenshot und jedem Kontrollzentrum kurz
+/// auf, weil unter der Abdeckung wirklich umgeschaltet wurde — und Face ID kam
+/// nie durch, weil der Systemdialog `inactive` erzeugt, das Sperren den
+/// Sperrzaehler hochzaehlte und die laufende Anmeldung danach als verfallen
+/// galt. Nach jeder erfolgreichen Erkennung landete man wieder auf dem
+/// Taschenrechner.
 ///
-/// Deshalb in zwei Schritten:
-///
-/// 1. **Frueh sperren**, schon bei `inactive`. Sichtbar ist davon nichts — die
-///    Abdeckung liegt zu diesem Zeitpunkt ohnehin ueber dem Fenster.
-/// 2. **Beim Aufwachen zurueckholen**, wenn die App zwischendurch nie wirklich
-///    im Hintergrund war. Das entscheidet [marksBackgrounded], nicht die Zeit.
+/// Beides ist der Preis dafuer, ein Ereignis zu behandeln, das mehrere
+/// Bedeutungen hat. **Der sehr schnelle App-Wechsel bleibt deshalb offen** —
+/// von einem Screenshot ist er nicht zu unterscheiden. Sichtbar wird der
+/// Messenger dabei fuer niemanden: die Vorschau im App-Umschalter deckt ein
+/// eigener Mechanismus ab.
 abstract final class ScreenLockPolicy {
   /// Ob in diesem Zustand auf den Taschenrechner umzuschalten ist.
-  static bool shouldLock(AppLifecycleState state) =>
-      state != AppLifecycleState.resumed;
-
-  /// Ob beim Aufwachen der vorherige Bildschirm zurueckzuholen ist.
-  ///
-  /// Nur wenn die App nie wirklich weg war. Nach einem echten Wechsel in den
-  /// Hintergrund bleibt der Taschenrechner stehen und verlangt den Code.
-  static bool shouldRestore(
-    AppLifecycleState state, {
-    required bool wasBackgrounded,
-  }) =>
-      state == AppLifecycleState.resumed && !wasBackgrounded;
+  static bool shouldLock(AppLifecycleState state) => marksBackgrounded(state);
 
   /// Ob dieser Zustand als „die App war wirklich weg" zaehlt.
-  ///
-  /// `inactive` zaehlt ausdruecklich **nicht** — sonst waere das Zurueckholen
-  /// wirkungslos und jeder Blick ins Kontrollzentrum endete auf dem
-  /// Taschenrechner.
   static bool marksBackgrounded(AppLifecycleState state) =>
       state == AppLifecycleState.paused ||
       state == AppLifecycleState.hidden ||
