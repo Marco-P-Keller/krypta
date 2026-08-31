@@ -112,6 +112,16 @@ class _KryptaShellState extends State<KryptaShell> with WidgetsBindingObserver {
   Chat? _chatVorSperre;
   bool _warImHintergrund = false;
 
+  /// Zaehlt jedes Sperren mit.
+  ///
+  /// Das Entsperren laeuft ueber mehrere `await` — Aufnahmeschutz,
+  /// `initialize()`, die Mindestdauer des Willkommens-Uebergangs. Wer die
+  /// App in dieser Zeit weglegt, wird gesperrt; der fertige Vorgang schaltete
+  /// danach trotzdem auf den Messenger und hebelte die Sperre aus, ohne dass
+  /// je wieder ein Code eingegeben wurde. Am Ende wird deshalb geprueft, ob
+  /// zwischendurch gesperrt wurde.
+  int _sperrZaehler = 0;
+
   @override
   void initState() {
     super.initState();
@@ -346,6 +356,9 @@ class _KryptaShellState extends State<KryptaShell> with WidgetsBindingObserver {
   /// vergeben zu haben. Der Willkommens-Uebergang ist NICHT ausgenommen —
   /// dahinter liegt bereits der entsperrte Messenger.
   void _sperreAufRechner() {
+    // Zaehlt auch, wenn unten frueh ausgestiegen wird: ein laufendes
+    // Entsperren muss auch dann abbrechen, wenn schon der Rechner steht.
+    _sperrZaehler++;
     if (!mounted) return;
     if (_currentScreen == _AppScreen.calculator ||
         _currentScreen == _AppScreen.setup ||
@@ -410,6 +423,7 @@ class _KryptaShellState extends State<KryptaShell> with WidgetsBindingObserver {
     // stehenbleiben, als wäre der Code nicht angekommen.
     if (mounted) setState(() => _currentScreen = _AppScreen.welcomeBack);
     final gezeigtSeit = DateTime.now();
+    final zaehlerBeimStart = _sperrZaehler;
 
     // Enable screenshot/recording protection BEFORE rendering the messenger.
     // Awaited so the native content mask is installed first. If the OS mask
@@ -437,7 +451,10 @@ class _KryptaShellState extends State<KryptaShell> with WidgetsBindingObserver {
       await Future<void>.delayed(_welcomeBackMinimum - verstrichen);
     }
 
-    if (mounted) setState(() => _currentScreen = _AppScreen.messenger);
+    // Wurde zwischendurch gesperrt, ist diese Anmeldung verfallen. Sonst
+    // schaltete ein spaet fertig gewordenes Entsperren an der Sperre vorbei.
+    if (!mounted || _sperrZaehler != zaehlerBeimStart) return;
+    setState(() => _currentScreen = _AppScreen.messenger);
   }
 
   Future<void> _handleEmergencyWipe() async {

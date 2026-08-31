@@ -17,6 +17,7 @@ import '../../../security/ratchet/ratchet_state.dart';
 import '../../../security/ratchet/replay_guard.dart';
 import 'recording_notice_policy.dart';
 import 'remote_clear_policy.dart';
+import 'control_message_policy.dart';
 import 'contact_request_policy.dart';
 import 'inbox_reconnect_backoff.dart';
 import 'self_destruct_policy.dart';
@@ -1449,6 +1450,12 @@ class MessengerProvider extends ChangeNotifier {
     final error = ctrl.validate(
       expectedSenderId: contact.id,
       lastSeenCounter: _controlCounter.getLastSeen(chatId),
+      // Nach Art: was einen Zustand aendert, muss ein langes Offline
+      // ueberstehen. Fuenf Minuten fuer alles hiess, dass `chatGone`,
+      // `burned` und `unlock` verpufften, sobald die Gegenseite eine Nacht
+      // nicht hingesehen hat — und danach wird die Nachricht auch noch vom
+      // Server geloescht.
+      maxAgeMs: ControlMessagePolicy.maxAge(ctrl.type).inMilliseconds,
     );
     if (error != null) {
       if (kDebugMode) debugPrint('Control message validation failed: $error');
