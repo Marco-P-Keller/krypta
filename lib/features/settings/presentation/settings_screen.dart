@@ -849,6 +849,27 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ]),
           const SizedBox(height: 28),
 
+          // About
+          _SectionHeader(l10n.about),
+          _Card(isDark: isDark, children: [
+            _NavTile(
+              icon: Icons.info_outline_rounded,
+              // Die Versionsnummer steht jetzt im Titel statt darunter — sie
+              // ist das, wonach man hier sucht. Sie kommt über --dart-define
+              // aus derselben Quelle wie CFBundleShortVersionString.
+              title: '${l10n.appName} ${l10n.version(AppConstants.appVersion)}',
+              onTap: () => _showAboutDialog(context, l10n),
+            ),
+            _Divider(isDark: isDark),
+            _NavTile(
+              icon: Icons.school_outlined,
+              title: l10n.showTutorial,
+              subtitle: l10n.showTutorialSubtitle,
+              onTap: () => _openTutorial(context),
+            ),
+          ]),
+          const SizedBox(height: 28),
+
           // Legal
           _SectionHeader(l10n.legalSection),
           _Card(isDark: isDark, children: [
@@ -867,27 +888,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 applicationName: 'Krypta ECC',
                 applicationVersion: AppConstants.appVersion,
               ),
-            ),
-          ]),
-          const SizedBox(height: 28),
-
-          // About
-          _SectionHeader(l10n.about),
-          _Card(isDark: isDark, children: [
-            _NavTile(
-              icon: Icons.info_outline_rounded,
-              // Die Versionsnummer steht jetzt im Titel statt darunter — sie
-              // ist das, wonach man hier sucht. Sie kommt über --dart-define
-              // aus derselben Quelle wie CFBundleShortVersionString.
-              title: '${l10n.appName} ${l10n.version(AppConstants.appVersion)}',
-              onTap: () => _showAboutDialog(context, l10n),
-            ),
-            _Divider(isDark: isDark),
-            _NavTile(
-              icon: Icons.school_outlined,
-              title: l10n.showTutorial,
-              subtitle: l10n.showTutorialSubtitle,
-              onTap: () => _openTutorial(context),
             ),
           ]),
           const SizedBox(height: 40),
