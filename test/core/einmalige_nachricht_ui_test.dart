@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kryptaapp/features/messenger/data/models/message_model.dart';
+import 'package:kryptaapp/features/messenger/presentation/einmalige_nachricht_screen.dart';
 import 'package:kryptaapp/features/messenger/presentation/widgets/message_bubble.dart';
 import 'package:kryptaapp/l10n/app_localizations.dart';
 
@@ -44,5 +45,34 @@ void main() {
     expect(find.textContaining('GEHEIMER TEXT', findRichText: true),
         findsOneWidget);
     expect(find.text('Öffnen'), findsNothing);
+  });
+
+  // ─── Die eigene Ansicht ──────────────────────────────────────────────
+
+  testWidgets('die Ansicht zeigt den Text und einen Schliessen-Knopf',
+      (t) async {
+    await t.pumpWidget(const MaterialApp(
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
+      locale: Locale('de'),
+      home: EinmaligeNachrichtScreen(text: 'GEHEIMER TEXT'),
+    ));
+    expect(find.text('GEHEIMER TEXT'), findsOneWidget);
+    expect(find.byIcon(Icons.close_rounded), findsOneWidget);
+    expect(t.takeException(), isNull);
+  });
+
+  testWidgets('ein langer Text scrollt, statt ueberzulaufen', (t) async {
+    t.view.devicePixelRatio = 2.0;
+    t.view.physicalSize = const Size(375, 667) * 2.0;
+    addTearDown(t.view.reset);
+    await t.pumpWidget(MaterialApp(
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
+      locale: const Locale('de'),
+      home: EinmaligeNachrichtScreen(text: List.filled(80, 'Zeile').join(' ')),
+    ));
+    await t.pumpAndSettle();
+    expect(t.takeException(), isNull);
   });
 }
