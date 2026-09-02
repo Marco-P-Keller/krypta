@@ -3,6 +3,21 @@ import '../../../l10n/app_localizations.dart';
 import '../../../theme/app_colors.dart';
 import '../../../theme/app_spacing.dart';
 
+/// Die Einfuehrung beim ersten Start, und Nachschlagewerk aus den
+/// Einstellungen.
+///
+/// Umgebaut am 02.09.2026 auf Daniels Ansage: kurz und buendig, dafuer
+/// vollstaendig. Vorher neun Seiten, von denen mehrere einer einzigen
+/// Einstellung gewidmet waren, waehrend die Haelfte der App gar nicht
+/// vorkam: Kontaktanfragen, QR und Sicherheitsnummer, Blockieren, der
+/// Screenshot-Hinweis, Chat leeren gegen Chat loeschen, die Restzeit.
+///
+/// Jetzt sechs Seiten nach Thema. Jede traegt drei bis fuenf Zeilen mit
+/// Symbol, Stichwort und genau einem Satz. Wer wischt, kommt schnell durch;
+/// wer nachschlaegt, findet das Stichwort.
+///
+/// Zum Ton: kurze Hauptsaetze, keine Gedankenstriche. Ein Test haelt das
+/// fest, sonst schleicht es sich wieder ein.
 class TutorialScreen extends StatefulWidget {
   final VoidCallback onComplete;
 
@@ -16,7 +31,19 @@ class _TutorialScreenState extends State<TutorialScreen> {
   final _controller = PageController();
   int _currentPage = 0;
 
-  static const _pageCount = 9;
+  static const _pageCount = 6;
+
+  static const _gruen = Color(0xFF30D158);
+  static const _orange = Color(0xFFFF9F0A);
+
+  static const _pageColors = [
+    AppColors.accent,
+    _gruen,
+    AppColors.accent,
+    _orange,
+    AppColors.destructive,
+    _gruen,
+  ];
 
   @override
   void dispose() {
@@ -36,18 +63,6 @@ class _TutorialScreenState extends State<TutorialScreen> {
   }
 
   void _skip() => widget.onComplete();
-
-  static const _pageColors = [
-    AppColors.accent,
-    AppColors.accent,
-    AppColors.destructive,
-    Color(0xFF30D158),
-    Color(0xFF30D158),
-    AppColors.accent,
-    AppColors.destructive,
-    Color(0xFFFF9F0A),
-    AppColors.accent,
-  ];
 
   @override
   Widget build(BuildContext context) {
@@ -69,7 +84,7 @@ class _TutorialScreenState extends State<TutorialScreen> {
                 child: TextButton(
                   onPressed: _skip,
                   child: Text(
-                    AppLocalizations.of(context)!.skip,
+                    l10n.skip,
                     style: TextStyle(
                       color: isDark
                           ? AppColors.textSecondaryDark
@@ -84,15 +99,12 @@ class _TutorialScreenState extends State<TutorialScreen> {
                 controller: _controller,
                 onPageChanged: (i) => setState(() => _currentPage = i),
                 children: [
-                  _Page1Welcome(isDark: isDark),
-                  _Page2SetupCodes(isDark: isDark),
-                  _Page3DeleteCode(isDark: isDark),
-                  _Page4OpenMessenger(isDark: isDark),
-                  _Page5VaultPassword(isDark: isDark),
-                  _Page6AddContacts(isDark: isDark),
-                  _Page7EmergencyButtons(isDark: isDark),
-                  _Page8ChatFeatures(isDark: isDark),
-                  _Page9Ready(isDark: isDark),
+                  _PageWelcome(isDark: isDark),
+                  _PageAccess(isDark: isDark),
+                  _PageContacts(isDark: isDark),
+                  _PageMessages(isDark: isDark),
+                  _PageProtection(isDark: isDark),
+                  _PageReady(isDark: isDark),
                 ],
               ),
             ),
@@ -120,21 +132,34 @@ class _TutorialScreenState extends State<TutorialScreen> {
                       ),
                     ),
                   ),
-                  const Spacer(),
-                  FilledButton(
-                    onPressed: _next,
-                    style: FilledButton.styleFrom(
-                      backgroundColor: color,
-                      foregroundColor: Colors.white,
-                      minimumSize: Size(isLast ? 140 : 100, 50),
-                      shape: RoundedRectangleBorder(
-                        borderRadius:
-                            BorderRadius.circular(AppSpacing.radiusMd),
+                  const SizedBox(width: 12),
+                  // Vorher stand hier ein Spacer und der Knopf trug eine
+                  // Mindestbreite. Damit hatte er keine Obergrenze: bei
+                  // grosser Systemschrift oder einer langen Uebersetzung lief
+                  // die Zeile nach rechts heraus. Expanded begrenzt ihn auf
+                  // den verbleibenden Platz, Align haelt ihn trotzdem rechts.
+                  Expanded(
+                    child: Align(
+                      alignment: Alignment.centerRight,
+                      child: FilledButton(
+                        onPressed: _next,
+                        style: FilledButton.styleFrom(
+                          backgroundColor: color,
+                          foregroundColor: Colors.white,
+                          minimumSize: Size(isLast ? 140 : 100, 50),
+                          padding:
+                              const EdgeInsets.symmetric(horizontal: 16),
+                          shape: RoundedRectangleBorder(
+                            borderRadius:
+                                BorderRadius.circular(AppSpacing.radiusMd),
+                          ),
+                        ),
+                        child: Text(
+                          isLast ? l10n.tutStartSetup : l10n.next,
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(fontWeight: FontWeight.w600),
+                        ),
                       ),
-                    ),
-                    child: Text(
-                      isLast ? l10n.tutStartSetup : l10n.next,
-                      style: const TextStyle(fontWeight: FontWeight.w600),
                     ),
                   ),
                 ],
@@ -147,11 +172,11 @@ class _TutorialScreenState extends State<TutorialScreen> {
   }
 }
 
-// ── Page 1: Welcome — Was ist diese App? ────────────────────────────────────
+// ── 1 Willkommen ────────────────────────────────────────────────────────────
 
-class _Page1Welcome extends StatelessWidget {
+class _PageWelcome extends StatelessWidget {
   final bool isDark;
-  const _Page1Welcome({required this.isDark});
+  const _PageWelcome({required this.isDark});
 
   @override
   Widget build(BuildContext context) {
@@ -159,448 +184,91 @@ class _Page1Welcome extends StatelessWidget {
     return _Layout(
       isDark: isDark,
       title: l10n.tutWelcomeTitle,
-      description:
-          l10n.tutWelcomeBody,
-      preview: Container(
-        width: 200,
-        padding: const EdgeInsets.all(14),
-        decoration: BoxDecoration(
-          color: Colors.black,
-          borderRadius: BorderRadius.circular(24),
-          border: Border.all(color: AppColors.dividerDark, width: 0.5),
+      description: l10n.tutWelcomeBody,
+      // Die einzige Seite mit einem echten Nachbau. Der Taschenrechner ist
+      // das, was Fremde von dieser App sehen, und damit ihr Kern.
+      preview: const _CalculatorMock(),
+      rows: [
+        _FeatureRow(
+          isDark: isDark,
+          icon: Icons.calculate_rounded,
+          color: AppColors.accent,
+          title: l10n.calculator,
+          description: l10n.tutDCalculator,
         ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
-              alignment: Alignment.centerRight,
-              child: const Text(
-                '0',
-                style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 38,
-                    fontWeight: FontWeight.w300),
-              ),
-            ),
-            const SizedBox(height: 6),
-            for (final row in [
-              ['C', '±', '%', '÷'],
-              ['7', '8', '9', '×'],
-              ['4', '5', '6', '−'],
-              ['1', '2', '3', '+'],
-            ])
-              Padding(
-                padding: const EdgeInsets.only(bottom: 5),
-                child: Row(
-                  children: row.map((l) {
-                    final isOp = ['÷', '×', '−', '+'].contains(l);
-                    final isFunc = ['C', '±', '%'].contains(l);
-                    return Expanded(
-                      child: Container(
-                        margin: const EdgeInsets.symmetric(horizontal: 2),
-                        height: 34,
-                        decoration: BoxDecoration(
-                          color: isOp
-                              ? AppColors.calculatorButtonAccent
-                              : (isFunc
-                                  ? AppColors.calculatorButtonLight
-                                  : AppColors.calculatorButtonDark),
-                          shape: BoxShape.circle,
-                        ),
-                        child: Center(
-                          child: Text(l,
-                              style: TextStyle(
-                                  color: isFunc ? Colors.black : Colors.white,
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w500)),
-                        ),
-                      ),
-                    );
-                  }).toList(),
-                ),
-              ),
-          ],
+        _FeatureRow(
+          isDark: isDark,
+          icon: Icons.lock_rounded,
+          color: Color(0xFF30D158),
+          title: l10n.tutTEncrypted,
+          description: l10n.tutDEncrypted,
         ),
-      ),
+        _FeatureRow(
+          isDark: isDark,
+          icon: Icons.language_rounded,
+          color: Color(0xFFFF9F0A),
+          title: l10n.language,
+          description: l10n.tutDLanguage,
+        ),
+      ],
     );
   }
 }
 
-// ── Page 2: Setup — Geheimcode festlegen ────────────────────────────────────
+// ── 2 Zugang ────────────────────────────────────────────────────────────────
 
-class _Page2SetupCodes extends StatelessWidget {
+class _PageAccess extends StatelessWidget {
   final bool isDark;
-  const _Page2SetupCodes({required this.isDark});
+  const _PageAccess({required this.isDark});
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     return _Layout(
       isDark: isDark,
-      title: l10n.tutSecretCodeTitle,
-      description:
-          l10n.tutSecretCodeBody,
-      preview: Container(
-        width: 220,
-        padding: const EdgeInsets.all(20),
-        decoration: BoxDecoration(
-          color: isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-            color: isDark ? AppColors.dividerDark : AppColors.dividerLight,
-            width: 0.5,
-          ),
+      title: l10n.tutAccessTitle,
+      description: l10n.tutAccessIntro,
+      preview: const _Badge(
+          icon: Icons.lock_rounded, color: Color(0xFF30D158)),
+      rows: [
+        _FeatureRow(
+          isDark: isDark,
+          icon: Icons.pin_rounded,
+          color: AppColors.accent,
+          title: l10n.tutTSecretCode,
+          description: l10n.tutDSecretCode,
         ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 52,
-              height: 52,
-              decoration: BoxDecoration(
-                color: AppColors.accent.withValues(alpha: 0.12),
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: const Icon(Icons.lock_outline_rounded,
-                  color: AppColors.accent, size: 28),
-            ),
-            const SizedBox(height: 14),
-            Text(
-              l10n.secretCodeLabel,
-              style: TextStyle(
-                color: isDark
-                    ? AppColors.textPrimaryDark
-                    : AppColors.textPrimaryLight,
-                fontSize: 16,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-            const SizedBox(height: 12),
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.symmetric(vertical: 14),
-              decoration: BoxDecoration(
-                color: isDark
-                    ? AppColors.surfaceElevatedDark
-                    : AppColors.backgroundLight,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Center(
-                child: Text(
-                  '• • • • •',
-                  style: TextStyle(
-                    color: isDark
-                        ? AppColors.textTertiaryDark
-                        : AppColors.textTertiaryLight,
-                    fontSize: 24,
-                    letterSpacing: 8,
-                  ),
-                ),
-              ),
-            ),
-          ],
+        _FeatureRow(
+          isDark: isDark,
+          icon: Icons.delete_forever_rounded,
+          color: AppColors.destructive,
+          title: l10n.tutTDeleteCode,
+          description: l10n.tutDDeleteCode,
         ),
-      ),
+        _FeatureRow(
+          isDark: isDark,
+          icon: Icons.shield_outlined,
+          color: Color(0xFF30D158),
+          title: l10n.vaultPassword,
+          description: l10n.tutDVault,
+        ),
+        _FeatureRow(
+          isDark: isDark,
+          icon: Icons.face_rounded,
+          color: Color(0xFFFF9F0A),
+          title: l10n.biometricUnlock,
+          description: l10n.tutDScreenLock,
+        ),
+      ],
     );
   }
 }
 
-// ── Page 3: Delete-Code ─────────────────────────────────────────────────────
+// ── 3 Kontakte ──────────────────────────────────────────────────────────────
 
-class _Page3DeleteCode extends StatelessWidget {
+class _PageContacts extends StatelessWidget {
   final bool isDark;
-  const _Page3DeleteCode({required this.isDark});
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
-    return _Layout(
-      isDark: isDark,
-      title: l10n.tutDeleteCodeTitle,
-      description:
-          l10n.tutDeleteCodeBody,
-      preview: Container(
-        width: 220,
-        padding: const EdgeInsets.all(20),
-        decoration: BoxDecoration(
-          color: AppColors.destructive.withValues(alpha: 0.08),
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-            color: AppColors.destructive.withValues(alpha: 0.3),
-          ),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 52,
-              height: 52,
-              decoration: BoxDecoration(
-                color: AppColors.destructive.withValues(alpha: 0.15),
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: const Icon(Icons.delete_forever_rounded,
-                  color: AppColors.destructive, size: 28),
-            ),
-            const SizedBox(height: 14),
-            Text(
-              l10n.deleteCodeLabel,
-              style: TextStyle(
-                color: AppColors.destructive,
-                fontSize: 16,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              l10n.tutDeleteCodeWarning,
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                color: AppColors.destructive.withValues(alpha: 0.7),
-                fontSize: 12,
-                height: 1.5,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-// ── Page 4: Messenger öffnen ────────────────────────────────────────────────
-
-class _Page4OpenMessenger extends StatelessWidget {
-  final bool isDark;
-  const _Page4OpenMessenger({required this.isDark});
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
-    return _Layout(
-      isDark: isDark,
-      title: l10n.tutOpenMessengerTitle,
-      description:
-          l10n.tutOpenMessengerBody,
-      preview: Container(
-        width: 220,
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: Colors.black,
-          borderRadius: BorderRadius.circular(24),
-          border: Border.all(color: AppColors.dividerDark, width: 0.5),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // Display with code
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 8),
-              alignment: Alignment.centerRight,
-              child: const Text(
-                '••••',
-                style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 36,
-                    fontWeight: FontWeight.w300,
-                    letterSpacing: 8),
-              ),
-            ),
-            const SizedBox(height: 10),
-            // = Button highlighted
-            Row(
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF30D158).withValues(alpha: 0.15),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Icon(Icons.touch_app_rounded,
-                          color: Color(0xFF30D158), size: 14),
-                      const SizedBox(width: 4),
-                      Text(l10n.tutPressEquals,
-                          style: TextStyle(
-                              color: Color(0xFF30D158),
-                              fontSize: 11,
-                              fontWeight: FontWeight.w600)),
-                    ],
-                  ),
-                ),
-                const SizedBox(width: 6),
-                Container(
-                  width: 40,
-                  height: 40,
-                  decoration: BoxDecoration(
-                    color: AppColors.calculatorButtonAccent,
-                    shape: BoxShape.circle,
-                    boxShadow: [
-                      BoxShadow(
-                        color: AppColors.calculatorButtonAccent
-                            .withValues(alpha: 0.4),
-                        blurRadius: 8,
-                      ),
-                    ],
-                  ),
-                  child: const Center(
-                    child: Text('=',
-                        style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 20,
-                            fontWeight: FontWeight.w500)),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 14),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
-              decoration: BoxDecoration(
-                color: const Color(0xFF30D158).withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(
-                    color: const Color(0xFF30D158).withValues(alpha: 0.3)),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Icon(Icons.lock_open_rounded,
-                      color: Color(0xFF30D158), size: 14),
-                  const SizedBox(width: 5),
-                  Text(l10n.tutMessengerUnlocked,
-                      style: TextStyle(
-                          color: Color(0xFF30D158),
-                          fontSize: 11,
-                          fontWeight: FontWeight.w600)),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-// ── Page 5: Tresor-Passwort ─────────────────────────────────────────────────
-
-class _Page5VaultPassword extends StatelessWidget {
-  final bool isDark;
-  const _Page5VaultPassword({required this.isDark});
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
-    return _Layout(
-      isDark: isDark,
-      title: l10n.vaultPassword,
-      description:
-          l10n.tutVaultBody,
-      preview: Container(
-        width: 220,
-        padding: const EdgeInsets.all(20),
-        decoration: BoxDecoration(
-          color: isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-            color: isDark ? AppColors.dividerDark : AppColors.dividerLight,
-            width: 0.5,
-          ),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 52,
-              height: 52,
-              decoration: BoxDecoration(
-                color: const Color(0xFF30D158).withValues(alpha: 0.12),
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: const Icon(Icons.shield_rounded,
-                  color: Color(0xFF30D158), size: 28),
-            ),
-            const SizedBox(height: 14),
-            Text(
-              l10n.vaultPassword,
-              style: TextStyle(
-                color: isDark
-                    ? AppColors.textPrimaryDark
-                    : AppColors.textPrimaryLight,
-                fontSize: 16,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-            const SizedBox(height: 12),
-            // Password field mock
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-              decoration: BoxDecoration(
-                color: isDark
-                    ? AppColors.surfaceElevatedDark
-                    : AppColors.backgroundLight,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Row(
-                children: [
-                  Icon(Icons.lock_outline, size: 18,
-                      color: isDark
-                          ? AppColors.textTertiaryDark
-                          : AppColors.textTertiaryLight),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      '••••••••',
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        color: isDark
-                            ? AppColors.textTertiaryDark
-                            : AppColors.textTertiaryLight,
-                        fontSize: 16,
-                        letterSpacing: 3,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 10),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-              decoration: BoxDecoration(
-                color: const Color(0xFF30D158).withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: const Text(
-                'Empfohlen',
-                style: TextStyle(
-                  color: Color(0xFF30D158),
-                  fontSize: 11,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-// ── Page 6: Kontakte hinzufügen ─────────────────────────────────────────────
-
-class _Page6AddContacts extends StatelessWidget {
-  final bool isDark;
-  const _Page6AddContacts({required this.isDark});
+  const _PageContacts({required this.isDark});
 
   @override
   Widget build(BuildContext context) {
@@ -608,280 +276,48 @@ class _Page6AddContacts extends StatelessWidget {
     return _Layout(
       isDark: isDark,
       title: l10n.tutAddContactsTitle,
-      description:
-          l10n.tutAddContactsBody,
-      preview: Container(
-        width: 240,
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-            color: isDark ? AppColors.dividerDark : AppColors.dividerLight,
-            width: 0.5,
-          ),
+      description: l10n.tutContactsIntro,
+      preview: const _Badge(
+          icon: Icons.person_add_alt_1_rounded, color: AppColors.accent),
+      rows: [
+        _FeatureRow(
+          isDark: isDark,
+          icon: Icons.tag_rounded,
+          color: AppColors.accent,
+          title: l10n.addContact,
+          description: l10n.tutDAddById,
         ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // QR option
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: isDark
-                    ? AppColors.surfaceElevatedDark
-                    : AppColors.backgroundLight,
-                borderRadius: BorderRadius.circular(14),
-              ),
-              child: Row(
-                children: [
-                  Container(
-                    width: 40,
-                    height: 40,
-                    decoration: BoxDecoration(
-                      color: AppColors.accent.withValues(alpha: 0.12),
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: const Icon(Icons.qr_code_rounded,
-                        color: AppColors.accent, size: 22),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(l10n.scanQrCode,
-                            style: TextStyle(
-                              color: isDark
-                                  ? AppColors.textPrimaryDark
-                                  : AppColors.textPrimaryLight,
-                              fontSize: 14,
-                              fontWeight: FontWeight.w600,
-                            )),
-                        Text(l10n.tutQrFast,
-                            style: TextStyle(
-                              color: isDark
-                                  ? AppColors.textSecondaryDark
-                                  : AppColors.textSecondaryLight,
-                              fontSize: 11,
-                            )),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 8),
-            // ID option
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: isDark
-                    ? AppColors.surfaceElevatedDark
-                    : AppColors.backgroundLight,
-                borderRadius: BorderRadius.circular(14),
-              ),
-              child: Row(
-                children: [
-                  Container(
-                    width: 40,
-                    height: 40,
-                    decoration: BoxDecoration(
-                      color: AppColors.accent.withValues(alpha: 0.12),
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: const Icon(Icons.person_add_rounded,
-                        color: AppColors.accent, size: 22),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(l10n.tutEnterUserId,
-                            style: TextStyle(
-                              color: isDark
-                                  ? AppColors.textPrimaryDark
-                                  : AppColors.textPrimaryLight,
-                              fontSize: 14,
-                              fontWeight: FontWeight.w600,
-                            )),
-                        Text(l10n.tutForRemoteContacts,
-                            style: TextStyle(
-                              color: isDark
-                                  ? AppColors.textSecondaryDark
-                                  : AppColors.textSecondaryLight,
-                              fontSize: 11,
-                            )),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
+        _FeatureRow(
+          isDark: isDark,
+          icon: Icons.mark_email_unread_rounded,
+          color: Color(0xFFFF9F0A),
+          title: l10n.tutTRequest,
+          description: l10n.tutDRequest,
         ),
-      ),
+        _FeatureRow(
+          isDark: isDark,
+          icon: Icons.qr_code_2_rounded,
+          color: Color(0xFF30D158),
+          title: l10n.scanQrCode,
+          description: l10n.tutDQr,
+        ),
+        _FeatureRow(
+          isDark: isDark,
+          icon: Icons.verified_rounded,
+          color: Color(0xFF30D158),
+          title: l10n.safetyNumberTitle,
+          description: l10n.tutDSafetyNumber,
+        ),
+      ],
     );
   }
 }
 
-// ── Page 7: Emergency Buttons (rot) ─────────────────────────────────────────
+// ── 4 Nachrichten ───────────────────────────────────────────────────────────
 
-class _Page7EmergencyButtons extends StatelessWidget {
+class _PageMessages extends StatelessWidget {
   final bool isDark;
-  const _Page7EmergencyButtons({required this.isDark});
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
-    return _Layout(
-      isDark: isDark,
-      title: l10n.tutEmergencyTitle,
-      description:
-          l10n.tutEmergencyBody,
-      preview: Container(
-        width: 240,
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-            color: isDark ? AppColors.dividerDark : AppColors.dividerLight,
-            width: 0.5,
-          ),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // AppBar mock with emergency button
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-              decoration: BoxDecoration(
-                color: isDark
-                    ? AppColors.surfaceElevatedDark
-                    : AppColors.backgroundLight,
-                borderRadius: BorderRadius.circular(14),
-              ),
-              child: Row(
-                children: [
-                  Icon(Icons.arrow_back_ios_new_rounded,
-                      size: 16,
-                      color: isDark
-                          ? AppColors.textPrimaryDark
-                          : AppColors.textPrimaryLight),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(l10n.chats,
-                        style: TextStyle(
-                          color: isDark
-                              ? AppColors.textPrimaryDark
-                              : AppColors.textPrimaryLight,
-                          fontSize: 16,
-                          fontWeight: FontWeight.w700,
-                        )),
-                  ),
-                  // Emergency button mock
-                  Container(
-                    padding: const EdgeInsets.all(6),
-                    decoration: BoxDecoration(
-                      color: AppColors.destructive.withValues(alpha: 0.12),
-                      shape: BoxShape.circle,
-                      border: Border.all(
-                        color: AppColors.destructive.withValues(alpha: 0.3),
-                        width: 1.5,
-                      ),
-                    ),
-                    child: Icon(Icons.warning_amber_rounded,
-                        size: 16,
-                        color:
-                            AppColors.destructive.withValues(alpha: 0.7)),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 10),
-            // Arrow pointing to button
-            Row(
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                  decoration: BoxDecoration(
-                    color: AppColors.destructive.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: const Text(
-                    'Notfall-Knopf',
-                    style: TextStyle(
-                      color: AppColors.destructive,
-                      fontSize: 11,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 4),
-                Icon(Icons.arrow_upward_rounded,
-                    size: 14, color: AppColors.destructive.withValues(alpha: 0.6)),
-              ],
-            ),
-            const SizedBox(height: 12),
-            // Settings emergency button mock
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(14),
-              decoration: BoxDecoration(
-                color: AppColors.destructive.withValues(alpha: 0.06),
-                borderRadius: BorderRadius.circular(14),
-                border: Border.all(
-                  color: AppColors.destructive.withValues(alpha: 0.25),
-                ),
-              ),
-              child: Row(
-                children: [
-                  Container(
-                    width: 32,
-                    height: 32,
-                    decoration: BoxDecoration(
-                      color: AppColors.destructive.withValues(alpha: 0.12),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: const Icon(Icons.delete_forever_rounded,
-                        color: AppColors.destructive, size: 18),
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(l10n.emergencyDelete,
-                            style: TextStyle(
-                                color: AppColors.destructive,
-                                fontSize: 13,
-                                fontWeight: FontWeight.w600)),
-                        Text(l10n.tutInSettings,
-                            style: TextStyle(
-                                color: AppColors.destructive,
-                                fontSize: 10)),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-// ── Page 8: Chat-Funktionen ─────────────────────────────────────────────────
-
-class _Page8ChatFeatures extends StatelessWidget {
-  final bool isDark;
-  const _Page8ChatFeatures({required this.isDark});
+  const _PageMessages({required this.isDark});
 
   @override
   Widget build(BuildContext context) {
@@ -889,198 +325,97 @@ class _Page8ChatFeatures extends StatelessWidget {
     return _Layout(
       isDark: isDark,
       title: l10n.tutChatFeaturesTitle,
-      description:
-          l10n.tutChatFeaturesIntro,
-      preview: Container(
-        width: 260,
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-            color: isDark ? AppColors.dividerDark : AppColors.dividerLight,
-            width: 0.5,
-          ),
+      description: l10n.tutChatFeaturesIntro,
+      preview: const _Badge(
+          icon: Icons.forum_rounded, color: Color(0xFFFF9F0A)),
+      rows: [
+        _FeatureRow(
+          isDark: isDark,
+          icon: Icons.timer_rounded,
+          color: AppColors.accent,
+          title: l10n.autoDeleteTimer,
+          description: l10n.tutAutoDeleteDesc,
         ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // Feature 1: Password lock
-            _FeatureRow(
-              isDark: isDark,
-              icon: Icons.lock_outline_rounded,
-              activeIcon: Icons.lock_rounded,
-              color: const Color(0xFFFFD60A),
-              title: l10n.lockMessage,
-              description: l10n.tutLockMessageDesc,
-            ),
-            const SizedBox(height: 10),
-            // Feature 2: Auto-delete timer
-            _FeatureRow(
-              isDark: isDark,
-              icon: Icons.timer_outlined,
-              activeIcon: Icons.timer_rounded,
-              color: AppColors.accent,
-              title: l10n.autoDeleteTimer,
-              description: l10n.tutAutoDeleteDesc,
-            ),
-            const SizedBox(height: 10),
-            // Feature 3: Burn after read
-            _FeatureRow(
-              isDark: isDark,
-              icon: Icons.local_fire_department_rounded,
-              activeIcon: Icons.local_fire_department_rounded,
-              color: AppColors.destructive,
-              title: l10n.burnAfterRead,
-              description: l10n.tutBurnAfterReadDesc,
-            ),
-            const SizedBox(height: 14),
-            // Input bar mock showing the buttons
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-              decoration: BoxDecoration(
-                color: isDark
-                    ? AppColors.backgroundDark
-                    : AppColors.backgroundLight,
-                borderRadius: BorderRadius.circular(22),
-                border: Border.all(
-                  color: isDark ? AppColors.dividerDark : AppColors.dividerLight,
-                  width: 0.5,
-                ),
-              ),
-              child: Row(
-                children: [
-                  // Lock button
-                  Container(
-                    width: 30,
-                    height: 30,
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFFFD60A).withValues(alpha: 0.15),
-                      shape: BoxShape.circle,
-                    ),
-                    child: Icon(Icons.lock_outline_rounded,
-                        size: 16,
-                        color: const Color(0xFFFFD60A).withValues(alpha: 0.8)),
-                  ),
-                  const SizedBox(width: 4),
-                  // Timer button
-                  Container(
-                    width: 30,
-                    height: 30,
-                    decoration: BoxDecoration(
-                      color: AppColors.accent.withValues(alpha: 0.15),
-                      shape: BoxShape.circle,
-                    ),
-                    child: Icon(Icons.timer_outlined,
-                        size: 16,
-                        color: AppColors.accent.withValues(alpha: 0.8)),
-                  ),
-                  const SizedBox(width: 6),
-                  Expanded(
-                    child: Container(
-                      height: 30,
-                      padding: const EdgeInsets.symmetric(horizontal: 10),
-                      decoration: BoxDecoration(
-                        color: isDark
-                            ? AppColors.surfaceElevatedDark
-                            : AppColors.surfaceElevatedLight,
-                        borderRadius: BorderRadius.circular(15),
-                      ),
-                      alignment: Alignment.centerLeft,
-                      child: Text(l10n.typeMessage,
-                          style: TextStyle(
-                            color: isDark
-                                ? AppColors.textTertiaryDark
-                                : AppColors.textTertiaryLight,
-                            fontSize: 12,
-                          )),
-                    ),
-                  ),
-                  const SizedBox(width: 6),
-                  Container(
-                    width: 30,
-                    height: 30,
-                    decoration: const BoxDecoration(
-                      color: AppColors.accent,
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Icon(Icons.arrow_upward_rounded,
-                        color: Colors.white, size: 16),
-                  ),
-                ],
-              ),
-            ),
-          ],
+        _FeatureRow(
+          isDark: isDark,
+          icon: Icons.hourglass_bottom_rounded,
+          color: Color(0xFFFF9F0A),
+          title: l10n.tutTRemaining,
+          description: l10n.tutDRemaining,
         ),
-      ),
-    );
-  }
-}
-
-class _FeatureRow extends StatelessWidget {
-  final bool isDark;
-  final IconData icon;
-  final IconData activeIcon;
-  final Color color;
-  final String title;
-  final String description;
-
-  const _FeatureRow({
-    required this.isDark,
-    required this.icon,
-    required this.activeIcon,
-    required this.color,
-    required this.title,
-    required this.description,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Container(
-          width: 34,
-          height: 34,
-          decoration: BoxDecoration(
-            color: color.withValues(alpha: 0.12),
-            borderRadius: BorderRadius.circular(9),
-          ),
-          child: Icon(activeIcon, color: color, size: 18),
+        _FeatureRow(
+          isDark: isDark,
+          icon: Icons.local_fire_department_rounded,
+          color: AppColors.destructive,
+          title: l10n.burnAfterRead,
+          description: l10n.tutBurnAfterReadDesc,
         ),
-        const SizedBox(width: 10),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(title,
-                  style: TextStyle(
-                    color: isDark
-                        ? AppColors.textPrimaryDark
-                        : AppColors.textPrimaryLight,
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                  )),
-              Text(description,
-                  style: TextStyle(
-                    color: isDark
-                        ? AppColors.textSecondaryDark
-                        : AppColors.textSecondaryLight,
-                    fontSize: 10.5,
-                    height: 1.3,
-                  )),
-            ],
-          ),
+        _FeatureRow(
+          isDark: isDark,
+          icon: Icons.lock_rounded,
+          color: Color(0xFFFFD60A),
+          title: l10n.lockMessage,
+          description: l10n.tutLockMessageDesc,
         ),
       ],
     );
   }
 }
 
-// ── Page 9: Bereit ──────────────────────────────────────────────────────────
+// ── 5 Schutz ────────────────────────────────────────────────────────────────
 
-class _Page9Ready extends StatelessWidget {
+class _PageProtection extends StatelessWidget {
   final bool isDark;
-  const _Page9Ready({required this.isDark});
+  const _PageProtection({required this.isDark});
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    return _Layout(
+      isDark: isDark,
+      title: l10n.tutProtectTitle,
+      description: l10n.tutProtectIntro,
+      preview: const _Badge(
+          icon: Icons.shield_rounded, color: AppColors.destructive),
+      rows: [
+        _FeatureRow(
+          isDark: isDark,
+          icon: Icons.photo_camera_rounded,
+          color: Color(0xFFFF9F0A),
+          title: l10n.screenshotNotice,
+          description: l10n.tutDScreenshot,
+        ),
+        _FeatureRow(
+          isDark: isDark,
+          icon: Icons.block_rounded,
+          color: AppColors.destructive,
+          title: l10n.blockContact,
+          description: l10n.tutDBlock,
+        ),
+        _FeatureRow(
+          isDark: isDark,
+          icon: Icons.cleaning_services_rounded,
+          color: AppColors.accent,
+          title: l10n.clearChat,
+          description: l10n.tutDClear,
+        ),
+        _FeatureRow(
+          isDark: isDark,
+          icon: Icons.delete_outline_rounded,
+          color: AppColors.destructive,
+          title: l10n.deleteChat,
+          description: l10n.tutDDeleteChat,
+        ),
+      ],
+    );
+  }
+}
+
+// ── 6 Fertig ────────────────────────────────────────────────────────────────
+
+class _PageReady extends StatelessWidget {
+  final bool isDark;
+  const _PageReady({required this.isDark});
 
   @override
   Widget build(BuildContext context) {
@@ -1088,34 +423,54 @@ class _Page9Ready extends StatelessWidget {
     return _Layout(
       isDark: isDark,
       title: l10n.tutReadyTitle,
-      description:
-          l10n.tutReadyBody,
-      preview: Container(
-        width: 100,
-        height: 100,
-        decoration: BoxDecoration(
-          color: AppColors.accent.withValues(alpha: 0.12),
-          shape: BoxShape.circle,
+      description: l10n.tutReadyBody,
+      preview: const _Badge(
+          icon: Icons.check_circle_rounded, color: Color(0xFF30D158)),
+      rows: [
+        // Die Notfall-Loeschung steht bewusst hier und nicht bei den uebrigen
+        // Schutzfunktionen: sie soll als Letztes haengenbleiben.
+        _FeatureRow(
+          isDark: isDark,
+          icon: Icons.emergency_rounded,
+          color: AppColors.destructive,
+          title: l10n.tutTEmergency,
+          description: l10n.tutDEmergency,
         ),
-        child: const Icon(Icons.check_rounded, color: AppColors.accent, size: 48),
-      ),
+        _FeatureRow(
+          isDark: isDark,
+          icon: Icons.settings_rounded,
+          color: AppColors.accent,
+          title: l10n.settings,
+          description: l10n.tutDSettings,
+        ),
+        _FeatureRow(
+          isDark: isDark,
+          icon: Icons.menu_book_rounded,
+          color: Color(0xFF30D158),
+          title: l10n.tutTAgain,
+          description: l10n.tutDAgain,
+        ),
+      ],
     );
   }
 }
 
-// ── Shared Layout ───────────────────────────────────────────────────────────
+// ── Bausteine ───────────────────────────────────────────────────────────────
 
+/// Das Geruest jeder Seite: Vorschau, Titel, ein Satz, dann die Zeilen.
 class _Layout extends StatelessWidget {
   final bool isDark;
   final String title;
   final String description;
   final Widget preview;
+  final List<Widget> rows;
 
   const _Layout({
     required this.isDark,
     required this.title,
     required this.description,
     required this.preview,
+    this.rows = const [],
   });
 
   @override
@@ -1126,7 +481,7 @@ class _Layout extends StatelessWidget {
         children: [
           const SizedBox(height: 8),
           preview,
-          const SizedBox(height: 28),
+          const SizedBox(height: 24),
           Text(
             title,
             style: Theme.of(context).textTheme.headlineSmall?.copyWith(
@@ -1135,18 +490,199 @@ class _Layout extends StatelessWidget {
                 ),
             textAlign: TextAlign.center,
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 10),
           Text(
             description,
             style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                   color: isDark
                       ? AppColors.textSecondaryDark
                       : AppColors.textSecondaryLight,
-                  height: 1.6,
+                  height: 1.5,
                 ),
             textAlign: TextAlign.center,
           ),
+          if (rows.isNotEmpty) ...[
+            const SizedBox(height: 22),
+            Container(
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
+                borderRadius: BorderRadius.circular(18),
+                border: Border.all(
+                  color: isDark
+                      ? AppColors.dividerDark
+                      : AppColors.dividerLight,
+                  width: 0.5,
+                ),
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  for (var i = 0; i < rows.length; i++) ...[
+                    if (i > 0) const SizedBox(height: 12),
+                    rows[i],
+                  ],
+                ],
+              ),
+            ),
+          ],
           const SizedBox(height: 24),
+        ],
+      ),
+    );
+  }
+}
+
+/// Eine Zeile: Symbol, Stichwort, ein Satz.
+class _FeatureRow extends StatelessWidget {
+  final bool isDark;
+  final IconData icon;
+  final Color color;
+  final String title;
+  final String description;
+
+  const _FeatureRow({
+    required this.isDark,
+    required this.icon,
+    required this.color,
+    required this.title,
+    required this.description,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          width: 34,
+          height: 34,
+          decoration: BoxDecoration(
+            color: color.withValues(alpha: 0.12),
+            borderRadius: BorderRadius.circular(9),
+          ),
+          child: Icon(icon, color: color, size: 18),
+        ),
+        const SizedBox(width: 10),
+        // Expanded, damit lange Uebersetzungen und grosse Systemschrift
+        // umbrechen statt seitlich herauszulaufen.
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                description,
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: isDark
+                          ? AppColors.textSecondaryDark
+                          : AppColors.textSecondaryLight,
+                      height: 1.35,
+                    ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// Das grosse Symbol oben auf den Seiten ohne eigenen Nachbau.
+class _Badge extends StatelessWidget {
+  final IconData icon;
+  final Color color;
+
+  const _Badge({required this.icon, required this.color});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 96,
+      height: 96,
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(28),
+      ),
+      child: Icon(icon, color: color, size: 44),
+    );
+  }
+}
+
+/// Der Taschenrechner, wie ihn Fremde sehen.
+class _CalculatorMock extends StatelessWidget {
+  const _CalculatorMock();
+
+  static const _rows = [
+    ['C', '±', '%', '÷'],
+    ['7', '8', '9', '×'],
+    ['4', '5', '6', '−'],
+    ['1', '2', '3', '+'],
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 190,
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.black,
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(color: AppColors.dividerDark, width: 0.5),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 6),
+            alignment: Alignment.centerRight,
+            child: const Text(
+              '0',
+              style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 32,
+                  fontWeight: FontWeight.w300),
+            ),
+          ),
+          const SizedBox(height: 4),
+          for (final row in _rows)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 4),
+              child: Row(
+                children: row.map((l) {
+                  final isOp = ['÷', '×', '−', '+'].contains(l);
+                  final isFunc = ['C', '±', '%'].contains(l);
+                  return Expanded(
+                    child: Container(
+                      margin: const EdgeInsets.symmetric(horizontal: 2),
+                      height: 32,
+                      decoration: BoxDecoration(
+                        color: isOp
+                            ? AppColors.calculatorButtonAccent
+                            : (isFunc
+                                ? AppColors.calculatorButtonLight
+                                : AppColors.calculatorButtonDark),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Center(
+                        child: Text(l,
+                            style: TextStyle(
+                                color: isFunc ? Colors.black : Colors.white,
+                                fontSize: 13,
+                                fontWeight: FontWeight.w500)),
+                      ),
+                    ),
+                  );
+                }).toList(),
+              ),
+            ),
         ],
       ),
     );

@@ -635,84 +635,32 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get tutWelcomeBody =>
-      'Krypta ist ein geheimer Messenger.\n\nFür alle anderen sieht die App aus wie ein ganz normaler Taschenrechner — niemand wird vermuten, dass sich dahinter ein verschlüsselter Chat versteckt.\n\nWir empfehlen, dieses Tutorial ausführlich zu lesen.';
-
-  @override
-  String get tutSecretCodeTitle => 'Dein Geheimcode';
-
-  @override
-  String get tutSecretCodeBody =>
-      'Beim Einrichten legst du einen Zahlencode fest.\n\nDieser Code ist dein Schlüssel — nur damit kannst du den versteckten Messenger öffnen.';
-
-  @override
-  String get tutDeleteCodeBody =>
-      'Der zweite Code ist für den Notfall.\n\nWenn du diesen Code eingibst, wird sofort alles gelöscht — Nachrichten, Schlüssel, Account. Unwiderruflich.\n\nNur im Ernstfall verwenden!';
-
-  @override
-  String get tutDeleteCodeWarning =>
-      'Alles wird sofort gelöscht.\nKeine Wiederherstellung möglich.';
-
-  @override
-  String get tutOpenMessengerTitle => 'Messenger öffnen';
-
-  @override
-  String get tutOpenMessengerBody =>
-      'Um deinen Messenger zu öffnen:\n\n1. Gib deinen Geheimcode im Taschenrechner ein\n2. Drücke die = Taste\n\nDer Messenger öffnet sich sofort.';
-
-  @override
-  String get tutPressEquals => 'Drücke =';
-
-  @override
-  String get tutMessengerUnlocked => 'Messenger entsperrt';
-
-  @override
-  String get tutVaultBody =>
-      'In den Einstellungen kannst du ein zusätzliches Passwort aktivieren.\n\nNach dem Geheimcode wird dann noch das Tresor-Passwort abgefragt — doppelte Sicherheit.\n\nWir empfehlen das aus Sicherheitsgründen.';
+      'Von aussen ein Taschenrechner. Dahinter liegen deine Nachrichten, verschlüsselt.';
 
   @override
   String get tutAddContactsTitle => 'Kontakte hinzufügen';
 
   @override
-  String get tutAddContactsBody =>
-      'Du kannst Kontakte auf zwei Arten hinzufügen:\n\n• QR-Code scannen — schnell und einfach\n• User-ID eingeben — wenn ihr nicht am selben Ort seid\n\nDanach kannst du der Person einen Namen geben.';
-
-  @override
-  String get tutQrFast => 'Schnell & einfach';
-
-  @override
-  String get tutEnterUserId => 'User-ID eingeben';
-
-  @override
-  String get tutForRemoteContacts => 'Für Fernkontakte';
-
-  @override
-  String get tutEmergencyBody =>
-      'In der App findest du rote Notfall-Knöpfe.\n\nSie löschen sofort alles — genau wie der Delete-Code. Verwende sie nur im Ernstfall.';
-
-  @override
-  String get tutInSettings => 'In den Einstellungen';
-
-  @override
   String get tutChatFeaturesIntro =>
-      'Im Chat hast du drei besondere Funktionen:';
+      'Jede Nachricht kann sich selbst wieder entfernen.';
 
   @override
-  String get tutLockMessageDesc => 'Einzelne Nachrichten mit Passwort schützen';
+  String get tutLockMessageDesc =>
+      'Ein Passwort nur für diese eine Nachricht. Sag es mündlich weiter.';
 
   @override
   String get tutAutoDeleteDesc =>
-      'Nachrichten löschen sich nach einer Zeit automatisch';
+      'Verschwindet nach der eingestellten Zeit, bei euch beiden.';
 
   @override
   String get tutBurnAfterReadDesc =>
-      'Nachricht wird nach dem Lesen sofort gelöscht';
+      'Weg, sobald die Gegenseite den Chat verlässt.';
 
   @override
-  String get tutReadyTitle => 'Alles klar!';
+  String get tutReadyTitle => 'Fertig';
 
   @override
-  String get tutReadyBody =>
-      'Du weisst jetzt alles was du brauchst.\n\nIm nächsten Schritt richtest du deine Codes ein — danach ist dein Messenger einsatzbereit.';
+  String get tutReadyBody => 'Ein Punkt fehlt noch. Er ist der wichtigste.';
 
   @override
   String get language => 'Sprache';
@@ -724,13 +672,7 @@ class AppLocalizationsDe extends AppLocalizations {
   String get deviceSecuritySection => 'Gerätesicherheit';
 
   @override
-  String get tutDeleteCodeTitle => 'Notfall-Code';
-
-  @override
-  String get tutEmergencyTitle => 'Notfall-Knöpfe';
-
-  @override
-  String get tutChatFeaturesTitle => 'Chat-Funktionen';
+  String get tutChatFeaturesTitle => 'Nachrichten';
 
   @override
   String get blockContact => 'Blockieren';
@@ -900,4 +842,117 @@ class AppLocalizationsDe extends AppLocalizations {
   String unblockedKeyChanged(String name) {
     return '$name wurde entblockiert. Der Sicherheitsschlüssel hat sich geändert und muss erneut bestätigt werden.';
   }
+
+  @override
+  String get tutDCalculator =>
+      'Der Rechner vor dem Messenger rechnet wirklich. Niemand sieht ihm etwas an.';
+
+  @override
+  String get tutTEncrypted => 'Ende zu Ende';
+
+  @override
+  String get tutDEncrypted =>
+      'Nur du und dein Kontakt könnt mitlesen. Der Server sieht nichts.';
+
+  @override
+  String get tutDLanguage => 'Sieben Sprachen. Jederzeit umstellbar.';
+
+  @override
+  String get tutAccessTitle => 'Dein Zugang';
+
+  @override
+  String get tutAccessIntro =>
+      'Vier Dinge schützen den Messenger. Du richtest sie gleich ein.';
+
+  @override
+  String get tutTSecretCode => 'Geheimcode';
+
+  @override
+  String get tutDSecretCode =>
+      'Im Rechner eintippen und Gleich drücken. Der Messenger geht auf.';
+
+  @override
+  String get tutTDeleteCode => 'Löschcode';
+
+  @override
+  String get tutDDeleteCode =>
+      'Ein zweiter Code. Er löscht alles sofort, ohne Rückfrage.';
+
+  @override
+  String get tutDVault =>
+      'Ein zusätzliches Passwort nach dem Code. Freiwillig, aber empfohlen.';
+
+  @override
+  String get tutDScreenLock =>
+      'Face ID statt Tippen. Beim Weglegen sperrt die App von selbst.';
+
+  @override
+  String get tutContactsIntro =>
+      'Zwei Wege hinzu. Und einer, um ganz sicher zu sein.';
+
+  @override
+  String get tutDAddById =>
+      'Kennungen austauschen und eintragen. Geht auch aus der Ferne.';
+
+  @override
+  String get tutTRequest => 'Anfrage';
+
+  @override
+  String get tutDRequest =>
+      'Die Gegenseite muss annehmen. Vorher geht nichts raus.';
+
+  @override
+  String get tutDQr =>
+      'Code zeigen und scannen. Wer ihn zeigt, stimmt damit zu.';
+
+  @override
+  String get tutDSafetyNumber =>
+      'Zahlen vergleichen oder scannen. Danach steht bestätigt im Chat.';
+
+  @override
+  String get tutTRemaining => 'Restzeit';
+
+  @override
+  String get tutDRemaining =>
+      'Unter der Nachricht läuft die verbleibende Zeit mit.';
+
+  @override
+  String get tutProtectTitle => 'Schutz';
+
+  @override
+  String get tutProtectIntro =>
+      'Was im Chat geschieht, bleibt nachvollziehbar.';
+
+  @override
+  String get tutDScreenshot =>
+      'Screenshots und Aufnahmen sieht die Gegenseite. Immer.';
+
+  @override
+  String get tutDBlock =>
+      'Es kommt nichts mehr durch. Die Bestätigung bleibt gespeichert.';
+
+  @override
+  String get tutDClear =>
+      'Leert den Verlauf. Deine Nachrichten verschwinden auch drüben.';
+
+  @override
+  String get tutDDeleteChat =>
+      'Entfernt den ganzen Chat. Die Gegenseite erfährt davon.';
+
+  @override
+  String get tutTEmergency => 'Notfall-Löschung';
+
+  @override
+  String get tutDEmergency =>
+      'Löscht alles auf der Stelle. Deine Kontakte erfahren es.';
+
+  @override
+  String get tutDSettings => 'Sprache, Tresor und Codes änderst du dort.';
+
+  @override
+  String get tutTAgain => 'Diese Einführung';
+
+  @override
+  String get tutDAgain =>
+      'Steht in den Einstellungen. Du kannst sie jederzeit erneut lesen.';
 }

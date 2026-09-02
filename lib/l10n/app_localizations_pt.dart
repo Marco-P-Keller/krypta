@@ -636,85 +636,31 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get tutWelcomeBody =>
-      'O Krypta é uma aplicação de mensagens secreta.\n\nPara todos os outros, a aplicação parece uma calculadora normal — ninguém vai suspeitar que por trás se esconde uma conversa cifrada.\n\nRecomendamos que leia este tutorial com atenção.';
-
-  @override
-  String get tutSecretCodeTitle => 'O seu código secreto';
-
-  @override
-  String get tutSecretCodeBody =>
-      'Durante a configuração escolhe um código numérico.\n\nEsse código é a sua chave: é a única forma de abrir as mensagens ocultas.';
-
-  @override
-  String get tutDeleteCodeBody =>
-      'O segundo código é para emergências.\n\nAo introduzi-lo, tudo é apagado de imediato: mensagens, chaves, conta. De forma irreversível.\n\nEscolha um código que não introduza por engano.';
-
-  @override
-  String get tutDeleteCodeWarning =>
-      'Tudo é apagado de imediato.\nNão há qualquer recuperação possível.';
-
-  @override
-  String get tutOpenMessengerTitle => 'Abrir as mensagens';
-
-  @override
-  String get tutOpenMessengerBody =>
-      'Para abrir as suas mensagens:\n\n1. Introduza o código secreto na calculadora\n2. Prima a tecla =\n\nAs mensagens abrem-se de imediato.';
-
-  @override
-  String get tutPressEquals => 'Prima =';
-
-  @override
-  String get tutMessengerUnlocked => 'Mensagens desbloqueadas';
-
-  @override
-  String get tutVaultBody =>
-      'Nas definições pode ativar uma palavra-passe adicional.\n\nDepois do código secreto passa a ser pedida também a palavra-passe do cofre — dupla segurança para as suas mensagens.';
+      'Por fora, uma calculadora. Atrás estão as tuas mensagens, cifradas.';
 
   @override
   String get tutAddContactsTitle => 'Adicionar contactos';
 
   @override
-  String get tutAddContactsBody =>
-      'Há duas formas de adicionar contactos:\n\n• Ler um código QR — rápido e simples\n• Introduzir um ID de utilizador — quando não estão no mesmo sítio\n\nDepois disso já se podem escrever.';
-
-  @override
-  String get tutQrFast => 'Rápido e simples';
-
-  @override
-  String get tutEnterUserId => 'Introduzir ID de utilizador';
-
-  @override
-  String get tutForRemoteContacts => 'Para contactos à distância';
-
-  @override
-  String get tutEmergencyBody =>
-      'Na aplicação encontra botões vermelhos de emergência.\n\nApagam tudo de imediato — tal como o código de eliminação. Use-os apenas quando for mesmo necessário.';
-
-  @override
-  String get tutInSettings => 'Nas definições';
-
-  @override
-  String get tutChatFeaturesIntro =>
-      'Numa conversa tem três funções especiais:';
+  String get tutChatFeaturesIntro => 'Cada mensagem pode retirar se sozinha.';
 
   @override
   String get tutLockMessageDesc =>
-      'Proteger mensagens individuais com uma palavra-passe';
+      'Uma palavra-passe só para esta mensagem. Diz a de viva voz.';
 
   @override
   String get tutAutoDeleteDesc =>
-      'As mensagens apagam-se sozinhas após um tempo definido';
+      'Desaparece após o tempo definido, de ambos os lados.';
 
   @override
   String get tutBurnAfterReadDesc =>
-      'A mensagem é eliminada logo depois de ser lida';
+      'Some assim que o outro lado sai da conversa.';
 
   @override
-  String get tutReadyTitle => 'Tudo pronto!';
+  String get tutReadyTitle => 'Pronto';
 
   @override
-  String get tutReadyBody =>
-      'Agora já sabe tudo o que precisa.\n\nNo passo seguinte configura os seus códigos — depois disso as suas mensagens ficam prontas a usar.';
+  String get tutReadyBody => 'Falta um ponto. É o mais importante.';
 
   @override
   String get language => 'Idioma';
@@ -726,13 +672,7 @@ class AppLocalizationsPt extends AppLocalizations {
   String get deviceSecuritySection => 'Segurança do dispositivo';
 
   @override
-  String get tutDeleteCodeTitle => 'Código de emergência';
-
-  @override
-  String get tutEmergencyTitle => 'Botões de emergência';
-
-  @override
-  String get tutChatFeaturesTitle => 'Funções da conversa';
+  String get tutChatFeaturesTitle => 'Mensagens';
 
   @override
   String get blockContact => 'Bloquear';
@@ -901,4 +841,111 @@ class AppLocalizationsPt extends AppLocalizations {
   String unblockedKeyChanged(String name) {
     return '$name foi desbloqueado. A chave de segurança mudou e tem de ser confirmada novamente.';
   }
+
+  @override
+  String get tutDCalculator => 'A calculadora funciona mesmo. Nada a denuncia.';
+
+  @override
+  String get tutTEncrypted => 'Ponto a ponto';
+
+  @override
+  String get tutDEncrypted =>
+      'Só tu e o teu contacto podem ler. O servidor não vê nada.';
+
+  @override
+  String get tutDLanguage => 'Sete idiomas. Mudam a qualquer momento.';
+
+  @override
+  String get tutAccessTitle => 'O teu acesso';
+
+  @override
+  String get tutAccessIntro =>
+      'Quatro coisas protegem o mensageiro. Vais defini las já.';
+
+  @override
+  String get tutTSecretCode => 'Código secreto';
+
+  @override
+  String get tutDSecretCode =>
+      'Escreve o na calculadora e carrega em igual. O mensageiro abre.';
+
+  @override
+  String get tutTDeleteCode => 'Código de apagar';
+
+  @override
+  String get tutDDeleteCode =>
+      'Um segundo código. Apaga tudo de imediato, sem perguntar.';
+
+  @override
+  String get tutDVault =>
+      'Uma palavra-passe extra depois do código. Opcional, mas recomendada.';
+
+  @override
+  String get tutDScreenLock =>
+      'Face ID em vez de escrever. A app bloqueia sozinha quando a pousas.';
+
+  @override
+  String get tutContactsIntro =>
+      'Duas formas de adicionar. E uma para teres a certeza.';
+
+  @override
+  String get tutDAddById =>
+      'Troquem os identificadores e insiram nos. Também funciona à distância.';
+
+  @override
+  String get tutTRequest => 'Pedido';
+
+  @override
+  String get tutDRequest =>
+      'O outro lado tem de aceitar. Antes disso não sai nada.';
+
+  @override
+  String get tutDQr => 'Mostrar o código e ler o. Mostrar já é consentir.';
+
+  @override
+  String get tutDSafetyNumber =>
+      'Compara os dígitos ou lê os. Depois a conversa diz confirmado.';
+
+  @override
+  String get tutTRemaining => 'Tempo restante';
+
+  @override
+  String get tutDRemaining => 'Por baixo da mensagem corre o tempo que falta.';
+
+  @override
+  String get tutProtectTitle => 'Proteção';
+
+  @override
+  String get tutProtectIntro => 'O que acontece numa conversa fica registado.';
+
+  @override
+  String get tutDScreenshot => 'O outro lado vê capturas e gravações. Sempre.';
+
+  @override
+  String get tutDBlock => 'Já não passa nada. A confirmação fica guardada.';
+
+  @override
+  String get tutDClear =>
+      'Esvazia o histórico. As tuas mensagens desaparecem também lá.';
+
+  @override
+  String get tutDDeleteChat =>
+      'Remove a conversa inteira. O outro lado fica a saber.';
+
+  @override
+  String get tutTEmergency => 'Apagamento de emergência';
+
+  @override
+  String get tutDEmergency =>
+      'Apaga tudo na hora. Os teus contactos ficam a saber.';
+
+  @override
+  String get tutDSettings => 'Idioma, cofre e códigos mudam se aí.';
+
+  @override
+  String get tutTAgain => 'Esta introdução';
+
+  @override
+  String get tutDAgain =>
+      'Está nas definições. Podes lê la de novo quando quiseres.';
 }

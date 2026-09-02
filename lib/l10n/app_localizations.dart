@@ -1239,62 +1239,8 @@ abstract class AppLocalizations {
   /// No description provided for @tutWelcomeBody.
   ///
   /// In en, this message translates to:
-  /// **'Krypta is a secret messenger.\n\nTo everyone else the app looks like an ordinary calculator — nobody will suspect that an encrypted chat is hiding behind it.\n\nWe recommend reading this tutorial carefully.'**
+  /// **'A calculator on the outside. Your messages sit behind it, encrypted.'**
   String get tutWelcomeBody;
-
-  /// No description provided for @tutSecretCodeTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Your secret code'**
-  String get tutSecretCodeTitle;
-
-  /// No description provided for @tutSecretCodeBody.
-  ///
-  /// In en, this message translates to:
-  /// **'During setup you choose a numeric code.\n\nThis code is your key — it is the only way to open the hidden messenger.'**
-  String get tutSecretCodeBody;
-
-  /// No description provided for @tutDeleteCodeBody.
-  ///
-  /// In en, this message translates to:
-  /// **'The second code is for emergencies.\n\nEntering it erases everything immediately — messages, keys, account. Irreversibly.\n\nChoose a code you will not enter by accident.'**
-  String get tutDeleteCodeBody;
-
-  /// No description provided for @tutDeleteCodeWarning.
-  ///
-  /// In en, this message translates to:
-  /// **'Everything is erased immediately.\nNo recovery is possible.'**
-  String get tutDeleteCodeWarning;
-
-  /// No description provided for @tutOpenMessengerTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Open the messenger'**
-  String get tutOpenMessengerTitle;
-
-  /// No description provided for @tutOpenMessengerBody.
-  ///
-  /// In en, this message translates to:
-  /// **'To open your messenger:\n\n1. Enter your secret code in the calculator\n2. Press the = key\n\nThe messenger opens right away.'**
-  String get tutOpenMessengerBody;
-
-  /// No description provided for @tutPressEquals.
-  ///
-  /// In en, this message translates to:
-  /// **'Press ='**
-  String get tutPressEquals;
-
-  /// No description provided for @tutMessengerUnlocked.
-  ///
-  /// In en, this message translates to:
-  /// **'Messenger unlocked'**
-  String get tutMessengerUnlocked;
-
-  /// No description provided for @tutVaultBody.
-  ///
-  /// In en, this message translates to:
-  /// **'In the settings you can enable an additional password.\n\nAfter the secret code the vault password is then requested as well — double security for your messages.'**
-  String get tutVaultBody;
 
   /// No description provided for @tutAddContactsTitle.
   ///
@@ -1302,76 +1248,40 @@ abstract class AppLocalizations {
   /// **'Add contacts'**
   String get tutAddContactsTitle;
 
-  /// No description provided for @tutAddContactsBody.
-  ///
-  /// In en, this message translates to:
-  /// **'There are two ways to add contacts:\n\n• Scan a QR code — quick and simple\n• Enter a user ID — when you are not in the same place\n\nAfter that you can write to each other.'**
-  String get tutAddContactsBody;
-
-  /// No description provided for @tutQrFast.
-  ///
-  /// In en, this message translates to:
-  /// **'Quick & simple'**
-  String get tutQrFast;
-
-  /// No description provided for @tutEnterUserId.
-  ///
-  /// In en, this message translates to:
-  /// **'Enter user ID'**
-  String get tutEnterUserId;
-
-  /// No description provided for @tutForRemoteContacts.
-  ///
-  /// In en, this message translates to:
-  /// **'For remote contacts'**
-  String get tutForRemoteContacts;
-
-  /// No description provided for @tutEmergencyBody.
-  ///
-  /// In en, this message translates to:
-  /// **'You will find red emergency buttons in the app.\n\nThey erase everything immediately — just like the delete code. Use them only when it really matters.'**
-  String get tutEmergencyBody;
-
-  /// No description provided for @tutInSettings.
-  ///
-  /// In en, this message translates to:
-  /// **'In the settings'**
-  String get tutInSettings;
-
   /// No description provided for @tutChatFeaturesIntro.
   ///
   /// In en, this message translates to:
-  /// **'A chat gives you three special features:'**
+  /// **'Every message can remove itself again.'**
   String get tutChatFeaturesIntro;
 
   /// No description provided for @tutLockMessageDesc.
   ///
   /// In en, this message translates to:
-  /// **'Protect individual messages with a password'**
+  /// **'A password for this one message. Pass it on by voice.'**
   String get tutLockMessageDesc;
 
   /// No description provided for @tutAutoDeleteDesc.
   ///
   /// In en, this message translates to:
-  /// **'Messages delete themselves after a set time'**
+  /// **'Disappears after the time you set, on both sides.'**
   String get tutAutoDeleteDesc;
 
   /// No description provided for @tutBurnAfterReadDesc.
   ///
   /// In en, this message translates to:
-  /// **'The message is deleted immediately after reading'**
+  /// **'Gone the moment the other side leaves the chat.'**
   String get tutBurnAfterReadDesc;
 
   /// No description provided for @tutReadyTitle.
   ///
   /// In en, this message translates to:
-  /// **'All set!'**
+  /// **'Ready'**
   String get tutReadyTitle;
 
   /// No description provided for @tutReadyBody.
   ///
   /// In en, this message translates to:
-  /// **'You now know everything you need.\n\nIn the next step you set up your codes — after that your messenger is ready to use.'**
+  /// **'One point is still missing. It is the most important one.'**
   String get tutReadyBody;
 
   /// No description provided for @language.
@@ -1392,22 +1302,10 @@ abstract class AppLocalizations {
   /// **'Device security'**
   String get deviceSecuritySection;
 
-  /// No description provided for @tutDeleteCodeTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Emergency code'**
-  String get tutDeleteCodeTitle;
-
-  /// No description provided for @tutEmergencyTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Emergency buttons'**
-  String get tutEmergencyTitle;
-
   /// No description provided for @tutChatFeaturesTitle.
   ///
   /// In en, this message translates to:
-  /// **'Chat features'**
+  /// **'Messages'**
   String get tutChatFeaturesTitle;
 
   /// No description provided for @blockContact.
@@ -1691,6 +1589,192 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{name} was unblocked. The security key has changed and must be confirmed again.'**
   String unblockedKeyChanged(String name);
+
+  /// No description provided for @tutDCalculator.
+  ///
+  /// In en, this message translates to:
+  /// **'The calculator in front really works. Nothing gives it away.'**
+  String get tutDCalculator;
+
+  /// No description provided for @tutTEncrypted.
+  ///
+  /// In en, this message translates to:
+  /// **'End to end'**
+  String get tutTEncrypted;
+
+  /// No description provided for @tutDEncrypted.
+  ///
+  /// In en, this message translates to:
+  /// **'Only you and your contact can read along. The server sees nothing.'**
+  String get tutDEncrypted;
+
+  /// No description provided for @tutDLanguage.
+  ///
+  /// In en, this message translates to:
+  /// **'Seven languages. Switch at any time.'**
+  String get tutDLanguage;
+
+  /// No description provided for @tutAccessTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Your access'**
+  String get tutAccessTitle;
+
+  /// No description provided for @tutAccessIntro.
+  ///
+  /// In en, this message translates to:
+  /// **'Four things protect the messenger. You set them up next.'**
+  String get tutAccessIntro;
+
+  /// No description provided for @tutTSecretCode.
+  ///
+  /// In en, this message translates to:
+  /// **'Secret code'**
+  String get tutTSecretCode;
+
+  /// No description provided for @tutDSecretCode.
+  ///
+  /// In en, this message translates to:
+  /// **'Type it into the calculator and press equals. The messenger opens.'**
+  String get tutDSecretCode;
+
+  /// No description provided for @tutTDeleteCode.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete code'**
+  String get tutTDeleteCode;
+
+  /// No description provided for @tutDDeleteCode.
+  ///
+  /// In en, this message translates to:
+  /// **'A second code. It wipes everything at once, without asking.'**
+  String get tutDDeleteCode;
+
+  /// No description provided for @tutDVault.
+  ///
+  /// In en, this message translates to:
+  /// **'An extra password after the code. Optional, but recommended.'**
+  String get tutDVault;
+
+  /// No description provided for @tutDScreenLock.
+  ///
+  /// In en, this message translates to:
+  /// **'Face ID instead of typing. The app locks itself when you put it away.'**
+  String get tutDScreenLock;
+
+  /// No description provided for @tutContactsIntro.
+  ///
+  /// In en, this message translates to:
+  /// **'Two ways to add someone. And one to be certain.'**
+  String get tutContactsIntro;
+
+  /// No description provided for @tutDAddById.
+  ///
+  /// In en, this message translates to:
+  /// **'Exchange IDs and enter them. Works from a distance too.'**
+  String get tutDAddById;
+
+  /// No description provided for @tutTRequest.
+  ///
+  /// In en, this message translates to:
+  /// **'Request'**
+  String get tutTRequest;
+
+  /// No description provided for @tutDRequest.
+  ///
+  /// In en, this message translates to:
+  /// **'The other side has to accept. Nothing goes out before that.'**
+  String get tutDRequest;
+
+  /// No description provided for @tutDQr.
+  ///
+  /// In en, this message translates to:
+  /// **'Show the code and scan it. Showing it counts as consent.'**
+  String get tutDQr;
+
+  /// No description provided for @tutDSafetyNumber.
+  ///
+  /// In en, this message translates to:
+  /// **'Compare the digits or scan them. The chat then says confirmed.'**
+  String get tutDSafetyNumber;
+
+  /// No description provided for @tutTRemaining.
+  ///
+  /// In en, this message translates to:
+  /// **'Time left'**
+  String get tutTRemaining;
+
+  /// No description provided for @tutDRemaining.
+  ///
+  /// In en, this message translates to:
+  /// **'The remaining time counts down under the message.'**
+  String get tutDRemaining;
+
+  /// No description provided for @tutProtectTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Protection'**
+  String get tutProtectTitle;
+
+  /// No description provided for @tutProtectIntro.
+  ///
+  /// In en, this message translates to:
+  /// **'What happens in a chat stays traceable.'**
+  String get tutProtectIntro;
+
+  /// No description provided for @tutDScreenshot.
+  ///
+  /// In en, this message translates to:
+  /// **'The other side sees screenshots and recordings. Always.'**
+  String get tutDScreenshot;
+
+  /// No description provided for @tutDBlock.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing gets through any more. The confirmation stays saved.'**
+  String get tutDBlock;
+
+  /// No description provided for @tutDClear.
+  ///
+  /// In en, this message translates to:
+  /// **'Clears the history. Your messages vanish on their side too.'**
+  String get tutDClear;
+
+  /// No description provided for @tutDDeleteChat.
+  ///
+  /// In en, this message translates to:
+  /// **'Removes the whole chat. The other side is told.'**
+  String get tutDDeleteChat;
+
+  /// No description provided for @tutTEmergency.
+  ///
+  /// In en, this message translates to:
+  /// **'Emergency wipe'**
+  String get tutTEmergency;
+
+  /// No description provided for @tutDEmergency.
+  ///
+  /// In en, this message translates to:
+  /// **'Deletes everything on the spot. Your contacts are told.'**
+  String get tutDEmergency;
+
+  /// No description provided for @tutDSettings.
+  ///
+  /// In en, this message translates to:
+  /// **'Language, vault and codes are changed there.'**
+  String get tutDSettings;
+
+  /// No description provided for @tutTAgain.
+  ///
+  /// In en, this message translates to:
+  /// **'This introduction'**
+  String get tutTAgain;
+
+  /// No description provided for @tutDAgain.
+  ///
+  /// In en, this message translates to:
+  /// **'It lives in the settings. You can read it again at any time.'**
+  String get tutDAgain;
 }
 
 class _AppLocalizationsDelegate

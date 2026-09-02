@@ -633,85 +633,31 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get tutWelcomeBody =>
-      'Krypta is een geheime berichtenapp.\n\nVoor iedereen anders ziet de app eruit als een gewone rekenmachine — niemand zal vermoeden dat er een versleuteld gesprek achter schuilgaat.\n\nWe raden je aan deze uitleg aandachtig te lezen.';
-
-  @override
-  String get tutSecretCodeTitle => 'Je geheime code';
-
-  @override
-  String get tutSecretCodeBody =>
-      'Bij het instellen kies je een cijfercode.\n\nDeze code is je sleutel: alleen daarmee open je de verborgen berichtenapp.';
-
-  @override
-  String get tutDeleteCodeBody =>
-      'De tweede code is voor noodgevallen.\n\nAls je die invoert wordt alles onmiddellijk gewist: berichten, sleutels, account. Onherroepelijk.\n\nKies een code die je niet per ongeluk invoert.';
-
-  @override
-  String get tutDeleteCodeWarning =>
-      'Alles wordt onmiddellijk gewist.\nHerstel is niet mogelijk.';
-
-  @override
-  String get tutOpenMessengerTitle => 'De berichtenapp openen';
-
-  @override
-  String get tutOpenMessengerBody =>
-      'Zo open je je berichtenapp:\n\n1. Voer je geheime code in op de rekenmachine\n2. Druk op de =-toets\n\nDe berichtenapp gaat meteen open.';
-
-  @override
-  String get tutPressEquals => 'Druk op =';
-
-  @override
-  String get tutMessengerUnlocked => 'Berichtenapp ontgrendeld';
-
-  @override
-  String get tutVaultBody =>
-      'In de instellingen kun je een extra wachtwoord inschakelen.\n\nNa de geheime code wordt dan ook het kluiswachtwoord gevraagd — dubbele beveiliging voor je berichten.';
+      'Van buiten een rekenmachine. Daarachter staan je berichten, versleuteld.';
 
   @override
   String get tutAddContactsTitle => 'Contacten toevoegen';
 
   @override
-  String get tutAddContactsBody =>
-      'Er zijn twee manieren om contacten toe te voegen:\n\n• Een QR-code scannen — snel en eenvoudig\n• Een gebruikers-ID invoeren — als jullie niet op dezelfde plek zijn\n\nDaarna kunnen jullie elkaar berichten sturen.';
-
-  @override
-  String get tutQrFast => 'Snel en eenvoudig';
-
-  @override
-  String get tutEnterUserId => 'Gebruikers-ID invoeren';
-
-  @override
-  String get tutForRemoteContacts => 'Voor contacten op afstand';
-
-  @override
-  String get tutEmergencyBody =>
-      'In de app vind je rode noodknoppen.\n\nZe wissen alles onmiddellijk — net als de wiscode. Gebruik ze alleen als het er echt op aankomt.';
-
-  @override
-  String get tutInSettings => 'In de instellingen';
-
-  @override
-  String get tutChatFeaturesIntro =>
-      'In een gesprek heb je drie bijzondere functies:';
+  String get tutChatFeaturesIntro => 'Elk bericht kan zichzelf weer weghalen.';
 
   @override
   String get tutLockMessageDesc =>
-      'Losse berichten met een wachtwoord beschermen';
+      'Een wachtwoord voor alleen dit bericht. Geef het mondeling door.';
 
   @override
   String get tutAutoDeleteDesc =>
-      'Berichten wissen zichzelf na een ingestelde tijd';
+      'Verdwijnt na de ingestelde tijd, bij jullie allebei.';
 
   @override
   String get tutBurnAfterReadDesc =>
-      'Het bericht wordt direct na het lezen verwijderd';
+      'Weg zodra de andere kant de chat verlaat.';
 
   @override
-  String get tutReadyTitle => 'Klaar!';
+  String get tutReadyTitle => 'Klaar';
 
   @override
-  String get tutReadyBody =>
-      'Je weet nu alles wat je nodig hebt.\n\nIn de volgende stap stel je je codes in — daarna is je berichtenapp klaar voor gebruik.';
+  String get tutReadyBody => 'Er ontbreekt nog een punt. Het belangrijkste.';
 
   @override
   String get language => 'Taal';
@@ -723,13 +669,7 @@ class AppLocalizationsNl extends AppLocalizations {
   String get deviceSecuritySection => 'Apparaatbeveiliging';
 
   @override
-  String get tutDeleteCodeTitle => 'Noodcode';
-
-  @override
-  String get tutEmergencyTitle => 'Noodknoppen';
-
-  @override
-  String get tutChatFeaturesTitle => 'Gespreksfuncties';
+  String get tutChatFeaturesTitle => 'Berichten';
 
   @override
   String get blockContact => 'Blokkeren';
@@ -899,4 +839,115 @@ class AppLocalizationsNl extends AppLocalizations {
   String unblockedKeyChanged(String name) {
     return '$name is gedeblokkeerd. De beveiligingssleutel is gewijzigd en moet opnieuw worden bevestigd.';
   }
+
+  @override
+  String get tutDCalculator =>
+      'De rekenmachine werkt echt. Niets verraadt hem.';
+
+  @override
+  String get tutTEncrypted => 'End to end';
+
+  @override
+  String get tutDEncrypted =>
+      'Alleen jij en je contact kunnen meelezen. De server ziet niets.';
+
+  @override
+  String get tutDLanguage => 'Zeven talen. Altijd om te zetten.';
+
+  @override
+  String get tutAccessTitle => 'Jouw toegang';
+
+  @override
+  String get tutAccessIntro =>
+      'Vier dingen beschermen de messenger. Je stelt ze nu in.';
+
+  @override
+  String get tutTSecretCode => 'Geheime code';
+
+  @override
+  String get tutDSecretCode =>
+      'Tik hem in de rekenmachine en druk op is gelijk aan. De messenger gaat open.';
+
+  @override
+  String get tutTDeleteCode => 'Wiscode';
+
+  @override
+  String get tutDDeleteCode =>
+      'Een tweede code. Die wist alles meteen, zonder te vragen.';
+
+  @override
+  String get tutDVault =>
+      'Een extra wachtwoord na de code. Vrijwillig, maar aanbevolen.';
+
+  @override
+  String get tutDScreenLock =>
+      'Face ID in plaats van tikken. De app vergrendelt zichzelf als je hem weglegt.';
+
+  @override
+  String get tutContactsIntro =>
+      'Twee manieren om toe te voegen. En een om zeker te zijn.';
+
+  @override
+  String get tutDAddById =>
+      'Wissel de kenmerken uit en voer ze in. Werkt ook op afstand.';
+
+  @override
+  String get tutTRequest => 'Verzoek';
+
+  @override
+  String get tutDRequest =>
+      'De andere kant moet accepteren. Daarvoor gaat er niets uit.';
+
+  @override
+  String get tutDQr => 'Code tonen en scannen. Tonen geldt als toestemming.';
+
+  @override
+  String get tutDSafetyNumber =>
+      'Vergelijk de cijfers of scan ze. Daarna staat bevestigd in de chat.';
+
+  @override
+  String get tutTRemaining => 'Resterende tijd';
+
+  @override
+  String get tutDRemaining => 'Onder het bericht loopt de resterende tijd mee.';
+
+  @override
+  String get tutProtectTitle => 'Bescherming';
+
+  @override
+  String get tutProtectIntro =>
+      'Wat er in een chat gebeurt, blijft na te gaan.';
+
+  @override
+  String get tutDScreenshot =>
+      'De andere kant ziet schermafbeeldingen en opnamen. Altijd.';
+
+  @override
+  String get tutDBlock =>
+      'Er komt niets meer door. De bevestiging blijft bewaard.';
+
+  @override
+  String get tutDClear =>
+      'Leegt het verloop. Jouw berichten verdwijnen ook daar.';
+
+  @override
+  String get tutDDeleteChat =>
+      'Verwijdert de hele chat. De andere kant hoort ervan.';
+
+  @override
+  String get tutTEmergency => 'Noodwissing';
+
+  @override
+  String get tutDEmergency =>
+      'Wist alles ter plekke. Je contacten horen ervan.';
+
+  @override
+  String get tutDSettings => 'Taal, kluis en codes wijzig je daar.';
+
+  @override
+  String get tutTAgain => 'Deze inleiding';
+
+  @override
+  String get tutDAgain =>
+      'Staat in de instellingen. Je kunt hem altijd opnieuw lezen.';
 }

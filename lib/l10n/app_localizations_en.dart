@@ -628,83 +628,32 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get tutWelcomeBody =>
-      'Krypta is a secret messenger.\n\nTo everyone else the app looks like an ordinary calculator — nobody will suspect that an encrypted chat is hiding behind it.\n\nWe recommend reading this tutorial carefully.';
-
-  @override
-  String get tutSecretCodeTitle => 'Your secret code';
-
-  @override
-  String get tutSecretCodeBody =>
-      'During setup you choose a numeric code.\n\nThis code is your key — it is the only way to open the hidden messenger.';
-
-  @override
-  String get tutDeleteCodeBody =>
-      'The second code is for emergencies.\n\nEntering it erases everything immediately — messages, keys, account. Irreversibly.\n\nChoose a code you will not enter by accident.';
-
-  @override
-  String get tutDeleteCodeWarning =>
-      'Everything is erased immediately.\nNo recovery is possible.';
-
-  @override
-  String get tutOpenMessengerTitle => 'Open the messenger';
-
-  @override
-  String get tutOpenMessengerBody =>
-      'To open your messenger:\n\n1. Enter your secret code in the calculator\n2. Press the = key\n\nThe messenger opens right away.';
-
-  @override
-  String get tutPressEquals => 'Press =';
-
-  @override
-  String get tutMessengerUnlocked => 'Messenger unlocked';
-
-  @override
-  String get tutVaultBody =>
-      'In the settings you can enable an additional password.\n\nAfter the secret code the vault password is then requested as well — double security for your messages.';
+      'A calculator on the outside. Your messages sit behind it, encrypted.';
 
   @override
   String get tutAddContactsTitle => 'Add contacts';
 
   @override
-  String get tutAddContactsBody =>
-      'There are two ways to add contacts:\n\n• Scan a QR code — quick and simple\n• Enter a user ID — when you are not in the same place\n\nAfter that you can write to each other.';
-
-  @override
-  String get tutQrFast => 'Quick & simple';
-
-  @override
-  String get tutEnterUserId => 'Enter user ID';
-
-  @override
-  String get tutForRemoteContacts => 'For remote contacts';
-
-  @override
-  String get tutEmergencyBody =>
-      'You will find red emergency buttons in the app.\n\nThey erase everything immediately — just like the delete code. Use them only when it really matters.';
-
-  @override
-  String get tutInSettings => 'In the settings';
-
-  @override
-  String get tutChatFeaturesIntro => 'A chat gives you three special features:';
+  String get tutChatFeaturesIntro => 'Every message can remove itself again.';
 
   @override
   String get tutLockMessageDesc =>
-      'Protect individual messages with a password';
+      'A password for this one message. Pass it on by voice.';
 
   @override
-  String get tutAutoDeleteDesc => 'Messages delete themselves after a set time';
+  String get tutAutoDeleteDesc =>
+      'Disappears after the time you set, on both sides.';
 
   @override
   String get tutBurnAfterReadDesc =>
-      'The message is deleted immediately after reading';
+      'Gone the moment the other side leaves the chat.';
 
   @override
-  String get tutReadyTitle => 'All set!';
+  String get tutReadyTitle => 'Ready';
 
   @override
   String get tutReadyBody =>
-      'You now know everything you need.\n\nIn the next step you set up your codes — after that your messenger is ready to use.';
+      'One point is still missing. It is the most important one.';
 
   @override
   String get language => 'Language';
@@ -716,13 +665,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get deviceSecuritySection => 'Device security';
 
   @override
-  String get tutDeleteCodeTitle => 'Emergency code';
-
-  @override
-  String get tutEmergencyTitle => 'Emergency buttons';
-
-  @override
-  String get tutChatFeaturesTitle => 'Chat features';
+  String get tutChatFeaturesTitle => 'Messages';
 
   @override
   String get blockContact => 'Block';
@@ -890,4 +833,116 @@ class AppLocalizationsEn extends AppLocalizations {
   String unblockedKeyChanged(String name) {
     return '$name was unblocked. The security key has changed and must be confirmed again.';
   }
+
+  @override
+  String get tutDCalculator =>
+      'The calculator in front really works. Nothing gives it away.';
+
+  @override
+  String get tutTEncrypted => 'End to end';
+
+  @override
+  String get tutDEncrypted =>
+      'Only you and your contact can read along. The server sees nothing.';
+
+  @override
+  String get tutDLanguage => 'Seven languages. Switch at any time.';
+
+  @override
+  String get tutAccessTitle => 'Your access';
+
+  @override
+  String get tutAccessIntro =>
+      'Four things protect the messenger. You set them up next.';
+
+  @override
+  String get tutTSecretCode => 'Secret code';
+
+  @override
+  String get tutDSecretCode =>
+      'Type it into the calculator and press equals. The messenger opens.';
+
+  @override
+  String get tutTDeleteCode => 'Delete code';
+
+  @override
+  String get tutDDeleteCode =>
+      'A second code. It wipes everything at once, without asking.';
+
+  @override
+  String get tutDVault =>
+      'An extra password after the code. Optional, but recommended.';
+
+  @override
+  String get tutDScreenLock =>
+      'Face ID instead of typing. The app locks itself when you put it away.';
+
+  @override
+  String get tutContactsIntro =>
+      'Two ways to add someone. And one to be certain.';
+
+  @override
+  String get tutDAddById =>
+      'Exchange IDs and enter them. Works from a distance too.';
+
+  @override
+  String get tutTRequest => 'Request';
+
+  @override
+  String get tutDRequest =>
+      'The other side has to accept. Nothing goes out before that.';
+
+  @override
+  String get tutDQr =>
+      'Show the code and scan it. Showing it counts as consent.';
+
+  @override
+  String get tutDSafetyNumber =>
+      'Compare the digits or scan them. The chat then says confirmed.';
+
+  @override
+  String get tutTRemaining => 'Time left';
+
+  @override
+  String get tutDRemaining =>
+      'The remaining time counts down under the message.';
+
+  @override
+  String get tutProtectTitle => 'Protection';
+
+  @override
+  String get tutProtectIntro => 'What happens in a chat stays traceable.';
+
+  @override
+  String get tutDScreenshot =>
+      'The other side sees screenshots and recordings. Always.';
+
+  @override
+  String get tutDBlock =>
+      'Nothing gets through any more. The confirmation stays saved.';
+
+  @override
+  String get tutDClear =>
+      'Clears the history. Your messages vanish on their side too.';
+
+  @override
+  String get tutDDeleteChat =>
+      'Removes the whole chat. The other side is told.';
+
+  @override
+  String get tutTEmergency => 'Emergency wipe';
+
+  @override
+  String get tutDEmergency =>
+      'Deletes everything on the spot. Your contacts are told.';
+
+  @override
+  String get tutDSettings => 'Language, vault and codes are changed there.';
+
+  @override
+  String get tutTAgain => 'This introduction';
+
+  @override
+  String get tutDAgain =>
+      'It lives in the settings. You can read it again at any time.';
 }
