@@ -456,7 +456,7 @@
   "@tutDClear": {},
   "tutDClear": "Clear the chat history at any time. The messages you sent are removed for good on both devices.",
   "@tutDDeleteChat": {},
-  "tutDDeleteChat": "Remove the whole chat from your list. The contact itself stays.",
+  "tutDDeleteChat": "Remove the whole chat from your list. The messages you sent are deleted on both devices.",
   "@tutTEmergency": {},
   "tutTEmergency": "Emergency wipe",
   "@tutDEmergency": {},

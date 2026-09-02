@@ -268,7 +268,7 @@
   "tutDScreenshot": "Siempre te avisamos si se hace una captura o una grabación del chat.",
   "tutDBlock": "Bloquea contactos para que no puedan escribirte hasta que los desbloquees.",
   "tutDClear": "Borra el historial cuando quieras. Los mensajes que enviaste se eliminan para siempre en ambos dispositivos.",
-  "tutDDeleteChat": "Quita el chat entero de tu lista. El contacto se mantiene.",
+  "tutDDeleteChat": "Quita el chat entero de tu lista. Los mensajes que enviaste se borran en ambos dispositivos.",
   "tutTEmergency": "Borrado de emergencia",
   "tutDEmergency": "Borra todo en el acto. Tus contactos se enteran.",
   "tutDSettings": "Idioma, caja fuerte y códigos se cambian ahí.",

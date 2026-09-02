@@ -922,7 +922,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get tutDDeleteChat =>
-      'Entferne den ganzen Chat aus deiner Liste. Der Kontakt bleibt bestehen.';
+      'Entferne den ganzen Chat aus deiner Liste. Deine gesendeten Nachrichten werden auf beiden Geräten gelöscht.';
 
   @override
   String get tutTEmergency => 'Notfall-Löschung';

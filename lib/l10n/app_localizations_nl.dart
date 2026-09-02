@@ -920,7 +920,7 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get tutDDeleteChat =>
-      'Verwijder de hele chat uit je lijst. Het contact blijft bestaan.';
+      'Verwijder de hele chat uit je lijst. Jouw verzonden berichten worden op beide apparaten gewist.';
 
   @override
   String get tutTEmergency => 'Noodwissing';

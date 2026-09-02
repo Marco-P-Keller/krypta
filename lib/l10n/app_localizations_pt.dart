@@ -923,7 +923,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get tutDDeleteChat =>
-      'Remove a conversa inteira da tua lista. O contacto mantém-se.';
+      'Remove a conversa inteira da tua lista. As mensagens que enviaste são apagadas nos dois aparelhos.';
 
   @override
   String get tutTEmergency => 'Apagamento de emergência';

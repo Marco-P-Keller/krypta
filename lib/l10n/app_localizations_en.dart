@@ -913,7 +913,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get tutDDeleteChat =>
-      'Remove the whole chat from your list. The contact itself stays.';
+      'Remove the whole chat from your list. The messages you sent are deleted on both devices.';
 
   @override
   String get tutTEmergency => 'Emergency wipe';

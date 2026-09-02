@@ -1719,7 +1719,7 @@ abstract class AppLocalizations {
   /// No description provided for @tutDDeleteChat.
   ///
   /// In en, this message translates to:
-  /// **'Remove the whole chat from your list. The contact itself stays.'**
+  /// **'Remove the whole chat from your list. The messages you sent are deleted on both devices.'**
   String get tutDDeleteChat;
 
   /// No description provided for @tutTEmergency.

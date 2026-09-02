@@ -924,7 +924,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get tutDDeleteChat =>
-      'Retire toute la discussion de ta liste. Le contact reste.';
+      'Retire toute la discussion de ta liste. Les messages que tu as envoyés sont supprimés des deux côtés.';
 
   @override
   String get tutTEmergency => 'Effacement d’urgence';

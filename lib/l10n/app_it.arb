@@ -268,7 +268,7 @@
   "tutDScreenshot": "Vieni sempre avvisato se qualcuno fa uno screenshot o registra la chat.",
   "tutDBlock": "Blocca i contatti così non possono più scriverti, finché non li sblocchi.",
   "tutDClear": "Svuota la cronologia quando vuoi. I messaggi che hai inviato spariscono per sempre da entrambi i dispositivi.",
-  "tutDDeleteChat": "Rimuovi l’intera chat dalla lista. Il contatto resta.",
+  "tutDDeleteChat": "Rimuovi l’intera chat dalla lista. I messaggi che hai inviato vengono cancellati su entrambi i dispositivi.",
   "tutTEmergency": "Cancellazione d’emergenza",
   "tutDEmergency": "Cancella tutto all’istante. I tuoi contatti vengono avvisati.",
   "tutDSettings": "Lingua, cassaforte e codici si cambiano lì.",

@@ -268,7 +268,7 @@
   "tutDScreenshot": "Tu es toujours prévenu si une capture ou un enregistrement de la discussion est réalisé.",
   "tutDBlock": "Bloque des contacts pour qu’ils ne puissent plus te joindre, jusqu’à ce que tu les débloques.",
   "tutDClear": "Efface l’historique quand tu veux. Les messages que tu as envoyés disparaissent définitivement des deux côtés.",
-  "tutDDeleteChat": "Retire toute la discussion de ta liste. Le contact reste.",
+  "tutDDeleteChat": "Retire toute la discussion de ta liste. Les messages que tu as envoyés sont supprimés des deux côtés.",
   "tutTEmergency": "Effacement d’urgence",
   "tutDEmergency": "Efface tout immédiatement. Tes contacts en sont informés.",
   "tutDSettings": "Langue, coffre et codes se changent là bas.",

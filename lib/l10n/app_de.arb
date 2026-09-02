@@ -289,7 +289,7 @@
   "tutDScreenshot": "Du wirst immer benachrichtigt, wenn ein Screenshot oder eine Bildschirmaufnahme des Chats erstellt wird.",
   "tutDBlock": "Blockiere Kontakte, damit sie dich nicht mehr kontaktieren können, bis du sie wieder freigibst.",
   "tutDClear": "Lösche den Chatverlauf jederzeit. Deine gesendeten Nachrichten werden auf beiden Geräten unwiderruflich gelöscht.",
-  "tutDDeleteChat": "Entferne den ganzen Chat aus deiner Liste. Der Kontakt bleibt bestehen.",
+  "tutDDeleteChat": "Entferne den ganzen Chat aus deiner Liste. Deine gesendeten Nachrichten werden auf beiden Geräten gelöscht.",
   "tutTEmergency": "Notfall-Löschung",
   "tutDEmergency": "Löscht alles auf der Stelle. Deine Kontakte erfahren es.",
   "tutDSettings": "Sprache, Tresor und Codes änderst du dort.",
