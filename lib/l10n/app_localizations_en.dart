@@ -200,7 +200,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get qrScanHint => 'Point your camera at a Krypta QR code';
 
   @override
-  String get qrShareHint => 'Let others scan this to connect';
+  String get qrShareHint =>
+      'Others can scan this QR code to add you as a contact.';
 
   @override
   String get yourQrCode => 'Your QR Code';

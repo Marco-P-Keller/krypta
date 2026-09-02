@@ -62,7 +62,7 @@
   "scanQrCode": "QR-code scannen",
   "scanQr": "QR scannen",
   "qrScanHint": "Richt je camera op een QR-code van Krypta",
-  "qrShareHint": "Laat anderen deze scannen om verbinding te maken",
+  "qrShareHint": "Anderen kunnen deze QR-code scannen om jou als contact toe te voegen.",
   "yourQrCode": "Jouw QR-code",
   "idCopied": "ID gekopieerd",
   "qrWebUnavailable": "QR-codes scannen is niet beschikbaar op het web.\nGebruik een mobiel apparaat om QR-codes te scannen.",

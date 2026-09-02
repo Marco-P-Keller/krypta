@@ -72,7 +72,7 @@
   "scanQrCode": "Scan QR Code",
   "scanQr": "Scan QR",
   "qrScanHint": "Point your camera at a Krypta QR code",
-  "qrShareHint": "Let others scan this to connect",
+  "qrShareHint": "Others can scan this QR code to add you as a contact.",
   "yourQrCode": "Your QR Code",
   "idCopied": "ID copied",
   "qrWebUnavailable": "QR scanning is not available on web.\nUse a mobile device to scan QR codes.",

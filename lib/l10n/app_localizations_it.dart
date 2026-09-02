@@ -203,7 +203,8 @@ class AppLocalizationsIt extends AppLocalizations {
   String get qrScanHint => 'Punta la fotocamera verso un codice QR di Krypta';
 
   @override
-  String get qrShareHint => 'Fallo scansionare agli altri per connettervi';
+  String get qrShareHint =>
+      'Gli altri possono scansionare questo codice QR per aggiungerti come contatto.';
 
   @override
   String get yourQrCode => 'Il tuo codice QR';

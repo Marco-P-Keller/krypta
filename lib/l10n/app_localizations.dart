@@ -483,7 +483,7 @@ abstract class AppLocalizations {
   /// No description provided for @qrShareHint.
   ///
   /// In en, this message translates to:
-  /// **'Let others scan this to connect'**
+  /// **'Others can scan this QR code to add you as a contact.'**
   String get qrShareHint;
 
   /// No description provided for @yourQrCode.

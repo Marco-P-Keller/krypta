@@ -202,7 +202,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get qrShareHint =>
-      'Andere können diesen Code scannen um sich zu verbinden';
+      'Andere können diesen QR-Code scannen, um dich als Kontakt hinzuzufügen.';
 
   @override
   String get yourQrCode => 'Dein QR-Code';

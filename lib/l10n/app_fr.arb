@@ -62,7 +62,7 @@
   "scanQrCode": "Scanner un code QR",
   "scanQr": "Scanner le QR",
   "qrScanHint": "Dirigez l’appareil photo vers un code QR Krypta",
-  "qrShareHint": "Laissez les autres le scanner pour se connecter",
+  "qrShareHint": "Les autres peuvent scanner ce code QR pour t’ajouter comme contact.",
   "yourQrCode": "Votre code QR",
   "idCopied": "Identifiant copié",
   "qrWebUnavailable": "Le scan de codes QR n’est pas disponible sur le web.\nUtilisez un appareil mobile pour scanner des codes QR.",

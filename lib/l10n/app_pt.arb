@@ -62,7 +62,7 @@
   "scanQrCode": "Ler código QR",
   "scanQr": "Ler QR",
   "qrScanHint": "Aponte a câmara para um código QR do Krypta",
-  "qrShareHint": "Deixe que os outros o leiam para se ligarem",
+  "qrShareHint": "Os outros podem ler este código QR para te adicionarem como contacto.",
   "yourQrCode": "O seu código QR",
   "idCopied": "ID copiado",
   "qrWebUnavailable": "A leitura de códigos QR não está disponível na web.\nUse um dispositivo móvel para ler códigos QR.",

@@ -62,7 +62,7 @@
   "scanQrCode": "Scansiona codice QR",
   "scanQr": "Scansiona QR",
   "qrScanHint": "Punta la fotocamera verso un codice QR di Krypta",
-  "qrShareHint": "Fallo scansionare agli altri per connettervi",
+  "qrShareHint": "Gli altri possono scansionare questo codice QR per aggiungerti come contatto.",
   "yourQrCode": "Il tuo codice QR",
   "idCopied": "ID copiato",
   "qrWebUnavailable": "La scansione dei codici QR non è disponibile sul web.\nUsa un dispositivo mobile per scansionare i codici QR.",
