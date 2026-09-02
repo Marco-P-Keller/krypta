@@ -277,5 +277,6 @@
   "tutDEmergency": "Borra todo en el acto. Tus contactos se enteran.",
   "tutDSettings": "Idioma, caja fuerte y códigos se cambian ahí.",
   "tutTAgain": "Esta introducción",
-  "tutDAgain": "Está en los ajustes. Puedes releerla cuando quieras."
+  "tutDAgain": "Está en los ajustes. Puedes releerla cuando quieras.",
+  "onceOnlyMessage": "Mensaje de una sola vez"
 }

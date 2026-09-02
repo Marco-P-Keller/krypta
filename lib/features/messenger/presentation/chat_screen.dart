@@ -11,6 +11,7 @@ import '../../../widgets/emergency_button.dart';
 import '../data/models/chat_model.dart';
 import '../data/models/message_model.dart';
 import '../data/models/contact_model.dart';
+import '../logic/frist_stufe.dart';
 import '../logic/messenger_provider.dart';
 import 'widgets/chat_settings_sheet.dart';
 import 'widgets/passwort_dialog.dart';
@@ -47,9 +48,13 @@ class _ChatScreenState extends State<ChatScreen>
   final _controller = TextEditingController();
   final _scrollController = ScrollController();
   final _focusNode = FocusNode();
-  Duration? _perMessageTimer;
-  bool _hasPerMessageOverride = false;
-  bool _burnAfterRead = false;
+  /// Ob die naechste Nachricht nur einmal geoeffnet werden darf.
+  ///
+  /// Loeste am 02.09.2026 den Einzeltimer und Burn after read ab. Drei
+  /// Konzepte fuer „geht wieder weg" wurden eines. Die Frist des ganzen Chats
+  /// bleibt davon unberuehrt und gilt weiterhin fuer jede Nachricht, die
+  /// nicht einmalig ist.
+  bool _einmalig = false;
   String? _messagePassword;
   StreamSubscription<bool>? _screenshotSub;
   StreamSubscription<int>? _captureSub;
@@ -119,18 +124,16 @@ class _ChatScreenState extends State<ChatScreen>
     });
   }
 
-  Duration? get _effectiveTimer {
-    if (_burnAfterRead) return null;
-    if (_hasPerMessageOverride) return _perMessageTimer;
+  /// Die Frist dieser Nachricht.
+  ///
+  /// Seit dem Wegfall des Einzeltimers gibt es nur noch eine Quelle: die
+  /// Frist des Chats. Eine einmalige Nachricht traegt keine, sie geht mit
+  /// dem Oeffnen.
+  Duration? get _frist {
+    if (_einmalig) return null;
     final chat = context.read<MessengerProvider>().chatById(widget.chat.id);
     return chat?.defaultSelfDestruct;
   }
-
-  /// Ob die Frist dieser Nachricht vom Chat-Timer stammt.
-  ///
-  /// Entscheidet, wann die Uhr startet: ein eigener Timer laeuft ab der
-  /// Zustellung, der Chat-Timer ab dem Lesen. Siehe [SelfDestructPolicy].
-  bool get _fristVomChat => !_burnAfterRead && !_hasPerMessageOverride;
 
 
   void _markVisibleMessagesAsRead(MessengerProvider messenger) {
@@ -177,14 +180,18 @@ class _ChatScreenState extends State<ChatScreen>
     messenger.sendMessage(
       chatId: widget.chat.id,
       text: text,
-      selfDestruct: _effectiveTimer,
-      selfDestructFromChat: _fristVomChat,
-      burnAfterRead: _burnAfterRead,
+      selfDestruct: _frist,
+      // Jede Frist kommt jetzt vom Chat-Timer, also laeuft sie ab dem Lesen.
+      selfDestructFromChat: true,
+      einmalig: _einmalig,
       password: _messagePassword,
     );
     messenger.stopLocalTyping(widget.chat.recipientId);
     _controller.clear();
-    setState(() => _messagePassword = null);
+    setState(() {
+      _messagePassword = null;
+      _einmalig = false;
+    });
     _scrollToBottom();
   }
 
@@ -555,30 +562,25 @@ class _ChatScreenState extends State<ChatScreen>
     final chat = messenger.chatById(widget.chat.id);
     final chatDefault = chat?.defaultSelfDestruct;
 
-    final showTimer = _hasPerMessageOverride
-        ? _perMessageTimer != null
-        : chatDefault != null;
-    final timerDuration = _hasPerMessageOverride ? _perMessageTimer : chatDefault;
-
-    if (showTimer || _burnAfterRead) {
-      final String label;
-      if (_burnAfterRead) {
-        label = l10n.burnAfterRead;
-      } else if (!_hasPerMessageOverride && chatDefault != null) {
-        label = l10n.chatDefaultWithTimer(_durationLabel(chatDefault, l10n));
-      } else {
-        label = _durationLabel(timerDuration, l10n);
-      }
-
+    // Entweder die Nachricht ist einmalig, dann gilt keine Frist. Oder es
+    // gilt die Frist des Chats. Beides nebeneinander waere falsch.
+    if (_einmalig) {
+      bars.add(_buildInfoBar(
+        context,
+        icon: Icons.visibility_off_rounded,
+        text: l10n.onceOnlyMessage,
+        color: AppColors.destructive,
+        onClear: () => setState(() => _einmalig = false),
+        isDark: isDark,
+      ));
+    } else if (chatDefault != null) {
       bars.add(_buildInfoBar(
         context,
         icon: Icons.timer_outlined,
-        text: label,
-        onClear: () => setState(() {
-          _perMessageTimer = null;
-          _hasPerMessageOverride = false;
-          _burnAfterRead = false;
-        }),
+        text: l10n.chatDefaultWithTimer(_durationLabel(chatDefault, l10n)),
+        // Kein Wegtippen: das ist die Frist des ganzen Chats und wird in den
+        // Chat-Einstellungen gesetzt, nicht je Nachricht.
+        onClear: null,
         isDark: isDark,
       ));
     }
@@ -603,7 +605,7 @@ class _ChatScreenState extends State<ChatScreen>
     required IconData icon,
     required String text,
     Color color = AppColors.primary,
-    required VoidCallback onClear,
+    VoidCallback? onClear,
     required bool isDark,
   }) {
     return Container(
@@ -636,18 +638,19 @@ class _ChatScreenState extends State<ChatScreen>
           // in a stack of info bars only 6pt apart, and a full-size invisible
           // tap area risks overlapping the next bar's own button — unverified
           // without a device, so a smaller, safe increase was chosen instead).
-          GestureDetector(
-            onTap: onClear,
-            behavior: HitTestBehavior.opaque,
-            child: Container(
-              padding: const EdgeInsets.all(9),
-              decoration: BoxDecoration(
-                color: color.withValues(alpha: 0.12),
-                shape: BoxShape.circle,
+          if (onClear != null)
+            GestureDetector(
+              onTap: onClear,
+              behavior: HitTestBehavior.opaque,
+              child: Container(
+                padding: const EdgeInsets.all(9),
+                decoration: BoxDecoration(
+                  color: color.withValues(alpha: 0.12),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(Icons.close_rounded, size: 14, color: color),
               ),
-              child: Icon(Icons.close_rounded, size: 14, color: color),
             ),
-          ),
         ],
       ),
     );
@@ -658,16 +661,22 @@ class _ChatScreenState extends State<ChatScreen>
   /// Ersetzt zwei identische Kopien mit fest verdrahtetem Englisch. Die
   /// Reihenfolge der Vergleiche ist aufsteigend, damit ein Wert, der genau
   /// auf einer Grenze liegt, die kürzere Beschriftung bekommt.
-  String _durationLabel(Duration? d, AppLocalizations l10n) {
-    if (d == null) return l10n.off;
-    if (d.inSeconds <= 30) return l10n.seconds30;
-    if (d.inMinutes <= 1) return l10n.minute1;
-    if (d.inMinutes <= 5) return l10n.minutes5;
-    if (d.inMinutes <= 30) return l10n.minutes30;
-    if (d.inHours <= 1) return l10n.hour1;
-    if (d.inDays <= 1) return l10n.day1;
-    return l10n.week1;
-  }
+  /// Beschriftung einer Frist, uebersetzt.
+  ///
+  /// Die Zuordnung stand hier ein zweites Mal, neben derselben Regel im
+  /// Chat-Einstellungsblatt. Zwei Fassungen laufen frueher oder spaeter
+  /// auseinander; genau so stand dort einmal „1 Std." zweimal in der Liste.
+  /// Jetzt entscheidet FristLabel, hier wird nur noch uebersetzt.
+  String _durationLabel(Duration? d, AppLocalizations l10n) =>
+      switch (FristLabel.stufe(d)) {
+        FristStufe.aus => l10n.off,
+        FristStufe.sekunden30 => l10n.seconds30,
+        FristStufe.minuten5 => l10n.minutes5,
+        FristStufe.minuten30 => l10n.minutes30,
+        FristStufe.stunde1 => l10n.hour1,
+        FristStufe.tag1 => l10n.day1,
+        FristStufe.woche1 => l10n.week1,
+      };
 
   /// Die Leiste, die das Schreibfeld ersetzt, solange die Kontaktanfrage
   /// offen ist.
@@ -908,62 +917,34 @@ class _ChatScreenState extends State<ChatScreen>
               height: 36,
               child: PopupMenuButton<String>(
                 icon: Icon(
-                  _perMessageTimer != null || _burnAfterRead
-                      ? Icons.timer_rounded
-                      : Icons.timer_outlined,
-                  color: _perMessageTimer != null || _burnAfterRead
-                      ? AppColors.accent
-                      : dimColor,
+                  _einmalig
+                      ? Icons.visibility_off_rounded
+                      : Icons.visibility_off_outlined,
+                  color: _einmalig ? AppColors.destructive : dimColor,
                   size: 22,
                 ),
                 padding: EdgeInsets.zero,
                 onSelected: (value) {
-                  setState(() {
-                    _hasPerMessageOverride = true;
-                    if (value == 'burn') {
-                      _burnAfterRead = true;
-                      _perMessageTimer = null;
-                    } else if (value == 'off') {
-                      _burnAfterRead = false;
-                      _perMessageTimer = null;
-                    } else if (value == 'default') {
-                      _hasPerMessageOverride = false;
-                      _burnAfterRead = false;
-                      _perMessageTimer = null;
-                    } else {
-                      _burnAfterRead = false;
-                      _perMessageTimer = Duration(seconds: int.parse(value));
-                    }
-                  });
+                  setState(() => _einmalig = value == 'once');
                 },
                 itemBuilder: (context) {
-                  final chat = context
-                      .read<MessengerProvider>()
-                      .chatById(widget.chat.id);
-                  final hasDefault = chat?.defaultSelfDestruct != null;
+                  // Vorher standen hier sechs Fristen und Burn after read,
+                  // also drei Konzepte fuer „geht wieder weg". Uebrig bleibt
+                  // eines. Die Frist des Chats steht weiter oben in der
+                  // Leiste und wird in den Chat-Einstellungen gesetzt.
                   return [
-                    if (hasDefault)
-                      PopupMenuItem(
-                        value: 'default',
-                        child: Text(l10n.chatDefaultWithTimer(
-                            _durationLabel(chat!.defaultSelfDestruct, l10n))),
-                      ),
-                    PopupMenuItem(value: 'off', child: Text(l10n.off)),
-                    PopupMenuItem(value: '30', child: Text(l10n.seconds30)),
-                    PopupMenuItem(value: '60', child: Text(l10n.minute1)),
-                    PopupMenuItem(value: '300', child: Text(l10n.minutes5)),
-                    PopupMenuItem(value: '3600', child: Text(l10n.hour1)),
-                    PopupMenuItem(value: '86400', child: Text(l10n.day1)),
-                    PopupMenuItem(value: '604800', child: Text(l10n.week1)),
-                    const PopupMenuDivider(),
                     PopupMenuItem(
-                      value: 'burn',
+                      value: 'off',
+                      child: Text(l10n.off),
+                    ),
+                    PopupMenuItem(
+                      value: 'once',
                       child: Row(
                         children: [
-                          const Icon(Icons.local_fire_department_rounded,
+                          const Icon(Icons.visibility_off_rounded,
                               color: AppColors.destructive, size: 18),
                           const SizedBox(width: 8),
-                          Text(l10n.burnAfterRead),
+                          Flexible(child: Text(l10n.onceOnlyMessage)),
                         ],
                       ),
                     ),

@@ -277,5 +277,6 @@
   "tutDEmergency": "Cancella tutto all’istante. I tuoi contatti vengono avvisati.",
   "tutDSettings": "Lingua, cassaforte e codici si cambiano lì.",
   "tutTAgain": "Questa introduzione",
-  "tutDAgain": "Sta nelle impostazioni. Puoi rileggerla quando vuoi."
+  "tutDAgain": "Sta nelle impostazioni. Puoi rileggerla quando vuoi.",
+  "onceOnlyMessage": "Messaggio usa e getta"
 }

@@ -277,5 +277,6 @@
   "tutDEmergency": "Wist alles ter plekke. Je contacten horen ervan.",
   "tutDSettings": "Taal, kluis en codes wijzig je daar.",
   "tutTAgain": "Deze inleiding",
-  "tutDAgain": "Staat in de instellingen. Je kunt hem altijd opnieuw lezen."
+  "tutDAgain": "Staat in de instellingen. Je kunt hem altijd opnieuw lezen.",
+  "onceOnlyMessage": "Eenmalig bericht"
 }

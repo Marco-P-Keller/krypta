@@ -952,4 +952,7 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get tutDAgain =>
       'Está en los ajustes. Puedes releerla cuando quieras.';
+
+  @override
+  String get onceOnlyMessage => 'Mensaje de una sola vez';
 }

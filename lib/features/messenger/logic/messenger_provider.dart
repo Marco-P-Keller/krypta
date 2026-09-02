@@ -22,6 +22,7 @@ import 'block_policy.dart';
 import 'contact_request_policy.dart';
 import 'inbox_reconnect_backoff.dart';
 import 'self_destruct_policy.dart';
+import 'einmalig_policy.dart';
 import 'unread_policy.dart';
 import 'verification_policy.dart';
 import 'qr_payload_policy.dart';
@@ -2376,7 +2377,9 @@ class MessengerProvider extends ChangeNotifier {
     required String chatId,
     required String text,
     Duration? selfDestruct,
-    bool burnAfterRead = false,
+    /// Nur einmal zu oeffnen. Loeste am 02.09.2026 burnAfterRead ab; das
+    /// alte Feld wird nur noch gelesen, siehe EinmaligPolicy.
+    bool einmalig = false,
     String? password,
     bool selfDestructFromChat = false,
     bool asContactRequest = false,
@@ -2392,7 +2395,7 @@ class MessengerProvider extends ChangeNotifier {
           chatId: chatId,
           text: text,
           selfDestruct: selfDestruct,
-          burnAfterRead: burnAfterRead,
+          einmalig: einmalig,
           selfDestructFromChat: selfDestructFromChat,
           password: password,
           asContactRequest: asContactRequest,
@@ -2405,7 +2408,9 @@ class MessengerProvider extends ChangeNotifier {
     required String chatId,
     required String text,
     Duration? selfDestruct,
-    bool burnAfterRead = false,
+    /// Nur einmal zu oeffnen. Loeste am 02.09.2026 burnAfterRead ab; das
+    /// alte Feld wird nur noch gelesen, siehe EinmaligPolicy.
+    bool einmalig = false,
     String? password,
     bool selfDestructFromChat = false,
     bool asContactRequest = false,
@@ -2525,7 +2530,7 @@ class MessengerProvider extends ChangeNotifier {
       status: MessageStatus.sending,
       selfDestructDuration: selfDestruct,
       selfDestructFromChat: selfDestructFromChat,
-      burnAfterRead: burnAfterRead,
+      einmalig: einmalig,
       isPasswordProtected: hasPassword,
       passwordUnlocked: !hasPassword, // Both sides start locked
     );
@@ -2576,7 +2581,9 @@ class MessengerProvider extends ChangeNotifier {
       // Die Herkunft muss mit: ohne sie liefe eine Chat-Frist beim
       // Empfaenger als eigener Timer ab der Zustellung statt ab dem Lesen.
       if (selfDestructFromChat) innerPayload['_sdc'] = true;
-      if (burnAfterRead) innerPayload['_bar'] = true;
+      // `_bar` wird nicht mehr geschrieben, aber weiter gelesen: aeltere
+      // Absender schicken es noch, und ihre Zusage gilt.
+      if (einmalig) innerPayload[EinmaligPolicy.feldName] = true;
       if (hasPassword) innerPayload['_pw'] = true;
 
       // Key Transparency gossip inside encrypted content
@@ -3165,6 +3172,7 @@ class MessengerProvider extends ChangeNotifier {
           selfDestructDuration:
               selfDestructMs != null ? Duration(milliseconds: selfDestructMs) : null,
           burnAfterRead: burnAfterRead,
+          einmalig: EinmaligPolicy.ausPayload(innerPayload),
           isPasswordProtected: isPasswordProtected,
           passwordUnlocked: !isPasswordProtected,
         );
@@ -3417,6 +3425,7 @@ class MessengerProvider extends ChangeNotifier {
         selfDestructDuration:
             selfDestructMs != null ? Duration(milliseconds: selfDestructMs) : null,
         burnAfterRead: burnAfterRead,
+        einmalig: EinmaligPolicy.ausPayload(innerPayload),
         isPasswordProtected: isPasswordProtected,
         passwordUnlocked: !isPasswordProtected,
       );

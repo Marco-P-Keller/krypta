@@ -1775,6 +1775,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'It lives in the settings. You can read it again at any time.'**
   String get tutDAgain;
+
+  /// No description provided for @onceOnlyMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Once only message'**
+  String get onceOnlyMessage;
 }
 
 class _AppLocalizationsDelegate

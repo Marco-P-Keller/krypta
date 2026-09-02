@@ -277,5 +277,6 @@
   "tutDEmergency": "Efface tout immédiatement. Tes contacts en sont informés.",
   "tutDSettings": "Langue, coffre et codes se changent là bas.",
   "tutTAgain": "Cette introduction",
-  "tutDAgain": "Elle est dans les réglages. Tu peux la relire quand tu veux."
+  "tutDAgain": "Elle est dans les réglages. Tu peux la relire quand tu veux.",
+  "onceOnlyMessage": "Message unique"
 }

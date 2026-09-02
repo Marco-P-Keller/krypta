@@ -945,4 +945,7 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get tutDAgain =>
       'It lives in the settings. You can read it again at any time.';
+
+  @override
+  String get onceOnlyMessage => 'Once only message';
 }

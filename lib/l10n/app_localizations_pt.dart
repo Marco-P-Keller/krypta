@@ -950,4 +950,7 @@ class AppLocalizationsPt extends AppLocalizations {
   @override
   String get tutDAgain =>
       'Está nas definições. Podes lê la de novo quando quiseres.';
+
+  @override
+  String get onceOnlyMessage => 'Mensagem de uma vez';
 }

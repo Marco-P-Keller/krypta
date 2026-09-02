@@ -277,5 +277,6 @@
   "tutDEmergency": "Apaga tudo na hora. Os teus contactos ficam a saber.",
   "tutDSettings": "Idioma, cofre e códigos mudam se aí.",
   "tutTAgain": "Esta introdução",
-  "tutDAgain": "Está nas definições. Podes lê la de novo quando quiseres."
+  "tutDAgain": "Está nas definições. Podes lê la de novo quando quiseres.",
+  "onceOnlyMessage": "Mensagem de uma vez"
 }

@@ -952,4 +952,7 @@ class AppLocalizationsNl extends AppLocalizations {
   @override
   String get tutDAgain =>
       'Staat in de instellingen. Je kunt hem altijd opnieuw lezen.';
+
+  @override
+  String get onceOnlyMessage => 'Eenmalig bericht';
 }
