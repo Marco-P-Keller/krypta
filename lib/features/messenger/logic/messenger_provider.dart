@@ -911,6 +911,24 @@ class MessengerProvider extends ChangeNotifier {
         systemEvent: kind,
       ),
     );
+    // Vorher endete die Funktion hier. Der Hinweis lag damit im Chat, aber in
+    // der Liste aenderte sich nichts: kein Punkt, keine Uhrzeit, der Eintrag
+    // rutschte nicht einmal nach oben. Man erfuhr davon nur, wenn man den
+    // Chat zufaellig oeffnete — genau das hat Daniel am 02.09. gemeldet.
+    //
+    // Der Punkt kommt nur fuer Hinweise der Gegenseite und nur, wenn der Chat
+    // nicht ohnehin offen ist. Was ich selbst getan habe, muss mir die Liste
+    // nicht melden.
+    _touchChat(
+      chatId,
+      DateTime.now(),
+      incrementHinweis: UnreadPolicy.meldeHinweis(
+        senderId: senderId,
+        eigeneId: userId,
+        chatId: chatId,
+        offenerChat: _activeChatId,
+      ),
+    );
     notifyListeners();
   }
 
@@ -1777,8 +1795,9 @@ class MessengerProvider extends ChangeNotifier {
     _activeChatId = chatId;
     if (chatId != null) {
       final idx = _chats.indexWhere((c) => c.id == chatId);
-      if (idx != -1 && _chats[idx].unreadCount > 0) {
-        _chats[idx] = _chats[idx].copyWith(unreadCount: 0, firstUnreadAt: null);
+      if (idx != -1 && _chats[idx].hatNeues) {
+        _chats[idx] = _chats[idx]
+            .copyWith(unreadCount: 0, hinweisCount: 0, firstUnreadAt: null);
         _localStore.saveChats(_chats);
         notifyListeners();
       }
@@ -2012,6 +2031,7 @@ class MessengerProvider extends ChangeNotifier {
 
     _chats[idx] = _chats[idx].copyWith(
       unreadCount: stand.anzahl,
+      hinweisCount: stand.hinweise,
       firstUnreadAt: stand.ersteNeue,
       lastMessageTime: letzte,
     );
@@ -2171,6 +2191,7 @@ class MessengerProvider extends ChangeNotifier {
       _chats[idx] = _chats[idx].copyWith(
         lastMessageTime: null,
         unreadCount: 0,
+        hinweisCount: 0,
         firstUnreadAt: null,
       );
       await _localStore.saveChats(_chats);
@@ -4053,7 +4074,7 @@ class MessengerProvider extends ChangeNotifier {
   /// Chatliste. Der steht jetzt nur noch im Nachrichtenspeicher; nach aussen
   /// sagt allein der Zaehler, dass etwas da ist.
   void _touchChat(String chatId, DateTime time,
-      {bool incrementUnread = false}) {
+      {bool incrementUnread = false, bool incrementHinweis = false}) {
     final idx = _chats.indexWhere((c) => c.id == chatId);
     if (idx == -1) return;
     final vorher = _chats[idx];
@@ -4061,13 +4082,17 @@ class MessengerProvider extends ChangeNotifier {
     // stehen, bis der Chat geoeffnet wird — sonst wanderte sie mit jeder
     // weiteren Nachricht mit, und der Moment, an dem etwas Neues anfing,
     // waere nicht mehr abzulesen.
-    final ersteNeue = incrementUnread && vorher.unreadCount == 0
+    // Ein Hinweis zaehlt dabei mit: wer wissen will, seit wann etwas liegt,
+    // meint auch den Screenshot von heute morgen.
+    final ersteNeue = (incrementUnread || incrementHinweis) && !vorher.hatNeues
         ? time
         : vorher.firstUnreadAt;
     _chats[idx] = vorher.copyWith(
       lastMessageTime: time,
       unreadCount:
           incrementUnread ? vorher.unreadCount + 1 : vorher.unreadCount,
+      hinweisCount:
+          incrementHinweis ? vorher.hinweisCount + 1 : vorher.hinweisCount,
       firstUnreadAt: ersteNeue,
     );
     final chat = _chats.removeAt(idx);

@@ -12,6 +12,18 @@ class Chat extends Equatable {
   final DateTime? lastMessageTime;
   final int unreadCount;
 
+  /// Wie viele Systemhinweise der Gegenseite noch ungesehen sind.
+  ///
+  /// Screenshot, Bildschirmaufnahme, Fristwechsel, geloeschtes Konto. Die
+  /// tauchten in der Chatliste vorher **gar nicht** auf: der Hinweis landete
+  /// im Chat, aber der Eintrag rutschte nicht einmal nach oben. Man erfuhr
+  /// davon nur, wenn man den Chat zufaellig oeffnete.
+  ///
+  /// Bewusst getrennt von [unreadCount] gehalten: ein Screenshot ist keine
+  /// Nachricht, und „1 neu" darf nicht beides heissen koennen. Angezeigt wird
+  /// darum ein Punkt statt einer Zahl — die genaue Menge sagt hier nichts.
+  final int hinweisCount;
+
   /// Wann die erste noch ungelesene Nachricht kam.
   ///
   /// In der Chatliste stand die Uhrzeit der **letzten** Nachricht. Kamen
@@ -38,6 +50,7 @@ class Chat extends Equatable {
     required this.recipientName,
     this.lastMessageTime,
     this.unreadCount = 0,
+    this.hinweisCount = 0,
     this.firstUnreadAt,
     this.isTyping = false,
     this.defaultSelfDestruct,
@@ -48,6 +61,7 @@ class Chat extends Equatable {
     String? recipientName,
     Object? lastMessageTime = _sentinel,
     int? unreadCount,
+    int? hinweisCount,
     Object? firstUnreadAt = _sentinel,
     bool? isTyping,
     Object? defaultSelfDestruct = _sentinel,
@@ -61,6 +75,7 @@ class Chat extends Equatable {
           ? this.lastMessageTime
           : lastMessageTime as DateTime?,
       unreadCount: unreadCount ?? this.unreadCount,
+      hinweisCount: hinweisCount ?? this.hinweisCount,
       firstUnreadAt: firstUnreadAt == _sentinel
           ? this.firstUnreadAt
           : firstUnreadAt as DateTime?,
@@ -80,6 +95,7 @@ class Chat extends Equatable {
         'recipientName': recipientName,
         'lastMessageTime': lastMessageTime?.millisecondsSinceEpoch,
         'unreadCount': unreadCount,
+        'hinweisCount': hinweisCount,
         'firstUnreadAt': firstUnreadAt?.millisecondsSinceEpoch,
         'defaultSelfDestructMs': defaultSelfDestruct?.inMilliseconds,
         'defaultSelfDestructSetAt':
@@ -97,6 +113,8 @@ class Chat extends Equatable {
           ? DateTime.fromMillisecondsSinceEpoch(map['lastMessageTime'] as int)
           : null,
       unreadCount: (map['unreadCount'] as int?) ?? 0,
+      // Bestandsdatensaetze kennen das Feld nicht: dann eben kein Punkt.
+      hinweisCount: (map['hinweisCount'] as int?) ?? 0,
       firstUnreadAt: map['firstUnreadAt'] is int
           ? DateTime.fromMillisecondsSinceEpoch(map['firstUnreadAt'] as int)
           : null,
@@ -126,8 +144,16 @@ class Chat extends Equatable {
   /// Nachricht stehen — auch wenn danach weitere hereinkommen. Sonst zeigt
   /// sie die letzte. Fehlt der Vermerk (Bestandsdatensatz), faellt sie auf
   /// die letzte zurueck: lieber die alte Uhrzeit als gar keine.
-  DateTime? get displayTime =>
-      unreadCount > 0 ? (firstUnreadAt ?? lastMessageTime) : lastMessageTime;
+  ///
+  /// Ein ungesehener Hinweis zaehlt hier mit: wer wissen will, seit wann
+  /// etwas liegt, meint auch den Screenshot von heute morgen.
+  DateTime? get displayTime => hatNeues
+      ? (firstUnreadAt ?? lastMessageTime)
+      : lastMessageTime;
+
+  /// Ob in diesem Chat ueberhaupt etwas Ungesehenes liegt — Nachricht oder
+  /// Hinweis. Was die Chatliste hervorhebt, haengt daran.
+  bool get hatNeues => unreadCount > 0 || hinweisCount > 0;
 
   @override
   List<Object?> get props => [id, recipientId];

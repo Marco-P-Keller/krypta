@@ -43,7 +43,10 @@ class ChatTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final hasUnread = chat.unreadCount > 0;
+    // Fett, farbige Uhrzeit und Hervorhebung gelten fuer alles Ungesehene —
+    // auch fuer einen blossen Screenshot-Hinweis ohne Nachricht.
+    final hasUnread = chat.hatNeues;
+    final hatHinweis = chat.hinweisCount > 0;
     final colors = _gradientFor(chat.recipientName);
 
     return InkWell(
@@ -168,7 +171,28 @@ class ChatTile extends StatelessWidget {
                             ? _TypingIndicator(isDark: isDark)
                             : const SizedBox.shrink(),
                       ),
-                      if (hasUnread) ...[
+                      // Der Punkt sagt: hier ist etwas passiert. Die Zahl
+                      // daneben sagt, wie viele echte Nachrichten liegen.
+                      // Bewusst zwei verschiedene Zeichen — ein Screenshot ist
+                      // keine Nachricht, und „1 neu" darf nicht beides heissen
+                      // koennen. Eine Menge wird beim Punkt nicht genannt: sie
+                      // sagt nichts, was jemanden weiterbraechte.
+                      if (hatHinweis) ...[
+                        const SizedBox(width: 8),
+                        Container(
+                          // Der Avatar ist ebenfalls ein Kreis; ohne den
+                          // Schluessel liesse sich der Punkt nicht sicher
+                          // von ihm unterscheiden.
+                          key: const Key('hinweis-punkt'),
+                          width: 8,
+                          height: 8,
+                          decoration: const BoxDecoration(
+                            color: AppColors.accent,
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+                      ],
+                      if (chat.unreadCount > 0) ...[
                         const SizedBox(width: 8),
                         Container(
                           padding: const EdgeInsets.symmetric(
