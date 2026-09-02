@@ -190,9 +190,9 @@
   "tutWelcomeTitle": "Bienvenido a Krypta",
   "tutWelcomeBody": "Por fuera, una calculadora. Detrás están tus mensajes, cifrados.",
   "tutAddContactsTitle": "Añadir contactos",
-  "tutChatFeaturesIntro": "Cada mensaje puede borrarse solo.",
-  "tutLockMessageDesc": "Una contraseña solo para este mensaje. Dila de viva voz.",
-  "tutAutoDeleteDesc": "Desaparece tras el tiempo que fijes, en ambos lados.",
+  "tutChatFeaturesIntro": "Funciones adicionales para tus mensajes.",
+  "tutLockMessageDesc": "Envía mensajes protegidos con una contraseña.",
+  "tutAutoDeleteDesc": "Fija un temporizador para todo el chat. Los mensajes se borran solos después de leerse.",
   "tutReadyTitle": "Listo",
   "tutReadyBody": "Falta un punto. Es el más importante.",
   "language": "Idioma",
@@ -275,12 +275,12 @@
   "tutDSettings": "Idioma, caja fuerte y códigos se cambian ahí.",
   "tutTAgain": "Esta introducción",
   "tutDAgain": "Está en los ajustes. Puedes releerla cuando quieras.",
-  "onceOnlyMessage": "Mensaje de una sola vez",
+  "onceOnlyMessage": "Ver una vez",
   "openOnceMessage": "Abrir",
   "onceOnlyHiddenHint": "Se puede abrir una vez",
   "onceOnlyConfirmTitle": "Se puede abrir una vez",
   "onceOnlyConfirmBody": "Este mensaje solo se puede abrir una vez. En cuanto lo cierres, se elimina para siempre. También si algo te interrumpe.",
   "onceOnlyScreenshotHint": "No se puede impedir una captura. Se te avisará.",
   "onceOnlyConfirmAction": "Confirmar y abrir",
-  "tutDOnceOnly": "Se abre una sola vez. Después desaparece para los dos."
+  "tutDOnceOnly": "Envía mensajes que solo se pueden abrir y leer una vez."
 }

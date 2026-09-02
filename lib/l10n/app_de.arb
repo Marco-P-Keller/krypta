@@ -211,9 +211,9 @@
   "tutWelcomeTitle": "Willkommen bei Krypta",
   "tutWelcomeBody": "Von aussen ein Taschenrechner. Dahinter liegen deine Nachrichten, verschlüsselt.",
   "tutAddContactsTitle": "Kontakte hinzufügen",
-  "tutChatFeaturesIntro": "Jede Nachricht kann sich selbst wieder entfernen.",
-  "tutLockMessageDesc": "Ein Passwort nur für diese eine Nachricht. Sag es mündlich weiter.",
-  "tutAutoDeleteDesc": "Verschwindet nach der eingestellten Zeit, bei euch beiden.",
+  "tutChatFeaturesIntro": "Zusätzliche Funktionen für deine Nachrichten.",
+  "tutLockMessageDesc": "Sende Nachrichten, die mit einem Passwort geschützt sind.",
+  "tutAutoDeleteDesc": "Lege einen Timer für den ganzen Chat fest. Nachrichten werden nach dem Lesen automatisch gelöscht.",
   "tutReadyTitle": "Fertig",
   "tutReadyBody": "Ein Punkt fehlt noch. Er ist der wichtigste.",
   "language": "Sprache",
@@ -296,12 +296,12 @@
   "tutDSettings": "Sprache, Tresor und Codes änderst du dort.",
   "tutTAgain": "Diese Einführung",
   "tutDAgain": "Steht in den Einstellungen. Du kannst sie jederzeit erneut lesen.",
-  "onceOnlyMessage": "Einmalige Nachricht",
+  "onceOnlyMessage": "Einmal ansehen",
   "openOnceMessage": "Öffnen",
   "onceOnlyHiddenHint": "Nur einmal zu öffnen",
   "onceOnlyConfirmTitle": "Nur einmal zu öffnen",
   "onceOnlyConfirmBody": "Diese Nachricht kann nur einmal geöffnet werden. Sobald du sie schliesst, wird sie dauerhaft entfernt. Das gilt auch, wenn etwas dazwischenkommt.",
   "onceOnlyScreenshotHint": "Ein Screenshot lässt sich nicht verhindern. Du erfährst davon.",
   "onceOnlyConfirmAction": "Bestätigen und öffnen",
-  "tutDOnceOnly": "Nur einmal zu öffnen. Danach ist sie bei euch beiden fort."
+  "tutDOnceOnly": "Sende Nachrichten, die nur einmal geöffnet und gelesen werden können."
 }

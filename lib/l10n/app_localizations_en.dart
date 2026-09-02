@@ -635,15 +635,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String get tutAddContactsTitle => 'Add contacts';
 
   @override
-  String get tutChatFeaturesIntro => 'Every message can remove itself again.';
+  String get tutChatFeaturesIntro => 'Extra options for your messages.';
 
   @override
   String get tutLockMessageDesc =>
-      'A password for this one message. Pass it on by voice.';
+      'Send messages that are protected with a password.';
 
   @override
   String get tutAutoDeleteDesc =>
-      'Disappears after the time you set, on both sides.';
+      'Set a timer for the whole chat. Messages are deleted automatically once they have been read.';
 
   @override
   String get tutReadyTitle => 'Ready';
@@ -936,7 +936,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'It lives in the settings. You can read it again at any time.';
 
   @override
-  String get onceOnlyMessage => 'Once only message';
+  String get onceOnlyMessage => 'View once';
 
   @override
   String get openOnceMessage => 'Open';
@@ -960,5 +960,5 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get tutDOnceOnly =>
-      'Can be opened once. After that it is gone on both sides.';
+      'Send messages that can be opened and read only once.';
 }

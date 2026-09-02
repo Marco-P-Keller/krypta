@@ -640,15 +640,15 @@ class AppLocalizationsNl extends AppLocalizations {
   String get tutAddContactsTitle => 'Contacten toevoegen';
 
   @override
-  String get tutChatFeaturesIntro => 'Elk bericht kan zichzelf weer weghalen.';
+  String get tutChatFeaturesIntro => 'Extra functies voor je berichten.';
 
   @override
   String get tutLockMessageDesc =>
-      'Een wachtwoord voor alleen dit bericht. Geef het mondeling door.';
+      'Stuur berichten die met een wachtwoord beveiligd zijn.';
 
   @override
   String get tutAutoDeleteDesc =>
-      'Verdwijnt na de ingestelde tijd, bij jullie allebei.';
+      'Stel een timer in voor de hele chat. Berichten worden na het lezen vanzelf gewist.';
 
   @override
   String get tutReadyTitle => 'Klaar';
@@ -944,7 +944,7 @@ class AppLocalizationsNl extends AppLocalizations {
       'Staat in de instellingen. Je kunt hem altijd opnieuw lezen.';
 
   @override
-  String get onceOnlyMessage => 'Eenmalig bericht';
+  String get onceOnlyMessage => 'Eenmaal bekijken';
 
   @override
   String get openOnceMessage => 'Openen';
@@ -968,5 +968,5 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get tutDOnceOnly =>
-      'Eenmalig te openen. Daarna is het bij jullie allebei weg.';
+      'Stuur berichten die maar een keer geopend en gelezen kunnen worden.';
 }

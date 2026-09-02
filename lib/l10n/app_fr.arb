@@ -190,9 +190,9 @@
   "tutWelcomeTitle": "Bienvenue dans Krypta",
   "tutWelcomeBody": "Une calculatrice à l’extérieur. Derrière, tes messages, chiffrés.",
   "tutAddContactsTitle": "Ajouter des contacts",
-  "tutChatFeaturesIntro": "Chaque message peut disparaître de lui même.",
-  "tutLockMessageDesc": "Un mot de passe pour ce seul message. Transmets le de vive voix.",
-  "tutAutoDeleteDesc": "Disparaît après le délai choisi, des deux côtés.",
+  "tutChatFeaturesIntro": "Des options supplémentaires pour tes messages.",
+  "tutLockMessageDesc": "Envoie des messages protégés par un mot de passe.",
+  "tutAutoDeleteDesc": "Règle un minuteur pour toute la discussion. Les messages sont supprimés après lecture.",
   "tutReadyTitle": "Prêt",
   "tutReadyBody": "Il reste un point. C’est le plus important.",
   "language": "Langue",
@@ -275,12 +275,12 @@
   "tutDSettings": "Langue, coffre et codes se changent là bas.",
   "tutTAgain": "Cette introduction",
   "tutDAgain": "Elle est dans les réglages. Tu peux la relire quand tu veux.",
-  "onceOnlyMessage": "Message unique",
+  "onceOnlyMessage": "Voir une fois",
   "openOnceMessage": "Ouvrir",
   "onceOnlyHiddenHint": "Ouvrable une seule fois",
   "onceOnlyConfirmTitle": "Ouvrable une seule fois",
   "onceOnlyConfirmBody": "Ce message ne peut être ouvert qu’une fois. Dès que tu le fermes, il est supprimé définitivement. Cela vaut aussi si quelque chose t’interrompt.",
   "onceOnlyScreenshotHint": "Une capture ne peut pas être empêchée. Tu en seras informé.",
   "onceOnlyConfirmAction": "Confirmer et ouvrir",
-  "tutDOnceOnly": "Ouvrable une seule fois. Ensuite elle est partie des deux côtés."
+  "tutDOnceOnly": "Envoie des messages qui ne peuvent être ouverts et lus qu’une fois."
 }

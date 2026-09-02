@@ -644,15 +644,15 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get tutChatFeaturesIntro =>
-      'Chaque message peut disparaître de lui même.';
+      'Des options supplémentaires pour tes messages.';
 
   @override
   String get tutLockMessageDesc =>
-      'Un mot de passe pour ce seul message. Transmets le de vive voix.';
+      'Envoie des messages protégés par un mot de passe.';
 
   @override
   String get tutAutoDeleteDesc =>
-      'Disparaît après le délai choisi, des deux côtés.';
+      'Règle un minuteur pour toute la discussion. Les messages sont supprimés après lecture.';
 
   @override
   String get tutReadyTitle => 'Prêt';
@@ -947,7 +947,7 @@ class AppLocalizationsFr extends AppLocalizations {
       'Elle est dans les réglages. Tu peux la relire quand tu veux.';
 
   @override
-  String get onceOnlyMessage => 'Message unique';
+  String get onceOnlyMessage => 'Voir une fois';
 
   @override
   String get openOnceMessage => 'Ouvrir';
@@ -971,5 +971,5 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get tutDOnceOnly =>
-      'Ouvrable une seule fois. Ensuite elle est partie des deux côtés.';
+      'Envoie des messages qui ne peuvent être ouverts et lus qu’une fois.';
 }

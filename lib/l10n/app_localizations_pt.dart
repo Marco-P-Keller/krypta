@@ -643,15 +643,16 @@ class AppLocalizationsPt extends AppLocalizations {
   String get tutAddContactsTitle => 'Adicionar contactos';
 
   @override
-  String get tutChatFeaturesIntro => 'Cada mensagem pode retirar se sozinha.';
+  String get tutChatFeaturesIntro =>
+      'Funções adicionais para as tuas mensagens.';
 
   @override
   String get tutLockMessageDesc =>
-      'Uma palavra-passe só para esta mensagem. Diz a de viva voz.';
+      'Envia mensagens protegidas com uma palavra-passe.';
 
   @override
   String get tutAutoDeleteDesc =>
-      'Desaparece após o tempo definido, de ambos os lados.';
+      'Define um temporizador para toda a conversa. As mensagens são apagadas depois de lidas.';
 
   @override
   String get tutReadyTitle => 'Pronto';
@@ -942,7 +943,7 @@ class AppLocalizationsPt extends AppLocalizations {
       'Está nas definições. Podes lê la de novo quando quiseres.';
 
   @override
-  String get onceOnlyMessage => 'Mensagem de uma vez';
+  String get onceOnlyMessage => 'Ver uma vez';
 
   @override
   String get openOnceMessage => 'Abrir';
@@ -966,5 +967,5 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get tutDOnceOnly =>
-      'Abre-se uma vez. Depois desaparece dos dois lados.';
+      'Envia mensagens que só podem ser abertas e lidas uma vez.';
 }

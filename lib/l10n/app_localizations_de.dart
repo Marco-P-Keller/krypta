@@ -642,15 +642,15 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get tutChatFeaturesIntro =>
-      'Jede Nachricht kann sich selbst wieder entfernen.';
+      'Zusätzliche Funktionen für deine Nachrichten.';
 
   @override
   String get tutLockMessageDesc =>
-      'Ein Passwort nur für diese eine Nachricht. Sag es mündlich weiter.';
+      'Sende Nachrichten, die mit einem Passwort geschützt sind.';
 
   @override
   String get tutAutoDeleteDesc =>
-      'Verschwindet nach der eingestellten Zeit, bei euch beiden.';
+      'Lege einen Timer für den ganzen Chat fest. Nachrichten werden nach dem Lesen automatisch gelöscht.';
 
   @override
   String get tutReadyTitle => 'Fertig';
@@ -946,7 +946,7 @@ class AppLocalizationsDe extends AppLocalizations {
       'Steht in den Einstellungen. Du kannst sie jederzeit erneut lesen.';
 
   @override
-  String get onceOnlyMessage => 'Einmalige Nachricht';
+  String get onceOnlyMessage => 'Einmal ansehen';
 
   @override
   String get openOnceMessage => 'Öffnen';
@@ -970,5 +970,5 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get tutDOnceOnly =>
-      'Nur einmal zu öffnen. Danach ist sie bei euch beiden fort.';
+      'Sende Nachrichten, die nur einmal geöffnet und gelesen werden können.';
 }

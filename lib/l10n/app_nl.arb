@@ -190,9 +190,9 @@
   "tutWelcomeTitle": "Welkom bij Krypta",
   "tutWelcomeBody": "Van buiten een rekenmachine. Daarachter staan je berichten, versleuteld.",
   "tutAddContactsTitle": "Contacten toevoegen",
-  "tutChatFeaturesIntro": "Elk bericht kan zichzelf weer weghalen.",
-  "tutLockMessageDesc": "Een wachtwoord voor alleen dit bericht. Geef het mondeling door.",
-  "tutAutoDeleteDesc": "Verdwijnt na de ingestelde tijd, bij jullie allebei.",
+  "tutChatFeaturesIntro": "Extra functies voor je berichten.",
+  "tutLockMessageDesc": "Stuur berichten die met een wachtwoord beveiligd zijn.",
+  "tutAutoDeleteDesc": "Stel een timer in voor de hele chat. Berichten worden na het lezen vanzelf gewist.",
   "tutReadyTitle": "Klaar",
   "tutReadyBody": "Er ontbreekt nog een punt. Het belangrijkste.",
   "language": "Taal",
@@ -275,12 +275,12 @@
   "tutDSettings": "Taal, kluis en codes wijzig je daar.",
   "tutTAgain": "Deze inleiding",
   "tutDAgain": "Staat in de instellingen. Je kunt hem altijd opnieuw lezen.",
-  "onceOnlyMessage": "Eenmalig bericht",
+  "onceOnlyMessage": "Eenmaal bekijken",
   "openOnceMessage": "Openen",
   "onceOnlyHiddenHint": "Eenmalig te openen",
   "onceOnlyConfirmTitle": "Eenmalig te openen",
   "onceOnlyConfirmBody": "Dit bericht kan een keer worden geopend. Zodra je het sluit, is het definitief weg. Dat geldt ook als er iets tussenkomt.",
   "onceOnlyScreenshotHint": "Een schermafbeelding is niet te voorkomen. Je hoort ervan.",
   "onceOnlyConfirmAction": "Bevestigen en openen",
-  "tutDOnceOnly": "Eenmalig te openen. Daarna is het bij jullie allebei weg."
+  "tutDOnceOnly": "Stuur berichten die maar een keer geopend en gelezen kunnen worden."
 }

@@ -190,9 +190,9 @@
   "tutWelcomeTitle": "Benvenuto in Krypta",
   "tutWelcomeBody": "Fuori una calcolatrice. Dietro ci sono i tuoi messaggi, cifrati.",
   "tutAddContactsTitle": "Aggiungere contatti",
-  "tutChatFeaturesIntro": "Ogni messaggio può togliersi di mezzo da solo.",
-  "tutLockMessageDesc": "Una password solo per questo messaggio. Dilla a voce.",
-  "tutAutoDeleteDesc": "Sparisce dopo il tempo impostato, da entrambe le parti.",
+  "tutChatFeaturesIntro": "Funzioni aggiuntive per i tuoi messaggi.",
+  "tutLockMessageDesc": "Invia messaggi protetti da una password.",
+  "tutAutoDeleteDesc": "Imposta un timer per tutta la chat. I messaggi si cancellano dopo la lettura.",
   "tutReadyTitle": "Pronto",
   "tutReadyBody": "Manca un punto. È il più importante.",
   "language": "Lingua",
@@ -275,12 +275,12 @@
   "tutDSettings": "Lingua, cassaforte e codici si cambiano lì.",
   "tutTAgain": "Questa introduzione",
   "tutDAgain": "Sta nelle impostazioni. Puoi rileggerla quando vuoi.",
-  "onceOnlyMessage": "Messaggio usa e getta",
+  "onceOnlyMessage": "Guarda una volta",
   "openOnceMessage": "Apri",
   "onceOnlyHiddenHint": "Apribile una sola volta",
   "onceOnlyConfirmTitle": "Apribile una sola volta",
   "onceOnlyConfirmBody": "Questo messaggio si può aprire una sola volta. Appena lo chiudi, viene rimosso per sempre. Vale anche se qualcosa ti interrompe.",
   "onceOnlyScreenshotHint": "Uno screenshot non si può impedire. Ne verrai informato.",
   "onceOnlyConfirmAction": "Conferma e apri",
-  "tutDOnceOnly": "Si apre una sola volta. Poi sparisce da entrambe le parti."
+  "tutDOnceOnly": "Invia messaggi che si possono aprire e leggere una sola volta."
 }

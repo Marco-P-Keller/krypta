@@ -1251,19 +1251,19 @@ abstract class AppLocalizations {
   /// No description provided for @tutChatFeaturesIntro.
   ///
   /// In en, this message translates to:
-  /// **'Every message can remove itself again.'**
+  /// **'Extra options for your messages.'**
   String get tutChatFeaturesIntro;
 
   /// No description provided for @tutLockMessageDesc.
   ///
   /// In en, this message translates to:
-  /// **'A password for this one message. Pass it on by voice.'**
+  /// **'Send messages that are protected with a password.'**
   String get tutLockMessageDesc;
 
   /// No description provided for @tutAutoDeleteDesc.
   ///
   /// In en, this message translates to:
-  /// **'Disappears after the time you set, on both sides.'**
+  /// **'Set a timer for the whole chat. Messages are deleted automatically once they have been read.'**
   String get tutAutoDeleteDesc;
 
   /// No description provided for @tutReadyTitle.
@@ -1761,7 +1761,7 @@ abstract class AppLocalizations {
   /// No description provided for @onceOnlyMessage.
   ///
   /// In en, this message translates to:
-  /// **'Once only message'**
+  /// **'View once'**
   String get onceOnlyMessage;
 
   /// No description provided for @openOnceMessage.
@@ -1803,7 +1803,7 @@ abstract class AppLocalizations {
   /// No description provided for @tutDOnceOnly.
   ///
   /// In en, this message translates to:
-  /// **'Can be opened once. After that it is gone on both sides.'**
+  /// **'Send messages that can be opened and read only once.'**
   String get tutDOnceOnly;
 }
 
