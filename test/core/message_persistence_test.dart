@@ -81,4 +81,35 @@ void main() {
     expect(zurueck.isSystemEvent, isTrue);
     expect(zurueck.decryptedContent, isNull);
   });
+
+  // ─── Einmalige Nachricht, ab 02.09.2026 ──────────────────────────────
+
+  test('einmalig ueberlebt Speichern und Laden', () {
+    final m = Message(
+      id: 'e1',
+      chatId: 'c1',
+      senderId: 'marco',
+      recipientId: 'ich',
+      encryptedContent: 'x',
+      timestamp: DateTime(2026, 9, 2, 12),
+      einmalig: true,
+    );
+    expect(Message.fromMap(m.toMap()).einmalig, isTrue);
+  });
+
+  test('ein Bestandsdatensatz ohne das Feld ist gewoehnlich', () {
+    // Nachrichten, die vor dieser Aenderung geschrieben wurden, kennen das
+    // Feld nicht. Sie duerfen nicht ploetzlich als einmalig gelten und sich
+    // beim ersten Oeffnen selbst entfernen.
+    final m = Message(
+      id: 'e2',
+      chatId: 'c1',
+      senderId: 'marco',
+      recipientId: 'ich',
+      encryptedContent: 'x',
+      timestamp: DateTime(2026, 9, 2, 12),
+    );
+    final karte = Map<String, dynamic>.from(m.toMap())..remove('einmalig');
+    expect(Message.fromMap(karte).einmalig, isFalse);
+  });
 }

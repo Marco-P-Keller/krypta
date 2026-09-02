@@ -172,7 +172,7 @@ In `lib/features/messenger/data/models/message_model.dart` direkt nach `final bo
 
 Im Konstruktor nach `this.burnAfterRead = false,` die Zeile `this.einmalig = false,`.
 
-In `copyWith` in der Parameterliste nach `bool? burnAfterRead,` die Zeile `bool? einmalig,`, und im Rumpf nach `burnAfterRead: burnAfterRead,` die Zeile `einmalig: einmalig ?? this.einmalig,`.
+In `copyWith` **kein** neuer Parameter: die Methode nimmt nur fuenf, alles andere wird durchgereicht, und `einmalig` steht beim Anlegen fest. Im Rumpf nach `burnAfterRead: burnAfterRead,` genuegt die Zeile `einmalig: einmalig,`.
 
 In `toMap` nach `'burnAfterRead': burnAfterRead ? 1 : 0,` die Zeile `'einmalig': einmalig ? 1 : 0,`.
 

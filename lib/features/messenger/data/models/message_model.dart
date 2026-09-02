@@ -54,6 +54,16 @@ class Message extends Equatable {
   final DateTime? readAt;
   final bool burnAfterRead;
 
+  /// Ob diese Nachricht nur einmal geoeffnet werden darf.
+  ///
+  /// Ersetzt seit dem 02.09.2026 den Einzeltimer und Burn after read. Beim
+  /// Empfaenger bleibt der Inhalt verborgen, bis er bestaetigt hat; mit dem
+  /// Bestaetigen ist die Nachricht von der Platte fort. Siehe EinmaligPolicy.
+  ///
+  /// Kein Parameter in copyWith: der Wert steht beim Anlegen fest und aendert
+  /// sich nie. Was sich aendert, ist ob die Nachricht noch da ist.
+  final bool einmalig;
+
   /// When true, `decryptedContent` holds the password-encrypted blob.
   /// The actual plaintext is only revealed after the recipient enters
   /// the correct password. Once unlocked, `passwordUnlocked` becomes true
@@ -84,6 +94,7 @@ class Message extends Equatable {
     this.selfDestructFromChat = false,
     this.readAt,
     this.burnAfterRead = false,
+    this.einmalig = false,
     this.isPasswordProtected = false,
     this.passwordUnlocked = false,
     this.systemEvent,
@@ -133,6 +144,7 @@ class Message extends Equatable {
       selfDestructFromChat: selfDestructFromChat ?? this.selfDestructFromChat,
       readAt: readAt ?? this.readAt,
       burnAfterRead: burnAfterRead,
+      einmalig: einmalig,
       isPasswordProtected: isPasswordProtected,
       passwordUnlocked: passwordUnlocked ?? this.passwordUnlocked,
       // Nicht vergessen: ohne diese Zeile wird aus einem Systemhinweis eine
@@ -173,6 +185,7 @@ class Message extends Equatable {
         'sdFromChat': selfDestructFromChat,
         'readAt': readAt?.millisecondsSinceEpoch,
         'burnAfterRead': burnAfterRead ? 1 : 0,
+        'einmalig': einmalig ? 1 : 0,
         'pwProtected': isPasswordProtected ? 1 : 0,
         'pwUnlocked': passwordUnlocked ? 1 : 0,
         if (systemEvent != null) 'sysEvent': systemEvent!.index,
@@ -196,6 +209,8 @@ class Message extends Equatable {
           ? DateTime.fromMillisecondsSinceEpoch(map['readAt'] as int)
           : null,
       burnAfterRead: (map['burnAfterRead'] as int?) == 1,
+      // Bestandsdatensaetze kennen das Feld nicht und sind gewoehnlich.
+      einmalig: (map['einmalig'] as int?) == 1,
       isPasswordProtected: (map['pwProtected'] as int?) == 1,
       passwordUnlocked: (map['pwUnlocked'] as int?) == 1,
       // Fehlt das Feld, stammt der Eintrag aus der Zeit vor den
