@@ -969,4 +969,75 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get tutDOnceOnly =>
       'Envoie des messages qui ne peuvent être ouverts et lus qu’une fois.';
+
+  @override
+  String get aboutSecurityLine =>
+      'Chiffré de bout en bout. Les clés restent sur ton appareil.';
+
+  @override
+  String get securityDetails => 'Détails de sécurité';
+
+  @override
+  String get secIntro =>
+      'Comment Krypta protège tes messages, de l’appareil à la remise jusqu’au serveur. Tout ce qui suit reflète la construction réelle de l’application.';
+
+  @override
+  String get secMessagesTitle => 'Chiffrement des messages';
+
+  @override
+  String get secMessagesBody =>
+      'Chaque message est chiffré sur ton appareil et ne redevient lisible que sur celui de ton contact. Le chiffrement et l’authentification se font en une seule étape, avec des données supplémentaires liées au sceau : un message modifié est rejeté au lieu d’être déchiffré.';
+
+  @override
+  String get secExchangeTitle => 'Échange de clés';
+
+  @override
+  String get secExchangeBody =>
+      'Au premier contact, les deux appareils conviennent d’un secret commun sans jamais le transmettre. Trois parts Diffie-Hellman sont combinées et la clé de session en est dérivée. Le serveur ne voit que des clés publiques.';
+
+  @override
+  String get secForwardTitle => 'Forward secrecy';
+
+  @override
+  String get secForwardBody =>
+      'Une nouvelle clé est dérivée pour chaque message et l’ancienne est jetée. Qui vole une clé ne peut lire ni les messages précédents ni les suivants. Les messages manqués rattrapent leur retard sans abandonner cette propriété.';
+
+  @override
+  String get secIdentityTitle => 'Identité et vérification';
+
+  @override
+  String get secIdentityBody =>
+      'Chaque appareil possède une paire de clés d’identité. Les préclés et les entrées de transparence sont signées, pour qu’un serveur ne puisse pas les remplacer sans que cela se voie. Le numéro de sécurité est calculé à partir des deux identités et il est identique sur les deux appareils.';
+
+  @override
+  String get secPasswordTitle => 'Mots de passe et codes';
+
+  @override
+  String get secPasswordBody =>
+      'Les mots de passe et les codes ne sont jamais enregistrés, seulement leur dérivation. La méthode est volontairement lente et gourmande en mémoire, pour empêcher les essais en masse.';
+
+  @override
+  String get secLocalTitle => 'Sur l’appareil';
+
+  @override
+  String get secLocalBody =>
+      'Les messages et les clés sont stockés chiffrés dans l’espace de l’application. La clé principale se trouve dans le trousseau du système et n’est lisible qu’après le premier déverrouillage de l’appareil. Là où il existe, une puce de sécurité l’enveloppe en plus.';
+
+  @override
+  String get secServerTitle => 'Serveur et remise';
+
+  @override
+  String get secServerBody =>
+      'Le serveur reçoit des envois chiffrés et les transmet. Il ne détient jamais de clé et ne voit aucun contenu. La remise utilise un identifiant éphémère du destinataire. Les envois remis sont supprimés.';
+
+  @override
+  String get secTransportTitle => 'Transport';
+
+  @override
+  String get secTransportBody =>
+      'La connexion est chiffrée et l’application n’accepte que les certificats attendus. Cela s’applique au niveau du système d’exploitation, donc à chaque connexion de l’application.';
+
+  @override
+  String get secFooter =>
+      'Ces indications décrivent des méthodes et des paramètres, jamais des clés. Elles valent pour la version affichée ci-dessus.';
 }

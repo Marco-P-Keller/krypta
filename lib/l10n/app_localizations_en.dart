@@ -958,4 +958,75 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get tutDOnceOnly =>
       'Send messages that can be opened and read only once.';
+
+  @override
+  String get aboutSecurityLine =>
+      'End-to-end encrypted. The keys stay on your device.';
+
+  @override
+  String get securityDetails => 'Security details';
+
+  @override
+  String get secIntro =>
+      'How Krypta protects your messages, from the device through delivery to the server. Everything here reflects how the app is actually built.';
+
+  @override
+  String get secMessagesTitle => 'Message encryption';
+
+  @override
+  String get secMessagesBody =>
+      'Every message is encrypted on your device and only becomes readable again on your contact\'s device. Encryption and authentication happen in one step, with extra data bound into the seal: a modified message is rejected rather than decrypted.';
+
+  @override
+  String get secExchangeTitle => 'Key exchange';
+
+  @override
+  String get secExchangeBody =>
+      'On first contact both devices agree on a shared secret without ever transmitting it. Three Diffie-Hellman parts are combined and the session key is derived from them. The server only ever sees public keys.';
+
+  @override
+  String get secForwardTitle => 'Forward secrecy';
+
+  @override
+  String get secForwardBody =>
+      'A fresh key is derived for every message and the old one is discarded. Anyone who steals a key can read neither earlier nor later messages. Missed messages catch up without giving that property away.';
+
+  @override
+  String get secIdentityTitle => 'Identity and verification';
+
+  @override
+  String get secIdentityBody =>
+      'Each device has an identity key pair. Prekeys and transparency entries are signed, so a server cannot swap them unnoticed. The safety number is computed from both identities and is the same on both devices.';
+
+  @override
+  String get secPasswordTitle => 'Passwords and codes';
+
+  @override
+  String get secPasswordBody =>
+      'Passwords and codes are never stored, only their derivation. The method is deliberately slow and memory-hungry so attempts cannot be run in bulk.';
+
+  @override
+  String get secLocalTitle => 'On the device';
+
+  @override
+  String get secLocalBody =>
+      'Messages and keys are stored encrypted in the app\'s own storage. The master key lives in the operating system keychain and is readable only after the device has been unlocked once. Where available, it is additionally wrapped by a security chip.';
+
+  @override
+  String get secServerTitle => 'Server and delivery';
+
+  @override
+  String get secServerBody =>
+      'The server accepts encrypted envelopes and forwards them. It never holds a key and never sees content. Delivery uses a short-lived identifier of the recipient. Delivered envelopes are removed.';
+
+  @override
+  String get secTransportTitle => 'Transport';
+
+  @override
+  String get secTransportBody =>
+      'The connection is encrypted and the app accepts only the expected certificates. This is enforced at the operating system level and therefore covers every connection the app makes.';
+
+  @override
+  String get secFooter =>
+      'These statements describe methods and parameters, never keys. They apply to the version shown above.';
 }

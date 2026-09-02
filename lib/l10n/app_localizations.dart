@@ -1799,6 +1799,126 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Send messages that can be opened and read only once.'**
   String get tutDOnceOnly;
+
+  /// No description provided for @aboutSecurityLine.
+  ///
+  /// In en, this message translates to:
+  /// **'End-to-end encrypted. The keys stay on your device.'**
+  String get aboutSecurityLine;
+
+  /// No description provided for @securityDetails.
+  ///
+  /// In en, this message translates to:
+  /// **'Security details'**
+  String get securityDetails;
+
+  /// No description provided for @secIntro.
+  ///
+  /// In en, this message translates to:
+  /// **'How Krypta protects your messages, from the device through delivery to the server. Everything here reflects how the app is actually built.'**
+  String get secIntro;
+
+  /// No description provided for @secMessagesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Message encryption'**
+  String get secMessagesTitle;
+
+  /// No description provided for @secMessagesBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Every message is encrypted on your device and only becomes readable again on your contact\'s device. Encryption and authentication happen in one step, with extra data bound into the seal: a modified message is rejected rather than decrypted.'**
+  String get secMessagesBody;
+
+  /// No description provided for @secExchangeTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Key exchange'**
+  String get secExchangeTitle;
+
+  /// No description provided for @secExchangeBody.
+  ///
+  /// In en, this message translates to:
+  /// **'On first contact both devices agree on a shared secret without ever transmitting it. Three Diffie-Hellman parts are combined and the session key is derived from them. The server only ever sees public keys.'**
+  String get secExchangeBody;
+
+  /// No description provided for @secForwardTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Forward secrecy'**
+  String get secForwardTitle;
+
+  /// No description provided for @secForwardBody.
+  ///
+  /// In en, this message translates to:
+  /// **'A fresh key is derived for every message and the old one is discarded. Anyone who steals a key can read neither earlier nor later messages. Missed messages catch up without giving that property away.'**
+  String get secForwardBody;
+
+  /// No description provided for @secIdentityTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Identity and verification'**
+  String get secIdentityTitle;
+
+  /// No description provided for @secIdentityBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Each device has an identity key pair. Prekeys and transparency entries are signed, so a server cannot swap them unnoticed. The safety number is computed from both identities and is the same on both devices.'**
+  String get secIdentityBody;
+
+  /// No description provided for @secPasswordTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Passwords and codes'**
+  String get secPasswordTitle;
+
+  /// No description provided for @secPasswordBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Passwords and codes are never stored, only their derivation. The method is deliberately slow and memory-hungry so attempts cannot be run in bulk.'**
+  String get secPasswordBody;
+
+  /// No description provided for @secLocalTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'On the device'**
+  String get secLocalTitle;
+
+  /// No description provided for @secLocalBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Messages and keys are stored encrypted in the app\'s own storage. The master key lives in the operating system keychain and is readable only after the device has been unlocked once. Where available, it is additionally wrapped by a security chip.'**
+  String get secLocalBody;
+
+  /// No description provided for @secServerTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Server and delivery'**
+  String get secServerTitle;
+
+  /// No description provided for @secServerBody.
+  ///
+  /// In en, this message translates to:
+  /// **'The server accepts encrypted envelopes and forwards them. It never holds a key and never sees content. Delivery uses a short-lived identifier of the recipient. Delivered envelopes are removed.'**
+  String get secServerBody;
+
+  /// No description provided for @secTransportTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Transport'**
+  String get secTransportTitle;
+
+  /// No description provided for @secTransportBody.
+  ///
+  /// In en, this message translates to:
+  /// **'The connection is encrypted and the app accepts only the expected certificates. This is enforced at the operating system level and therefore covers every connection the app makes.'**
+  String get secTransportBody;
+
+  /// No description provided for @secFooter.
+  ///
+  /// In en, this message translates to:
+  /// **'These statements describe methods and parameters, never keys. They apply to the version shown above.'**
+  String get secFooter;
 }
 
 class _AppLocalizationsDelegate

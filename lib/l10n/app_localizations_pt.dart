@@ -968,4 +968,75 @@ class AppLocalizationsPt extends AppLocalizations {
   @override
   String get tutDOnceOnly =>
       'Envia mensagens que só podem ser abertas e lidas uma vez.';
+
+  @override
+  String get aboutSecurityLine =>
+      'Cifrado ponto a ponto. As chaves ficam no teu aparelho.';
+
+  @override
+  String get securityDetails => 'Detalhes de segurança';
+
+  @override
+  String get secIntro =>
+      'Como o Krypta protege as tuas mensagens, do aparelho à entrega até ao servidor. Tudo o que se segue reflete como a app está realmente construída.';
+
+  @override
+  String get secMessagesTitle => 'Cifra das mensagens';
+
+  @override
+  String get secMessagesBody =>
+      'Cada mensagem é cifrada no teu aparelho e só volta a ser legível no do teu contacto. A cifra e a autenticação acontecem num só passo, com dados adicionais ligados ao selo: uma mensagem alterada é rejeitada em vez de decifrada.';
+
+  @override
+  String get secExchangeTitle => 'Troca de chaves';
+
+  @override
+  String get secExchangeBody =>
+      'No primeiro contacto os dois aparelhos acordam um segredo comum sem nunca o transmitir. Combinam-se três partes Diffie-Hellman e daí deriva a chave de sessão. O servidor vê apenas chaves públicas.';
+
+  @override
+  String get secForwardTitle => 'Forward secrecy';
+
+  @override
+  String get secForwardBody =>
+      'Para cada mensagem deriva-se uma chave nova e a antiga é descartada. Quem roube uma chave não consegue ler mensagens anteriores nem posteriores. As mensagens perdidas recuperam sem abdicar dessa propriedade.';
+
+  @override
+  String get secIdentityTitle => 'Identidade e verificação';
+
+  @override
+  String get secIdentityBody =>
+      'Cada aparelho tem um par de chaves de identidade. As pré-chaves e os registos de transparência são assinados, para que um servidor não os possa trocar sem se notar. O número de segurança é calculado a partir das duas identidades e é igual nos dois aparelhos.';
+
+  @override
+  String get secPasswordTitle => 'Palavras-passe e códigos';
+
+  @override
+  String get secPasswordBody =>
+      'As palavras-passe e os códigos nunca são guardados, apenas a sua derivação. O método é lento e exigente em memória de propósito, para que as tentativas não se possam fazer em massa.';
+
+  @override
+  String get secLocalTitle => 'No aparelho';
+
+  @override
+  String get secLocalBody =>
+      'As mensagens e as chaves ficam cifradas no armazenamento da app. A chave principal vive no porta-chaves do sistema e só é legível depois do primeiro desbloqueio do aparelho. Onde existe, é ainda envolvida por um chip de segurança.';
+
+  @override
+  String get secServerTitle => 'Servidor e entrega';
+
+  @override
+  String get secServerBody =>
+      'O servidor recebe envios cifrados e encaminha-os. Nunca tem uma chave nem vê conteúdo. Para a entrega serve um identificador efémero do destinatário. Os envios entregues são removidos.';
+
+  @override
+  String get secTransportTitle => 'Transporte';
+
+  @override
+  String get secTransportBody =>
+      'A ligação é cifrada e a app aceita apenas os certificados esperados. Isto aplica-se ao nível do sistema operativo e portanto a todas as ligações da app.';
+
+  @override
+  String get secFooter =>
+      'Estas indicações descrevem métodos e parâmetros, nunca chaves. Aplicam-se à versão mostrada acima.';
 }

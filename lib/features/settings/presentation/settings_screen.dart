@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+
+import 'sicherheitsdetails_screen.dart';
 import 'package:flutter/services.dart';
 import '../../../services/platform/clipboard_helper.dart';
 import 'package:provider/provider.dart';
@@ -626,13 +628,43 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   ),
             ),
             const SizedBox(height: 18),
+            // Hier standen drei Algorithmusnamen. Sie waren zudem unvollstaendig
+            // und ungenau: „Curve25519" verschwieg, dass es zwei Verfahren sind
+            // (X25519 zum Austausch, Ed25519 zum Signieren), und HKDF fehlte
+            // ganz. Wer die Namen sucht, findet sie jetzt vollstaendig in den
+            // Sicherheitsdetails; hier steht, was die Sache bedeutet.
             Text(
-              'Curve25519 · XChaCha20-Poly1305 · Argon2id',
+              l10n.aboutSecurityLine,
               style: Theme.of(ctx).textTheme.bodySmall?.copyWith(
-                    color: AppColors.accent,
-                    fontWeight: FontWeight.w500,
+                    color: isDark
+                        ? AppColors.textSecondaryDark
+                        : AppColors.textSecondaryLight,
+                    height: 1.4,
                   ),
               textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 14),
+            TextButton(
+              onPressed: () {
+                Navigator.of(ctx).pop();
+                Navigator.of(context).push(MaterialPageRoute(
+                  builder: (_) => const SicherheitsdetailsScreen(),
+                ));
+              },
+              style: TextButton.styleFrom(
+                foregroundColor: AppColors.accent,
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 12, vertical: 6),
+                minimumSize: const Size(0, 36),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Flexible(child: Text(l10n.securityDetails)),
+                  const SizedBox(width: 2),
+                  const Icon(Icons.chevron_right_rounded, size: 18),
+                ],
+              ),
             ),
           ],
         ),

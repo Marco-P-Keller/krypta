@@ -967,4 +967,75 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String get tutDOnceOnly =>
       'Sende Nachrichten, die nur einmal geöffnet und gelesen werden können.';
+
+  @override
+  String get aboutSecurityLine =>
+      'Ende-zu-Ende verschlüsselt. Die Schlüssel liegen nur auf deinem Gerät.';
+
+  @override
+  String get securityDetails => 'Sicherheitsdetails';
+
+  @override
+  String get secIntro =>
+      'Wie Krypta deine Nachrichten schützt, vom Gerät über die Zustellung bis zum Server. Alle Angaben stammen aus dem tatsächlichen Aufbau der App.';
+
+  @override
+  String get secMessagesTitle => 'Nachrichtenverschlüsselung';
+
+  @override
+  String get secMessagesBody =>
+      'Jede Nachricht wird auf deinem Gerät verschlüsselt und erst auf dem Gerät des Empfängers wieder lesbar. Verschlüsselt und authentifiziert in einem Schritt, mit zusätzlichen Daten im Siegel: eine veränderte Nachricht wird abgewiesen statt entschlüsselt.';
+
+  @override
+  String get secExchangeTitle => 'Schlüsselaustausch';
+
+  @override
+  String get secExchangeBody =>
+      'Beim ersten Kontakt einigen sich beide Geräte auf ein gemeinsames Geheimnis, ohne es je zu übertragen. Dafür werden drei Diffie-Hellman-Anteile gebildet und daraus der Sitzungsschlüssel abgeleitet. Der Server sieht dabei nur öffentliche Schlüssel.';
+
+  @override
+  String get secForwardTitle => 'Forward Secrecy';
+
+  @override
+  String get secForwardBody =>
+      'Für jede Nachricht wird ein neuer Schlüssel abgeleitet und der alte verworfen. Wer einen Schlüssel erbeutet, kann damit weder ältere noch spätere Nachrichten lesen. Verpasste Nachrichten holen auf, ohne diese Eigenschaft aufzugeben.';
+
+  @override
+  String get secIdentityTitle => 'Identität und Verifikation';
+
+  @override
+  String get secIdentityBody =>
+      'Jedes Gerät hat ein Identitätsschlüsselpaar. Vorabschlüssel und Transparenzeinträge sind signiert, damit ein Server sie nicht unbemerkt austauschen kann. Die Sicherheitsnummer wird aus beiden Identitäten berechnet und ist auf beiden Geräten dieselbe.';
+
+  @override
+  String get secPasswordTitle => 'Passwörter und Codes';
+
+  @override
+  String get secPasswordBody =>
+      'Passwörter und Codes werden nie gespeichert, sondern nur ihre Ableitung. Das Verfahren ist absichtlich langsam und speicherhungrig, damit sich Versuche nicht in Masse durchprobieren lassen.';
+
+  @override
+  String get secLocalTitle => 'Auf dem Gerät';
+
+  @override
+  String get secLocalBody =>
+      'Nachrichten und Schlüssel liegen verschlüsselt im App-Speicher. Der Hauptschlüssel liegt im Schlüsselbund des Betriebssystems und ist erst nach der ersten Entsperrung des Geräts lesbar. Wo vorhanden, wird er zusätzlich von einem Sicherheitschip umschlossen.';
+
+  @override
+  String get secServerTitle => 'Server und Zustellung';
+
+  @override
+  String get secServerBody =>
+      'Der Server nimmt verschlüsselte Sendungen entgegen und leitet sie weiter. Er hat zu keinem Zeitpunkt einen Schlüssel und sieht keinen Inhalt. Für die Zustellung dient eine kurzlebige Kennung des Empfängers. Zugestellte Sendungen werden entfernt.';
+
+  @override
+  String get secTransportTitle => 'Transport';
+
+  @override
+  String get secTransportBody =>
+      'Die Verbindung ist verschlüsselt, und die App akzeptiert nur die erwarteten Zertifikate. Das gilt auf Betriebssystemebene und damit für jede Verbindung der App.';
+
+  @override
+  String get secFooter =>
+      'Stand dieser Angaben: die eingebaute Version oben. Sie beschreiben Verfahren und Parameter, keine Schlüssel.';
 }

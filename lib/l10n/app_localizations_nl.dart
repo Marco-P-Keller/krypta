@@ -965,4 +965,75 @@ class AppLocalizationsNl extends AppLocalizations {
   @override
   String get tutDOnceOnly =>
       'Stuur berichten die maar een keer geopend en gelezen kunnen worden.';
+
+  @override
+  String get aboutSecurityLine =>
+      'End-to-end versleuteld. De sleutels blijven op je apparaat.';
+
+  @override
+  String get securityDetails => 'Beveiligingsdetails';
+
+  @override
+  String get secIntro =>
+      'Hoe Krypta je berichten beschermt, van het apparaat via de bezorging tot de server. Alles hier weerspiegelt hoe de app werkelijk is gebouwd.';
+
+  @override
+  String get secMessagesTitle => 'Berichtversleuteling';
+
+  @override
+  String get secMessagesBody =>
+      'Elk bericht wordt op je eigen apparaat versleuteld en pas op dat van je contact weer leesbaar. Versleutelen en authenticeren gebeuren in een stap, met extra gegevens in het zegel: een gewijzigd bericht wordt geweigerd in plaats van ontsleuteld.';
+
+  @override
+  String get secExchangeTitle => 'Sleuteluitwisseling';
+
+  @override
+  String get secExchangeBody =>
+      'Bij het eerste contact komen beide apparaten tot een gedeeld geheim zonder het ooit te versturen. Drie Diffie-Hellman-delen worden gecombineerd en daaruit volgt de sessiesleutel. De server ziet alleen publieke sleutels.';
+
+  @override
+  String get secForwardTitle => 'Forward secrecy';
+
+  @override
+  String get secForwardBody =>
+      'Voor elk bericht wordt een nieuwe sleutel afgeleid en de oude weggegooid. Wie een sleutel buitmaakt, kan noch eerdere noch latere berichten lezen. Gemiste berichten halen in zonder die eigenschap op te geven.';
+
+  @override
+  String get secIdentityTitle => 'Identiteit en verificatie';
+
+  @override
+  String get secIdentityBody =>
+      'Elk apparaat heeft een identiteitssleutelpaar. Voorsleutels en transparantieregels zijn ondertekend, zodat een server ze niet ongemerkt kan verwisselen. Het veiligheidsnummer wordt uit beide identiteiten berekend en is op beide apparaten hetzelfde.';
+
+  @override
+  String get secPasswordTitle => 'Wachtwoorden en codes';
+
+  @override
+  String get secPasswordBody =>
+      'Wachtwoorden en codes worden nooit opgeslagen, alleen hun afleiding. De methode is met opzet traag en geheugenhongerig, zodat pogingen niet massaal kunnen worden gedaan.';
+
+  @override
+  String get secLocalTitle => 'Op het apparaat';
+
+  @override
+  String get secLocalBody =>
+      'Berichten en sleutels staan versleuteld in de opslag van de app. De hoofdsleutel zit in de sleutelhanger van het systeem en is pas leesbaar nadat het apparaat een keer is ontgrendeld. Waar aanwezig, wordt hij bovendien door een beveiligingschip omsloten.';
+
+  @override
+  String get secServerTitle => 'Server en bezorging';
+
+  @override
+  String get secServerBody =>
+      'De server neemt versleutelde zendingen aan en stuurt ze door. Hij heeft nooit een sleutel en ziet geen inhoud. Voor de bezorging dient een kortlevend kenmerk van de ontvanger. Bezorgde zendingen worden verwijderd.';
+
+  @override
+  String get secTransportTitle => 'Transport';
+
+  @override
+  String get secTransportBody =>
+      'De verbinding is versleuteld en de app accepteert alleen de verwachte certificaten. Dat geldt op het niveau van het besturingssysteem en dus voor elke verbinding van de app.';
+
+  @override
+  String get secFooter =>
+      'Deze gegevens beschrijven methoden en parameters, nooit sleutels. Ze gelden voor de versie die hierboven staat.';
 }
