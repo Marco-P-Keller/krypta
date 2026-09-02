@@ -23,6 +23,8 @@ import 'contact_request_policy.dart';
 import 'inbox_reconnect_backoff.dart';
 import 'self_destruct_policy.dart';
 import 'unread_policy.dart';
+import 'verification_policy.dart';
+import 'qr_payload_policy.dart';
 import 'session_reset_policy.dart';
 import 'key_publish_status.dart';
 import '../../../security/session/session_errors.dart';
@@ -268,11 +270,10 @@ class MessengerProvider extends ChangeNotifier {
 
   /// Validate user ID format (Firebase Auth UID).
   /// Rejects path traversal characters, whitespace, and extreme lengths.
-  static bool _isValidUserId(String id) {
-    if (id.length < 10 || id.length > 128) return false;
-    // Firebase Auth UIDs are alphanumeric (letters, digits)
-    return RegExp(r'^[a-zA-Z0-9]+$').hasMatch(id);
-  }
+  /// Die Regel steht in [QrPayloadPolicy.userIdPasst] — dieselbe, die der
+  /// QR-Weg benutzt. Zwei Fassungen derselben Pruefung laufen frueher oder
+  /// spaeter auseinander, und dann ist eine davon die schwaechere.
+  static bool _isValidUserId(String id) => QrPayloadPolicy.userIdPasst(id);
 
   Chat? chatForContact(String contactId) {
     for (final c in _chats) {
@@ -520,9 +521,13 @@ class MessengerProvider extends ChangeNotifier {
         // Also invalidate existing ratchet sessions (compromised key = untrusted session).
         if (base64Encode(existing.publicKey) != publicKeyBase64) {
           final idx = _contacts.indexWhere((c) => c.id == contactId);
-          _contacts[idx] = existing.copyWith(
+          // Der Zustand kommt aus VerificationPolicy: bei einem blockierten
+          // Kontakt bleibt die Sperre stehen und der Wechsel wandert in die
+          // Erinnerung. Vorher stand hier stur `trustState: keyChanged` —
+          // damit hob ein Schluesselwechsel die Blockierung auf.
+          _contacts[idx] = VerificationPolicy.nachSchluesselwechsel(existing)
+              .copyWith(
             publicKey: newPublicKey,
-            trustState: TrustState.keyChanged,
             verifiedAt: null,
             verificationMethod: null,
             verifiedFingerprint: null,
@@ -614,9 +619,10 @@ class MessengerProvider extends ChangeNotifier {
         final existing = contactForId(contactId);
         if (existing != null) {
           final idx = _contacts.indexWhere((c) => c.id == contactId);
-          _contacts[idx] = existing.copyWith(
+          // Auch hier: eine Blockierung ueberlebt den Schluesselwechsel.
+          _contacts[idx] = VerificationPolicy.nachSchluesselwechsel(existing)
+              .copyWith(
             publicKey: qrPublicKey, // Trust QR key, not server
-            trustState: TrustState.keyChanged,
             verifiedAt: null,
             verificationMethod: null,
             verifiedFingerprint: null,
@@ -1739,7 +1745,8 @@ class MessengerProvider extends ChangeNotifier {
             splitViewDetected = true;
           }
           if (kDebugMode) {
-            debugPrint('SPLIT VIEW DETECTED for ${entry.key}');
+            // Ohne kDebugMode stand die Kennung auch im Release-Log.
+            if (kDebugMode) debugPrint('SPLIT VIEW DETECTED for ${entry.key}');
           }
         }
       }

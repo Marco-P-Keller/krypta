@@ -8,6 +8,7 @@ import '../../../theme/app_colors.dart';
 import '../data/models/chat_model.dart';
 import '../data/models/contact_model.dart';
 import '../logic/messenger_provider.dart';
+import '../logic/qr_payload_policy.dart';
 
 /// Full-screen QR scanner that reads a contact's cryptographic identity payload.
 ///
@@ -56,6 +57,13 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
 
   /// Parse and validate the QR payload. Returns null on failure (sets _error).
   _QrPayload? _parseQrPayload(String raw) {
+    // Obergrenze zuerst, noch vor dem Parsen: ein QR-Code kann mehrere
+    // Kilobyte tragen, ein echter Krypta-Code liegt bei rund 300 Zeichen.
+    if (!QrPayloadPolicy.rohdatenPassen(raw)) {
+      _error = AppLocalizations.of(context)!.qrInvalidFormat;
+      return null;
+    }
+
     // Strict JSON parse — fail-closed on any non-JSON content
     final Map<String, dynamic> json;
     try {
@@ -79,9 +87,19 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
     final ik = json['ik'];
     final fp = json['fp'];
 
-    if (uid is! String || uid.isEmpty ||
-        ik is! String || ik.isEmpty ||
-        fp is! String || fp.isEmpty) {
+    if (uid is! String ||
+        ik is! String ||
+        fp is! String ||
+        !QrPayloadPolicy.feldPasst(uid) ||
+        !QrPayloadPolicy.feldPasst(ik) ||
+        !QrPayloadPolicy.feldPasst(fp)) {
+      _error = AppLocalizations.of(context)!.qrInvalidFormat;
+      return null;
+    }
+
+    // Die Kennung pruefen, BEVOR mit ihr der Server befragt wird — dieselbe
+    // Regel wie im ID-Weg. Vorher ging jede Zeichenkette hinaus.
+    if (!QrPayloadPolicy.userIdPasst(uid)) {
       _error = AppLocalizations.of(context)!.qrInvalidFormat;
       return null;
     }
@@ -90,7 +108,10 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
     final Uint8List publicKey;
     try {
       publicKey = base64Decode(ik);
-      if (publicKey.isEmpty) {
+      // Genau 32 Byte, nicht blosss „nicht leer": ein X25519-Schluessel hat
+      // diese Laenge (RFC 7748). Vorher kam ein Schluessel beliebiger Groesse
+      // bis zur Fingerprint-Pruefung durch.
+      if (!QrPayloadPolicy.schluesselPasst(publicKey.length)) {
         _error = AppLocalizations.of(context)!.qrInvalidFormat;
         return null;
       }

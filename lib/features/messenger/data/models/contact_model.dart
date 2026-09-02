@@ -198,7 +198,25 @@ class Contact extends Equatable {
   String get publicKeyBase64 => base64Encode(publicKey);
   String get shortId => id.length > 8 ? '${id.substring(0, 8)}...' : id;
   bool get hasKeyChanged => trustState == TrustState.keyChanged;
-  bool get isVerified => trustState == TrustState.verified;
+  /// Ob der Kontakt wirklich als bestaetigt gilt.
+  ///
+  /// `trustState == verified` allein genuegt nicht: bestaetigt wurde immer
+  /// ein **bestimmter** Schluessel, und genau der muss noch derselbe sein.
+  /// [verifiedFingerprint] hielt das fest, wurde bis zum 02.09.2026 aber an
+  /// fuenf Stellen geschrieben und **nirgends gelesen** — der Beweis lag
+  /// ungenutzt herum, waehrend die Anzeige allein am Enum hing.
+  ///
+  /// Fehlt der Fingerprint oder passt er nicht, gilt der Kontakt als
+  /// **unbestaetigt**. Fail-closed in die sichere Richtung: ein
+  /// Bestandsdatensatz oder ein beschaedigter Zustand darf nie als bestaetigt
+  /// durchgehen. Der Preis ist, dass ein alter Kontakt ohne festgehaltenen
+  /// Fingerprint erneut bestaetigt werden will — das ist der richtige Preis.
+  bool get isVerified {
+    if (trustState != TrustState.verified) return false;
+    final bestaetigt = verifiedFingerprint;
+    if (bestaetigt == null || bestaetigt.isEmpty) return false;
+    return bestaetigt == computeFullFingerprint(publicKey);
+  }
   bool get isBlocked => trustState == TrustState.blocked;
 
   /// Whether sending messages to this contact is allowed.
