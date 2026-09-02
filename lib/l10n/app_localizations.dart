@@ -1695,31 +1695,31 @@ abstract class AppLocalizations {
   /// No description provided for @tutProtectIntro.
   ///
   /// In en, this message translates to:
-  /// **'What happens in a chat stays traceable.'**
+  /// **'More control over your chats and contacts.'**
   String get tutProtectIntro;
 
   /// No description provided for @tutDScreenshot.
   ///
   /// In en, this message translates to:
-  /// **'The other side sees screenshots and recordings. Always.'**
+  /// **'You are always told when a screenshot or a screen recording of the chat is made.'**
   String get tutDScreenshot;
 
   /// No description provided for @tutDBlock.
   ///
   /// In en, this message translates to:
-  /// **'Nothing gets through any more. The confirmation stays saved.'**
+  /// **'Block contacts so they can no longer reach you, until you unblock them.'**
   String get tutDBlock;
 
   /// No description provided for @tutDClear.
   ///
   /// In en, this message translates to:
-  /// **'Clears the history. Your messages vanish on their side too.'**
+  /// **'Clear the chat history at any time. The messages you sent are removed for good on both devices.'**
   String get tutDClear;
 
   /// No description provided for @tutDDeleteChat.
   ///
   /// In en, this message translates to:
-  /// **'Removes the whole chat. The other side is told.'**
+  /// **'Remove the whole chat from your list. The contact itself stays.'**
   String get tutDDeleteChat;
 
   /// No description provided for @tutTEmergency.

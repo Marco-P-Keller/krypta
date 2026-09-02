@@ -908,23 +908,23 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get tutProtectIntro =>
-      'Ce qui se passe dans une discussion reste visible.';
+      'Plus de contrôle sur tes discussions et tes contacts.';
 
   @override
   String get tutDScreenshot =>
-      'L’autre voit les captures et les enregistrements. Toujours.';
+      'Tu es toujours prévenu si une capture ou un enregistrement de la discussion est réalisé.';
 
   @override
   String get tutDBlock =>
-      'Plus rien ne passe. La confirmation reste enregistrée.';
+      'Bloque des contacts pour qu’ils ne puissent plus te joindre, jusqu’à ce que tu les débloques.';
 
   @override
   String get tutDClear =>
-      'Vide l’historique. Tes messages disparaissent aussi chez l’autre.';
+      'Efface l’historique quand tu veux. Les messages que tu as envoyés disparaissent définitivement des deux côtés.';
 
   @override
   String get tutDDeleteChat =>
-      'Supprime toute la discussion. L’autre en est informé.';
+      'Retire toute la discussion de ta liste. Le contact reste.';
 
   @override
   String get tutTEmergency => 'Effacement d’urgence';

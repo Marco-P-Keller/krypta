@@ -904,24 +904,23 @@ class AppLocalizationsNl extends AppLocalizations {
   String get tutProtectTitle => 'Bescherming';
 
   @override
-  String get tutProtectIntro =>
-      'Wat er in een chat gebeurt, blijft na te gaan.';
+  String get tutProtectIntro => 'Meer controle over je chats en contacten.';
 
   @override
   String get tutDScreenshot =>
-      'De andere kant ziet schermafbeeldingen en opnamen. Altijd.';
+      'Je hoort het altijd als er een schermafbeelding of opname van de chat wordt gemaakt.';
 
   @override
   String get tutDBlock =>
-      'Er komt niets meer door. De bevestiging blijft bewaard.';
+      'Blokkeer contacten zodat ze je niet meer kunnen bereiken, tot je ze vrijgeeft.';
 
   @override
   String get tutDClear =>
-      'Leegt het verloop. Jouw berichten verdwijnen ook daar.';
+      'Wis het chatverloop wanneer je wilt. Jouw verzonden berichten zijn op beide apparaten definitief weg.';
 
   @override
   String get tutDDeleteChat =>
-      'Verwijdert de hele chat. De andere kant hoort ervan.';
+      'Verwijder de hele chat uit je lijst. Het contact blijft bestaan.';
 
   @override
   String get tutTEmergency => 'Noodwissing';

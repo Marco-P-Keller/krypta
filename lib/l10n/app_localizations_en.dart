@@ -897,23 +897,23 @@ class AppLocalizationsEn extends AppLocalizations {
   String get tutProtectTitle => 'Protection';
 
   @override
-  String get tutProtectIntro => 'What happens in a chat stays traceable.';
+  String get tutProtectIntro => 'More control over your chats and contacts.';
 
   @override
   String get tutDScreenshot =>
-      'The other side sees screenshots and recordings. Always.';
+      'You are always told when a screenshot or a screen recording of the chat is made.';
 
   @override
   String get tutDBlock =>
-      'Nothing gets through any more. The confirmation stays saved.';
+      'Block contacts so they can no longer reach you, until you unblock them.';
 
   @override
   String get tutDClear =>
-      'Clears the history. Your messages vanish on their side too.';
+      'Clear the chat history at any time. The messages you sent are removed for good on both devices.';
 
   @override
   String get tutDDeleteChat =>
-      'Removes the whole chat. The other side is told.';
+      'Remove the whole chat from your list. The contact itself stays.';
 
   @override
   String get tutTEmergency => 'Emergency wipe';
