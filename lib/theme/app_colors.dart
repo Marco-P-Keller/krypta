@@ -20,7 +20,17 @@ abstract final class AppColors {
   // ── Dark text ─────────────────────────────────────────────────────────
   static const Color textPrimaryDark = Color(0xFFFFFFFF);
   static const Color textSecondaryDark = Color(0xFF8E8E93);
-  static const Color textTertiaryDark = Color(0xFF48484A);
+  /// Dritte Textstufe im Dunkelmodus.
+  ///
+  /// War #48484A und kam damit auf **1.86:1** gegen die Karte — weit unter
+  /// den 4.5:1, die WCAG AA fuer Fliesstext verlangt. Sie traegt keine
+  /// Dekoration, sondern echte Lesetexte: die Uhrzeit in der Chatliste, die
+  /// Uhrzeit in der Blase und die Restzeit unter einer Nachricht, letztere
+  /// bei zehn Pixeln.
+  ///
+  /// Der Wert ist bewusst dunkler als [textSecondaryDark] gewaehlt, sonst
+  /// stuende die dritte Stufe staerker da als die zweite.
+  static const Color textTertiaryDark = Color(0xFF838389);
 
   // ── Light text ────────────────────────────────────────────────────────
   static const Color textPrimaryLight = Color(0xFF000000);
