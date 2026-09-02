@@ -13,6 +13,7 @@ import '../data/models/message_model.dart';
 import '../data/models/contact_model.dart';
 import '../logic/messenger_provider.dart';
 import 'widgets/chat_settings_sheet.dart';
+import 'widgets/passwort_dialog.dart';
 import 'widgets/message_bubble.dart';
 import 'widgets/system_event_row.dart';
 
@@ -206,37 +207,28 @@ class _ChatScreenState extends State<ChatScreen>
     // held by a long-lived widget reference.
     showDialog(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: Row(
-          children: [
-            const Icon(Icons.lock_rounded, color: AppColors.warning, size: 22),
-            const SizedBox(width: 10),
-            Text(l10n.lockMessage),
-          ],
+      builder: (ctx) => PasswortDialog(
+        symbol: Icons.lock_rounded,
+        symbolFarbe: AppColors.warning,
+        symbolGroesse: 22,
+        titel: l10n.lockMessage,
+        hinweis: l10n.lockMessageHint,
+        feld: TextField(
+          controller: pwController,
+          autofocus: true,
+          // M1-Client (audit 2026-05): obscure the message password as
+          // the user types it. Without this, the password sits in
+          // plaintext on the visible UI - defeating the point of
+          // password-protecting a single message.
+          obscureText: true,
+          enableSuggestions: false,
+          autocorrect: false,
+          decoration: InputDecoration(
+            hintText: l10n.enterPassword,
+            prefixIcon: const Icon(Icons.key_rounded, size: 20),
+          ),
         ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(l10n.lockMessageHint),
-            const SizedBox(height: 16),
-            TextField(
-              controller: pwController,
-              autofocus: true,
-              // M1-Client (audit 2026-05): obscure the message password as
-              // the user types it. Without this, the password sits in
-              // plaintext on the visible UI — defeating the point of
-              // password-protecting a single message.
-              obscureText: true,
-              enableSuggestions: false,
-              autocorrect: false,
-              decoration: InputDecoration(
-                hintText: l10n.enterPassword,
-                prefixIcon: const Icon(Icons.key_rounded, size: 20),
-              ),
-            ),
-          ],
-        ),
-        actions: [
+        aktionen: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(),
             child: Text(l10n.cancel),

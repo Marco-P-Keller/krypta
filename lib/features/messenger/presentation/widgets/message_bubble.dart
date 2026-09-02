@@ -9,6 +9,7 @@ import '../../../../theme/app_spacing.dart';
 import '../../data/models/message_model.dart';
 import '../../logic/messenger_provider.dart';
 import '../../logic/self_destruct_policy.dart';
+import 'passwort_dialog.dart';
 
 class MessageBubble extends StatelessWidget {
   final Message message;
@@ -380,37 +381,28 @@ class _LockedBubble extends StatelessWidget {
     showDialog(
       context: context,
       builder: (ctx) => StatefulBuilder(
-        builder: (ctx, setDialogState) => AlertDialog(
-          title: Row(
-            children: [
-              const Icon(Icons.lock_rounded, color: AppColors.accent, size: 20),
-              const SizedBox(width: 10),
-              Text(l10n.passwordRequired),
-            ],
+        builder: (ctx, setDialogState) => PasswortDialog(
+          symbol: Icons.lock_rounded,
+          symbolFarbe: AppColors.accent,
+          symbolGroesse: 20,
+          titel: l10n.passwordRequired,
+          hinweis: l10n.passwordRequiredHint,
+          feld: TextField(
+            controller: controller,
+            obscureText: true,
+            autofocus: true,
+            decoration: InputDecoration(
+              hintText: l10n.password,
+              errorText: error,
+              prefixIcon: const Icon(Icons.key_rounded, size: 20),
+            ),
+            onSubmitted: (_) => _tryUnlock(
+              context, ctx, controller,
+              (l) => setDialogState(() => isLoading = l),
+              (e) => setDialogState(() => error = e),
+            ),
           ),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(l10n.passwordRequiredHint),
-              const SizedBox(height: 16),
-              TextField(
-                controller: controller,
-                obscureText: true,
-                autofocus: true,
-                decoration: InputDecoration(
-                  hintText: l10n.password,
-                  errorText: error,
-                  prefixIcon: const Icon(Icons.key_rounded, size: 20),
-                ),
-                onSubmitted: (_) => _tryUnlock(
-                  context, ctx, controller,
-                  (l) => setDialogState(() => isLoading = l),
-                  (e) => setDialogState(() => error = e),
-                ),
-              ),
-            ],
-          ),
-          actions: [
+          aktionen: [
             TextButton(
               onPressed: () => Navigator.of(ctx).pop(),
               child: Text(l10n.cancel),
