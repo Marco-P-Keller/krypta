@@ -301,5 +301,9 @@
   "tutDAgain": "Steht in den Einstellungen. Du kannst sie jederzeit erneut lesen.",
   "onceOnlyMessage": "Einmalige Nachricht",
   "openOnceMessage": "Öffnen",
-  "onceOnlyHiddenHint": "Nur einmal zu öffnen"
+  "onceOnlyHiddenHint": "Nur einmal zu öffnen",
+  "onceOnlyConfirmTitle": "Nur einmal zu öffnen",
+  "onceOnlyConfirmBody": "Diese Nachricht kann nur einmal geöffnet werden. Sobald du sie schliesst, wird sie dauerhaft entfernt. Das gilt auch, wenn etwas dazwischenkommt.",
+  "onceOnlyScreenshotHint": "Ein Screenshot lässt sich nicht verhindern. Du erfährst davon.",
+  "onceOnlyConfirmAction": "Bestätigen und öffnen"
 }

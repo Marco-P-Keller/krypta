@@ -961,4 +961,18 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get onceOnlyHiddenHint => 'Eenmalig te openen';
+
+  @override
+  String get onceOnlyConfirmTitle => 'Eenmalig te openen';
+
+  @override
+  String get onceOnlyConfirmBody =>
+      'Dit bericht kan een keer worden geopend. Zodra je het sluit, is het definitief weg. Dat geldt ook als er iets tussenkomt.';
+
+  @override
+  String get onceOnlyScreenshotHint =>
+      'Een schermafbeelding is niet te voorkomen. Je hoort ervan.';
+
+  @override
+  String get onceOnlyConfirmAction => 'Bevestigen en openen';
 }

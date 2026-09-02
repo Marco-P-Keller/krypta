@@ -1793,6 +1793,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Can be opened once'**
   String get onceOnlyHiddenHint;
+
+  /// No description provided for @onceOnlyConfirmTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Can be opened once'**
+  String get onceOnlyConfirmTitle;
+
+  /// No description provided for @onceOnlyConfirmBody.
+  ///
+  /// In en, this message translates to:
+  /// **'This message can be opened once. As soon as you close it, it is removed for good. That also applies if something interrupts you.'**
+  String get onceOnlyConfirmBody;
+
+  /// No description provided for @onceOnlyScreenshotHint.
+  ///
+  /// In en, this message translates to:
+  /// **'A screenshot cannot be prevented. You will be told about it.'**
+  String get onceOnlyScreenshotHint;
+
+  /// No description provided for @onceOnlyConfirmAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm and open'**
+  String get onceOnlyConfirmAction;
 }
 
 class _AppLocalizationsDelegate

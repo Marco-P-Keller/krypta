@@ -13,6 +13,7 @@ import '../data/models/message_model.dart';
 import '../data/models/contact_model.dart';
 import '../logic/frist_stufe.dart';
 import '../logic/messenger_provider.dart';
+import 'einmalige_nachricht_screen.dart';
 import 'widgets/chat_settings_sheet.dart';
 import 'widgets/passwort_dialog.dart';
 import 'widgets/message_bubble.dart';
@@ -199,6 +200,69 @@ class _ChatScreenState extends State<ChatScreen>
     if (text.isNotEmpty) {
       context.read<MessengerProvider>().onLocalTyping(widget.chat.recipientId);
     }
+  }
+
+  /// Eine einmalige Nachricht oeffnen.
+  ///
+  /// Erst die Rueckfrage, dann verbrauchen, dann anzeigen. Die Reihenfolge
+  /// haengt an Daniels Entscheidung vom 02.09.2026: verbraucht wird beim
+  /// Bestaetigen, nicht beim Schliessen. Nur so haelt die Zusage auch dann,
+  /// wenn die App abstuerzt oder der Akku leer wird.
+  Future<void> _oeffneEinmalige(Message m) async {
+    final l10n = AppLocalizations.of(context)!;
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        // Sonst legt sich der Inhalt bei grosser Systemschrift ueber die
+        // Knopfzeile, siehe die Dialogarbeit vom 02.09.
+        scrollable: true,
+        title: Row(
+          children: [
+            const Icon(Icons.visibility_off_rounded,
+                color: AppColors.destructive, size: 22),
+            const SizedBox(width: 10),
+            Expanded(child: Text(l10n.onceOnlyConfirmTitle)),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(l10n.onceOnlyConfirmBody),
+            const SizedBox(height: 12),
+            // Ehrlich statt beruhigend: die App kann einen Screenshot nicht
+            // verhindern, nur melden. Wer hier liest, entscheidet mit dem
+            // Wissen.
+            Text(
+              l10n.onceOnlyScreenshotHint,
+              style: Theme.of(ctx).textTheme.bodySmall,
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: Text(l10n.cancel),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            style: FilledButton.styleFrom(
+                backgroundColor: AppColors.destructive),
+            child: Text(l10n.onceOnlyConfirmAction),
+          ),
+        ],
+      ),
+    );
+    if (ok != true || !mounted) return;
+
+    final text = await context
+        .read<MessengerProvider>()
+        .verbraucheEinmalige(widget.chat.id, m.id);
+    if (text == null || !mounted) return;
+
+    await Navigator.of(context).push(MaterialPageRoute(
+      builder: (_) => EinmaligeNachrichtScreen(text: text),
+    ));
   }
 
   void _showPasswordSetDialog() {
@@ -549,7 +613,13 @@ class _ChatScreenState extends State<ChatScreen>
                 peerName: widget.chat.recipientName,
               );
             }
-            return MessageBubble(message: msg, isMine: isMine);
+            return MessageBubble(
+              message: msg,
+              isMine: isMine,
+              onOeffnen: msg.einmalig && !isMine
+                  ? () => _oeffneEinmalige(msg)
+                  : null,
+            );
           },
         );
       },

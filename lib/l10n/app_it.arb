@@ -280,5 +280,9 @@
   "tutDAgain": "Sta nelle impostazioni. Puoi rileggerla quando vuoi.",
   "onceOnlyMessage": "Messaggio usa e getta",
   "openOnceMessage": "Apri",
-  "onceOnlyHiddenHint": "Apribile una sola volta"
+  "onceOnlyHiddenHint": "Apribile una sola volta",
+  "onceOnlyConfirmTitle": "Apribile una sola volta",
+  "onceOnlyConfirmBody": "Questo messaggio si può aprire una sola volta. Appena lo chiudi, viene rimosso per sempre. Vale anche se qualcosa ti interrompe.",
+  "onceOnlyScreenshotHint": "Uno screenshot non si può impedire. Ne verrai informato.",
+  "onceOnlyConfirmAction": "Conferma e apri"
 }

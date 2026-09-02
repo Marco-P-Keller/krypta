@@ -954,4 +954,18 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get onceOnlyHiddenHint => 'Can be opened once';
+
+  @override
+  String get onceOnlyConfirmTitle => 'Can be opened once';
+
+  @override
+  String get onceOnlyConfirmBody =>
+      'This message can be opened once. As soon as you close it, it is removed for good. That also applies if something interrupts you.';
+
+  @override
+  String get onceOnlyScreenshotHint =>
+      'A screenshot cannot be prevented. You will be told about it.';
+
+  @override
+  String get onceOnlyConfirmAction => 'Confirm and open';
 }

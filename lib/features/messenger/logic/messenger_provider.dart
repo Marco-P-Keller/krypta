@@ -3541,6 +3541,36 @@ class MessengerProvider extends ChangeNotifier {
   /// Mit derselben zeitlichen Streuung wie die Empfangsbestaetigungen: der
   /// Ablaufzeitpunkt verraet den Lesezeitpunkt, und der soll nicht auf die
   /// Sekunde genau ablesbar sein.
+  /// Eine einmalige Nachricht verbrauchen und ihren Klartext herausgeben.
+  ///
+  /// Die Reihenfolge ist die eigentliche Aussage: erst von der Platte
+  /// entfernen und der Gegenseite Bescheid sagen, dann den Text
+  /// zurueckgeben. Wer danach abstuerzt, hat sie trotzdem verbraucht, und
+  /// genau das ist zugesagt.
+  ///
+  /// Wuerde erst beim Schliessen der Ansicht geloescht, koennte man die App
+  /// im richtigen Moment abschiessen und die Nachricht bliebe erneut
+  /// oeffenbar. Daniels Entscheidung vom 02.09.2026.
+  ///
+  /// Gibt `null` zurueck, wenn die Nachricht nicht mehr da ist oder keinen
+  /// lesbaren Text traegt. Dann passiert nichts, und nichts geht verloren.
+  Future<String?> verbraucheEinmalige(String chatId, String messageId) async {
+    final messages = _messagesByChat[chatId];
+    if (messages == null) return null;
+    final idx = messages.indexWhere((m) => m.id == messageId);
+    if (idx == -1) return null;
+
+    final text = messages[idx].decryptedContent;
+    if (text == null || text.isEmpty) return null;
+
+    messages.removeAt(idx);
+    await _localStore.saveMessages(chatId, messages);
+    _meldeAblauf(chatId, messageId);
+    _standNachrechnen(chatId);
+    notifyListeners();
+    return text;
+  }
+
   void _meldeAblauf(String chatId, String messageId) {
     final idx = _chats.indexWhere((c) => c.id == chatId);
     if (idx == -1) return;

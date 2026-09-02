@@ -280,5 +280,9 @@
   "tutDAgain": "Está nas definições. Podes lê la de novo quando quiseres.",
   "onceOnlyMessage": "Mensagem de uma vez",
   "openOnceMessage": "Abrir",
-  "onceOnlyHiddenHint": "Pode ser aberta uma vez"
+  "onceOnlyHiddenHint": "Pode ser aberta uma vez",
+  "onceOnlyConfirmTitle": "Pode ser aberta uma vez",
+  "onceOnlyConfirmBody": "Esta mensagem só pode ser aberta uma vez. Assim que a fechares, é removida para sempre. Isso também vale se algo te interromper.",
+  "onceOnlyScreenshotHint": "Uma captura não pode ser impedida. Vais saber dela.",
+  "onceOnlyConfirmAction": "Confirmar e abrir"
 }

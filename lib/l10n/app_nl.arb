@@ -280,5 +280,9 @@
   "tutDAgain": "Staat in de instellingen. Je kunt hem altijd opnieuw lezen.",
   "onceOnlyMessage": "Eenmalig bericht",
   "openOnceMessage": "Openen",
-  "onceOnlyHiddenHint": "Eenmalig te openen"
+  "onceOnlyHiddenHint": "Eenmalig te openen",
+  "onceOnlyConfirmTitle": "Eenmalig te openen",
+  "onceOnlyConfirmBody": "Dit bericht kan een keer worden geopend. Zodra je het sluit, is het definitief weg. Dat geldt ook als er iets tussenkomt.",
+  "onceOnlyScreenshotHint": "Een schermafbeelding is niet te voorkomen. Je hoort ervan.",
+  "onceOnlyConfirmAction": "Bevestigen en openen"
 }

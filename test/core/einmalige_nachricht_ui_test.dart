@@ -75,4 +75,91 @@ void main() {
     await t.pumpAndSettle();
     expect(t.takeException(), isNull);
   });
+
+  // ─── Der Bestaetigungsdialog ─────────────────────────────────────────
+
+  for (final sprache in const ['de', 'en', 'es', 'fr', 'it', 'nl', 'pt']) {
+    testWidgets('der Bestaetigungsdialog passt, Sprache $sprache', (t) async {
+      t.view.devicePixelRatio = 2.0;
+      t.view.physicalSize = const Size(375, 667) * 2.0;
+      addTearDown(t.view.reset);
+
+      late AppLocalizations l10n;
+      await t.pumpWidget(MaterialApp(
+        locale: Locale(sprache),
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        builder: (ctx, child) => MediaQuery(
+          data: MediaQuery.of(ctx)
+              .copyWith(textScaler: const TextScaler.linear(1.35)),
+          child: child!,
+        ),
+        home: Builder(builder: (ctx) {
+          l10n = AppLocalizations.of(ctx)!;
+          return Scaffold(
+            body: Center(
+              child: ElevatedButton(
+                onPressed: () => showDialog(
+                  context: ctx,
+                  builder: (d) => AlertDialog(
+                    scrollable: true,
+                    title: Row(
+                      children: [
+                        const Icon(Icons.visibility_off_rounded, size: 22),
+                        const SizedBox(width: 10),
+                        Expanded(child: Text(l10n.onceOnlyConfirmTitle)),
+                      ],
+                    ),
+                    content: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(l10n.onceOnlyConfirmBody),
+                        const SizedBox(height: 12),
+                        Text(l10n.onceOnlyScreenshotHint),
+                      ],
+                    ),
+                    actions: [
+                      TextButton(onPressed: () {}, child: Text(l10n.cancel)),
+                      FilledButton(
+                          onPressed: () {},
+                          child: Text(l10n.onceOnlyConfirmAction)),
+                    ],
+                  ),
+                ),
+                child: const Text('auf'),
+              ),
+            ),
+          );
+        }),
+      ));
+      await t.tap(find.text('auf'));
+      await t.pumpAndSettle();
+      expect(t.takeException(), isNull,
+          reason: 'der Dialog laeuft in $sprache ueber');
+    });
+  }
+
+  test('die Texte sind kurz und ohne Gedankenstriche', () async {
+    // tutorial_texte_test deckt nur Schluessel ab, die mit tut beginnen.
+    // Diese hier tun das nicht und waeren sonst ungeprueft.
+    for (final sprache in const ['de', 'en', 'es', 'fr', 'it', 'nl', 'pt']) {
+      final l = await AppLocalizations.delegate.load(Locale(sprache));
+      final texte = <String, String>{
+        'onceOnlyMessage': l.onceOnlyMessage,
+        'openOnceMessage': l.openOnceMessage,
+        'onceOnlyHiddenHint': l.onceOnlyHiddenHint,
+        'onceOnlyConfirmTitle': l.onceOnlyConfirmTitle,
+        'onceOnlyConfirmBody': l.onceOnlyConfirmBody,
+        'onceOnlyScreenshotHint': l.onceOnlyScreenshotHint,
+        'onceOnlyConfirmAction': l.onceOnlyConfirmAction,
+      };
+      texte.forEach((k, v) {
+        expect(v.trim(), isNotEmpty, reason: '$k ist leer in $sprache');
+        expect(v.contains('—'), isFalse, reason: '$k in $sprache');
+        expect(v.contains('–'), isFalse, reason: '$k in $sprache');
+        expect(v.length, lessThanOrEqualTo(160), reason: '$k in $sprache');
+      });
+    }
+  });
 }
