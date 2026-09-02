@@ -105,7 +105,6 @@
     }
   },
   "onlyVisibleToYou": "Only visible to you",
-  "burnAfterRead": "Burn after read",
   "passwordProtected": "Password protected",
   "lockMessage": "Lock Message",
   "lockMessageHint": "Set a password for the next message. The recipient must enter this password to read it.",
@@ -254,7 +253,7 @@
   "tutAddContactsTitle": "Add contacts",
   "tutChatFeaturesIntro": "Extra options for your messages.",
   "tutLockMessageDesc": "Send messages that are protected with a password.",
-  "tutAutoDeleteDesc": "Set a timer for the whole chat. Messages are deleted automatically once they have been read.",
+  "tutAutoDeleteDesc": "Set a timer for the whole chat. Messages are deleted automatically once they arrive.",
   "tutReadyTitle": "Ready",
   "tutReadyBody": "One point is still missing. It is the most important one.",
   "language": "Language",

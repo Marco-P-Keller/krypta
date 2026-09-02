@@ -74,42 +74,55 @@ void main() {
     });
   });
 
-  group('Chat-Timer — ab dem Lesen', () {
+  group('Chat-Timer — ab der Zustellung', () {
+    // Geaendert am 02.09.2026 auf Daniels Ansage: der Countdown beginnt mit
+    // der Zustellung, nicht mehr mit dem Lesen. Sein Beispiel: Frist zehn
+    // Minuten, Zustellung um 18:00, geloescht um 18:10, egal ob geoeffnet.
+    //
+    // Damit verschwindet auch Ungelesenes. Das war bis zum 01.09. bewusst
+    // andersherum; die Umkehr ist seine Entscheidung.
     final eingeschaltet = DateTime(2026, 8, 31, 11, 0, 0);
 
-    test('ungelesen laeuft er nicht', () {
+    test('ungelesen laeuft er jetzt trotzdem ab', () {
       expect(
         SelfDestructPolicy.expired(
-            nachricht(), zugestellt.add(const Duration(days: 365)),
+            nachricht(), zugestellt.add(const Duration(minutes: 9)),
             chatTimer: const Duration(minutes: 10),
             chatTimerSetAt: eingeschaltet),
         isFalse,
+      );
+      expect(
+        SelfDestructPolicy.expired(
+            nachricht(), zugestellt.add(const Duration(minutes: 11)),
+            chatTimer: const Duration(minutes: 10),
+            chatTimerSetAt: eingeschaltet),
+        isTrue,
+        reason: 'ungelesen darf ihn nicht mehr aufhalten',
       );
     });
 
-    test('gelesen laeuft er ab dem Lesen', () {
-      final m = nachricht(gelesenAm: gelesen);
+    test('spaeteres Lesen verschiebt nichts', () {
+      // Wer erst nach neun Minuten hineinschaut, hat noch eine.
+      final m = nachricht(gelesenAm: zugestellt.add(const Duration(minutes: 9)));
       expect(
-        SelfDestructPolicy.expired(m, gelesen.add(const Duration(minutes: 9)),
-            chatTimer: const Duration(minutes: 10),
-            chatTimerSetAt: eingeschaltet),
-        isFalse,
-      );
-      expect(
-        SelfDestructPolicy.expired(m, gelesen.add(const Duration(minutes: 11)),
+        SelfDestructPolicy.expired(m, zugestellt.add(const Duration(minutes: 11)),
             chatTimer: const Duration(minutes: 10),
             chatTimerSetAt: eingeschaltet),
         isTrue,
       );
     });
 
-    test('nachtraeglich eingeschaltet: volle Frist ab dem Einschalten', () {
+    test('nachtraeglich eingeschaltet raeumt nicht sofort den Verlauf', () {
+      // Ohne diese Regel waeren beim Einschalten alle aelteren Nachrichten
+      // im selben Moment ueberfaellig und der ganze sichtbare Verlauf waere
+      // mit einem Tipp weg. Daniels Entscheidung vom 31.08., sie gilt weiter.
       final spaeter = DateTime(2026, 8, 31, 14, 0, 0);
-      final m = nachricht(gelesenAm: gelesen);
+      final m = nachricht();
       expect(
         SelfDestructPolicy.expired(m, spaeter.add(const Duration(minutes: 9)),
             chatTimer: const Duration(minutes: 10), chatTimerSetAt: spaeter),
         isFalse,
+        reason: 'volle Frist ab dem Einschalten, nicht sofort',
       );
       expect(
         SelfDestructPolicy.expired(m, spaeter.add(const Duration(minutes: 11)),
@@ -118,14 +131,16 @@ void main() {
       );
     });
 
-    test('eine Nachricht MIT Chat-Frist laeuft ebenfalls ab dem Lesen', () {
-      // Die Frist reist mit, damit beide Seiten sie kennen — die Herkunft auch,
-      // sonst wuerde sie beim Empfaenger als eigener Timer ab Zustellung laufen.
+    test('eine Nachricht MIT mitgereister Chat-Frist laeuft ab Zustellung', () {
       final m = nachricht(timer: const Duration(minutes: 10), vomChat: true);
       expect(
-        SelfDestructPolicy.expired(m, zugestellt.add(const Duration(hours: 5))),
+        SelfDestructPolicy.expired(m, zugestellt.add(const Duration(minutes: 9))),
         isFalse,
-        reason: 'ungelesen laeuft der Chat-Timer nicht',
+      );
+      expect(
+        SelfDestructPolicy.expired(m, zugestellt.add(const Duration(minutes: 11))),
+        isTrue,
+        reason: 'die Herkunft der Frist aendert den Start nicht mehr',
       );
     });
   });

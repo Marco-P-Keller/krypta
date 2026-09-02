@@ -270,9 +270,6 @@ class AppLocalizationsPt extends AppLocalizations {
   String get onlyVisibleToYou => 'Visível apenas para si';
 
   @override
-  String get burnAfterRead => 'Destruir depois de ler';
-
-  @override
   String get passwordProtected => 'Protegida por palavra-passe';
 
   @override
@@ -652,7 +649,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get tutAutoDeleteDesc =>
-      'Define um temporizador para toda a conversa. As mensagens são apagadas depois de lidas.';
+      'Define um temporizador para toda a conversa. As mensagens são apagadas após a entrega.';
 
   @override
   String get tutReadyTitle => 'Pronto';

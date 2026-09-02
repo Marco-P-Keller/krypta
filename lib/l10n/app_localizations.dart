@@ -594,12 +594,6 @@ abstract class AppLocalizations {
   /// **'Only visible to you'**
   String get onlyVisibleToYou;
 
-  /// No description provided for @burnAfterRead.
-  ///
-  /// In en, this message translates to:
-  /// **'Burn after read'**
-  String get burnAfterRead;
-
   /// No description provided for @passwordProtected.
   ///
   /// In en, this message translates to:
@@ -1263,7 +1257,7 @@ abstract class AppLocalizations {
   /// No description provided for @tutAutoDeleteDesc.
   ///
   /// In en, this message translates to:
-  /// **'Set a timer for the whole chat. Messages are deleted automatically once they have been read.'**
+  /// **'Set a timer for the whole chat. Messages are deleted automatically once they arrive.'**
   String get tutAutoDeleteDesc;
 
   /// No description provided for @tutReadyTitle.

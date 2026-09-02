@@ -2,24 +2,31 @@ import '../data/models/message_model.dart';
 
 /// Wann eine Nachricht verschwindet — und bei wem.
 ///
-/// Es gibt zwei Timer, und sie starten verschieden.
+/// **Jede Frist laeuft ab der Zustellung.** Seit dem 02.09.2026 gilt das auch
+/// fuer den Chat-Timer; vorher hing er am Lesen. Daniels Beispiel: Frist zehn
+/// Minuten, Zustellung um 18:00, geloescht um 18:10, unabhaengig davon, ob
+/// die Nachricht geoeffnet wurde.
 ///
-/// **Der Timer einer einzelnen Nachricht laeuft ab der Zustellung.** Er soll
-/// auch ablaufen, wenn die Nachricht nie geoeffnet wird: dreissig Sekunden
-/// heissen dreissig Sekunden. Wer erst nach zwanzig hineinschaut, hat noch
-/// zehn.
+/// Die Folge ist beabsichtigt: **auch Ungelesenes verschwindet**. Bis zum
+/// 01.09. war es umgekehrt, damit nichts verfaellt, was niemand gesehen hat.
+/// Die Umkehr ist seine Entscheidung.
 ///
-/// **Der Chat-Timer laeuft ab dem Lesen.** Er ist Hausordnung fuer den Chat,
-/// kein Versprechen an die Gegenseite; Ungelesenes bleibt darunter liegen.
+/// Damit spielt es fuer die Zeitrechnung keine Rolle mehr, ob die Frist von
+/// der Nachricht selbst oder vom Chat stammt. `selfDestructFromChat` bleibt
+/// nur, weil das Feld noch auf der Leitung reist und aeltere Geraete es
+/// erwarten.
 ///
-/// `readAt` setzt nur der Empfaenger, und den Zustellzeitpunkt kennt auch nur
-/// er — beim Absender ist `timestamp` der Sendezeitpunkt. Seine Fassung
-/// raeumt deshalb keine eigene Uhr weg, sondern die Ablaufmeldung der
-/// Gegenseite, siehe [announceBurn].
-////// Der Unterschied zwischen den beiden liegt woanders: der **Chat-Timer**
-/// gilt auch fuer das, was schon dasteht — dann ab dem **Einschalten**, damit
-/// nicht mit einem Tipp der halbe Verlauf im selben Moment verschwindet. Und
-/// ein eigener Timer der Nachricht schlaegt ihn, in beide Richtungen.
+/// **Eine Ausnahme bleibt und ist wichtig:** wird der Chat-Timer
+/// nachtraeglich eingeschaltet, rechnet die Uhr ab dem **Einschalten**, nicht
+/// ab der Zustellung. Ohne das waeren beim Umlegen des Schalters alle
+/// aelteren Nachrichten im selben Moment ueberfaellig und der ganze sichtbare
+/// Verlauf verschwaende mit einem Tipp.
+///
+/// Auf dem Geraet des Empfaengers ist `timestamp` der Zustellzeitpunkt, beim
+/// Absender der Sendezeitpunkt. Die beiden liegen ein paar Sekunden
+/// auseinander, weil der Abruf gestreut ist. Wartet die Nachricht laenger auf
+/// dem Server, laeuft die Fassung des Absenders zuerst ab; anders geht es
+/// nicht, solange sie dort auf ihn wartet.
 abstract final class SelfDestructPolicy {
   /// Ob diese Nachricht abgelaufen ist.
   ///
@@ -51,33 +58,21 @@ abstract final class SelfDestructPolicy {
     // verschwindet, wenn man ihn braucht, waere sinnlos.
     if (m.isSystemEvent) return null;
 
-    final eigener = m.selfDestructDuration;
+    // Die Frist der Nachricht selbst, sonst die des Chats.
+    final frist = m.selfDestructDuration ?? chatTimer;
+    if (frist == null) return null;
 
-    // Eigener Timer: ab der **Zustellung**. Er soll auch ablaufen, wenn die
-    // Nachricht nie geoeffnet wird — dreissig Sekunden heissen dreissig
-    // Sekunden, nicht „dreissig Sekunden ab irgendwann".
+    // Gerechnet wird ab der Zustellung. `readAt` spielt keine Rolle mehr:
+    // wer erst nach neun von zehn Minuten hineinschaut, hat noch eine.
     //
-    // Auf dem Geraet des Empfaengers ist `timestamp` der Zustellzeitpunkt.
-    // Beim Absender ist es der Sendezeitpunkt, und dessen Fassung raeumt
-    // deshalb nicht die eigene Uhr weg, sondern die Ablaufmeldung der
-    // Gegenseite — siehe [announceBurn].
-    if (eigener != null && !m.selfDestructFromChat) {
-      return m.timestamp.add(eigener);
-    }
-
-    // Alles Weitere haengt am Lesen. Ungelesen laeuft der Chat-Timer nicht:
-    // er ist Hausordnung, kein Versprechen an die Gegenseite.
-    final gelesen = m.readAt;
-    if (gelesen == null) return null;
-    if (eigener != null) return gelesen.add(eigener);
-
-    if (chatTimer == null) return null;
-    // Nachtraeglich eingeschaltet: was schon gelesen war, bekommt die volle
-    // Frist ab dem Einschalten.
-    final start = chatTimerSetAt != null && chatTimerSetAt.isAfter(gelesen)
+    // Die einzige Verschiebung ist der nachtraeglich eingeschaltete
+    // Chat-Timer. Ohne sie waeren beim Umlegen des Schalters alle aelteren
+    // Nachrichten sofort ueberfaellig, und der ganze sichtbare Verlauf
+    // verschwaende mit einem Tipp.
+    final start = chatTimerSetAt != null && chatTimerSetAt.isAfter(m.timestamp)
         ? chatTimerSetAt
-        : gelesen;
-    return start.add(chatTimer);
+        : m.timestamp;
+    return start.add(frist);
   }
 
   /// Ob der Ablauf dieser Nachricht der Gegenseite mitzuteilen ist.

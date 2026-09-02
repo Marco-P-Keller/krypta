@@ -269,9 +269,6 @@ class AppLocalizationsFr extends AppLocalizations {
   String get onlyVisibleToYou => 'Visible uniquement par vous';
 
   @override
-  String get burnAfterRead => 'Détruire après lecture';
-
-  @override
   String get passwordProtected => 'Protégé par mot de passe';
 
   @override
@@ -652,7 +649,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get tutAutoDeleteDesc =>
-      'Règle un minuteur pour toute la discussion. Les messages sont supprimés après lecture.';
+      'Règle un minuteur pour toute la discussion. Les messages sont supprimés après la remise.';
 
   @override
   String get tutReadyTitle => 'Prêt';

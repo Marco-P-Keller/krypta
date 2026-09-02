@@ -270,9 +270,6 @@ class AppLocalizationsEs extends AppLocalizations {
   String get onlyVisibleToYou => 'Solo visible para ti';
 
   @override
-  String get burnAfterRead => 'Destruir tras leer';
-
-  @override
   String get passwordProtected => 'Protegido con contraseña';
 
   @override
@@ -651,7 +648,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get tutAutoDeleteDesc =>
-      'Fija un temporizador para todo el chat. Los mensajes se borran solos después de leerse.';
+      'Fija un temporizador para todo el chat. Los mensajes se borran solos tras la entrega.';
 
   @override
   String get tutReadyTitle => 'Listo';
