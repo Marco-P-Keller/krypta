@@ -278,5 +278,7 @@
   "tutDSettings": "Idioma, caja fuerte y códigos se cambian ahí.",
   "tutTAgain": "Esta introducción",
   "tutDAgain": "Está en los ajustes. Puedes releerla cuando quieras.",
-  "onceOnlyMessage": "Mensaje de una sola vez"
+  "onceOnlyMessage": "Mensaje de una sola vez",
+  "openOnceMessage": "Abrir",
+  "onceOnlyHiddenHint": "Se puede abrir una vez"
 }

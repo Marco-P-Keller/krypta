@@ -299,5 +299,7 @@
   "tutDSettings": "Sprache, Tresor und Codes änderst du dort.",
   "tutTAgain": "Diese Einführung",
   "tutDAgain": "Steht in den Einstellungen. Du kannst sie jederzeit erneut lesen.",
-  "onceOnlyMessage": "Einmalige Nachricht"
+  "onceOnlyMessage": "Einmalige Nachricht",
+  "openOnceMessage": "Öffnen",
+  "onceOnlyHiddenHint": "Nur einmal zu öffnen"
 }

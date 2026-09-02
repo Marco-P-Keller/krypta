@@ -278,5 +278,7 @@
   "tutDSettings": "Langue, coffre et codes se changent là bas.",
   "tutTAgain": "Cette introduction",
   "tutDAgain": "Elle est dans les réglages. Tu peux la relire quand tu veux.",
-  "onceOnlyMessage": "Message unique"
+  "onceOnlyMessage": "Message unique",
+  "openOnceMessage": "Ouvrir",
+  "onceOnlyHiddenHint": "Ouvrable une seule fois"
 }

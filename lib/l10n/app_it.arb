@@ -278,5 +278,7 @@
   "tutDSettings": "Lingua, cassaforte e codici si cambiano lì.",
   "tutTAgain": "Questa introduzione",
   "tutDAgain": "Sta nelle impostazioni. Puoi rileggerla quando vuoi.",
-  "onceOnlyMessage": "Messaggio usa e getta"
+  "onceOnlyMessage": "Messaggio usa e getta",
+  "openOnceMessage": "Apri",
+  "onceOnlyHiddenHint": "Apribile una sola volta"
 }

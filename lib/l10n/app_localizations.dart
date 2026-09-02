@@ -1781,6 +1781,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Once only message'**
   String get onceOnlyMessage;
+
+  /// No description provided for @openOnceMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Open'**
+  String get openOnceMessage;
+
+  /// No description provided for @onceOnlyHiddenHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Can be opened once'**
+  String get onceOnlyHiddenHint;
 }
 
 class _AppLocalizationsDelegate

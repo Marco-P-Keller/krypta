@@ -8,6 +8,7 @@ import '../../../../theme/app_colors.dart';
 import '../../../../theme/app_spacing.dart';
 import '../../data/models/message_model.dart';
 import '../../logic/messenger_provider.dart';
+import '../../logic/einmalig_policy.dart';
 import '../../logic/self_destruct_policy.dart';
 import 'passwort_dialog.dart';
 
@@ -16,11 +17,18 @@ class MessageBubble extends StatelessWidget {
   final bool isMine;
   final bool isLastInGroup;
 
+  /// Wird gerufen, wenn der Empfaenger eine einmalige Nachricht oeffnen will.
+  ///
+  /// Die Rueckfrage und das Verbrauchen haengen beim Aufrufer, nicht an der
+  /// Blase. Die Blase weiss nur, dass etwas verborgen ist.
+  final VoidCallback? onOeffnen;
+
   const MessageBubble({
     super.key,
     required this.message,
     required this.isMine,
     this.isLastInGroup = true,
+    this.onOeffnen,
   });
 
   void _showMessageMenu(BuildContext context, bool isDark) {
@@ -133,6 +141,7 @@ class MessageBubble extends StatelessWidget {
                   isMine: isMine,
                   isDark: isDark,
                   isLast: isLastInGroup,
+                  onOeffnen: onOeffnen,
                 ),
             ),
             // Der mitlaufende Rest, aber nur beim Timer DIESER Nachricht.
@@ -256,11 +265,17 @@ class _UnlockedBubble extends StatelessWidget {
   final bool isDark;
   final bool isLast;
 
+  /// Nur fuer eine einmalige Nachricht gesetzt. Die Blase zeigt dann statt
+  /// des Textes eine Schaltflaeche, und das Oeffnen selbst haengt beim
+  /// Aufrufer.
+  final VoidCallback? onOeffnen;
+
   const _UnlockedBubble({
     required this.message,
     required this.isMine,
     required this.isDark,
     required this.isLast,
+    this.onOeffnen,
   });
 
   @override
@@ -316,6 +331,51 @@ class _UnlockedBubble extends StatelessWidget {
           // Passt sie auf der letzten Zeile nicht mehr hin, bricht der
           // Platzhalter um und nimmt sie mit auf die naechste — dasselbe
           // Verhalten wie bei WhatsApp.
+          // Eine einmalige Nachricht zeigt beim Empfaenger nichts vom
+          // Inhalt. Erst nach der Rueckfrage wird sie geoeffnet, und mit dem
+          // Bestaetigen ist sie fort. Siehe EinmaligPolicy.
+          if (EinmaligPolicy.verbergen(
+            einmalig: message.einmalig,
+            senderId: message.senderId,
+            eigeneId: isMine ? message.senderId : message.recipientId,
+          ))
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.visibility_off_rounded,
+                        size: 15, color: AppColors.destructive),
+                    const SizedBox(width: 6),
+                    Flexible(
+                      child: Text(
+                        l10n.onceOnlyHiddenHint,
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                          color: isDark
+                              ? AppColors.textSecondaryDark
+                              : AppColors.textSecondaryLight,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                FilledButton(
+                  onPressed: onOeffnen,
+                  style: FilledButton.styleFrom(
+                    backgroundColor: AppColors.destructive,
+                    foregroundColor: Colors.white,
+                    minimumSize: const Size(0, 36),
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                  ),
+                  child: Text(l10n.openOnceMessage),
+                ),
+              ],
+            )
+          else
           Stack(
             children: [
               Text.rich(

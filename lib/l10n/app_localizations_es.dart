@@ -955,4 +955,10 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get onceOnlyMessage => 'Mensaje de una sola vez';
+
+  @override
+  String get openOnceMessage => 'Abrir';
+
+  @override
+  String get onceOnlyHiddenHint => 'Se puede abrir una vez';
 }

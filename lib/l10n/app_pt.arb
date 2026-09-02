@@ -278,5 +278,7 @@
   "tutDSettings": "Idioma, cofre e códigos mudam se aí.",
   "tutTAgain": "Esta introdução",
   "tutDAgain": "Está nas definições. Podes lê la de novo quando quiseres.",
-  "onceOnlyMessage": "Mensagem de uma vez"
+  "onceOnlyMessage": "Mensagem de uma vez",
+  "openOnceMessage": "Abrir",
+  "onceOnlyHiddenHint": "Pode ser aberta uma vez"
 }

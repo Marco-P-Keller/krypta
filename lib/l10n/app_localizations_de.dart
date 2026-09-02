@@ -958,4 +958,10 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get onceOnlyMessage => 'Einmalige Nachricht';
+
+  @override
+  String get openOnceMessage => 'Öffnen';
+
+  @override
+  String get onceOnlyHiddenHint => 'Nur einmal zu öffnen';
 }
