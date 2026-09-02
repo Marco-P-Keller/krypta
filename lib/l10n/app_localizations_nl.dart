@@ -890,21 +890,22 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get tutDAddById =>
-      'Wissel de kenmerken uit en voer ze in. Werkt ook op afstand.';
+      'Wissel je ID uit en voer hem in. Werkt ook op afstand.';
 
   @override
   String get tutTRequest => 'Verzoek';
 
   @override
   String get tutDRequest =>
-      'De andere kant moet accepteren. Daarvoor gaat er niets uit.';
+      'De andere kant moet je verzoek accepteren voordat jullie kunnen chatten.';
 
   @override
-  String get tutDQr => 'Code tonen en scannen. Tonen geldt als toestemming.';
+  String get tutDQr =>
+      'Toon of scan een QR-code om contacten direct toe te voegen.';
 
   @override
   String get tutDSafetyNumber =>
-      'Vergelijk de cijfers of scan ze. Daarna staat bevestigd in de chat.';
+      'Vergelijk de veiligheidsnummers om te controleren wie je contact is en de end-to-end versleuteling.';
 
   @override
   String get tutTRemaining => 'Resterende tijd';

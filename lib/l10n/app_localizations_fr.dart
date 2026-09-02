@@ -893,20 +893,22 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get tutDAddById =>
-      'Échangez vos identifiants et saisissez les. Cela marche à distance.';
+      'Échange ton ID et saisis le. Cela marche aussi à distance.';
 
   @override
   String get tutTRequest => 'Demande';
 
   @override
-  String get tutDRequest => 'L’autre doit accepter. Rien ne part avant.';
+  String get tutDRequest =>
+      'L’autre doit accepter ta demande avant que vous puissiez discuter.';
 
   @override
-  String get tutDQr => 'Montrer le code et le scanner. Le montrer vaut accord.';
+  String get tutDQr =>
+      'Montre ou scanne un code QR pour ajouter des contacts directement.';
 
   @override
   String get tutDSafetyNumber =>
-      'Compare les chiffres ou scanne les. Le chat indique ensuite confirmé.';
+      'Compare les numéros de sécurité pour vérifier qui est ton contact et le chiffrement de bout en bout.';
 
   @override
   String get tutTRemaining => 'Temps restant';

@@ -892,22 +892,22 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get tutDAddById =>
-      'Kennungen austauschen und eintragen. Geht auch aus der Ferne.';
+      'Deine ID austauschen und eingeben. Funktioniert auch aus der Ferne.';
 
   @override
   String get tutTRequest => 'Anfrage';
 
   @override
   String get tutDRequest =>
-      'Die Gegenseite muss annehmen. Vorher geht nichts raus.';
+      'Die Gegenseite muss deine Anfrage annehmen, bevor ihr chatten könnt.';
 
   @override
   String get tutDQr =>
-      'Code zeigen und scannen. Wer ihn zeigt, stimmt damit zu.';
+      'QR-Code zeigen oder scannen, um Kontakte direkt hinzuzufügen.';
 
   @override
   String get tutDSafetyNumber =>
-      'Zahlen vergleichen oder scannen. Danach steht bestätigt im Chat.';
+      'Sicherheitsnummern vergleichen, um die Identität eures Kontakts und die Ende-zu-Ende-Verschlüsselung zu verifizieren.';
 
   @override
   String get tutTRemaining => 'Restzeit';

@@ -884,22 +884,21 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get tutDAddById =>
-      'Exchange IDs and enter them. Works from a distance too.';
+      'Exchange your ID and enter it. Works from a distance too.';
 
   @override
   String get tutTRequest => 'Request';
 
   @override
   String get tutDRequest =>
-      'The other side has to accept. Nothing goes out before that.';
+      'The other side has to accept your request before you can chat.';
 
   @override
-  String get tutDQr =>
-      'Show the code and scan it. Showing it counts as consent.';
+  String get tutDQr => 'Show or scan a QR code to add contacts directly.';
 
   @override
   String get tutDSafetyNumber =>
-      'Compare the digits or scan them. The chat then says confirmed.';
+      'Compare safety numbers to verify who your contact really is and the end-to-end encryption of the chat.';
 
   @override
   String get tutTRemaining => 'Time left';

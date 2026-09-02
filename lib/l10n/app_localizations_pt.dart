@@ -891,21 +891,22 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get tutDAddById =>
-      'Troquem os identificadores e insiram nos. Também funciona à distância.';
+      'Troca o teu ID e insere o. Também funciona à distância.';
 
   @override
   String get tutTRequest => 'Pedido';
 
   @override
   String get tutDRequest =>
-      'O outro lado tem de aceitar. Antes disso não sai nada.';
+      'O outro lado tem de aceitar o teu pedido antes de poderem conversar.';
 
   @override
-  String get tutDQr => 'Mostrar o código e ler o. Mostrar já é consentir.';
+  String get tutDQr =>
+      'Mostra ou lê um código QR para adicionar contactos diretamente.';
 
   @override
   String get tutDSafetyNumber =>
-      'Compara os dígitos ou lê os. Depois a conversa diz confirmado.';
+      'Compara os números de segurança para verificar quem é o teu contacto e a cifra ponto a ponto.';
 
   @override
   String get tutTRemaining => 'Tempo restante';

@@ -894,22 +894,22 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get tutDAddById =>
-      'Scambiatevi gli identificativi e inseriteli. Funziona anche a distanza.';
+      'Scambia il tuo ID e inseriscilo. Funziona anche a distanza.';
 
   @override
   String get tutTRequest => 'Richiesta';
 
   @override
   String get tutDRequest =>
-      'L’altra parte deve accettare. Prima non esce nulla.';
+      'L’altra parte deve accettare la tua richiesta prima di poter chattare.';
 
   @override
   String get tutDQr =>
-      'Mostrare il codice e scansionarlo. Mostrarlo vale come consenso.';
+      'Mostra o scansiona un codice QR per aggiungere contatti direttamente.';
 
   @override
   String get tutDSafetyNumber =>
-      'Confronta le cifre o scansionale. Poi la chat dice confermato.';
+      'Confronta i numeri di sicurezza per verificare chi è il tuo contatto e la crittografia end-to-end.';
 
   @override
   String get tutTRemaining => 'Tempo rimasto';

@@ -1671,7 +1671,7 @@ abstract class AppLocalizations {
   /// No description provided for @tutDAddById.
   ///
   /// In en, this message translates to:
-  /// **'Exchange IDs and enter them. Works from a distance too.'**
+  /// **'Exchange your ID and enter it. Works from a distance too.'**
   String get tutDAddById;
 
   /// No description provided for @tutTRequest.
@@ -1683,19 +1683,19 @@ abstract class AppLocalizations {
   /// No description provided for @tutDRequest.
   ///
   /// In en, this message translates to:
-  /// **'The other side has to accept. Nothing goes out before that.'**
+  /// **'The other side has to accept your request before you can chat.'**
   String get tutDRequest;
 
   /// No description provided for @tutDQr.
   ///
   /// In en, this message translates to:
-  /// **'Show the code and scan it. Showing it counts as consent.'**
+  /// **'Show or scan a QR code to add contacts directly.'**
   String get tutDQr;
 
   /// No description provided for @tutDSafetyNumber.
   ///
   /// In en, this message translates to:
-  /// **'Compare the digits or scan them. The chat then says confirmed.'**
+  /// **'Compare safety numbers to verify who your contact really is and the end-to-end encryption of the chat.'**
   String get tutDSafetyNumber;
 
   /// No description provided for @tutTRemaining.
