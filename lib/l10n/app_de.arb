@@ -214,7 +214,6 @@
   "tutChatFeaturesIntro": "Jede Nachricht kann sich selbst wieder entfernen.",
   "tutLockMessageDesc": "Ein Passwort nur für diese eine Nachricht. Sag es mündlich weiter.",
   "tutAutoDeleteDesc": "Verschwindet nach der eingestellten Zeit, bei euch beiden.",
-  "tutBurnAfterReadDesc": "Weg, sobald die Gegenseite den Chat verlässt.",
   "tutReadyTitle": "Fertig",
   "tutReadyBody": "Ein Punkt fehlt noch. Er ist der wichtigste.",
   "language": "Sprache",
@@ -286,8 +285,6 @@
   "tutDRequest": "Die Gegenseite muss deine Anfrage annehmen, bevor ihr chatten könnt.",
   "tutDQr": "QR-Code zeigen oder scannen, um Kontakte direkt hinzuzufügen.",
   "tutDSafetyNumber": "Sicherheitsnummern vergleichen, um die Identität eures Kontakts und die Ende-zu-Ende-Verschlüsselung zu verifizieren.",
-  "tutTRemaining": "Restzeit",
-  "tutDRemaining": "Unter der Nachricht läuft die verbleibende Zeit mit.",
   "tutProtectTitle": "Schutz",
   "tutProtectIntro": "Was im Chat geschieht, bleibt nachvollziehbar.",
   "tutDScreenshot": "Screenshots und Aufnahmen sieht die Gegenseite. Immer.",
@@ -305,5 +302,6 @@
   "onceOnlyConfirmTitle": "Nur einmal zu öffnen",
   "onceOnlyConfirmBody": "Diese Nachricht kann nur einmal geöffnet werden. Sobald du sie schliesst, wird sie dauerhaft entfernt. Das gilt auch, wenn etwas dazwischenkommt.",
   "onceOnlyScreenshotHint": "Ein Screenshot lässt sich nicht verhindern. Du erfährst davon.",
-  "onceOnlyConfirmAction": "Bestätigen und öffnen"
+  "onceOnlyConfirmAction": "Bestätigen und öffnen",
+  "tutDOnceOnly": "Nur einmal zu öffnen. Danach ist sie bei euch beiden fort."
 }

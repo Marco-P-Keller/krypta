@@ -654,10 +654,6 @@ class AppLocalizationsEs extends AppLocalizations {
       'Desaparece tras el tiempo que fijes, en ambos lados.';
 
   @override
-  String get tutBurnAfterReadDesc =>
-      'Se va en cuanto la otra parte sale del chat.';
-
-  @override
   String get tutReadyTitle => 'Listo';
 
   @override
@@ -910,12 +906,6 @@ class AppLocalizationsEs extends AppLocalizations {
       'Compara los números de seguridad para verificar quién es tu contacto y el cifrado de extremo a extremo.';
 
   @override
-  String get tutTRemaining => 'Tiempo restante';
-
-  @override
-  String get tutDRemaining => 'Bajo el mensaje corre el tiempo que queda.';
-
-  @override
   String get tutProtectTitle => 'Protección';
 
   @override
@@ -975,4 +965,8 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get onceOnlyConfirmAction => 'Confirmar y abrir';
+
+  @override
+  String get tutDOnceOnly =>
+      'Se abre una sola vez. Después desaparece para los dos.';
 }

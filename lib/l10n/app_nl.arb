@@ -193,7 +193,6 @@
   "tutChatFeaturesIntro": "Elk bericht kan zichzelf weer weghalen.",
   "tutLockMessageDesc": "Een wachtwoord voor alleen dit bericht. Geef het mondeling door.",
   "tutAutoDeleteDesc": "Verdwijnt na de ingestelde tijd, bij jullie allebei.",
-  "tutBurnAfterReadDesc": "Weg zodra de andere kant de chat verlaat.",
   "tutReadyTitle": "Klaar",
   "tutReadyBody": "Er ontbreekt nog een punt. Het belangrijkste.",
   "language": "Taal",
@@ -265,8 +264,6 @@
   "tutDRequest": "De andere kant moet je verzoek accepteren voordat jullie kunnen chatten.",
   "tutDQr": "Toon of scan een QR-code om contacten direct toe te voegen.",
   "tutDSafetyNumber": "Vergelijk de veiligheidsnummers om te controleren wie je contact is en de end-to-end versleuteling.",
-  "tutTRemaining": "Resterende tijd",
-  "tutDRemaining": "Onder het bericht loopt de resterende tijd mee.",
   "tutProtectTitle": "Bescherming",
   "tutProtectIntro": "Wat er in een chat gebeurt, blijft na te gaan.",
   "tutDScreenshot": "De andere kant ziet schermafbeeldingen en opnamen. Altijd.",
@@ -284,5 +281,6 @@
   "onceOnlyConfirmTitle": "Eenmalig te openen",
   "onceOnlyConfirmBody": "Dit bericht kan een keer worden geopend. Zodra je het sluit, is het definitief weg. Dat geldt ook als er iets tussenkomt.",
   "onceOnlyScreenshotHint": "Een schermafbeelding is niet te voorkomen. Je hoort ervan.",
-  "onceOnlyConfirmAction": "Bevestigen en openen"
+  "onceOnlyConfirmAction": "Bevestigen en openen",
+  "tutDOnceOnly": "Eenmalig te openen. Daarna is het bij jullie allebei weg."
 }

@@ -193,7 +193,6 @@
   "tutChatFeaturesIntro": "Ogni messaggio può togliersi di mezzo da solo.",
   "tutLockMessageDesc": "Una password solo per questo messaggio. Dilla a voce.",
   "tutAutoDeleteDesc": "Sparisce dopo il tempo impostato, da entrambe le parti.",
-  "tutBurnAfterReadDesc": "Via appena l’altra parte esce dalla chat.",
   "tutReadyTitle": "Pronto",
   "tutReadyBody": "Manca un punto. È il più importante.",
   "language": "Lingua",
@@ -265,8 +264,6 @@
   "tutDRequest": "L’altra parte deve accettare la tua richiesta prima di poter chattare.",
   "tutDQr": "Mostra o scansiona un codice QR per aggiungere contatti direttamente.",
   "tutDSafetyNumber": "Confronta i numeri di sicurezza per verificare chi è il tuo contatto e la crittografia end-to-end.",
-  "tutTRemaining": "Tempo rimasto",
-  "tutDRemaining": "Sotto il messaggio scorre il tempo che resta.",
   "tutProtectTitle": "Protezione",
   "tutProtectIntro": "Quello che accade in chat resta tracciabile.",
   "tutDScreenshot": "L’altra parte vede screenshot e registrazioni. Sempre.",
@@ -284,5 +281,6 @@
   "onceOnlyConfirmTitle": "Apribile una sola volta",
   "onceOnlyConfirmBody": "Questo messaggio si può aprire una sola volta. Appena lo chiudi, viene rimosso per sempre. Vale anche se qualcosa ti interrompe.",
   "onceOnlyScreenshotHint": "Uno screenshot non si può impedire. Ne verrai informato.",
-  "onceOnlyConfirmAction": "Conferma e apri"
+  "onceOnlyConfirmAction": "Conferma e apri",
+  "tutDOnceOnly": "Si apre una sola volta. Poi sparisce da entrambe le parti."
 }

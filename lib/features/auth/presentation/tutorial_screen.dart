@@ -338,17 +338,10 @@ class _PageMessages extends StatelessWidget {
         ),
         _FeatureRow(
           isDark: isDark,
-          icon: Icons.hourglass_bottom_rounded,
-          color: Color(0xFFFF9F0A),
-          title: l10n.tutTRemaining,
-          description: l10n.tutDRemaining,
-        ),
-        _FeatureRow(
-          isDark: isDark,
-          icon: Icons.local_fire_department_rounded,
+          icon: Icons.visibility_off_rounded,
           color: AppColors.destructive,
-          title: l10n.burnAfterRead,
-          description: l10n.tutBurnAfterReadDesc,
+          title: l10n.onceOnlyMessage,
+          description: l10n.tutDOnceOnly,
         ),
         _FeatureRow(
           isDark: isDark,

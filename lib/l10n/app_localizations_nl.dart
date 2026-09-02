@@ -651,10 +651,6 @@ class AppLocalizationsNl extends AppLocalizations {
       'Verdwijnt na de ingestelde tijd, bij jullie allebei.';
 
   @override
-  String get tutBurnAfterReadDesc =>
-      'Weg zodra de andere kant de chat verlaat.';
-
-  @override
   String get tutReadyTitle => 'Klaar';
 
   @override
@@ -908,12 +904,6 @@ class AppLocalizationsNl extends AppLocalizations {
       'Vergelijk de veiligheidsnummers om te controleren wie je contact is en de end-to-end versleuteling.';
 
   @override
-  String get tutTRemaining => 'Resterende tijd';
-
-  @override
-  String get tutDRemaining => 'Onder het bericht loopt de resterende tijd mee.';
-
-  @override
   String get tutProtectTitle => 'Bescherming';
 
   @override
@@ -975,4 +965,8 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get onceOnlyConfirmAction => 'Bevestigen en openen';
+
+  @override
+  String get tutDOnceOnly =>
+      'Eenmalig te openen. Daarna is het bij jullie allebei weg.';
 }

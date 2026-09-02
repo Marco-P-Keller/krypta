@@ -193,7 +193,6 @@
   "tutChatFeaturesIntro": "Cada mensagem pode retirar se sozinha.",
   "tutLockMessageDesc": "Uma palavra-passe só para esta mensagem. Diz a de viva voz.",
   "tutAutoDeleteDesc": "Desaparece após o tempo definido, de ambos os lados.",
-  "tutBurnAfterReadDesc": "Some assim que o outro lado sai da conversa.",
   "tutReadyTitle": "Pronto",
   "tutReadyBody": "Falta um ponto. É o mais importante.",
   "language": "Idioma",
@@ -265,8 +264,6 @@
   "tutDRequest": "O outro lado tem de aceitar o teu pedido antes de poderem conversar.",
   "tutDQr": "Mostra ou lê um código QR para adicionar contactos diretamente.",
   "tutDSafetyNumber": "Compara os números de segurança para verificar quem é o teu contacto e a cifra ponto a ponto.",
-  "tutTRemaining": "Tempo restante",
-  "tutDRemaining": "Por baixo da mensagem corre o tempo que falta.",
   "tutProtectTitle": "Proteção",
   "tutProtectIntro": "O que acontece numa conversa fica registado.",
   "tutDScreenshot": "O outro lado vê capturas e gravações. Sempre.",
@@ -284,5 +281,6 @@
   "onceOnlyConfirmTitle": "Pode ser aberta uma vez",
   "onceOnlyConfirmBody": "Esta mensagem só pode ser aberta uma vez. Assim que a fechares, é removida para sempre. Isso também vale se algo te interromper.",
   "onceOnlyScreenshotHint": "Uma captura não pode ser impedida. Vais saber dela.",
-  "onceOnlyConfirmAction": "Confirmar e abrir"
+  "onceOnlyConfirmAction": "Confirmar e abrir",
+  "tutDOnceOnly": "Abre-se uma vez. Depois desaparece dos dois lados."
 }

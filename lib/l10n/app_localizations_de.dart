@@ -653,10 +653,6 @@ class AppLocalizationsDe extends AppLocalizations {
       'Verschwindet nach der eingestellten Zeit, bei euch beiden.';
 
   @override
-  String get tutBurnAfterReadDesc =>
-      'Weg, sobald die Gegenseite den Chat verlässt.';
-
-  @override
   String get tutReadyTitle => 'Fertig';
 
   @override
@@ -910,13 +906,6 @@ class AppLocalizationsDe extends AppLocalizations {
       'Sicherheitsnummern vergleichen, um die Identität eures Kontakts und die Ende-zu-Ende-Verschlüsselung zu verifizieren.';
 
   @override
-  String get tutTRemaining => 'Restzeit';
-
-  @override
-  String get tutDRemaining =>
-      'Unter der Nachricht läuft die verbleibende Zeit mit.';
-
-  @override
   String get tutProtectTitle => 'Schutz';
 
   @override
@@ -978,4 +967,8 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get onceOnlyConfirmAction => 'Bestätigen und öffnen';
+
+  @override
+  String get tutDOnceOnly =>
+      'Nur einmal zu öffnen. Danach ist sie bei euch beiden fort.';
 }

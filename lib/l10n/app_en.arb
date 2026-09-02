@@ -255,7 +255,6 @@
   "tutChatFeaturesIntro": "Every message can remove itself again.",
   "tutLockMessageDesc": "A password for this one message. Pass it on by voice.",
   "tutAutoDeleteDesc": "Disappears after the time you set, on both sides.",
-  "tutBurnAfterReadDesc": "Gone the moment the other side leaves the chat.",
   "tutReadyTitle": "Ready",
   "tutReadyBody": "One point is still missing. It is the most important one.",
   "language": "Language",
@@ -447,10 +446,6 @@
   "tutDQr": "Show or scan a QR code to add contacts directly.",
   "@tutDSafetyNumber": {},
   "tutDSafetyNumber": "Compare safety numbers to verify who your contact really is and the end-to-end encryption of the chat.",
-  "@tutTRemaining": {},
-  "tutTRemaining": "Time left",
-  "@tutDRemaining": {},
-  "tutDRemaining": "The remaining time counts down under the message.",
   "@tutProtectTitle": {},
   "tutProtectTitle": "Protection",
   "@tutProtectIntro": {},
@@ -486,5 +481,7 @@
   "onceOnlyScreenshotHint": "A screenshot cannot be prevented. You will be told about it.",
   "@onceOnlyScreenshotHint": {},
   "onceOnlyConfirmAction": "Confirm and open",
-  "@onceOnlyConfirmAction": {}
+  "@onceOnlyConfirmAction": {},
+  "tutDOnceOnly": "Can be opened once. After that it is gone on both sides.",
+  "@tutDOnceOnly": {}
 }

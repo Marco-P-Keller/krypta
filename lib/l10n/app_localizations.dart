@@ -1266,12 +1266,6 @@ abstract class AppLocalizations {
   /// **'Disappears after the time you set, on both sides.'**
   String get tutAutoDeleteDesc;
 
-  /// No description provided for @tutBurnAfterReadDesc.
-  ///
-  /// In en, this message translates to:
-  /// **'Gone the moment the other side leaves the chat.'**
-  String get tutBurnAfterReadDesc;
-
   /// No description provided for @tutReadyTitle.
   ///
   /// In en, this message translates to:
@@ -1698,18 +1692,6 @@ abstract class AppLocalizations {
   /// **'Compare safety numbers to verify who your contact really is and the end-to-end encryption of the chat.'**
   String get tutDSafetyNumber;
 
-  /// No description provided for @tutTRemaining.
-  ///
-  /// In en, this message translates to:
-  /// **'Time left'**
-  String get tutTRemaining;
-
-  /// No description provided for @tutDRemaining.
-  ///
-  /// In en, this message translates to:
-  /// **'The remaining time counts down under the message.'**
-  String get tutDRemaining;
-
   /// No description provided for @tutProtectTitle.
   ///
   /// In en, this message translates to:
@@ -1817,6 +1799,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Confirm and open'**
   String get onceOnlyConfirmAction;
+
+  /// No description provided for @tutDOnceOnly.
+  ///
+  /// In en, this message translates to:
+  /// **'Can be opened once. After that it is gone on both sides.'**
+  String get tutDOnceOnly;
 }
 
 class _AppLocalizationsDelegate

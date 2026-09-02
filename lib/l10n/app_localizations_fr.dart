@@ -655,10 +655,6 @@ class AppLocalizationsFr extends AppLocalizations {
       'Disparaît après le délai choisi, des deux côtés.';
 
   @override
-  String get tutBurnAfterReadDesc =>
-      'Parti dès que l’autre quitte la discussion.';
-
-  @override
   String get tutReadyTitle => 'Prêt';
 
   @override
@@ -911,12 +907,6 @@ class AppLocalizationsFr extends AppLocalizations {
       'Compare les numéros de sécurité pour vérifier qui est ton contact et le chiffrement de bout en bout.';
 
   @override
-  String get tutTRemaining => 'Temps restant';
-
-  @override
-  String get tutDRemaining => 'Sous le message, le temps restant défile.';
-
-  @override
   String get tutProtectTitle => 'Protection';
 
   @override
@@ -978,4 +968,8 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get onceOnlyConfirmAction => 'Confirmer et ouvrir';
+
+  @override
+  String get tutDOnceOnly =>
+      'Ouvrable une seule fois. Ensuite elle est partie des deux côtés.';
 }

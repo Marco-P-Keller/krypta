@@ -9,7 +9,6 @@ import '../../../../theme/app_spacing.dart';
 import '../../data/models/message_model.dart';
 import '../../logic/messenger_provider.dart';
 import '../../logic/einmalig_policy.dart';
-import '../../logic/self_destruct_policy.dart';
 import 'passwort_dialog.dart';
 
 class MessageBubble extends StatelessWidget {
@@ -144,101 +143,15 @@ class MessageBubble extends StatelessWidget {
                   onOeffnen: onOeffnen,
                 ),
             ),
-            // Der mitlaufende Rest, aber nur beim Timer DIESER Nachricht.
-            // Ein Chat-Timer gilt fuer alles und gehoert nicht unter jede
-            // einzelne Blase.
-            if (_eigenerTimer) _Restzeit(message: message, isDark: isDark),
           ],
         ),
       ),
     );
   }
-
-  /// Ob diese Nachricht einen eigenen Loeschtimer traegt.
-  bool get _eigenerTimer =>
-      message.selfDestructDuration != null && !message.selfDestructFromChat;
 }
 
-/// Die verbleibende Zeit unter einer Nachricht mit eigenem Loeschtimer.
-///
-/// Zaehlt im Sekundentakt herunter. Eigener Zeitgeber, weil der Chat sonst
-/// nur dann neu zeichnet, wenn sich am Bestand etwas aendert — und genau das
-/// passiert waehrend des Wartens ja nicht.
-class _Restzeit extends StatefulWidget {
-  final Message message;
-  final bool isDark;
-
-  const _Restzeit({required this.message, required this.isDark});
-
-  @override
-  State<_Restzeit> createState() => _RestzeitState();
-}
-
-class _RestzeitState extends State<_Restzeit> {
-  Timer? _takt;
-
-  @override
-  void initState() {
-    super.initState();
-    _takt = Timer.periodic(const Duration(seconds: 1), (_) {
-      if (mounted) setState(() {});
-    });
-  }
-
-  @override
-  void dispose() {
-    _takt?.cancel();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final ablauf = SelfDestructPolicy.deadline(widget.message);
-    if (ablauf == null) return const SizedBox.shrink();
-
-    final rest = ablauf.difference(DateTime.now());
-    if (rest.isNegative) return const SizedBox.shrink();
-
-    return Padding(
-      padding: const EdgeInsets.only(top: 2, left: 4, right: 4),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(Icons.timer_outlined,
-              size: 10,
-              color: widget.isDark
-                  ? AppColors.textTertiaryDark
-                  : AppColors.textTertiaryLight),
-          const SizedBox(width: 3),
-          Text(
-            _knapp(rest),
-            style: TextStyle(
-              fontSize: 10,
-              fontVariations: const [FontVariation('wght', 500)],
-              color: widget.isDark
-                  ? AppColors.textTertiaryDark
-                  : AppColors.textTertiaryLight,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  /// Knapp und ohne Uebersetzung: die Einheiten sind in allen sieben
-  /// Sprachen dieselben Kuerzel.
-  static String _knapp(Duration d) {
-    if (d.inSeconds < 60) return '${d.inSeconds} s';
-    if (d.inMinutes < 60) return '${d.inMinutes} min';
-    if (d.inHours < 24) return '${d.inHours} h';
-    return '${d.inDays} d';
-  }
-}
-
-/// Der Radius sitzt bewusst unter [AppSpacing.radiusLg]: eine kompakte Blase
-/// ist nur noch gut dreissig Pixel hoch, und zwanzig Pixel Radius machten
-/// daraus eine Pille. Vierzehn ist der Wert, den das Gestaltungsraster ohnehin
-/// kennt.
+/// Die Rundung einer Blase. Die letzte einer Gruppe bekommt unten an ihrer
+/// Seite eine kleinere Ecke, damit sie wie ein Schwanz wirkt.
 BorderRadius _bubbleRadius(bool isMine, bool isLast) {
   const r = Radius.circular(AppSpacing.radiusMd);
   const tail = Radius.circular(4);
