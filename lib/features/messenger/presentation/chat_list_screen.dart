@@ -270,6 +270,9 @@ class ChatListScreen extends StatelessWidget {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
+        // Sonst legt sich der Inhalt bei offener Tastatur und grosser
+        // Systemschrift ueber die Knopfzeile, statt zu scrollen.
+        scrollable: true,
         title: Text(l10n.renameChat),
         content: TextField(
           controller: controller,

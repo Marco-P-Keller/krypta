@@ -213,6 +213,9 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
       context: context,
       barrierDismissible: false,
       builder: (ctx) => AlertDialog(
+        // Sonst legt sich der Inhalt bei offener Tastatur und grosser
+        // Systemschrift ueber die Knopfzeile, statt zu scrollen.
+        scrollable: true,
         title: Text(l10n.nameThisContact),
         content: Column(
           mainAxisSize: MainAxisSize.min,

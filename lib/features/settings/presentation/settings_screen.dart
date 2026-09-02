@@ -135,6 +135,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
         context: context,
         barrierDismissible: false,
         builder: (ctx) => AlertDialog(
+          // Sonst legt sich der Inhalt bei offener Tastatur und grosser
+          // Systemschrift ueber die Knopfzeile, statt zu scrollen.
+          scrollable: true,
           title: Text(AppLocalizations.of(context)!.authentication),
           content: Column(
             mainAxisSize: MainAxisSize.min,
@@ -271,6 +274,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
+        // Sonst legt sich der Inhalt bei offener Tastatur und grosser
+        // Systemschrift ueber die Knopfzeile, statt zu scrollen.
+        scrollable: true,
         title: Text(title),
         content: TextField(
           controller: controller,
