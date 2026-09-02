@@ -253,5 +253,15 @@
   "safetyNumberNotRecognised": "Dat is geen veiligheidsnummer. Scan de code die bij je contact onder het veiligheidsnummer staat.",
   "verifiedContact": "geverifieerd",
   "accountGone": "{name} bestaat niet meer",
-  "accountGoneCannotWrite": "Dit account bestaat niet meer — hier kun je niets meer schrijven."
+  "accountGoneCannotWrite": "Dit account bestaat niet meer — hier kun je niets meer schrijven.",
+  "identityKeyConfirmed": "Beveiligingssleutel bevestigd",
+  "identityNotConfirmed": "Contact niet bevestigd",
+  "identityConfirmedHint": "De beveiligingssleutel van dit contact is met je apparaat vergeleken. Dat bevestigt de sleutel, niet wie de telefoon vasthoudt.",
+  "identityNotConfirmedHint": "Jullie berichten zijn hoe dan ook end-to-end versleuteld. Vergelijk de QR-code of het veiligheidsnummer om ook de beveiligingssleutel te bevestigen.",
+  "identityAlreadyConfirmed": "Beveiligingssleutel al bevestigd",
+  "scanContactQr": "QR-code van {name} scannen",
+  "blockKeepsVerification": "De opgeslagen beveiligingsstatus blijft behouden.",
+  "unblockedVerified": "{name} is gedeblokkeerd. Het contact blijft bevestigd.",
+  "unblockedUnverified": "{name} is gedeblokkeerd. De beveiligingssleutel is nog niet bevestigd.",
+  "unblockedKeyChanged": "{name} is gedeblokkeerd. De beveiligingssleutel is gewijzigd en moet opnieuw worden bevestigd."
 }

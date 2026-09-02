@@ -850,4 +850,44 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get accountGoneCannotWrite =>
       'This account no longer exists — you can\'t write here.';
+
+  @override
+  String get identityKeyConfirmed => 'Security key confirmed';
+
+  @override
+  String get identityNotConfirmed => 'Contact not confirmed';
+
+  @override
+  String get identityConfirmedHint =>
+      'This contact\'s security key has been checked against your device. That confirms the key, not who is holding the phone.';
+
+  @override
+  String get identityNotConfirmedHint =>
+      'Your messages are end-to-end encrypted either way. Compare the QR code or the safety number to confirm this contact\'s security key as well.';
+
+  @override
+  String get identityAlreadyConfirmed => 'Security key already confirmed';
+
+  @override
+  String scanContactQr(String name) {
+    return 'Scan the QR code from $name';
+  }
+
+  @override
+  String get blockKeepsVerification => 'The saved security status is kept.';
+
+  @override
+  String unblockedVerified(String name) {
+    return '$name was unblocked. The contact stays confirmed.';
+  }
+
+  @override
+  String unblockedUnverified(String name) {
+    return '$name was unblocked. The security key has not been confirmed yet.';
+  }
+
+  @override
+  String unblockedKeyChanged(String name) {
+    return '$name was unblocked. The security key has changed and must be confirmed again.';
+  }
 }

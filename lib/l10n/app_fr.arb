@@ -253,5 +253,15 @@
   "safetyNumberNotRecognised": "Ce n'est pas un numéro de sécurité. Scanne le code affiché sous le numéro de sécurité de ton contact.",
   "verifiedContact": "vérifié",
   "accountGone": "{name} n'existe plus",
-  "accountGoneCannotWrite": "Ce compte n'existe plus — impossible d'écrire ici."
+  "accountGoneCannotWrite": "Ce compte n'existe plus — impossible d'écrire ici.",
+  "identityKeyConfirmed": "Clé de sécurité confirmée",
+  "identityNotConfirmed": "Contact non confirmé",
+  "identityConfirmedHint": "La clé de sécurité de ce contact a été comparée avec ton appareil. Cela confirme la clé, pas qui tient le téléphone.",
+  "identityNotConfirmedHint": "Vos messages sont chiffrés de bout en bout dans tous les cas. Comparez le code QR ou le numéro de sécurité pour confirmer aussi la clé de sécurité.",
+  "identityAlreadyConfirmed": "Clé de sécurité déjà confirmée",
+  "scanContactQr": "Scanner le code QR de {name}",
+  "blockKeepsVerification": "Le statut de sécurité enregistré est conservé.",
+  "unblockedVerified": "{name} a été débloqué. Le contact reste confirmé.",
+  "unblockedUnverified": "{name} a été débloqué. La clé de sécurité n'a pas encore été confirmée.",
+  "unblockedKeyChanged": "{name} a été débloqué. La clé de sécurité a changé et doit être confirmée à nouveau."
 }

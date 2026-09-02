@@ -860,4 +860,45 @@ class AppLocalizationsPt extends AppLocalizations {
   @override
   String get accountGoneCannotWrite =>
       'Esta conta já não existe — aqui não se pode escrever.';
+
+  @override
+  String get identityKeyConfirmed => 'Chave de segurança confirmada';
+
+  @override
+  String get identityNotConfirmed => 'Contacto não confirmado';
+
+  @override
+  String get identityConfirmedHint =>
+      'A chave de segurança deste contacto foi comparada com o teu dispositivo. Isso confirma a chave, não quem tem o telefone na mão.';
+
+  @override
+  String get identityNotConfirmedHint =>
+      'As vossas mensagens estão sempre cifradas ponto a ponto. Compara o código QR ou o número de segurança para confirmar também a chave de segurança.';
+
+  @override
+  String get identityAlreadyConfirmed => 'Chave de segurança já confirmada';
+
+  @override
+  String scanContactQr(String name) {
+    return 'Ler o código QR de $name';
+  }
+
+  @override
+  String get blockKeepsVerification =>
+      'O estado de segurança guardado é mantido.';
+
+  @override
+  String unblockedVerified(String name) {
+    return '$name foi desbloqueado. O contacto continua confirmado.';
+  }
+
+  @override
+  String unblockedUnverified(String name) {
+    return '$name foi desbloqueado. A chave de segurança ainda não foi confirmada.';
+  }
+
+  @override
+  String unblockedKeyChanged(String name) {
+    return '$name foi desbloqueado. A chave de segurança mudou e tem de ser confirmada novamente.';
+  }
 }

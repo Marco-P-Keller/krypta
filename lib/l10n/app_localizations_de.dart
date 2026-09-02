@@ -858,4 +858,46 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String get accountGoneCannotWrite =>
       'Dieses Konto existiert nicht mehr — hier lässt sich nichts mehr schreiben.';
+
+  @override
+  String get identityKeyConfirmed => 'Sicherheitsschlüssel bestätigt';
+
+  @override
+  String get identityNotConfirmed => 'Kontakt nicht bestätigt';
+
+  @override
+  String get identityConfirmedHint =>
+      'Der Sicherheitsschlüssel dieses Kontakts wurde mit deinem Gerät abgeglichen. Das bestätigt den Schlüssel, nicht wer das Telefon gerade in der Hand hält.';
+
+  @override
+  String get identityNotConfirmedHint =>
+      'Eure Nachrichten sind so oder so Ende-zu-Ende verschlüsselt. Vergleicht zusätzlich den QR-Code oder die Sicherheitsnummer, um auch den Sicherheitsschlüssel zu bestätigen.';
+
+  @override
+  String get identityAlreadyConfirmed =>
+      'Sicherheitsschlüssel bereits bestätigt';
+
+  @override
+  String scanContactQr(String name) {
+    return 'QR-Code von $name scannen';
+  }
+
+  @override
+  String get blockKeepsVerification =>
+      'Der gespeicherte Sicherheitsstatus bleibt erhalten.';
+
+  @override
+  String unblockedVerified(String name) {
+    return '$name wurde entblockiert. Der Kontakt bleibt bestätigt.';
+  }
+
+  @override
+  String unblockedUnverified(String name) {
+    return '$name wurde entblockiert. Der Sicherheitsschlüssel wurde noch nicht bestätigt.';
+  }
+
+  @override
+  String unblockedKeyChanged(String name) {
+    return '$name wurde entblockiert. Der Sicherheitsschlüssel hat sich geändert und muss erneut bestätigt werden.';
+  }
 }

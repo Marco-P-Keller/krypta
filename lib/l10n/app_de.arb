@@ -274,5 +274,15 @@
   "safetyNumberNotRecognised": "Das ist keine Sicherheitsnummer. Scanne den Code, der bei deinem Kontakt unter der Sicherheitsnummer steht.",
   "verifiedContact": "bestätigt",
   "accountGone": "{name} gibt es nicht mehr",
-  "accountGoneCannotWrite": "Dieses Konto existiert nicht mehr — hier lässt sich nichts mehr schreiben."
+  "accountGoneCannotWrite": "Dieses Konto existiert nicht mehr — hier lässt sich nichts mehr schreiben.",
+  "identityKeyConfirmed": "Sicherheitsschlüssel bestätigt",
+  "identityNotConfirmed": "Kontakt nicht bestätigt",
+  "identityConfirmedHint": "Der Sicherheitsschlüssel dieses Kontakts wurde mit deinem Gerät abgeglichen. Das bestätigt den Schlüssel, nicht wer das Telefon gerade in der Hand hält.",
+  "identityNotConfirmedHint": "Eure Nachrichten sind so oder so Ende-zu-Ende verschlüsselt. Vergleicht zusätzlich den QR-Code oder die Sicherheitsnummer, um auch den Sicherheitsschlüssel zu bestätigen.",
+  "identityAlreadyConfirmed": "Sicherheitsschlüssel bereits bestätigt",
+  "scanContactQr": "QR-Code von {name} scannen",
+  "blockKeepsVerification": "Der gespeicherte Sicherheitsstatus bleibt erhalten.",
+  "unblockedVerified": "{name} wurde entblockiert. Der Kontakt bleibt bestätigt.",
+  "unblockedUnverified": "{name} wurde entblockiert. Der Sicherheitsschlüssel wurde noch nicht bestätigt.",
+  "unblockedKeyChanged": "{name} wurde entblockiert. Der Sicherheitsschlüssel hat sich geändert und muss erneut bestätigt werden."
 }

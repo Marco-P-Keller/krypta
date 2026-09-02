@@ -10,6 +10,7 @@ import '../../../../theme/app_colors.dart';
 import '../../../../theme/app_spacing.dart';
 import '../../data/models/contact_model.dart';
 import '../../logic/messenger_provider.dart';
+import '../../logic/frist_stufe.dart';
 
 class ChatSettingsSheet extends StatefulWidget {
   final String chatId;
@@ -375,7 +376,7 @@ class _ChatSettingsSheetState extends State<ChatSettingsSheet> {
                                 : null,
                           ),
                           child: Text(
-                            _durationLabel(duration),
+                            _durationLabel(l10n, duration),
                             style: TextStyle(
                               color: isSelected
                                   ? Colors.white
@@ -417,10 +418,15 @@ class _ChatSettingsSheetState extends State<ChatSettingsSheet> {
                               : AppColors.primary,
                         ),
                         const SizedBox(width: 8),
-                        Text(
+                        // "Identitaet" versprach zu viel: ein QR-Code kann
+                        // nicht zeigen, WER das Geraet in der Hand haelt. Das
+                        // Abzeichen "Sicher" daneben sagte dasselbe noch
+                        // einmal, nur absoluter — beides ist raus.
+                        Expanded(
+                          child: Text(
                           contact.isVerified
-                              ? l10n.identityVerified
-                              : l10n.identityTitle,
+                              ? l10n.identityKeyConfirmed
+                              : l10n.identityNotConfirmed,
                           style: Theme.of(context)
                               .textTheme
                               .titleSmall
@@ -429,28 +435,17 @@ class _ChatSettingsSheetState extends State<ChatSettingsSheet> {
                                 letterSpacing: -0.1,
                               ),
                         ),
-                        const Spacer(),
-                        if (contact.isVerified)
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 8, vertical: 3),
-                            decoration: BoxDecoration(
-                              color: AppColors.success.withValues(alpha: 0.12),
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: Text(
-                              l10n.identityBadge,
-                              style: const TextStyle(
-                                  color: AppColors.success,
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w600),
-                            ),
-                          ),
+                        ),
                       ],
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      l10n.safetyNumberCompareHint,
+                      // Bei "nicht bestaetigt" muss dastehen, dass trotzdem
+                      // verschluesselt wird — sonst liest es sich wie
+                      // "unverschluesselt", und das waere schlicht falsch.
+                      contact.isVerified
+                          ? l10n.identityConfirmedHint
+                          : l10n.identityNotConfirmedHint,
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
                             color: isDark
                                 ? AppColors.textSecondaryDark
@@ -502,7 +497,7 @@ class _ChatSettingsSheetState extends State<ChatSettingsSheet> {
                   Expanded(
                     child: Text(
                       l10n.messagesAutoDelete(
-                          _durationLabel(chat.defaultSelfDestruct)),
+                          _durationLabel(l10n, chat.defaultSelfDestruct)),
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
                             color: AppColors.primary,
                             fontWeight: FontWeight.w500,
@@ -577,7 +572,22 @@ class _ChatSettingsSheetState extends State<ChatSettingsSheet> {
 
     if (contact.isBlocked) {
       await messenger.unblockContact(contactId);
-      if (context.mounted) setState(() {});
+      if (!context.mounted) return;
+      // Entblocken stellt wieder her, was vorher galt — und das kann
+      // bestaetigt, unbestaetigt oder "Schluessel geaendert" sein. Sichtbar
+      // passierte dabei bisher gar nichts, man musste selbst nachsehen.
+      final nachher = messenger.contactForId(contactId);
+      if (nachher != null) {
+        final name = nachher.displayName;
+        final text = nachher.hasKeyChanged
+            ? l10n.unblockedKeyChanged(name)
+            : nachher.isVerified
+                ? l10n.unblockedVerified(name)
+                : l10n.unblockedUnverified(name);
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text(text)));
+      }
+      setState(() {});
       return;
     }
 
@@ -585,7 +595,21 @@ class _ChatSettingsSheetState extends State<ChatSettingsSheet> {
       context: context,
       builder: (ctx) => AlertDialog(
         title: Text(l10n.blockContact),
-        content: Text(l10n.blockContactConfirm),
+        // Zwei Absaetze statt einer Zeichenkette mit Umbruechen: die
+        // Rueckfrage sagt, was passiert, der Zusatz sagt, was NICHT passiert
+        // — die Bestaetigung geht beim Blockieren nicht verloren.
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(l10n.blockContactConfirm),
+            const SizedBox(height: 12),
+            Text(
+              l10n.blockKeepsVerification,
+              style: Theme.of(ctx).textTheme.bodySmall,
+            ),
+          ],
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(false),
@@ -774,7 +798,7 @@ class _ChatSettingsSheetState extends State<ChatSettingsSheet> {
                 onPressed: () => _scanUndPruefen(
                     ctx, messenger, contact, safetyNumber),
                 icon: const Icon(Icons.qr_code_scanner_rounded, size: 18),
-                label: Text(l10n.scanSafetyNumber),
+                label: Text(l10n.scanContactQr(contact.displayName)),
               ),
             ),
             const SizedBox(height: 8),
@@ -794,7 +818,30 @@ class _ChatSettingsSheetState extends State<ChatSettingsSheet> {
             onPressed: () => Navigator.of(ctx).pop(),
             child: Text(l10n.aboutClose),
           ),
-          if (!contact.isVerified)
+          // Vorher verschwand die Taste einfach — man sah nicht, ob schon
+          // bestaetigt war oder ob etwas fehlt.
+          if (contact.isVerified)
+            Padding(
+              padding: const EdgeInsets.only(right: 8),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.check_rounded,
+                      size: 16, color: AppColors.success),
+                  const SizedBox(width: 6),
+                  Flexible(
+                    child: Text(
+                      l10n.identityAlreadyConfirmed,
+                      style: const TextStyle(
+                          color: AppColors.success,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600),
+                    ),
+                  ),
+                ],
+              ),
+            )
+          else
             ElevatedButton.icon(
               onPressed: () async {
                 final ok = await messenger.markContactVerified(
@@ -905,12 +952,24 @@ class _ChatSettingsSheetState extends State<ChatSettingsSheet> {
     );
   }
 
-  String _durationLabel(Duration? d) {
-    if (d == null) return 'Off';
-    if (d.inSeconds <= 30) return '30s';
-    if (d.inMinutes <= 5) return '5 min';
-    if (d.inHours <= 1) return '1 hour';
-    if (d.inDays <= 1) return '1 day';
-    return '1 week';
-  }
+  /// Die Beschriftung einer Frist.
+  ///
+  /// Stand fest auf Englisch im Code und tauchte damit mitten in jeder
+  /// anderen Sprache auf. Die Schluessel dafuer gab es die ganze Zeit, sie
+  /// wurden nur nie benutzt.
+  ///
+  /// Der zweite Fehler war die Reihenfolge: bei dreissig Minuten ist
+  /// inMinutes schon groesser als fuenf, inHours aber noch null — also griff
+  /// inHours <= 1, und dreissig Minuten hiessen "1 hour". In der Auswahl
+  /// stand derselbe Text dadurch zweimal.
+  String _durationLabel(AppLocalizations l10n, Duration? d) =>
+      switch (FristLabel.stufe(d)) {
+        FristStufe.aus => l10n.off,
+        FristStufe.sekunden30 => l10n.seconds30,
+        FristStufe.minuten5 => l10n.minutes5,
+        FristStufe.minuten30 => l10n.minutes30,
+        FristStufe.stunde1 => l10n.hour1,
+        FristStufe.tag1 => l10n.day1,
+        FristStufe.woche1 => l10n.week1,
+      };
 }

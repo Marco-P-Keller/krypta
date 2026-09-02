@@ -70,4 +70,39 @@ void main() {
     await zeige(t, chat(nachrichten: 120));
     expect(find.text('99+'), findsOneWidget);
   });
+
+  testWidgets('grosse Systemschrift schneidet nichts ab', (t) async {
+    // Der Fall, in dem es eng wird: langer Name, dreistellige Zahl, Punkt
+    // daneben — und dazu die groesste Schriftstufe.
+    t.view.devicePixelRatio = 2.0;
+    t.view.physicalSize = const Size(375, 667) * 2.0;
+    addTearDown(t.view.reset);
+
+    await t.pumpWidget(MaterialApp(
+      builder: (ctx, child) => MediaQuery(
+        data: MediaQuery.of(ctx).copyWith(
+          textScaler: const TextScaler.linear(1.35),
+        ),
+        child: child!,
+      ),
+      home: Scaffold(
+        body: ChatTile(
+          chat: Chat(
+            id: 'c1',
+            recipientId: 'marco',
+            recipientName: 'Marco Maximilian von Habsburg-Lothringen',
+            lastMessageTime: DateTime(2026, 9, 2, 14, 32),
+            unreadCount: 128,
+            hinweisCount: 2,
+          ),
+          onTap: () {},
+        ),
+      ),
+    ));
+    await t.pumpAndSettle();
+
+    expect(t.takeException(), isNull, reason: 'nichts darf ueberlaufen');
+    expect(punkt(), findsOneWidget);
+    expect(find.text('99+'), findsOneWidget);
+  });
 }

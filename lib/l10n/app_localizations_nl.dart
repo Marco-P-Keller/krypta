@@ -858,4 +858,45 @@ class AppLocalizationsNl extends AppLocalizations {
   @override
   String get accountGoneCannotWrite =>
       'Dit account bestaat niet meer — hier kun je niets meer schrijven.';
+
+  @override
+  String get identityKeyConfirmed => 'Beveiligingssleutel bevestigd';
+
+  @override
+  String get identityNotConfirmed => 'Contact niet bevestigd';
+
+  @override
+  String get identityConfirmedHint =>
+      'De beveiligingssleutel van dit contact is met je apparaat vergeleken. Dat bevestigt de sleutel, niet wie de telefoon vasthoudt.';
+
+  @override
+  String get identityNotConfirmedHint =>
+      'Jullie berichten zijn hoe dan ook end-to-end versleuteld. Vergelijk de QR-code of het veiligheidsnummer om ook de beveiligingssleutel te bevestigen.';
+
+  @override
+  String get identityAlreadyConfirmed => 'Beveiligingssleutel al bevestigd';
+
+  @override
+  String scanContactQr(String name) {
+    return 'QR-code van $name scannen';
+  }
+
+  @override
+  String get blockKeepsVerification =>
+      'De opgeslagen beveiligingsstatus blijft behouden.';
+
+  @override
+  String unblockedVerified(String name) {
+    return '$name is gedeblokkeerd. Het contact blijft bevestigd.';
+  }
+
+  @override
+  String unblockedUnverified(String name) {
+    return '$name is gedeblokkeerd. De beveiligingssleutel is nog niet bevestigd.';
+  }
+
+  @override
+  String unblockedKeyChanged(String name) {
+    return '$name is gedeblokkeerd. De beveiligingssleutel is gewijzigd en moet opnieuw worden bevestigd.';
+  }
 }

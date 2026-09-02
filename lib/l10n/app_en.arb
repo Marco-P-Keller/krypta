@@ -383,5 +383,49 @@
   "accountGoneCannotWrite": "This account no longer exists — you can't write here.",
   "@accountGoneCannotWrite": {
     "description": "Statt des Eingabefelds im Chat"
+  },
+  "identityKeyConfirmed": "Security key confirmed",
+  "@identityKeyConfirmed": {},
+  "identityNotConfirmed": "Contact not confirmed",
+  "@identityNotConfirmed": {},
+  "identityConfirmedHint": "This contact's security key has been checked against your device. That confirms the key, not who is holding the phone.",
+  "@identityConfirmedHint": {},
+  "identityNotConfirmedHint": "Your messages are end-to-end encrypted either way. Compare the QR code or the safety number to confirm this contact's security key as well.",
+  "@identityNotConfirmedHint": {},
+  "identityAlreadyConfirmed": "Security key already confirmed",
+  "@identityAlreadyConfirmed": {},
+  "scanContactQr": "Scan the QR code from {name}",
+  "@scanContactQr": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "blockKeepsVerification": "The saved security status is kept.",
+  "@blockKeepsVerification": {},
+  "unblockedVerified": "{name} was unblocked. The contact stays confirmed.",
+  "@unblockedVerified": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "unblockedUnverified": "{name} was unblocked. The security key has not been confirmed yet.",
+  "@unblockedUnverified": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "unblockedKeyChanged": "{name} was unblocked. The security key has changed and must be confirmed again.",
+  "@unblockedKeyChanged": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
   }
 }

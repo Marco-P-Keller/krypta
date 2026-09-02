@@ -1631,6 +1631,66 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'This account no longer exists — you can\'t write here.'**
   String get accountGoneCannotWrite;
+
+  /// No description provided for @identityKeyConfirmed.
+  ///
+  /// In en, this message translates to:
+  /// **'Security key confirmed'**
+  String get identityKeyConfirmed;
+
+  /// No description provided for @identityNotConfirmed.
+  ///
+  /// In en, this message translates to:
+  /// **'Contact not confirmed'**
+  String get identityNotConfirmed;
+
+  /// No description provided for @identityConfirmedHint.
+  ///
+  /// In en, this message translates to:
+  /// **'This contact\'s security key has been checked against your device. That confirms the key, not who is holding the phone.'**
+  String get identityConfirmedHint;
+
+  /// No description provided for @identityNotConfirmedHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Your messages are end-to-end encrypted either way. Compare the QR code or the safety number to confirm this contact\'s security key as well.'**
+  String get identityNotConfirmedHint;
+
+  /// No description provided for @identityAlreadyConfirmed.
+  ///
+  /// In en, this message translates to:
+  /// **'Security key already confirmed'**
+  String get identityAlreadyConfirmed;
+
+  /// No description provided for @scanContactQr.
+  ///
+  /// In en, this message translates to:
+  /// **'Scan the QR code from {name}'**
+  String scanContactQr(String name);
+
+  /// No description provided for @blockKeepsVerification.
+  ///
+  /// In en, this message translates to:
+  /// **'The saved security status is kept.'**
+  String get blockKeepsVerification;
+
+  /// No description provided for @unblockedVerified.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} was unblocked. The contact stays confirmed.'**
+  String unblockedVerified(String name);
+
+  /// No description provided for @unblockedUnverified.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} was unblocked. The security key has not been confirmed yet.'**
+  String unblockedUnverified(String name);
+
+  /// No description provided for @unblockedKeyChanged.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} was unblocked. The security key has changed and must be confirmed again.'**
+  String unblockedKeyChanged(String name);
 }
 
 class _AppLocalizationsDelegate
