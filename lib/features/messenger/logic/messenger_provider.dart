@@ -505,24 +505,55 @@ class MessengerProvider extends ChangeNotifier {
       if (existing != null) {
         // Anfragezustand nachziehen: wer hinzufügt, hat zugestimmt.
         final moved = ContactRequestPolicy.afterLocalAdd(existing);
-        if (moved.requestState != existing.requestState) {
+        final zustandGewechselt = moved.requestState != existing.requestState;
+        if (zustandGewechselt) {
           final i = _contacts.indexWhere((c) => c.id == contactId);
           _contacts[i] = moved;
           await _localStore.saveContacts(_contacts);
           notifyListeners();
-          await _announceRequestTransition(existing, moved);
         }
-        // Erneut hinzufuegen heisst „fang mit dem von vorn an". Ohne das
-        // Verwerfen der Sitzung passierte hier gar nichts: der Zustand eines
-        // angenommenen Kontakts aendert sich nicht, und die naechste Nachricht
-        // traegt weiter keinen Handschlag — die Gegenseite, die ihre Haelfte
-        // verloren hat, kann sie also weiterhin nicht entschluesseln.
-        if (SessionResetPolicy.onReAdd(existing)) {
+
+        // Erneut hinzufuegen heisst „fang mit dem von vorn an": Sitzung weg
+        // — und **sofort** eine frische Anfrage hinterher.
+        //
+        // Die beiden Haelften gehoeren zusammen. Bis Build 100 stand hier nur
+        // das Verwerfen, und der Zweig kehrte danach zurueck, ohne etwas zu
+        // senden. Die Gegenseite erfuhr davon nichts und behielt ihre
+        // Sitzung; weil eine laufende Sitzung nie wieder einen `ek`-Kopf
+        // schickt, konnte auch nichts mehr heilen. Wer die ID ein zweites Mal
+        // eintippte, machte damit die Verbindung endgueltig kaputt — gefunden
+        // im Geraetetest von Build 100 (03.09.2026). Die Anfrage traegt den
+        // Handschlag-Kopf und ist genau das Stueck, das gefehlt hat.
+        //
+        // Der Schluessel wurde gerade geholt; er wird gleich unten noch auf
+        // Wechsel geprueft. Ist er ein anderer, unterbleibt der Neuaufbau —
+        // siehe [SessionResetPolicy.brauchtNeuenHandschlag].
+        final schluesselGleich =
+            base64Encode(existing.publicKey) == publicKeyBase64;
+        final neuerHandschlag = SessionResetPolicy.brauchtNeuenHandschlag(
+          existing: existing,
+          schluesselGleich: schluesselGleich,
+        );
+        if (neuerHandschlag) {
           await _verwerfeSitzung(contactId);
+          final jetzt = contactForId(contactId);
+          if (jetzt != null) {
+            await _sendRequestTo(jetzt,
+                preverifiedServerKey: publicKeyBase64);
+          }
+        }
+
+        // Die Zustandsmeldung zuletzt — sie geht dann unter der **neuen**
+        // Sitzung raus, die die Gegenseite ueber den Kopf der Anfrage schon
+        // aufgebaut hat. Umgekehrt waere sie nicht entschluesselbar:
+        // Kontrollnachrichten tragen keinen Handschlag-Kopf.
+        if (zustandGewechselt) {
+          await _announceRequestTransition(existing, moved,
+              anfrageSchonGesendet: neuerHandschlag);
         }
         // Key change detection: if the public key changed, block sending until re-verified.
         // Also invalidate existing ratchet sessions (compromised key = untrusted session).
-        if (base64Encode(existing.publicKey) != publicKeyBase64) {
+        if (!schluesselGleich) {
           final idx = _contacts.indexWhere((c) => c.id == contactId);
           // Der Zustand kommt aus VerificationPolicy: bei einem blockierten
           // Kontakt bleibt die Sperre stehen und der Wechsel wandert in die
@@ -678,10 +709,17 @@ class MessengerProvider extends ChangeNotifier {
         // Wie im ID-Pfad: der Scan ist die Geste „von vorn". Vorher meldete
         // er „verifiziert" und tat sonst nichts, wenn der Kontakt schon
         // angenommen war.
-        if (SessionResetPolicy.onReAdd(_contacts[idx])) {
+        // Dieselbe Regel wie im ID-Weg: verwerfen und neu aufbauen gehoeren
+        // zusammen. Hier stand die Anfrage bisher hinter `isOutgoingRequest`
+        // — bei einem bereits angenommenen Kontakt wurde die Sitzung also
+        // weggeworfen und nichts nachgeschickt, und die Gegenseite blieb
+        // stumm. Der Schluessel ist an dieser Stelle schon abgeglichen, sonst
+        // waeren wir gar nicht hier.
+        if (SessionResetPolicy.brauchtNeuenHandschlag(
+          existing: _contacts[idx],
+          schluesselGleich: true,
+        )) {
           await _verwerfeSitzung(contactId);
-        }
-        if (_contacts[idx].isOutgoingRequest) {
           await _sendRequestTo(
             _contacts[idx],
             qrToken: qrToken,
@@ -1040,7 +1078,8 @@ class MessengerProvider extends ChangeNotifier {
   /// dann selbst hinzu, statt auf „Annehmen" zu tippen, wird der Kontakt hier
   /// zwar frei — auf seiner Seite stünde aber weiter „Anfrage gesendet", für
   /// immer.
-  Future<void> _announceRequestTransition(Contact vorher, Contact nachher) async {
+  Future<void> _announceRequestTransition(Contact vorher, Contact nachher,
+      {bool anfrageSchonGesendet = false}) async {
     final chat = chatForContact(nachher.id);
     if (chat == null) return;
 
@@ -1058,7 +1097,7 @@ class MessengerProvider extends ChangeNotifier {
     }
 
     // Nach eigener Ablehnung doch wieder angefragt.
-    if (nachher.isOutgoingRequest) {
+    if (nachher.isOutgoingRequest && !anfrageSchonGesendet) {
       await _sendRequestTo(nachher);
     }
   }
@@ -1122,6 +1161,51 @@ class MessengerProvider extends ChangeNotifier {
   /// vom Server geloescht.
   ///
   /// Siehe `docs/KONTAKTANFRAGEN.md`, Abschnitt 3.
+  /// Eine erneute Anfrage von jemandem, der hier schon gefuehrt wird.
+  ///
+  /// Sie kommt **nicht** durch [_receiveContactRequest] — dorthin geht nur,
+  /// wer noch nicht angenommen ist ([_onlyAcceptsRequestFrom]). Bis Build 100
+  /// fiel sie deshalb in den gewoehnlichen Nachrichtenweg, und zwei Dinge
+  /// gingen schief: es ging nie ein `accepted` zurueck, die Gegenseite blieb
+  /// also fuer immer auf „Anfrage gesendet" stehen, und der leere
+  /// Anfragetext landete als leere Nachricht im Verlauf.
+  ///
+  /// Das ist zugleich der Rueckweg aus einer verklemmten Verbindung: wessen
+  /// Sitzung auseinandergelaufen ist, schickt eine neue Anfrage, heilt die
+  /// Sitzung ueber ihren `ek`-Kopf und bekommt hier die Antwort, die ihn
+  /// wieder freigibt.
+  ///
+  /// Der Handschlag ist an dieser Stelle bereits vollzogen — entschluesselt
+  /// wurde die Anfrage weiter oben, samt Heilung. Es fehlt nur die Antwort.
+  ///
+  /// Gibt `true` zurueck, wenn die Nachricht damit erledigt ist und **keine**
+  /// Nachricht aus ihr werden darf.
+  Future<bool> _beantworteErneuteAnfrage(String chatId, String senderId,
+      Map<String, dynamic> innerPayload) async {
+    if (innerPayload['_rq'] != 1) return false;
+
+    // Beide haben sich hinzugefuegt, damit sind beide einverstanden —
+    // dieselbe Regel wie in [ContactRequestPolicy.stateAfterIncoming], nur
+    // an der Stelle, an der ein bereits gefuehrter Kontakt landet.
+    final idx = _contacts.indexWhere((c) => c.id == senderId);
+    if (idx != -1 && _contacts[idx].isOutgoingRequest) {
+      _contacts[idx] = ContactRequestPolicy.afterAccept(_contacts[idx]);
+      await _localStore.saveContacts(_contacts);
+    }
+
+    final aktuell = contactForId(senderId);
+    if (aktuell != null) {
+      await _sendControlMessage(
+        chatId: chatId,
+        contact: aktuell,
+        type: 'accepted',
+        messageId: _uuid.v4(),
+      );
+    }
+    notifyListeners();
+    return true;
+  }
+
   Future<void> _receiveContactRequest({
     required String senderId,
     required String messageId,
@@ -1233,7 +1317,15 @@ class MessengerProvider extends ChangeNotifier {
         await _localStore.saveChats(_chats);
       }
 
-      await _finalizeAcceptedMessage(chatId, messageId, payloadMap);
+      // Wie an den beiden Stellen im Normalpfad: ein `false` heisst, dass
+      // dieselbe Anfrage ein zweites Mal zugestellt wurde. Der geheilte
+      // Zustand wurde dabei verworfen, die laufende Sitzung bleibt stehen.
+      // Die Kopie faellt weg — sie hier durchzulassen hiesse, den Verlauf
+      // und die Zaehler an einer Zustellung des Servers auszurichten.
+      if (!await _finalizeAcceptedMessage(chatId, messageId, payloadMap)) {
+        await drop();
+        return;
+      }
       _processedMessageIds.add(messageId);
       festgeschrieben = true;
       notifyListeners();
@@ -3221,6 +3313,12 @@ class MessengerProvider extends ChangeNotifier {
         // Process Key Transparency gossip from the encrypted payload
         await _processTransparencyGossip(senderId, innerPayload);
 
+        if (await _beantworteErneuteAnfrage(
+            chat.id, senderId, innerPayload)) {
+          await _firestore.deleteRelayedMessage(userId!, change.doc.id);
+          continue;
+        }
+
         // Extract message metadata from the (now correctly encrypted) inner payload.
         // A2: clamp self-destruct to a sane non-negative range so a malicious
         // sender cannot hide messages instantly (negative Duration = already
@@ -3475,6 +3573,11 @@ class MessengerProvider extends ChangeNotifier {
 
       // Process Key Transparency gossip from the encrypted payload
       await _processTransparencyGossip(senderId, innerPayload);
+
+      if (await _beantworteErneuteAnfrage(chat.id, senderId, innerPayload)) {
+        await _firestore.deleteRelayedMessage(userId!, doc.id);
+        return;
+      }
 
       // Extract metadata from inner payload (v3 keys with v2 compat)
       // A2: see _handleInbox — sanitize attacker-controlled self-destruct.

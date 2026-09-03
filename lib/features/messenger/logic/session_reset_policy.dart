@@ -27,6 +27,32 @@ abstract final class SessionResetPolicy {
   /// die Sperre soll. Blockiert bleibt blockiert.
   static bool onReAdd(Contact existing) => !existing.isBlocked;
 
+  /// Ob ein erneutes Hinzufuegen einen **neuen Handschlag** ausloesen muss.
+  ///
+  /// Der eigentliche Fund aus dem Geraetetest von Build 100 (03.09.2026):
+  /// [onReAdd] warf die Sitzung weg, und der ID-Pfad kehrte danach zurueck,
+  /// **ohne etwas zu senden**. Die Gegenseite erfuhr nichts. Damit war die
+  /// Verbindung dauerhaft entzwei: hier keine Sitzung mehr, drueben die alte,
+  /// und weil eine laufende Sitzung nie wieder einen `ek`-Kopf schickt, gab
+  /// es auch keinen Weg zurueck. Der Kollege sah fuer immer
+  /// „Anfrage gesendet“, und jede Nachricht von der anderen Seite fiel
+  /// stumm weg.
+  ///
+  /// Verwerfen und Neuaufbau gehoeren deshalb zusammen. Wer das eine tut,
+  /// muss das andere tun.
+  ///
+  /// **Nicht bei geaendertem Schluessel** ([schluesselGleich] false): dann
+  /// wandert der Kontakt in „Schluessel geaendert“ und ist gesperrt, bis er
+  /// erneut bestaetigt wurde. Einen Handschlag mit einem Schluessel
+  /// aufzubauen, dem gerade misstraut wird, waere genau falsch herum.
+  ///
+  /// **Nicht bei blockiert**, aus demselben Grund wie in [onReAdd].
+  static bool brauchtNeuenHandschlag({
+    required Contact existing,
+    required bool schluesselGleich,
+  }) =>
+      schluesselGleich && onReAdd(existing);
+
   /// Wie viele Sitzungskennungen der Gegenseite pro Chat aufgehoben werden.
   ///
   /// Ohne Deckel wuechse die Spur mit jedem Neuaufbau weiter und landete in

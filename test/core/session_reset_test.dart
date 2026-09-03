@@ -31,6 +31,80 @@ void main() {
         requestState: zustand,
       );
 
+  group('Verwerfen und Neuaufbau gehoeren zusammen', () {
+    // Der Fund aus dem Geraetetest von Build 100 (03.09.2026): der ID-Weg
+    // warf die Sitzung weg und kehrte zurueck, ohne etwas zu senden. Die
+    // Gegenseite erfuhr nichts, behielt ihre Sitzung, und weil eine laufende
+    // Sitzung nie wieder einen `ek`-Kopf schickt, heilte auch nichts mehr.
+    // Der Kollege sah fuer immer „Anfrage gesendet".
+    for (final zustand in ContactRequestState.values) {
+      test('$zustand: erneutes Hinzufuegen verlangt einen neuen Handschlag',
+          () {
+        expect(
+          SessionResetPolicy.brauchtNeuenHandschlag(
+            existing: kontakt(zustand: zustand),
+            schluesselGleich: true,
+          ),
+          isTrue,
+          reason: 'ohne Handschlag bleibt die Gegenseite stumm',
+        );
+      });
+    }
+
+    test('blockiert: kein Neuaufbau', () {
+      // Mit jemandem, den ich ausdruecklich gesperrt habe, still eine neue
+      // Sitzung aufzubauen waere das Gegenteil dessen, was die Sperre soll.
+      expect(
+        SessionResetPolicy.brauchtNeuenHandschlag(
+          existing: kontakt(vertrauen: TrustState.blocked),
+          schluesselGleich: true,
+        ),
+        isFalse,
+      );
+    });
+
+    test('geaenderter Schluessel: kein Neuaufbau', () {
+      // Der Kontakt wandert gleich in „Schluessel geaendert" und ist gesperrt,
+      // bis er erneut bestaetigt wurde. Einen Handschlag mit einem Schluessel
+      // aufzubauen, dem gerade misstraut wird, waere genau falsch herum.
+      expect(
+        SessionResetPolicy.brauchtNeuenHandschlag(
+          existing: kontakt(),
+          schluesselGleich: false,
+        ),
+        isFalse,
+      );
+    });
+
+    test('blockiert UND geaenderter Schluessel: erst recht nicht', () {
+      expect(
+        SessionResetPolicy.brauchtNeuenHandschlag(
+          existing: kontakt(vertrauen: TrustState.blocked),
+          schluesselGleich: false,
+        ),
+        isFalse,
+      );
+    });
+
+    test('die Regel ist nie strenger als onReAdd', () {
+      // brauchtNeuenHandschlag darf das Verwerfen nur einschraenken, nie
+      // ausweiten: sonst wuerde verworfen, ohne dass etwas nachkommt — genau
+      // der Zustand, der den Fehler ausgemacht hat.
+      for (final zustand in ContactRequestState.values) {
+        for (final vertrauen in TrustState.values) {
+          for (final gleich in [true, false]) {
+            final c = kontakt(zustand: zustand, vertrauen: vertrauen);
+            if (SessionResetPolicy.brauchtNeuenHandschlag(
+                existing: c, schluesselGleich: gleich)) {
+              expect(SessionResetPolicy.onReAdd(c), isTrue,
+                  reason: '$zustand/$vertrauen/$gleich');
+            }
+          }
+        }
+      }
+    });
+  });
+
   group('Die Spur der Sitzungskennungen', () {
     // `peerSeenPsids` haelt fest, welche Sitzungskennungen die Gegenseite
     // schon benutzt hat — damit ein alter Handschlag nicht ein zweites Mal
