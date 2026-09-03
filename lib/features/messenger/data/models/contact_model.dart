@@ -79,6 +79,16 @@ class Contact extends Equatable {
   /// weiterhin mir.
   final bool isGone;
 
+  /// Wann das Konto geloescht wurde — der Zeitpunkt aus der Meldung der
+  /// Gegenseite, nicht der, zu dem ich sie gelesen habe.
+  ///
+  /// Die Meldung ist HMAC-signiert und traegt ihren eigenen Zeitstempel; sie
+  /// ueberlebt ein langes Offline (30-Tage-Fenster in
+  /// [ControlMessagePolicy]). Deshalb laeuft die Sichtbarkeitsfrist ab der
+  /// **Loeschung**, nicht ab meinem naechsten Start — wer eine Nacht offline
+  /// war, sieht den Kontakt nicht noch einmal volle 24 Stunden.
+  final DateTime? goneAt;
+
   /// Ob der Kontakt zustande gekommen ist. Siehe [ContactRequestState].
   final ContactRequestState requestState;
 
@@ -153,6 +163,7 @@ class Contact extends Equatable {
     this.lastVerifiedEpoch,
     this.transparencyVerified = false,
     this.isGone = false,
+    this.goneAt,
   }) : keyFingerprint = _computeFingerprint(publicKey);
 
   /// For deserialization — fingerprint is provided, not computed.
@@ -177,6 +188,7 @@ class Contact extends Equatable {
     this.lastVerifiedEpoch,
     this.transparencyVerified = false,
     this.isGone = false,
+    this.goneAt,
   });
 
   static String _computeFingerprint(Uint8List key) {
@@ -264,6 +276,7 @@ class Contact extends Equatable {
     Object? lastVerifiedEpoch = _sentinel,
     bool? transparencyVerified,
     bool? isGone,
+    Object? goneAt = _sentinel,
   }) {
     final newPublicKey = publicKey ?? this.publicKey;
     return Contact._internal(
@@ -308,6 +321,7 @@ class Contact extends Equatable {
       transparencyVerified:
           transparencyVerified ?? this.transparencyVerified,
       isGone: isGone ?? this.isGone,
+      goneAt: goneAt == _sentinel ? this.goneAt : goneAt as DateTime?,
     );
   }
 
@@ -339,6 +353,7 @@ class Contact extends Equatable {
           'ktEpoch': lastVerifiedEpoch,
         'ktVerified': transparencyVerified,
         'gone': isGone,
+        if (goneAt != null) 'goneAt': goneAt!.millisecondsSinceEpoch,
       };
 
   factory Contact.fromMap(Map<String, dynamic> map) {
@@ -392,6 +407,9 @@ class Contact extends Equatable {
       lastVerifiedEpoch: map['ktEpoch'] as int?,
       transparencyVerified: (map['ktVerified'] as bool?) ?? false,
       isGone: (map['gone'] as bool?) ?? false,
+      goneAt: map['goneAt'] == null
+          ? null
+          : DateTime.fromMillisecondsSinceEpoch(map['goneAt'] as int),
     );
   }
 

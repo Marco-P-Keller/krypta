@@ -24,6 +24,7 @@ import 'inbox_reconnect_backoff.dart';
 import 'self_destruct_policy.dart';
 import 'einmalig_policy.dart';
 import 'unread_policy.dart';
+import 'gone_policy.dart';
 import 'verification_policy.dart';
 import 'qr_payload_policy.dart';
 import 'session_reset_policy.dart';
@@ -297,6 +298,7 @@ class MessengerProvider extends ChangeNotifier {
     await _localStore.init();
     _chats = await _localStore.loadChats();
     _contacts = await _localStore.loadContacts();
+    await _trageFehlendeLoeschzeitpunkteNach();
 
     // A3: drop any `msg_*` / `ratchet_*` files left behind by a crashed
     // deleteChat — no chat to consume them, and loading a ratchet file
@@ -1535,7 +1537,7 @@ class MessengerProvider extends ChangeNotifier {
       case 'chatGone':
         await _applyPeerChatGone(chatId, contact.id);
       case 'gone':
-        await _applyPeerGone(chatId, contact.id);
+        await _applyPeerGone(chatId, contact.id, ctrl.timestamp);
       case 'screenshot':
         _applySystemEventFromPeer(
             chatId, contact, SystemEventKind.screenshot, ctrl.messageId);
@@ -1760,6 +1762,78 @@ class MessengerProvider extends ChangeNotifier {
     }
   }
 
+  /// Einen Kontakt aus der eigenen Liste nehmen.
+  ///
+  /// Ausdruecklich **nur hier**. Die Gegenseite erfaehrt nichts — anders als
+  /// beim Loeschen eines Chats, das eine Meldung schickt, damit dort
+  /// ebenfalls geraeumt wird. Wen ich in meiner Liste fuehre, geht niemanden
+  /// sonst etwas an.
+  ///
+  /// Der Chat geht mit. Ihn stehen zu lassen hiesse, eine Zeile zu behalten,
+  /// die auf niemanden mehr zeigt: kein Name, kein Schluessel, kein Senden.
+  /// Geraeumt wird er ueber [deleteChat] mit `announce: false` — dieselbe
+  /// stille Fassung, die eine abgelehnte Kontaktanfrage benutzt.
+  ///
+  /// Was danach noch geht: die andere Seite kann eine **neue Anfrage**
+  /// stellen. Nachrichten kann sie nicht schicken, dafuer braeuchte es einen
+  /// angenommenen Kontakt. Wer jemanden blockiert hatte und dann loescht,
+  /// gibt die Sperre damit auf — der Bestaetigungstext sagt das.
+  Future<void> deleteContact(String contactId) async {
+    // Sperre wie bei [deleteChat]. Der Sekundentakt in
+    // [_raeumeFortgefalleneKontakte] feuert waehrend des Aufraeumens erneut
+    // — der Kontakt steht bis zum letzten `await` noch in der Liste und
+    // waere sonst ein zweites Mal faellig.
+    if (!_loeschendeKontakte.add(contactId)) return;
+    try {
+      final idx = _contacts.indexWhere((c) => c.id == contactId);
+      if (idx == -1) return;
+
+      final chat = chatForContact(contactId);
+      if (chat != null) await deleteChat(chat.id, announce: false);
+
+      _contacts.removeWhere((c) => c.id == contactId);
+      await _localStore.saveContacts(_contacts);
+      _invalidateHmacKey(contactId);
+
+      notifyListeners();
+    } finally {
+      _loeschendeKontakte.remove(contactId);
+    }
+  }
+
+  /// Laufende Kontaktloeschungen, siehe [deleteContact].
+  final Set<String> _loeschendeKontakte = {};
+
+  /// Kontakte wegraeumen, deren Konto seit ueber 24 Stunden geloescht ist.
+  ///
+  /// Laeuft im Sekundentakt mit [_raeumeAbgelaufene] mit. Die Pruefung ist
+  /// eine Schleife ueber eine Handvoll Eintraege im Speicher; angefasst wird
+  /// die Platte erst, wenn wirklich etwas faellig ist.
+  bool _raeumeFortgefalleneKontakte() {
+    final faellig = GonePolicy.abgelaufene(_contacts, DateTime.now());
+    if (faellig.isEmpty) return false;
+    for (final id in faellig) {
+      deleteContact(id);
+    }
+    return true;
+  }
+
+  /// Bestandsdaten: als fort markiert, aber ohne Zeitpunkt.
+  ///
+  /// Aus der Zeit vor der Frist. Sie sofort wegzuwerfen waere falsch — der
+  /// Hinweis im Chat wurde vielleicht noch nicht gesehen. Sie bekommen den
+  /// Zeitpunkt jetzt nachgetragen und damit ihren Tag.
+  Future<void> _trageFehlendeLoeschzeitpunkteNach() async {
+    var geaendert = false;
+    final jetzt = DateTime.now();
+    for (var i = 0; i < _contacts.length; i++) {
+      if (!GonePolicy.brauchtNachtrag(_contacts[i])) continue;
+      _contacts[i] = _contacts[i].copyWith(goneAt: jetzt);
+      geaendert = true;
+    }
+    if (geaendert) await _localStore.saveContacts(_contacts);
+  }
+
   Future<void> renameContact(String contactId, String newName) async {
     final idx = _contacts.indexWhere((c) => c.id == contactId);
     if (idx == -1) return;
@@ -1930,12 +2004,18 @@ class MessengerProvider extends ChangeNotifier {
     await _verwerfeSitzungFuerChat(chatId);
   }
 
-  Future<void> _applyPeerGone(String chatId, String peerId) async {
+  Future<void> _applyPeerGone(
+      String chatId, String peerId, int gemeldetMs) async {
     _applyPeerClear(chatId, peerId);
 
     final idx = _contacts.indexWhere((c) => c.id == peerId);
     if (idx != -1 && !_contacts[idx].isGone) {
-      _contacts[idx] = _contacts[idx].copyWith(isGone: true);
+      _contacts[idx] = _contacts[idx].copyWith(
+        isGone: true,
+        // Der Zeitpunkt aus der Meldung, nicht der meines Lesens — sonst
+        // begaenne die Frist bei jedem Empfaenger zu einer anderen Stunde.
+        goneAt: GonePolicy.loeschzeitpunkt(gemeldetMs, DateTime.now()),
+      );
       await _localStore.saveContacts(_contacts);
     }
 
@@ -3590,7 +3670,9 @@ class MessengerProvider extends ChangeNotifier {
 
   void _startSelfDestructTimer() {
     _selfDestructTimer = Timer.periodic(const Duration(seconds: 1), (_) {
-      if (_raeumeAbgelaufene()) notifyListeners();
+      final nachrichten = _raeumeAbgelaufene();
+      final kontakte = _raeumeFortgefalleneKontakte();
+      if (nachrichten || kontakte) notifyListeners();
     });
   }
 

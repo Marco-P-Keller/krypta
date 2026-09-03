@@ -546,6 +546,24 @@ abstract class AppLocalizations {
   /// **'Delete Chat'**
   String get deleteChat;
 
+  /// No description provided for @deleteContact.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete Contact'**
+  String get deleteContact;
+
+  /// No description provided for @deleteContactTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete contact?'**
+  String get deleteContactTitle;
+
+  /// Rueckfrage vor dem Loeschen eines Kontakts aus der Kontaktliste
+  ///
+  /// In en, this message translates to:
+  /// **'{name} disappears from your contact list, and your chat with them goes too. Nothing changes on their side. They can send you a new request later.'**
+  String deleteContactBody(String name);
+
   /// No description provided for @clearChat.
   ///
   /// In en, this message translates to:

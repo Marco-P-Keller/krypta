@@ -83,6 +83,17 @@
   "cancel": "Cancel",
   "skip": "Skip",
   "deleteChat": "Delete Chat",
+  "deleteContact": "Delete Contact",
+  "deleteContactTitle": "Delete contact?",
+  "deleteContactBody": "{name} disappears from your contact list, and your chat with them goes too. Nothing changes on their side. They can send you a new request later.",
+  "@deleteContactBody": {
+    "description": "Rueckfrage vor dem Loeschen eines Kontakts aus der Kontaktliste",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "clearChat": "Clear Chat",
   "clearChatConfirm": "Delete all messages in this chat? On {name}'s device the messages you sent will disappear too — their own stay. This cannot be undone.",
   "autoDeleteTimer": "Auto-Delete Timer",

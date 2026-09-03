@@ -235,6 +235,17 @@ class AppLocalizationsEn extends AppLocalizations {
   String get deleteChat => 'Delete Chat';
 
   @override
+  String get deleteContact => 'Delete Contact';
+
+  @override
+  String get deleteContactTitle => 'Delete contact?';
+
+  @override
+  String deleteContactBody(String name) {
+    return '$name disappears from your contact list, and your chat with them goes too. Nothing changes on their side. They can send you a new request later.';
+  }
+
+  @override
   String get clearChat => 'Clear Chat';
 
   @override

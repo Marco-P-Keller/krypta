@@ -4,6 +4,7 @@ import '../../../l10n/app_localizations.dart';
 import '../../../services/platform/clipboard_helper.dart';
 import '../../../theme/app_colors.dart';
 import '../data/models/chat_model.dart';
+import '../data/models/contact_model.dart';
 import '../logic/messenger_provider.dart';
 import 'widgets/qr_display_sheet.dart';
 
@@ -140,6 +141,39 @@ class _NewChatScreenState extends State<NewChatScreen> {
     } finally {
       controller.dispose();
     }
+  }
+
+  /// Rueckfrage vor dem Loeschen eines Kontakts.
+  ///
+  /// Bewusst mit `scrollable: true`: bei grosser Systemschrift legte sich
+  /// der Text sonst ueber die Knopfzeile, statt zu scrollen — derselbe
+  /// Fehler, der in Build 98 an acht Dialogen steckte.
+  Future<void> _kontaktLoeschen(
+      BuildContext context, MessengerProvider messenger, Contact contact) async {
+    final l10n = AppLocalizations.of(context)!;
+    final bestaetigt = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        scrollable: true,
+        title: Text(l10n.deleteContactTitle),
+        content: Text(l10n.deleteContactBody(contact.displayName)),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: Text(l10n.cancel),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: Text(
+              l10n.deleteContact,
+              style: const TextStyle(color: AppColors.destructive),
+            ),
+          ),
+        ],
+      ),
+    );
+    if (bestaetigt != true) return;
+    await messenger.deleteContact(contact.id);
   }
 
   @override
@@ -305,6 +339,29 @@ class _NewChatScreenState extends State<NewChatScreen> {
                             Theme.of(context).textTheme.bodySmall?.copyWith(
                                   fontFamily: 'monospace',
                                 ),
+                      ),
+                      trailing: PopupMenuButton<String>(
+                        icon: const Icon(Icons.more_vert_rounded),
+                        tooltip: l10n.deleteContact,
+                        onSelected: (_) =>
+                            _kontaktLoeschen(context, messenger, contact),
+                        itemBuilder: (_) => [
+                          PopupMenuItem<String>(
+                            value: 'delete',
+                            child: Row(
+                              children: [
+                                const Icon(Icons.person_remove_outlined,
+                                    size: 20, color: AppColors.destructive),
+                                const SizedBox(width: 12),
+                                Text(
+                                  l10n.deleteContact,
+                                  style: const TextStyle(
+                                      color: AppColors.destructive),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
                       ),
                       onTap: () {
                         final chat = messenger.getOrCreateChat(contact);
