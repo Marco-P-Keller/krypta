@@ -34,24 +34,34 @@ const db = admin.firestore();
 /**
  * Wording of the push alert that lands on the lock screen.
  *
- * The app hides behind a calculator — CFBundleDisplayName is "Rechner" / "Calc"
- * — so iOS renders this as:
+ * iOS renders it under the app name, which since d62998f is "Krypta ECC" and
+ * no longer a calculator alias:
  *
- *     RECHNER
- *     Tippen zum Öffnen
+ *     KRYPTA ECC
+ *     Du hast eine neue Nachricht erhalten
  *
- * It used to read "New Message / You have a new encrypted message". A
- * calculator announcing encrypted messages gives the entire cover away to
- * anyone glancing at the phone, which is precisely the threat the disguise
- * exists for. The text must therefore say that *something* arrived without
- * hinting at what the app is.
+ * Daniel asked for this wording, replacing the neutral "Tippen zum Oeffnen".
+ * What it gives up: a glance at the lock screen now reveals THAT something
+ * arrived, not merely that the app wants attention. Under a display name
+ * already reading "Krypta ECC" that is a small step. On Android the label is
+ * still "Calc", so there it costs more.
  *
- * Deliberately no `title`: iOS already shows the app name above the body, and
- * a second line would only add surface that has to stay in character.
+ * Never a sender, never content, never a preview. Those would have to travel
+ * through FCM, which Google logs.
+ *
+ * Deliberately no `title`: iOS already shows the app name above the body.
+ *
+ * ONE text for both cases, and the server could not do better. A contact
+ * request is an ordinary inbox document; the `_rq` marker sits inside the
+ * ciphertext. Writing "Du hast eine Anfrage erhalten" would require the sender
+ * to attach a plaintext flag, telling Firebase exactly when a new connection
+ * between two accounts is formed. Telling the two apart belongs in an iOS
+ * Notification Service Extension that decrypts on the device; that needs a new
+ * Xcode target and a Mac.
  *
  * Not localized. Doing that properly needs APNs `loc-key` plus a
  * Localizable.strings in every .lproj, and each of those has to be wired into
- * the Xcode project — not something to do blind without a Mac. All current
+ * the Xcode project - not something to do blind without a Mac. All current
  * users are German-speaking, so German is the honest default rather than a
  * half-done mechanism. If the user base widens, localize it properly instead
  * of guessing server-side.
@@ -59,11 +69,11 @@ const db = admin.firestore();
  * Stricter alternative, if the cover matters more than being notified at all:
  * drop `notification` entirely and send a data-only push. The app already
  * fetches through lib/security/transport/privacy_polling.dart, so no message
- * would be lost — the user simply would not learn about it until they open
+ * would be lost - the user simply would not learn about it until they open
  * the app. See docs/FIREBASE_FUNCTIONS.md.
  */
 const COVER_NOTIFICATION = {
-  body: "Tippen zum Öffnen",
+  body: "Du hast eine neue Nachricht erhalten",
 };
 
 /**

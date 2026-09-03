@@ -3,6 +3,10 @@
     <uses-permission android:name="android.permission.USE_FINGERPRINT"/>
     <uses-permission android:name="android.permission.INTERNET"/>
     <uses-permission android:name="android.permission.CAMERA"/>
+    <!-- Ab Android 13 muss die Anzeige von Benachrichtigungen ausdruecklich
+         erlaubt werden. Ohne diesen Eintrag laeuft requestPermission im
+         NotificationService ins Leere und es erscheint nie etwas. -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
     <application
         android:label="@string/app_name"
         android:name="${applicationName}"

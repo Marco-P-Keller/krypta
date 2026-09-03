@@ -52,15 +52,35 @@ richtige Vorsichtsmaßnahme für Metadaten (keine Sender-ID im Payload, weil
 FCM-Payloads bei Google geloggt werden); nur der sichtbare Text war übersehen
 worden.
 
-Jetzt steht dort `COVER_NOTIFICATION`, ein einzelner Body ohne Titel:
+**Geändert am 2026-09-03 auf Daniels Wunsch.** Aus `Tippen zum Öffnen` wurde:
 
 ```
-RECHNER
-Tippen zum Öffnen
+KRYPTA ECC
+Du hast eine neue Nachricht erhalten
 ```
 
 Bewusst ohne `title` — iOS zeigt den App-Namen ohnehin darüber, eine zweite
-Zeile wäre nur weitere Fläche, die in der Rolle bleiben muss.
+Zeile wäre nur weitere Fläche.
+
+**Was der neue Text preisgibt.** Ein Blick auf den Sperrbildschirm verrät
+jetzt, **dass** etwas angekommen ist, nicht mehr nur, dass die App
+Aufmerksamkeit will. Unter einem Anzeigenamen, der seit `d62998f` ohnehin
+„Krypta ECC" lautet, ist das ein kleiner Schritt — die Begründung von 2026-08-23
+oben stand auf der Annahme eines Rechner-Namens, und die gilt für iOS nicht
+mehr. Auf **Android** heißt die App weiterhin „Calc"; dort kostet der Satz
+mehr, und falls Android je ausgeliefert wird, gehört das noch einmal
+abgewogen. Absender, Inhalt und Vorschau bleiben draußen — die müssten durch
+FCM, und das protokolliert Google.
+
+**Ein Text für beide Fälle, und der Server kann es nicht besser.** Daniel
+wollte zwischen „neue Nachricht" und „Anfrage erhalten" unterscheiden. Eine
+Kontaktanfrage ist aber ein ganz normales Inbox-Dokument; die Markierung `_rq`
+liegt **innerhalb** des Chiffrats. Damit die Function den Unterschied sähe,
+müsste der Absender ein Klartextfeld ans Dokument hängen — und damit erführe
+Firebase genau, wann zwischen zwei Konten eine neue Verbindung entsteht. Das
+ist die Sorte Metadatum, die diese App nicht hergibt. Der saubere Weg wäre
+eine **iOS Notification Service Extension**, die auf dem Gerät entschlüsselt
+und den Text dort ersetzt; das braucht ein neues Xcode-Target und einen Mac.
 
 **Warum dieser Weg und nicht der stille Push.** Naheliegend wäre gewesen, den
 `notification`-Block ganz zu streichen und nur `content-available` zu schicken.
@@ -221,7 +241,25 @@ Der Deploy allein genügt nicht. Die Kette ist:
    Tokens ab (`firebase/firestore.rules`)
 4. `onNewMessage` deployt
 
-Punkt 2 ist bisher nirgends geprüft worden. Zu beachten: in
+**Punkt 2 ist die aktuelle Blockade — geprüft, nicht vermutet.** Im
+Function-Log steht bei jedem Sendeversuch:
+
+```
+onNewMessage: Push notification failed: Invalid APNs credential.
+```
+
+Zuletzt gesehen am 2026-09-03 um 09:26 UTC. Die Function läuft also, **findet
+den Geräte-Token** und scheitert erst beim Zustellen an APNs. Punkt 1, 3 und 4
+sind damit erledigt; es fehlt ausschließlich der `.p8`.
+
+Der Weg dorthin: **erzeugen** lässt sich der Schlüssel nur im
+Apple-Entwicklerkonto (Zertifikate, IDs & Profile → Schlüssel → neuer
+Schlüssel mit Haken bei „Apple Push Notifications service"), und dafür braucht
+es **Admin-Rechte** — vermutlich Marco. Die `.p8` gibt es **nur einmal** zum
+Herunterladen. **Hochladen** darf Daniel als Editor selbst, unter
+Projekteinstellungen → Cloud Messaging → die iOS-App, zusammen mit **Key-ID**
+(steht neben dem Schlüssel) und **Team-ID** (oben rechts im Entwicklerkonto).
+Danach wirkt es sofort, ohne neuen Build und ohne neuen Deploy. Zu beachten: in
 `lib/services/notification/notification_service.dart` liegt der ganze
 Anmeldevorgang in einem `try`, das den Fehler nur in Debug-Builds ausgibt —
 schlägt einer dieser Schritte fehl, passiert sichtbar **gar nichts**.
