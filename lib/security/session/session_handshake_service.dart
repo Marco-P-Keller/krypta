@@ -39,11 +39,46 @@ class SessionHandshakeService {
   /// Full OTP support needs opkId on the wire plus receiver consumption,
   /// on BOTH sides, before DH4 may come back.
   ///
-  /// Throws [HandshakeException] if signature verification fails.
+  /// [pinnedIdentityPublicKey] is the contact's X25519 identity key as it is
+  /// already stored on THIS device — from the scanned QR code, or from the
+  /// first exchange plus whatever the safety number confirmed. It is the
+  /// trust anchor, and it is required: a bundle arrives from the server, so
+  /// nothing inside it may decide who the contact is (KRY-01, audit
+  /// 2026-09). The parameter is mandatory rather than optional precisely so
+  /// a future caller cannot drop the check by accident.
+  ///
+  /// Throws [IdentityMismatchException] if the bundle names a different
+  /// identity, [HandshakeException] if signature verification fails.
   static Future<OutboundSession> createOutboundSession({
     required KryptaKeyPair identityKeyPair,
     required PreKeyBundle bundle,
+    required Uint8List pinnedIdentityPublicKey,
   }) async {
+    // Step 0: Bind the bundle to the pinned identity — MANDATORY, and
+    // first, before any key material is touched.
+    //
+    // Without this the server picked the identity. It could serve a wholly
+    // self-consistent bundle — its own ik, its own sigPk, its own spk and a
+    // valid signature over that spk — and the check below would have passed
+    // it, because the signature is verified with the key that arrived in the
+    // same document. DH2 would then run against the server's key and every
+    // outgoing message of the new session would be readable by it, while the
+    // safety number, computed from `publicKeys/`, stayed green.
+    //
+    // With the pin in place DH2 = DH(ephemeral, pinnedIdentity) can only be
+    // computed by the holder of the contact's identity private key. That is
+    // what makes the bundle's remaining fields non-load-bearing for
+    // confidentiality: a forged spk/sigPk pair still cannot derive the
+    // shared secret, it can only make the session underivable for the real
+    // contact — a denial of service the server has anyway.
+    if (!_constantTimeEquals(
+        bundle.identityPublicKey, pinnedIdentityPublicKey)) {
+      throw const IdentityMismatchException(
+        'PreKey bundle identity key does not match the stored contact key. '
+        'Possible MITM attack — aborting session.',
+      );
+    }
+
     // Step 1: Verify signed prekey signature — MANDATORY
     final signatureValid = await verifySignedPreKey(
       preKeyPublic: bundle.signedPreKeyPublic,
@@ -312,6 +347,16 @@ class SessionHandshakeService {
     return r;
   }
 
+  /// Constant-time byte comparison to prevent timing attacks.
+  static bool _constantTimeEquals(Uint8List a, Uint8List b) {
+    if (a.length != b.length) return false;
+    var diff = 0;
+    for (var i = 0; i < a.length; i++) {
+      diff |= a[i] ^ b[i];
+    }
+    return diff == 0;
+  }
+
   /// Best-effort zero of byte array (Dart GC may retain copies).
   static void _zeroBytes(Uint8List bytes) {
     for (var i = 0; i < bytes.length; i++) {
@@ -343,4 +388,18 @@ class HandshakeException implements Exception {
   const HandshakeException(this.message);
   @override
   String toString() => 'HandshakeException: $message';
+}
+
+/// Thrown when a server-served PreKeyBundle claims an identity key other
+/// than the one pinned for this contact (KRY-01, audit 2026-09).
+///
+/// Implements [HandshakeException] so every existing fail-closed catch
+/// keeps catching it; the distinct type lets the caller additionally flag
+/// the contact for re-verification.
+class IdentityMismatchException implements HandshakeException {
+  @override
+  final String message;
+  const IdentityMismatchException(this.message);
+  @override
+  String toString() => 'IdentityMismatchException: $message';
 }

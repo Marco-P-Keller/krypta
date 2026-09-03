@@ -219,6 +219,9 @@ void main() {
         () => SessionHandshakeService.createOutboundSession(
           identityKeyPair: alice,
           bundle: invalidBundle,
+          // Pin matches the bundle, so this test still exercises what it
+          // was written for: the malformed key length.
+          pinnedIdentityPublicKey: Uint8List(31),
         ),
         throwsA(isA<HandshakeException>()),
       );
@@ -241,6 +244,9 @@ void main() {
         () => SessionHandshakeService.createOutboundSession(
           identityKeyPair: alice,
           bundle: bundle,
+          // Pin matches the bundle, so the low-order point stays the
+          // subject of this test rather than the identity check.
+          pinnedIdentityPublicKey: zeroKey,
         ),
         throwsA(anything),
       );

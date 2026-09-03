@@ -101,6 +101,7 @@ void main() {
       final out = await SessionHandshakeService.createOutboundSession(
         identityKeyPair: senderIdentity,
         bundle: bundle(withOtp: true),
+        pinnedIdentityPublicKey: receiverIdentity.publicKey,
       );
 
       final (_, msg) = await DoubleRatchet.encrypt(
@@ -132,6 +133,7 @@ void main() {
       final out = await SessionHandshakeService.createOutboundSession(
         identityKeyPair: senderIdentity,
         bundle: bundle(withOtp: false),
+        pinnedIdentityPublicKey: receiverIdentity.publicKey,
       );
 
       final (_, msg) = await DoubleRatchet.encrypt(
@@ -161,6 +163,7 @@ void main() {
       final out = await SessionHandshakeService.createOutboundSession(
         identityKeyPair: senderIdentity,
         bundle: bundle(withOtp: true),
+        pinnedIdentityPublicKey: receiverIdentity.publicKey,
       );
       expect(out.signedPreKeyId, 7);
     });
@@ -337,6 +340,7 @@ void main() {
       final staleOut = await SessionHandshakeService.createOutboundSession(
         identityKeyPair: senderIdentity,
         bundle: bundle(),
+        pinnedIdentityPublicKey: receiverIdentity.publicKey,
       );
       final staleReceiverState =
           await SessionHandshakeService.createInboundSession(
@@ -351,6 +355,7 @@ void main() {
       final freshOut = await SessionHandshakeService.createOutboundSession(
         identityKeyPair: senderIdentity,
         bundle: bundle(),
+        pinnedIdentityPublicKey: receiverIdentity.publicKey,
       );
       final (_, msg) = await DoubleRatchet.encrypt(
         state: freshOut.ratchetState,

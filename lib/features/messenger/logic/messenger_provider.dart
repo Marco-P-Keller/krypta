@@ -3648,10 +3648,20 @@ class MessengerProvider extends ChangeNotifier {
 
     if (bundleMap != null) {
       final bundle = PreKeyBundle.fromMap(bundleMap);
-      final session = await SessionHandshakeService.createOutboundSession(
-        identityKeyPair: keyPair,
-        bundle: bundle,
-      );
+      final OutboundSession session;
+      try {
+        // Der gespeicherte Kontaktschluessel ist der Anker, nicht das
+        // Buendel. Ohne diesen Parameter bestimmte der Server, wem die
+        // Sitzung gehoert (KRY-01).
+        session = await SessionHandshakeService.createOutboundSession(
+          identityKeyPair: keyPair,
+          bundle: bundle,
+          pinnedIdentityPublicKey: contact.publicKey,
+        );
+      } on IdentityMismatchException {
+        await _buendelIdentitaetPasstNicht(contact);
+        rethrow;
+      }
 
       // Assign session ID for anti-rollback protection.
       final oldState = _ratchetStates[chatId];
@@ -3712,6 +3722,48 @@ class MessengerProvider extends ChangeNotifier {
       'ek': base64Encode(ephPub),
       'ek2': base64Encode(eph2Pub),
     };
+  }
+
+  /// Ein Vorabschluesselbuendel nennt eine andere Identitaet als die, die
+  /// fuer diesen Kontakt hinterlegt ist.
+  ///
+  /// Das ist kein Netzfehler, sondern die Signatur eines Servers, der die
+  /// Identitaet austauschen wollte. Behandelt wird es wie ein
+  /// Schluesselwechsel, damit der bestehende Weg greift: Senden ist ueber
+  /// [_validateSendPermission] gesperrt, bis der Kontakt erneut bestaetigt
+  /// wurde, und die Oberflaeche zeigt die Warnung, die es dafuer schon gibt.
+  ///
+  /// Der Schluessel aus dem Buendel wird **nicht** uebernommen. Beim echten
+  /// Schluesselwechsel steht der neue Schluessel in `publicKeys/` und wird
+  /// mit `previousPublicKey` festgehalten; hier existiert kein neuer
+  /// Schluessel, den es zu uebernehmen gaebe, sondern nur die Behauptung
+  /// eines Buendels. Sie zu speichern wuerde genau das tun, was der Fix
+  /// verhindert.
+  Future<void> _buendelIdentitaetPasstNicht(Contact contact) async {
+    final idx = _contacts.indexWhere((c) => c.id == contact.id);
+    if (idx == -1) return;
+
+    _contacts[idx] = VerificationPolicy.nachSchluesselwechsel(_contacts[idx])
+        .copyWith(
+      verifiedAt: null,
+      verificationMethod: null,
+      verifiedFingerprint: null,
+      safetyNumberVersion: null,
+      lastKeyChangeAt: DateTime.now(),
+    );
+    await _localStore.saveContacts(_contacts);
+
+    // Wie beim Schluesselwechsel: die abgeleiteten Geheimnisse dieses
+    // Kontakts sind ab hier nicht mehr vertrauenswuerdig.
+    _invalidateHmacKey(contact.id);
+    for (final chat in _chats) {
+      if (chat.recipientId == contact.id) {
+        _ratchetStates.remove(chat.id);
+        await _localStore.deleteRatchetState(chat.id);
+      }
+    }
+
+    notifyListeners();
   }
 
   /// Initialize a ratchet session as receiver (first message from them):
