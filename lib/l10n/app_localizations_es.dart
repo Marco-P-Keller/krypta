@@ -262,7 +262,10 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get autoDeleteHint =>
-      'Los mensajes nuevos de este chat se autodestruirán tras el tiempo seleccionado.';
+      'Los mensajes nuevos de este chat se eliminan automáticamente tras el tiempo elegido. El ajuste vale para ambas partes.';
+
+  @override
+  String get autoDeleteAfterRead => 'Justo después de leer';
 
   @override
   String get chatDefault => 'Valor por defecto del chat';
@@ -622,16 +625,6 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get readReceiptsOff => 'Desactivadas: máxima privacidad';
-
-  @override
-  String get deliveryReceipts => 'Confirmaciones de entrega';
-
-  @override
-  String get deliveryReceiptsOn =>
-      'Activadas: el remitente ve cuándo se entrega';
-
-  @override
-  String get deliveryReceiptsOff => 'Desactivadas: máxima privacidad';
 
   @override
   String get privacyPolicyBody =>

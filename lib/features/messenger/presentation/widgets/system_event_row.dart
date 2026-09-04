@@ -49,6 +49,8 @@ class SystemEventRow extends StatelessWidget {
         return dauer == null
             ? l10n.selfDestructTurnedOff
             : l10n.selfDestructSetTo(_knapp(dauer));
+      case SystemEventKind.selfDestructAfterRead:
+        return l10n.selfDestructSetTo(l10n.autoDeleteAfterRead);
     }
   }
 
@@ -66,6 +68,7 @@ class SystemEventRow extends StatelessWidget {
         SystemEventKind.screenRecording => Icons.videocam_rounded,
         SystemEventKind.accountDeleted => Icons.person_off_rounded,
         SystemEventKind.selfDestructChanged => Icons.timer_outlined,
+        SystemEventKind.selfDestructAfterRead => Icons.drafts_outlined,
       };
 
   @override

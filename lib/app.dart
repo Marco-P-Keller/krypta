@@ -165,6 +165,10 @@ class _KryptaShellState extends State<KryptaShell> with WidgetsBindingObserver {
     final isBackgrounded = state == AppLifecycleState.paused ||
         state == AppLifecycleState.hidden;
     if (isBackgrounded) {
+      // Wer die App wegwischt, hat den Chat verlassen — in einem Chat mit
+      // „Direkt nach dem Lesen" geht das Gelesene damit auch dann, wenn die
+      // Chat-Ansicht selbst stehen bleibt.
+      unawaited(messenger.burnReadInActiveChat());
       // Evict stale ratchet state entries (containing private keys) from memory.
       // This reduces the window where sensitive cryptographic material is in RAM.
       context.read<EncryptedLocalStore>().evictStaleCacheEntries();

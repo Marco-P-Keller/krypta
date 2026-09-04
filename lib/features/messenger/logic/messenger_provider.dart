@@ -189,8 +189,6 @@ class MessengerProvider extends ChangeNotifier {
   /// Cached HMAC keys per contact for control message signing.
   /// Cleared on key change, wipe, and dispose.
   final Map<String, Uint8List> _hmacKeyCache = {};
-  /// Whether delivery receipts are enabled (default: disabled for privacy).
-  bool _deliveryReceiptsEnabled = false;
   /// Whether read receipts are enabled (default: disabled for privacy).
   bool _readReceiptsEnabled = false;
 
@@ -248,7 +246,6 @@ class MessengerProvider extends ChangeNotifier {
   String? get activeChatId => _activeChatId;
   bool get isInitialized => _isInitialized;
   bool get isPushPrivacyEnabled => _pushPrivacyEnabled;
-  bool get isDeliveryReceiptsEnabled => _deliveryReceiptsEnabled;
   bool get isReadReceiptsEnabled => _readReceiptsEnabled;
 
   List<Message> messagesForChat(String chatId) =>
@@ -358,13 +355,22 @@ class MessengerProvider extends ChangeNotifier {
 
     for (final chat in _chats) {
       final geladen = await _localStore.loadMessages(chat.id);
-      // Bestand nachraeumen: einmalige Nachrichten, die ich zwischen dem
-      // 02.09. und dem 04.09.2026 selbst verschickt habe, tragen ihren
-      // Klartext noch auf der Platte. Die Blase zeigt ihn seit dem 04.09.
-      // nicht mehr an — das allein waere die Kosmetik, vor der
-      // EinmaligPolicy.klartextBeimAbsender warnt. Hier faellt er wirklich
-      // weg. Gespeichert wird nur, wenn es etwas zu raeumen gab.
-      if (EinmaligPolicy.nachraeumen(geladen, userId ?? '')) {
+      // Zwei Nachtraege am Bestand, beide einmalig und beide still.
+      //
+      // 1. Der Klartext einmaliger Nachrichten, die ich zwischen dem 02.09.
+      //    und dem 04.09.2026 selbst verschickt habe. Die Blase zeigt ihn
+      //    nicht mehr an — das allein waere die Kosmetik, vor der
+      //    EinmaligPolicy.klartextBeimAbsender warnt.
+      // 2. Der Zustellzeitpunkt. Vor dem 04.09.2026 gab es das Feld nicht,
+      //    und ohne ihn laeuft keine Loeschfrist an: der Bestand laege fuer
+      //    immer da.
+      //
+      // Beide Aufrufe muessen laufen, deshalb erst rechnen und dann pruefen.
+      // Gespeichert wird nur, wenn wirklich etwas anders ist.
+      final geraeumt = EinmaligPolicy.nachraeumen(geladen, userId ?? '');
+      final nachgetragen =
+          SelfDestructPolicy.zustellungNachtragen(geladen, userId ?? '');
+      if (geraeumt || nachgetragen) {
         await _localStore.saveMessages(chat.id, geladen);
       }
       _messagesByChat[chat.id] = geladen;
@@ -433,8 +439,9 @@ class MessengerProvider extends ChangeNotifier {
       // Check push privacy mode setting
       _pushPrivacyEnabled = await _secureStorage.isPushPrivacyEnabled();
 
-      // Load receipt privacy settings (both default to disabled = maximum privacy)
-      _deliveryReceiptsEnabled = await _secureStorage.isDeliveryReceiptsEnabled();
+      // Die Lesebestaetigung ist weiter abschaltbar und standardmaessig aus.
+      // Die Zustellbestaetigung nicht mehr: sie ist seit dem 04.09.2026 immer
+      // an, siehe _sendeZustellbestaetigung.
       _readReceiptsEnabled = await _secureStorage.isReadReceiptsEnabled();
 
       // Load persisted control message counters for replay prevention
@@ -1623,7 +1630,7 @@ class MessengerProvider extends ChangeNotifier {
     // Apply the control action
     switch (ctrl.type) {
       case 'delivered':
-        _applyDeliveredStatus(ctrl.messageId);
+        _applyDeliveredStatus(ctrl.messageId, ctrl.timestamp);
       case 'read':
         _applyReadStatus(ctrl.messageId);
       case 'delete':
@@ -1647,17 +1654,30 @@ class MessengerProvider extends ChangeNotifier {
         _applySystemEventFromPeer(
             chatId, contact, SystemEventKind.screenRecording, ctrl.messageId);
       default:
-        if (SelfDestructPolicy.istChatFristAenderung(ctrl.type)) {
-          // Die Frist der Gegenseite aendert meine eigene nicht — sie ist
-          // Hausordnung, jede Seite stellt sie fuer sich. Der Hinweis sagt
-          // nur, dass drueben etwas anders ist.
-          _appendSystemEvent(
-            chatId: chatId,
-            kind: SystemEventKind.selfDestructChanged,
-            senderId: contact.id,
-            recipientId: userId ?? '',
-            messageId: ctrl.messageId,
-            dauer: SelfDestructPolicy.chatFristAusArt(ctrl.type),
+        final regel = SelfDestructPolicy.regelAusArt(ctrl.type);
+        if (regel != null) {
+          // Die Regel gehoert dem Chat, nicht dem Geraet: was drueben
+          // gestellt wird, gilt hier auch. Bis zum 04.09.2026 stand hier nur
+          // ein Hinweis, und jede Seite behielt ihre eigene Frist — bei
+          // fuenf Minuten drueben und „aus" bei mir blieb meine Fassung
+          // liegen, waehrend ihre verschwand.
+          final ci = _chats.indexWhere((c) => c.id == chatId);
+          if (ci == -1) break;
+          if (!SelfDestructPolicy.fremdeRegelUebernehmen(
+            meineVersion: _chats[ci].regelVersion,
+            fremdeVersion: regel.version,
+            meineId: userId ?? '',
+            fremdeId: contact.id,
+          )) {
+            break;
+          }
+          await _regelUebernehmen(
+            idx: ci,
+            frist: regel.frist,
+            nachLesen: regel.nachLesen,
+            version: regel.version,
+            hinweisVon: contact.id,
+            hinweisId: ctrl.messageId,
           );
           break;
         }
@@ -1666,16 +1686,66 @@ class MessengerProvider extends ChangeNotifier {
     return true;
   }
 
-  /// Apply delivered status from a verified control message.
-  void _applyDeliveredStatus(String messageId) {
+  /// Der Gegenseite melden, dass ihre Nachricht angekommen ist.
+  ///
+  /// **Immer**, seit dem 04.09.2026. Vorher hing das an einem Schalter, der
+  /// standardmaessig aus war — mit zwei Folgen. Sichtbar: der Absender sah
+  /// nie, ob etwas ankam. Unsichtbar und schlimmer: der Loeschtimer hat
+  /// keinen Zustellzeitpunkt, an dem er haengen koennte, und lief bei jeder
+  /// Seite ab ihrer eigenen Uhr. Die Zustellung ist damit nicht laenger eine
+  /// Anzeigefrage, sondern die Grundlage der Frist — siehe
+  /// SelfDestructPolicy.deadline.
+  ///
+  /// Der Preis, offen gesagt: die Gegenseite erfaehrt, wann mein Geraet
+  /// online war. Die zeitliche Streuung nimmt der Meldung die Genauigkeit,
+  /// nicht die Aussage. Daniels Entscheidung vom 04.09.2026.
+  void _sendeZustellbestaetigung({
+    required String chatId,
+    required Contact contact,
+    required String messageId,
+  }) {
+    if (userId == null) return;
+    _pendingJitterTimers.add(
+      TimingProtection.sendDeliveryAckWithJitter(() => _sendControlMessage(
+            chatId: chatId,
+            contact: contact,
+            type: 'delivered',
+            messageId: messageId,
+          )),
+    );
+  }
+
+  /// Die Gegenseite meldet, dass meine Nachricht angekommen ist.
+  ///
+  /// Die Meldung traegt zwei Dinge: den sichtbaren Haken und — wichtiger —
+  /// den **Zustellzeitpunkt**, an dem die Loeschfrist haengt. Vorher wurde
+  /// nur der Status gesetzt, und jede Seite rechnete mit ihrer eigenen Uhr:
+  /// der Absender ab dem Senden, der Empfaenger ab dem Abholen.
+  ///
+  /// [gemeldetMs] kommt von einer fremden Uhr und wird gekappt, siehe
+  /// SelfDestructPolicy.zustellzeitpunkt. Ein einmal gesetzter Zeitpunkt
+  /// bleibt: eine zweite Meldung darf die Frist nicht verlaengern.
+  void _applyDeliveredStatus(String messageId, int gemeldetMs) {
     for (final chatId in _messagesByChat.keys) {
       final messages = _messagesByChat[chatId]!;
       final idx = messages.indexWhere((m) => m.id == messageId);
       if (idx != -1) {
         final msg = messages[idx];
         if (msg.senderId != userId) break; // Only accept for OUR messages
-        if (msg.status == MessageStatus.read) break; // Don't regress status
-        messages[idx] = msg.copyWith(status: MessageStatus.delivered);
+        final zugestellt = msg.deliveredAt ??
+            SelfDestructPolicy.zustellzeitpunkt(
+              gemeldet: DateTime.fromMillisecondsSinceEpoch(gemeldetMs),
+              gesendet: msg.timestamp,
+              jetzt: DateTime.now(),
+            );
+        // Den Status nicht zurueckdrehen, den Zeitpunkt trotzdem nachtragen:
+        // eine Zustellmeldung kann nach der Lesemeldung eintreffen.
+        messages[idx] = msg.copyWith(
+          deliveredAt: zugestellt,
+          status: msg.status == MessageStatus.read
+              ? MessageStatus.read
+              : MessageStatus.delivered,
+        );
         _localStore.saveMessages(chatId, messages);
         notifyListeners();
         break;
@@ -2071,7 +2141,12 @@ class MessengerProvider extends ChangeNotifier {
     if (messages == null) return;
     final idx = messages.indexWhere((m) => m.id == messageId);
     if (idx == -1) return;
-    if (!SelfDestructPolicy.acceptBurn(messages[idx], userId ?? '')) return;
+    final ci = _chats.indexWhere((c) => c.id == chatId);
+    final chatVergaenglich = ci != -1 && _chats[ci].regelMachtVergaenglich;
+    if (!SelfDestructPolicy.acceptBurn(messages[idx], userId ?? '',
+        chatVergaenglich: chatVergaenglich)) {
+      return;
+    }
     messages.removeAt(idx);
     _localStore.saveMessages(chatId, messages);
     notifyListeners();
@@ -2486,28 +2561,27 @@ class MessengerProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> setChatSelfDestruct(String chatId, Duration? duration) async {
+  /// Die Loeschregel des Chats setzen — fuer **beide** Seiten.
+  ///
+  /// Seit dem 04.09.2026 ist sie keine Hausordnung mehr, die jeder fuer sich
+  /// stellt. Wer hier fuenf Minuten waehlt, stellt den ganzen Chat auf fuenf
+  /// Minuten, auch drueben. Die Aenderung reist als Kontrollnachricht und
+  /// traegt einen Zaehler, damit zwei gleichzeitige Aenderungen auf beiden
+  /// Geraeten gleich ausgehen.
+  Future<void> setChatSelfDestruct(
+    String chatId,
+    Duration? duration, {
+    bool nachLesen = false,
+  }) async {
     final idx = _chats.indexWhere((c) => c.id == chatId);
     if (idx == -1) return;
-    // Den Einschaltzeitpunkt mitschreiben: der Timer gilt auch fuer das,
-    // was schon dasteht, aber erst ab jetzt. Beim Ausschalten faellt er weg.
-    _chats[idx] = _chats[idx].copyWith(
-      defaultSelfDestruct: duration,
-      defaultSelfDestructSetAt: duration == null ? null : DateTime.now(),
-    );
-    await _localStore.saveChats(_chats);
-
-    // Ein Hinweis im Verlauf, den beide sehen — wie bei Screenshots. Ohne ihn
-    // aendert sich die Frist fuer die Gegenseite lautlos, und sie wundert
-    // sich, wo ihre Nachrichten hin sind.
-    final hinweisId = _uuid.v4();
-    _appendSystemEvent(
-      chatId: chatId,
-      kind: SystemEventKind.selfDestructChanged,
-      senderId: userId ?? '',
-      recipientId: _chats[idx].recipientId,
-      messageId: hinweisId,
-      dauer: duration,
+    final version = _chats[idx].regelVersion + 1;
+    final hinweisId = await _regelUebernehmen(
+      idx: idx,
+      frist: nachLesen ? null : duration,
+      nachLesen: nachLesen,
+      version: version,
+      hinweisVon: userId ?? '',
     );
 
     final contact = contactForId(_chats[idx].recipientId);
@@ -2515,12 +2589,69 @@ class MessengerProvider extends ChangeNotifier {
       unawaited(_sendControlMessage(
         chatId: chatId,
         contact: contact,
-        type: SelfDestructPolicy.artFuerChatFrist(duration),
+        type: SelfDestructPolicy.artFuerRegel(
+          frist: nachLesen ? null : duration,
+          nachLesen: nachLesen,
+          version: version,
+        ),
         messageId: hinweisId,
       ).catchError((_) {}));
     }
+  }
 
+  /// Eine Loeschregel anwenden und den Hinweis dazu schreiben.
+  ///
+  /// Gibt die Kennung des Hinweises zurueck. Der Hinweis und die
+  /// Kontrollnachricht teilen sie sich: die Gegenseite legt ihren Hinweis
+  /// unter derselben Kennung ab, damit dieselbe Aenderung nicht zweimal im
+  /// Verlauf steht.
+  ///
+  /// Ein Weg fuer beide Richtungen — die eigene Aenderung und die der
+  /// Gegenseite. Zwei getrennte Wege waren der Grund, warum die Regel bis
+  /// zum 04.09.2026 ueberhaupt auseinanderlaufen konnte.
+  Future<String> _regelUebernehmen({
+    required int idx,
+    required Duration? frist,
+    required bool nachLesen,
+    required int version,
+    required String hinweisVon,
+    String? hinweisId,
+  }) async {
+    // Den Einschaltzeitpunkt mitschreiben: die Frist gilt auch fuer das, was
+    // schon dasteht, aber erst ab jetzt. Ohne ihn waere mit einem Tipp der
+    // halbe Verlauf weg.
+    //
+    // Bewusst die **eigene** Uhr, auch bei einer Aenderung von drueben,
+    // obwohl die Meldung einen Zeitstempel traegt. Der stammt von einer
+    // fremden Uhr, und ginge sie nach, waere der halbe Verlauf im Moment des
+    // Empfangs ueberfaellig — genau das, was diese Regel verhindern soll.
+    // Der Preis: war ich lange offline, bekommt mein Bestand die Frist erst
+    // ab jetzt. Was drueben schon geraeumt ist, meldet die Gegenseite
+    // ohnehin einzeln (siehe announceBurn).
+    _chats[idx] = _chats[idx].copyWith(
+      defaultSelfDestruct: frist,
+      defaultSelfDestructSetAt: frist == null ? null : DateTime.now(),
+      loeschtNachLesen: nachLesen,
+      regelVersion: version,
+    );
+    await _localStore.saveChats(_chats);
+
+    // Ein Hinweis im Verlauf, den beide sehen — wie bei Screenshots. Ohne ihn
+    // aendert sich die Regel fuer die Gegenseite lautlos, und sie wundert
+    // sich, wo ihre Nachrichten hin sind.
+    final id = hinweisId ?? _uuid.v4();
+    _appendSystemEvent(
+      chatId: _chats[idx].id,
+      kind: nachLesen
+          ? SystemEventKind.selfDestructAfterRead
+          : SystemEventKind.selfDestructChanged,
+      senderId: hinweisVon,
+      recipientId: hinweisVon == userId ? _chats[idx].recipientId : userId ?? '',
+      messageId: id,
+      dauer: frist,
+    );
     notifyListeners();
+    return id;
   }
 
   Chat? chatById(String chatId) {
@@ -3038,14 +3169,6 @@ class MessengerProvider extends ChangeNotifier {
 
   // --- Receipt Privacy Settings ---
 
-  /// Toggle delivery receipts (default: disabled).
-  /// When disabled, senders learn nothing about message delivery.
-  Future<void> setDeliveryReceiptsEnabled(bool enabled) async {
-    _deliveryReceiptsEnabled = enabled;
-    await _secureStorage.setDeliveryReceiptsEnabled(enabled);
-    notifyListeners();
-  }
-
   /// Toggle read receipts (default: disabled).
   /// When disabled, senders learn nothing about read state.
   Future<void> setReadReceiptsEnabled(bool enabled) async {
@@ -3352,6 +3475,10 @@ class MessengerProvider extends ChangeNotifier {
             innerPayload['pw'] == true ||
             innerPayload['pw'] == 'true'; // v2 compat
 
+        // Der Moment des Abholens ist der Zustellzeitpunkt, und der ist der
+        // Start jeder Loeschfrist — auf beiden Geraeten. Der Absender erfaehrt
+        // ihn aus der Zustellbestaetigung, siehe SelfDestructPolicy.deadline.
+        final zugestellt = DateTime.now();
         final message = Message(
           id: messageId,
           chatId: chat.id,
@@ -3359,7 +3486,8 @@ class MessengerProvider extends ChangeNotifier {
           recipientId: userId!,
           encryptedContent: '',
           decryptedContent: messageContent,
-          timestamp: DateTime.now(),
+          timestamp: zugestellt,
+          deliveredAt: zugestellt,
           status: MessageStatus.delivered,
           selfDestructFromChat: innerPayload['_sdc'] == true,
           selfDestructDuration:
@@ -3376,18 +3504,8 @@ class MessengerProvider extends ChangeNotifier {
           incrementUnread: _activeChatId != chat.id,
         );
 
-        // Delivery ACK via encrypted control channel (with jitter).
-        // Only sent if delivery receipts are enabled.
-        if (_deliveryReceiptsEnabled && userId != null) {
-          _pendingJitterTimers.add(
-            TimingProtection.sendDeliveryAckWithJitter(() => _sendControlMessage(
-              chatId: chat.id,
-              contact: contact,
-              type: 'delivered',
-              messageId: messageId,
-            )),
-          );
-        }
+        _sendeZustellbestaetigung(
+            chatId: chat.id, contact: contact, messageId: messageId);
 
         // Erst die Oberflaeche, dann der Server.
         //
@@ -3610,6 +3728,10 @@ class MessengerProvider extends ChangeNotifier {
           innerPayload['pw'] == true ||
           innerPayload['pw'] == 'true';
 
+      // Der Moment des Abholens ist der Zustellzeitpunkt, und der ist der
+      // Start jeder Loeschfrist — auf beiden Geraeten. Der Absender erfaehrt
+      // ihn aus der Zustellbestaetigung, siehe SelfDestructPolicy.deadline.
+      final zugestellt = DateTime.now();
       final message = Message(
         id: messageId,
         chatId: chat.id,
@@ -3617,7 +3739,8 @@ class MessengerProvider extends ChangeNotifier {
         recipientId: userId!,
         encryptedContent: '',
         decryptedContent: messageContent,
-        timestamp: DateTime.now(),
+        timestamp: zugestellt,
+        deliveredAt: zugestellt,
         status: MessageStatus.delivered,
         selfDestructFromChat: innerPayload['_sdc'] == true,
         selfDestructDuration:
@@ -3634,17 +3757,8 @@ class MessengerProvider extends ChangeNotifier {
         incrementUnread: _activeChatId != chat.id,
       );
 
-      // Delivery ACK via encrypted control channel (with jitter)
-      if (_deliveryReceiptsEnabled && userId != null) {
-        _pendingJitterTimers.add(
-          TimingProtection.sendDeliveryAckWithJitter(() => _sendControlMessage(
-            chatId: chat.id,
-            contact: contact,
-            type: 'delivered',
-            messageId: messageId,
-          )),
-        );
-      }
+      _sendeZustellbestaetigung(
+          chatId: chat.id, contact: contact, messageId: messageId);
 
       // Erst die Oberflaeche, dann der Server — siehe _handleInbox.
       notifyListeners();
@@ -3708,19 +3822,26 @@ class MessengerProvider extends ChangeNotifier {
       final chatTimer = ci == -1 ? null : _chats[ci].defaultSelfDestruct;
       final chatTimerSetAt =
           ci == -1 ? null : _chats[ci].defaultSelfDestructSetAt;
-      // Nur zeitgesteuerte Selbstzerstoerung. Burn-after-Read laeuft sonst
-      // beim Verlassen des Chats (burnReadMessages); beim Start wird es hier
-      // mit erledigt.
+      final nachLesen = ci != -1 && _chats[ci].loeschtNachLesen;
+      final chatVergaenglich = ci != -1 && _chats[ci].regelMachtVergaenglich;
+      // Nur zeitgesteuerte Selbstzerstoerung. „Direkt nach dem Lesen" laeuft
+      // sonst beim Verlassen des Chats (burnReadMessages); beim Start wird es
+      // hier mit erledigt — sonst ueberlebt eine gelesene Nachricht den
+      // Absturz waehrend des Lesens.
       final faellig = messages
           .where((m) =>
               SelfDestructPolicy.expired(m, jetzt,
                   chatTimer: chatTimer, chatTimerSetAt: chatTimerSetAt) ||
-              (auchVerbrannte && m.shouldBurn))
+              (auchVerbrannte &&
+                  (m.shouldBurn ||
+                      SelfDestructPolicy.nachLesenFaellig(m,
+                          regelNachLesen: nachLesen))))
           .toList();
       if (faellig.isEmpty) continue;
 
       for (final m in faellig) {
-        if (SelfDestructPolicy.announceBurn(m, ich)) {
+        if (SelfDestructPolicy.announceBurn(m, ich,
+            chatVergaenglich: chatVergaenglich)) {
           _meldeAblauf(chatId, m.id);
         }
       }
@@ -3800,17 +3921,44 @@ class MessengerProvider extends ChangeNotifier {
   /// Und der Gegenseite Bescheid sagen. Ohne die Meldung verschwand die
   /// Nachricht nur beim Empfaenger und blieb beim Absender stehen — die
   /// Funktion verspricht aber, dass sie weg ist.
+  /// Beim Wegwischen der App gilt der Chat ebenfalls als verlassen.
+  ///
+  /// Ohne das ueberlebte eine gelesene Nachricht in einem Chat mit „Direkt
+  /// nach dem Lesen" genau den Fall, in dem sie am wenigsten liegen bleiben
+  /// darf: das Geraet wandert aus der Hand, waehrend der Chat offen ist.
+  Future<void> burnReadInActiveChat() async {
+    final chatId = _activeChatId;
+    if (chatId == null) return;
+    await burnReadMessages(chatId);
+  }
+
   Future<void> burnReadMessages(String chatId) async {
     final messages = _messagesByChat[chatId];
     if (messages == null) return;
     final ich = userId ?? '';
+    final ci = _chats.indexWhere((c) => c.id == chatId);
+    final nachLesen = ci != -1 && _chats[ci].loeschtNachLesen;
+    final chatVergaenglich = ci != -1 && _chats[ci].regelMachtVergaenglich;
 
-    final verbrannt =
-        messages.where((m) => m.burnAfterRead && m.readAt != null).toList();
+    // Zwei Quellen: die Regel des Chats („Direkt nach dem Lesen") und das
+    // alte `burnAfterRead` an einer einzelnen Nachricht, das aeltere Absender
+    // noch schicken.
+    //
+    // Gelesen heisst `readAt` — das setzt der Empfaenger fuer sich, **ohne**
+    // die Lesebestaetigung zu fragen. Die entscheidet nur, ob die Gegenseite
+    // davon erfaehrt.
+    final verbrannt = messages
+        .where((m) =>
+            (m.burnAfterRead && m.readAt != null) ||
+            SelfDestructPolicy.nachLesenFaellig(m, regelNachLesen: nachLesen))
+        .toList();
     if (verbrannt.isEmpty) return;
 
     for (final m in verbrannt) {
-      if (SelfDestructPolicy.announceBurn(m, ich)) _meldeAblauf(chatId, m.id);
+      if (SelfDestructPolicy.announceBurn(m, ich,
+          chatVergaenglich: chatVergaenglich)) {
+        _meldeAblauf(chatId, m.id);
+      }
     }
 
     final weg = verbrannt.map((m) => m.id).toSet();

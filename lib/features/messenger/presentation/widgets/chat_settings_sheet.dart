@@ -42,19 +42,23 @@ const _avatarGradients = [
 ];
 
 class _ChatSettingsSheetState extends State<ChatSettingsSheet> {
-  /// Zeiten für den ganzen Chat. Bewusst gröber als die Auswahl an einer
-  /// einzelnen Nachricht: 30 Sekunden auf alles anzuwenden wäre kein
+  /// Die Löschregeln für den ganzen Chat. Bewusst gröber als die Auswahl an
+  /// einer einzelnen Nachricht: 30 Sekunden auf alles anzuwenden wäre kein
   /// Sicherheitsgewinn, sondern ein unbenutzbarer Chat.
   ///
-  /// Die Uhr läuft je Nachricht erst ab dem Moment, in dem der Empfänger sie
-  /// gelesen hat — siehe `Message.isExpired`.
-  static const _timerOptions = <Duration?>[
-    null,
-    Duration(minutes: 5),
-    Duration(minutes: 30),
-    Duration(hours: 1),
-    Duration(hours: 24),
-    Duration(days: 7),
+  /// Die Uhr läuft je Nachricht ab der **Zustellung** — siehe
+  /// SelfDestructPolicy.deadline. „Direkt nach dem Lesen" ist keine Uhr: was
+  /// gelesen ist, geht, sobald der Empfänger den Chat verlässt.
+  ///
+  /// Die Regel gilt für **beide** Seiten und wird zwischen ihnen abgeglichen.
+  static const _timerOptions = <({Duration? frist, bool nachLesen})>[
+    (frist: null, nachLesen: false),
+    (frist: null, nachLesen: true),
+    (frist: Duration(minutes: 5), nachLesen: false),
+    (frist: Duration(minutes: 30), nachLesen: false),
+    (frist: Duration(hours: 1), nachLesen: false),
+    (frist: Duration(hours: 24), nachLesen: false),
+    (frist: Duration(days: 7), nachLesen: false),
   ];
 
   List<Color> _gradientForName(String name) {
@@ -329,10 +333,13 @@ class _ChatSettingsSheetState extends State<ChatSettingsSheet> {
                   Wrap(
                     spacing: 8,
                     runSpacing: 8,
-                    children: _timerOptions.map((duration) {
-                      final isSelected = chat.defaultSelfDestruct == duration;
+                    children: _timerOptions.map((option) {
+                      final isSelected = option.nachLesen
+                          ? chat.loeschtNachLesen
+                          : (!chat.loeschtNachLesen &&
+                              chat.defaultSelfDestruct == option.frist);
                       return GestureDetector(
-                        onTap: () => _onTimerChanged(duration),
+                        onTap: () => _onTimerChanged(option),
                         child: AnimatedContainer(
                           duration: const Duration(milliseconds: 200),
                           padding: const EdgeInsets.symmetric(
@@ -376,7 +383,9 @@ class _ChatSettingsSheetState extends State<ChatSettingsSheet> {
                                 : null,
                           ),
                           child: Text(
-                            _durationLabel(l10n, duration),
+                            _regelLabel(l10n,
+                                frist: option.frist,
+                                nachLesen: option.nachLesen),
                             style: TextStyle(
                               color: isSelected
                                   ? Colors.white
@@ -496,8 +505,9 @@ class _ChatSettingsSheetState extends State<ChatSettingsSheet> {
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
-                      l10n.messagesAutoDelete(
-                          _durationLabel(l10n, chat.defaultSelfDestruct)),
+                      l10n.messagesAutoDelete(_regelLabel(l10n,
+                          frist: chat.defaultSelfDestruct,
+                          nachLesen: chat.loeschtNachLesen)),
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
                             color: AppColors.primary,
                             fontWeight: FontWeight.w500,
@@ -661,10 +671,11 @@ class _ChatSettingsSheetState extends State<ChatSettingsSheet> {
     );
   }
 
-  void _onTimerChanged(Duration? duration) {
+  void _onTimerChanged(({Duration? frist, bool nachLesen}) option) {
     context.read<MessengerProvider>().setChatSelfDestruct(
           widget.chatId,
-          duration,
+          option.frist,
+          nachLesen: option.nachLesen,
         );
   }
 
@@ -962,8 +973,9 @@ class _ChatSettingsSheetState extends State<ChatSettingsSheet> {
   /// inMinutes schon groesser als fuenf, inHours aber noch null — also griff
   /// inHours <= 1, und dreissig Minuten hiessen "1 hour". In der Auswahl
   /// stand derselbe Text dadurch zweimal.
-  String _durationLabel(AppLocalizations l10n, Duration? d) =>
-      switch (FristLabel.stufe(d)) {
+  String _regelLabel(AppLocalizations l10n,
+          {Duration? frist, bool nachLesen = false}) =>
+      switch (FristLabel.stufeFuerRegel(frist: frist, nachLesen: nachLesen)) {
         FristStufe.aus => l10n.off,
         FristStufe.sekunden30 => l10n.seconds30,
         FristStufe.minuten5 => l10n.minutes5,
@@ -971,5 +983,6 @@ class _ChatSettingsSheetState extends State<ChatSettingsSheet> {
         FristStufe.stunde1 => l10n.hour1,
         FristStufe.tag1 => l10n.day1,
         FristStufe.woche1 => l10n.week1,
+        FristStufe.nachLesen => l10n.autoDeleteAfterRead,
       };
 }

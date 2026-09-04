@@ -17,23 +17,25 @@ import 'package:kryptaapp/features/messenger/logic/self_destruct_policy.dart';
 void main() {
   group('Die Dauer reist in der Art mit', () {
     test('eine gesetzte Dauer', () {
-      expect(SelfDestructPolicy.artFuerChatFrist(const Duration(hours: 24)),
-          'sdChanged:86400000');
+      expect(
+          SelfDestructPolicy.artFuerRegel(
+              frist: const Duration(hours: 24), version: 0),
+          'sdChanged:86400000:0');
     });
 
     test('ausgeschaltet', () {
-      expect(SelfDestructPolicy.artFuerChatFrist(null), 'sdChanged:off');
+      expect(SelfDestructPolicy.artFuerRegel(version: 0), 'sdChanged:off:0');
     });
 
     test('und wird wieder herausgelesen', () {
-      expect(SelfDestructPolicy.chatFristAusArt('sdChanged:86400000'),
+      expect(SelfDestructPolicy.regelAusArt('sdChanged:86400000:0')?.frist,
           const Duration(hours: 24));
-      expect(SelfDestructPolicy.chatFristAusArt('sdChanged:300000'),
+      expect(SelfDestructPolicy.regelAusArt('sdChanged:300000:2')?.frist,
           const Duration(minutes: 5));
     });
 
     test('ausgeschaltet kommt als null zurueck', () {
-      expect(SelfDestructPolicy.chatFristAusArt('sdChanged:off'), isNull);
+      expect(SelfDestructPolicy.regelAusArt('sdChanged:off:0')?.frist, isNull);
     });
 
     test('eine fremde Art ist keine Fristaenderung', () {
@@ -45,8 +47,8 @@ void main() {
 
     test('Unsinn in der Zahl gilt als ausgeschaltet', () {
       // Fail-closed: lieber keine Frist als eine erfundene.
-      expect(SelfDestructPolicy.chatFristAusArt('sdChanged:abc'), isNull);
-      expect(SelfDestructPolicy.chatFristAusArt('sdChanged:-5'), isNull);
+      expect(SelfDestructPolicy.regelAusArt('sdChanged:abc:0')?.frist, isNull);
+      expect(SelfDestructPolicy.regelAusArt('sdChanged:-5:0')?.frist, isNull);
     });
 
     test('sie ueberlebt ein langes Offline', () {

@@ -47,7 +47,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
   bool _biometricAvailable = false;
   bool _vaultPasswordEnabled = false;
   bool _pushPrivacyEnabled = false;
-  bool _deliveryReceiptsEnabled = false;
   bool _readReceiptsEnabled = false;
   DeviceIntegrityLevel? _deviceIntegrityLevel;
   HardwareSecurityLevel? _hardwareSecurityLevel;
@@ -76,7 +75,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final available = await platform.isBiometricAvailable;
     final vaultPw = await storage.isVaultPasswordEnabled();
     final pushPrivacy = await storage.isPushPrivacyEnabled();
-    final deliveryReceipts = await storage.isDeliveryReceiptsEnabled();
     final readReceipts = await storage.isReadReceiptsEnabled();
 
     if (mounted) {
@@ -85,7 +83,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
         _biometricAvailable = available;
         _vaultPasswordEnabled = vaultPw;
         _pushPrivacyEnabled = pushPrivacy;
-        _deliveryReceiptsEnabled = deliveryReceipts;
         _readReceiptsEnabled = readReceipts;
         _deviceIntegrityLevel = integrity.lastResult?.level;
         _hardwareSecurityLevel = hardware.level;
@@ -248,12 +245,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final messenger = context.read<MessengerProvider>();
     await messenger.setPushPrivacyEnabled(value);
     if (mounted) setState(() => _pushPrivacyEnabled = value);
-  }
-
-  Future<void> _toggleDeliveryReceipts(bool value) async {
-    final messenger = context.read<MessengerProvider>();
-    await messenger.setDeliveryReceiptsEnabled(value);
-    if (mounted) setState(() => _deliveryReceiptsEnabled = value);
   }
 
   Future<void> _toggleReadReceipts(bool value) async {
@@ -865,17 +856,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   : l10n.readReceiptsOff,
               value: _readReceiptsEnabled,
               onChanged: _toggleReadReceipts,
-              isDark: isDark,
-            ),
-            _Divider(isDark: isDark),
-            _SwitchTile(
-              icon: Icons.done_all_rounded,
-              title: l10n.deliveryReceipts,
-              subtitle: _deliveryReceiptsEnabled
-                  ? l10n.deliveryReceiptsOn
-                  : l10n.deliveryReceiptsOff,
-              value: _deliveryReceiptsEnabled,
-              onChanged: _toggleDeliveryReceipts,
               isDark: isDark,
             ),
           ]),

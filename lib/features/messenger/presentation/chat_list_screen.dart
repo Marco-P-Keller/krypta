@@ -6,6 +6,7 @@ import '../../../theme/app_colors.dart';
 import '../../../theme/app_spacing.dart';
 import '../../../widgets/emergency_button.dart';
 import '../data/models/chat_model.dart';
+import '../logic/frist_stufe.dart';
 import '../logic/messenger_provider.dart';
 import 'widgets/chat_tile.dart';
 import 'widgets/qr_display_sheet.dart';
@@ -238,9 +239,9 @@ class ChatListScreen extends StatelessWidget {
             ListTile(
               leading: const Icon(Icons.timer_outlined),
               title: Text(l10n.selfDestructTimerLabel),
-              subtitle: chat.defaultSelfDestruct != null
-                  ? Text(_durationLabel(chat.defaultSelfDestruct, l10n))
-                  : Text(l10n.off),
+              subtitle: Text(_regelLabel(l10n,
+                  frist: chat.defaultSelfDestruct,
+                  nachLesen: chat.loeschtNachLesen)),
               onTap: () {
                 Navigator.of(ctx).pop();
                 _showTimerPicker(context, chat, messenger);
@@ -303,24 +304,29 @@ class ChatListScreen extends StatelessWidget {
     // Dieselben Zeiten wie im Chat-Einstellungsblatt. Bewusst gröber als die
     // Auswahl an einer einzelnen Nachricht: 30 Sekunden auf einen ganzen Chat
     // anzuwenden wäre kein Sicherheitsgewinn, sondern ein unbenutzbarer Chat.
-    final options = <Duration?>[
-      null,
-      const Duration(minutes: 5),
-      const Duration(minutes: 30),
-      const Duration(hours: 1),
-      const Duration(hours: 24),
-      const Duration(days: 7),
+    const options = <({Duration? frist, bool nachLesen})>[
+      (frist: null, nachLesen: false),
+      (frist: null, nachLesen: true),
+      (frist: Duration(minutes: 5), nachLesen: false),
+      (frist: Duration(minutes: 30), nachLesen: false),
+      (frist: Duration(hours: 1), nachLesen: false),
+      (frist: Duration(hours: 24), nachLesen: false),
+      (frist: Duration(days: 7), nachLesen: false),
     ];
     final l10n = AppLocalizations.of(context)!;
     showDialog(
       context: context,
       builder: (ctx) => SimpleDialog(
         title: Text(l10n.autoDeleteTimer),
-        children: options.map((d) {
-          final isSelected = chat.defaultSelfDestruct == d;
+        children: options.map((option) {
+          final isSelected = option.nachLesen
+              ? chat.loeschtNachLesen
+              : (!chat.loeschtNachLesen &&
+                  chat.defaultSelfDestruct == option.frist);
           return SimpleDialogOption(
             onPressed: () {
-              messenger.setChatSelfDestruct(chat.id, d);
+              messenger.setChatSelfDestruct(chat.id, option.frist,
+                  nachLesen: option.nachLesen);
               Navigator.of(ctx).pop();
             },
             child: Row(
@@ -336,7 +342,8 @@ class ChatListScreen extends StatelessWidget {
                 ),
                 const SizedBox(width: 12),
                 Text(
-                  _durationLabel(d, AppLocalizations.of(context)!),
+                  _regelLabel(AppLocalizations.of(context)!,
+                      frist: option.frist, nachLesen: option.nachLesen),
                   style: TextStyle(
                     fontWeight:
                         isSelected ? FontWeight.w600 : FontWeight.w400,
@@ -355,14 +362,19 @@ class ChatListScreen extends StatelessWidget {
   ///
   /// Stand hier zuvor in englischem Klartext — und kannte die neuen Zeiten
   /// nicht, die für den ganzen Chat wählbar sind.
-  String _durationLabel(Duration? d, AppLocalizations l10n) {
-    if (d == null) return l10n.off;
-    if (d.inSeconds <= 30) return l10n.seconds30;
-    if (d.inMinutes <= 1) return l10n.minute1;
-    if (d.inMinutes <= 5) return l10n.minutes5;
-    if (d.inMinutes <= 30) return l10n.minutes30;
-    if (d.inHours <= 1) return l10n.hour1;
-    if (d.inDays <= 1) return l10n.day1;
-    return l10n.week1;
-  }
+  /// Die dritte Kopie dieser Zuordnung stand hier von Hand ausgeschrieben —
+  /// und lief damit genau so auseinander, wie es der Kommentar oben
+  /// befuerchtet. Jetzt entscheidet FristLabel, hier wird nur uebersetzt.
+  String _regelLabel(AppLocalizations l10n,
+          {Duration? frist, bool nachLesen = false}) =>
+      switch (FristLabel.stufeFuerRegel(frist: frist, nachLesen: nachLesen)) {
+        FristStufe.aus => l10n.off,
+        FristStufe.sekunden30 => l10n.seconds30,
+        FristStufe.minuten5 => l10n.minutes5,
+        FristStufe.minuten30 => l10n.minutes30,
+        FristStufe.stunde1 => l10n.hour1,
+        FristStufe.tag1 => l10n.day1,
+        FristStufe.woche1 => l10n.week1,
+        FristStufe.nachLesen => l10n.autoDeleteAfterRead,
+      };
 }

@@ -8,7 +8,20 @@
 ///
 /// Die Zuordnung steht deshalb hier und nicht in der Oberflaeche: sie ist
 /// eine Regel, keine Darstellung, und so ist sie pruefbar.
-enum FristStufe { aus, sekunden30, minuten5, minuten30, stunde1, tag1, woche1 }
+enum FristStufe {
+  aus,
+  sekunden30,
+  minuten5,
+  minuten30,
+  stunde1,
+  tag1,
+  woche1,
+
+  /// Keine Frist, sondern ein Ereignis: was gelesen ist, geht beim Verlassen
+  /// des Chats. Steht in der Auswahl neben den Zeiten und braucht deshalb
+  /// eine eigene Stufe — sonst stuende dort „Aus".
+  nachLesen,
+}
 
 abstract final class FristLabel {
   /// Die Stufe zu einer Dauer. Die Reihenfolge der Vergleiche ist die
@@ -23,4 +36,11 @@ abstract final class FristLabel {
     if (d.inDays <= 1) return FristStufe.tag1;
     return FristStufe.woche1;
   }
+
+  /// Die Stufe zur ganzen Loeschregel eines Chats.
+  ///
+  /// Die Regel ist mehr als eine Dauer: sie kann auch „Direkt nach dem Lesen"
+  /// sein. Wer nur [stufe] fragt, sieht davon nichts.
+  static FristStufe stufeFuerRegel({Duration? frist, bool nachLesen = false}) =>
+      nachLesen ? FristStufe.nachLesen : stufe(frist);
 }

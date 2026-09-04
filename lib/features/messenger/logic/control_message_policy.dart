@@ -43,6 +43,11 @@ abstract final class ControlMessagePolicy {
     'gone',
     // Die Kontaktanfrage wurde angenommen.
     'accepted',
+    // Die Nachricht ist angekommen. Seit dem 04.09.2026 keine reine Anzeige
+    // mehr: die Meldung traegt den Zustellzeitpunkt, und daran haengt der
+    // Start jeder Loeschfrist. Verfaellt sie, faengt die Uhr des Absenders
+    // nie an — seine Fassung bliebe stehen, waehrend sie drueben ablaeuft.
+    'delivered',
   };
 
   /// Wie alt eine Kontrollnachricht dieser Art sein darf.

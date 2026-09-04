@@ -262,7 +262,10 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get autoDeleteHint =>
-      'As novas mensagens desta conversa autodestroem-se após o tempo escolhido.';
+      'As mensagens novas desta conversa são apagadas automaticamente após o tempo escolhido. A definição vale para os dois lados.';
+
+  @override
+  String get autoDeleteAfterRead => 'Logo após a leitura';
 
   @override
   String get chatDefault => 'Predefinição da conversa';
@@ -622,16 +625,6 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get readReceiptsOff => 'Desativadas – privacidade máxima';
-
-  @override
-  String get deliveryReceipts => 'Confirmações de entrega';
-
-  @override
-  String get deliveryReceiptsOn =>
-      'Ativadas – o remetente vê quando é entregue';
-
-  @override
-  String get deliveryReceiptsOff => 'Desativadas – privacidade máxima';
 
   @override
   String get privacyPolicyBody =>

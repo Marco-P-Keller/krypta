@@ -1,9 +1,10 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kryptaapp/features/messenger/data/models/message_model.dart';
+import 'package:kryptaapp/features/messenger/logic/self_destruct_policy.dart';
 
 void main() {
   group('Message Self-Destruct Logic', () {
-    test('isExpired — not expired when readAt is null', () {
+    test('ungelesen und frisch zugestellt: laeuft noch nicht ab', () {
       final msg = Message(
         id: '1',
         chatId: 'c1',
@@ -11,14 +12,15 @@ void main() {
         recipientId: 'r1',
         encryptedContent: '',
         timestamp: DateTime.now(),
+        deliveredAt: DateTime.now(),
         selfDestructDuration: const Duration(seconds: 30),
         readAt: null,
       );
       // Frisch zugestellt: die halbe Minute laeuft gerade erst an.
-      expect(msg.isExpired, false);
+      expect(SelfDestructPolicy.expired(msg, DateTime.now()), false);
     });
 
-    test('isExpired — not expired within duration', () {
+    test('innerhalb der Frist bleibt sie stehen', () {
       final msg = Message(
         id: '1',
         chatId: 'c1',
@@ -26,13 +28,14 @@ void main() {
         recipientId: 'r1',
         encryptedContent: '',
         timestamp: DateTime.now(),
+        deliveredAt: DateTime.now(),
         selfDestructDuration: const Duration(hours: 1),
         readAt: DateTime.now(),
       );
-      expect(msg.isExpired, false);
+      expect(SelfDestructPolicy.expired(msg, DateTime.now()), false);
     });
 
-    test('isExpired — expired after duration', () {
+    test('nach der Frist ist sie faellig', () {
       final msg = Message(
         id: '1',
         chatId: 'c1',
@@ -42,13 +45,14 @@ void main() {
         // Der Timer einer einzelnen Nachricht laeuft ab der Zustellung; auf
         // dem Geraet des Empfaengers ist das genau dieser Zeitstempel.
         timestamp: DateTime.now().subtract(const Duration(seconds: 5)),
+        deliveredAt: DateTime.now().subtract(const Duration(seconds: 5)),
         selfDestructDuration: const Duration(seconds: 1),
         readAt: null,
       );
-      expect(msg.isExpired, true);
+      expect(SelfDestructPolicy.expired(msg, DateTime.now()), true);
     });
 
-    test('isExpired — no self-destruct duration means never expires', () {
+    test('ohne Frist laeuft nichts ab', () {
       final msg = Message(
         id: '1',
         chatId: 'c1',
@@ -56,9 +60,10 @@ void main() {
         recipientId: 'r1',
         encryptedContent: '',
         timestamp: DateTime.now(),
+        deliveredAt: DateTime.now(),
         readAt: DateTime.now().subtract(const Duration(days: 365)),
       );
-      expect(msg.isExpired, false);
+      expect(SelfDestructPolicy.expired(msg, DateTime.now()), false);
     });
 
     test('shouldBurn — burns after read when flag set', () {

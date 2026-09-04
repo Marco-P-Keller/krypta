@@ -26,6 +26,7 @@ void main() {
         recipientId: von == 'ich' ? 'marco' : 'ich',
         encryptedContent: 'x',
         timestamp: DateTime(2026, 8, 31, 11, 0),
+        deliveredAt: DateTime(2026, 8, 31, 11, 0),
         selfDestructDuration: timer,
         readAt: gelesenAm,
         einmalig: einmalig,

@@ -58,31 +58,102 @@ abstract final class SelfDestructPolicy {
     // verschwindet, wenn man ihn braucht, waere sinnlos.
     if (m.isSystemEvent) return null;
 
-    // Die Frist der Nachricht selbst, sonst die des Chats.
-    final frist = m.selfDestructDuration ?? chatTimer;
+    // Welche Frist gilt.
+    //
+    // Kam sie vom Chat, gilt die **aktuelle** Einstellung des Chats: sie
+    // gehoert beiden Seiten und wird zwischen ihnen abgeglichen. Waere
+    // stattdessen die mitgereiste Zahl massgeblich, liefe nach jeder
+    // Aenderung jede Seite mit dem, was zufaellig in ihren alten Nachrichten
+    // steht. Die mitgereiste Zahl bleibt der Rueckfall — geht die Meldung
+    // ueber die neue Einstellung verloren, wird nach der alten Frist
+    // geloescht und nicht gar nicht.
+    //
+    // Eine Nachricht mit **eigener** Frist behaelt sie: der Absender hat sie
+    // dieser einen Nachricht mitgegeben, nicht dem Chat.
+    final frist = m.selfDestructFromChat
+        ? (chatTimer ?? m.selfDestructDuration)
+        : (m.selfDestructDuration ?? chatTimer);
     if (frist == null) return null;
 
-    // Gerechnet wird ab der Zustellung. `readAt` spielt keine Rolle mehr:
-    // wer erst nach neun von zehn Minuten hineinschaut, hat noch eine.
+    // Gerechnet wird ab der **Zustellung**, und zwar ab der wirklichen: dem
+    // Zeitpunkt, den beide Geraete gleich lesen. `timestamp` taugte dafuer
+    // nicht — beim Absender ist er der Sendezeitpunkt, beim Empfaenger der
+    // des Abholens, und dazwischen liegt die Wartezeit auf dem Server.
+    //
+    // Noch nicht zugestellt heisst: keine Uhr. Was die Gegenseite nie
+    // bekommen hat, darf beim Absender nicht verschwinden.
+    final zugestellt = m.deliveredAt;
+    if (zugestellt == null) return null;
+
+    // `readAt` spielt keine Rolle: wer erst nach neun von zehn Minuten
+    // hineinschaut, hat noch eine.
     //
     // Die einzige Verschiebung ist der nachtraeglich eingeschaltete
     // Chat-Timer. Ohne sie waeren beim Umlegen des Schalters alle aelteren
     // Nachrichten sofort ueberfaellig, und der ganze sichtbare Verlauf
     // verschwaende mit einem Tipp.
-    final start = chatTimerSetAt != null && chatTimerSetAt.isAfter(m.timestamp)
+    final start = chatTimerSetAt != null && chatTimerSetAt.isAfter(zugestellt)
         ? chatTimerSetAt
-        : m.timestamp;
+        : zugestellt;
     return start.add(frist);
+  }
+
+  /// Welcher Zustellzeitpunkt aus einer Meldung der Gegenseite gilt.
+  ///
+  /// Die Meldung ist signiert, aber sie kommt von einer fremden Uhr. Geht sie
+  /// vor, liefe meine Nachricht nie ab; geht sie nach, waere sie
+  /// rueckwirkend faellig. Beides wird hier gekappt: nicht vor dem Senden —
+  /// frueher kann sie nicht angekommen sein — und nicht in der Zukunft.
+  static DateTime zustellzeitpunkt({
+    required DateTime gemeldet,
+    required DateTime gesendet,
+    required DateTime jetzt,
+  }) {
+    if (gemeldet.isBefore(gesendet)) return gesendet;
+    if (gemeldet.isAfter(jetzt)) return jetzt;
+    return gemeldet;
+  }
+
+  /// Bestand ohne Zustellzeitpunkt nachtragen. Meldet, ob etwas geschrieben
+  /// werden muss.
+  ///
+  /// Alles von vor dem 04.09.2026 kennt das Feld nicht, und ohne Zeitpunkt
+  /// laeuft keine Uhr — der ganze Bestand laege sonst fuer immer da.
+  ///
+  /// Zwei Faelle sind nachweislich zugestellt: was von drueben kam (ich habe
+  /// es ja) und was als zugestellt gemeldet war. Der Sendezeitpunkt ist die
+  /// beste Schaetzung, die davon noch uebrig ist.
+  ///
+  /// **Nicht** angefasst wird mein eigener Postausgang: eine Nachricht, deren
+  /// Zustellung nie gemeldet wurde, bekaeme sonst bei jedem Start einen
+  /// erfundenen Zeitpunkt und liefe ab, ohne je angekommen zu sein.
+  static bool zustellungNachtragen(List<Message> messages, String eigeneId) {
+    var geaendert = false;
+    for (var i = 0; i < messages.length; i++) {
+      final m = messages[i];
+      if (m.deliveredAt != null || m.isSystemEvent) continue;
+      final zugestellt = m.senderId != eigeneId ||
+          m.status == MessageStatus.delivered ||
+          m.status == MessageStatus.read;
+      if (!zugestellt) continue;
+      messages[i] = m.copyWith(deliveredAt: m.timestamp);
+      geaendert = true;
+    }
+    return geaendert;
   }
 
   /// Ob der Ablauf dieser Nachricht der Gegenseite mitzuteilen ist.
   ///
-  /// Nur der Empfaenger hat `readAt` und weiss damit ueberhaupt, wann die Uhr
-  /// abgelaufen ist.
-  /// Burn-after-Read zaehlt mit: auch dort weiss nur der Empfaenger, wann es
-  /// soweit ist — naemlich wenn er den Chat verlaesst.
-  static bool announceBurn(Message m, String myId) =>
-      _vergaenglich(m) && m.senderId != myId;
+  /// Nur der Empfaenger meldet: bei „Direkt nach dem Lesen" weiss auch nur er,
+  /// wann es soweit ist — naemlich wenn er den Chat verlaesst.
+  ///
+  /// [chatVergaenglich] sagt, dass die **Regel des Chats** diese Nachricht
+  /// vergaenglich macht. Sie traegt dann keine eigene Markierung, und ohne
+  /// diesen Hinweis bliebe sie beim Absender stehen.
+  static bool announceBurn(Message m, String myId,
+          {bool chatVergaenglich = false}) =>
+      (_vergaenglich(m) || (chatVergaenglich && !m.isSystemEvent)) &&
+      m.senderId != myId;
 
   /// Die kuerzeste Frist, die eine Gegenseite mir vorgeben darf.
   ///
@@ -113,8 +184,31 @@ abstract final class SelfDestructPolicy {
   /// eine Gegenseite mit erfundenen Ablaufmeldungen beliebige Nachrichten von
   /// meinem Geraet raeumen. Entfernt werden darf nur, was ich selbst als
   /// vergaenglich markiert habe.
-  static bool acceptBurn(Message m, String myId) =>
-      m.senderId == myId && _vergaenglich(m);
+  ///
+  /// [chatVergaenglich] oeffnet die Schranke fuer die **Regel des Chats**:
+  /// steht sie auf einer Frist oder auf „Direkt nach dem Lesen", ist das
+  /// dieselbe Zusage wie eine Markierung an der Nachricht — nur eben fuer den
+  /// ganzen Chat, und sie gehoert beiden Seiten. Ohne das bliebe eine
+  /// Nachricht beim Absender stehen, waehrend sie drueben verschwindet;
+  /// genau dieser Fehler steckte bis zum 04.09.2026 in der einmaligen
+  /// Nachricht.
+  static bool acceptBurn(Message m, String myId,
+          {bool chatVergaenglich = false}) =>
+      m.senderId == myId &&
+      (_vergaenglich(m) || (chatVergaenglich && !m.isSystemEvent));
+
+  /// Ob diese Nachricht faellig ist, weil der Chat auf „Direkt nach dem
+  /// Lesen" steht und der Empfaenger sie gelesen hat.
+  ///
+  /// Keine Uhr, sondern ein Ereignis: geraeumt wird beim Verlassen des Chats.
+  /// Waehrend er offen ist, bleibt die Nachricht stehen — sonst verschwaende
+  /// sie unter den Augen dessen, der gerade liest.
+  ///
+  /// `readAt` setzt der Empfaenger fuer sich, **unabhaengig von der
+  /// Lesebestaetigung**. Die entscheidet nur, ob die Gegenseite davon
+  /// erfaehrt; ob geloescht wird, haengt nicht daran.
+  static bool nachLesenFaellig(Message m, {required bool regelNachLesen}) =>
+      regelNachLesen && !m.isSystemEvent && m.readAt != null;
 
   /// Ob ich diese Nachricht selbst als vergaenglich markiert habe.
   ///
@@ -137,29 +231,76 @@ abstract final class SelfDestructPolicy {
   /// Der Anfang der Art, unter der eine geaenderte Chat-Frist reist.
   static const String artChatFrist = 'sdChanged';
 
-  /// Die Art fuer eine Kontrollnachricht, die eine neue Chat-Frist meldet.
+  /// Die Art fuer eine Kontrollnachricht, die die neue Regel des Chats
+  /// meldet.
   ///
-  /// Die Zahl steckt **in der Art**. Ihr ein eigenes Feld zu geben haette
-  /// jede Signatur veraendert — ein Geraet mit einer aelteren Fassung wuerde
-  /// danach auch Screenshot-Hinweise verwerfen. Die Art ist ohnehin Teil der
-  /// Signatur, also faelschungssicher, und eine unbekannte Art wird von
-  /// aelteren Fassungen schlicht ignoriert.
-  static String artFuerChatFrist(Duration? dauer) =>
-      dauer == null ? '$artChatFrist:off' : '$artChatFrist:${dauer.inMilliseconds}';
+  /// Alles steckt **in der Art**: `sdChanged:<wert>:<zaehler>`, wobei der
+  /// Wert `off`, `read` oder eine Zahl in Millisekunden ist. Eigene Felder
+  /// haetten jede Signatur veraendert — ein Geraet mit einer aelteren Fassung
+  /// wuerde danach auch Screenshot-Hinweise verwerfen. Die Art ist ohnehin
+  /// Teil der Signatur, also faelschungssicher, und eine unbekannte Art wird
+  /// von aelteren Fassungen schlicht ignoriert.
+  ///
+  /// Der Zaehler steigt bei jeder Aenderung. Er entscheidet, welche von zwei
+  /// Aenderungen gewinnt — die Wanduhr taugt dafuer nicht, siehe
+  /// [fremdeRegelUebernehmen].
+  static String artFuerRegel({
+    Duration? frist,
+    bool nachLesen = false,
+    required int version,
+  }) {
+    final wert = nachLesen
+        ? 'read'
+        : (frist == null ? 'off' : '${frist.inMilliseconds}');
+    return '$artChatFrist:$wert:$version';
+  }
 
-  /// Ob diese Art eine geaenderte Chat-Frist meldet.
+  /// Ob diese Art eine geaenderte Chat-Regel meldet.
   static bool istChatFristAenderung(String art) =>
       art.startsWith('$artChatFrist:');
 
-  /// Die Frist aus der Art herauslesen. `null` heisst ausgeschaltet.
+  /// Die Regel aus der Art herauslesen, oder `null`, wenn es keine ist.
   ///
-  /// Fail-closed: was sich nicht als positive Zahl lesen laesst, gilt als
-  /// ausgeschaltet. Lieber keine Frist als eine erfundene.
-  static Duration? chatFristAusArt(String art) {
+  /// Fail-closed: was sich nicht lesen laesst, gilt als ausgeschaltet. Lieber
+  /// keine Frist als eine erfundene, die den halben Verlauf raeumt.
+  ///
+  /// Bestand: die alte Form ohne Zaehler (`sdChanged:300000`) wird weiter
+  /// gelesen und zaehlt als Version null — Build 100 schickt sie noch, und
+  /// jede spaetere Aenderung soll sie ueberstimmen.
+  static ({Duration? frist, bool nachLesen, int version})? regelAusArt(
+      String art) {
     if (!istChatFristAenderung(art)) return null;
-    final roh = art.substring(artChatFrist.length + 1);
-    final ms = int.tryParse(roh);
-    if (ms == null || ms <= 0) return null;
-    return clampFremdeFrist(ms);
+    final teile = art.substring(artChatFrist.length + 1).split(':');
+    final wert = teile.first;
+    final version = teile.length > 1 ? (int.tryParse(teile[1]) ?? 0) : 0;
+    if (wert == 'read') {
+      return (frist: null, nachLesen: true, version: version);
+    }
+    final ms = int.tryParse(wert);
+    return (
+      frist: ms == null || ms <= 0 ? null : clampFremdeFrist(ms),
+      nachLesen: false,
+      version: version,
+    );
+  }
+
+  /// Ob die gemeldete Regel der Gegenseite meine ersetzt.
+  ///
+  /// Der hoehere Zaehler gewinnt. Bei Gleichstand die groessere Kennung —
+  /// nicht weil sie mehr wert waere, sondern weil beide Geraete dieselbe
+  /// Antwort brauchen. Ohne diese Regel bleiben sie nach zwei gleichzeitigen
+  /// Aenderungen dauerhaft verschieden eingestellt: jeder haette die des
+  /// anderen uebernommen und die eigene verworfen.
+  ///
+  /// Bewusst **nicht** nach Uhrzeit: geht eine der beiden Uhren nach, wuerden
+  /// ihre Aenderungen fuer immer verworfen.
+  static bool fremdeRegelUebernehmen({
+    required int meineVersion,
+    required int fremdeVersion,
+    required String meineId,
+    required String fremdeId,
+  }) {
+    if (fremdeVersion != meineVersion) return fremdeVersion > meineVersion;
+    return fremdeId.compareTo(meineId) > 0;
   }
 }

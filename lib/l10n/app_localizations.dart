@@ -585,8 +585,14 @@ abstract class AppLocalizations {
   /// No description provided for @autoDeleteHint.
   ///
   /// In en, this message translates to:
-  /// **'New messages in this chat will automatically self-destruct after the selected time.'**
+  /// **'New messages in this chat are deleted automatically after the selected time. The setting applies to both sides.'**
   String get autoDeleteHint;
+
+  /// No description provided for @autoDeleteAfterRead.
+  ///
+  /// In en, this message translates to:
+  /// **'Right after reading'**
+  String get autoDeleteAfterRead;
 
   /// No description provided for @chatDefault.
   ///
@@ -1211,24 +1217,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Off — maximum privacy'**
   String get readReceiptsOff;
-
-  /// No description provided for @deliveryReceipts.
-  ///
-  /// In en, this message translates to:
-  /// **'Delivery receipts'**
-  String get deliveryReceipts;
-
-  /// No description provided for @deliveryReceiptsOn.
-  ///
-  /// In en, this message translates to:
-  /// **'On — the sender sees when delivered'**
-  String get deliveryReceiptsOn;
-
-  /// No description provided for @deliveryReceiptsOff.
-  ///
-  /// In en, this message translates to:
-  /// **'Off — maximum privacy'**
-  String get deliveryReceiptsOff;
 
   /// No description provided for @privacyPolicyBody.
   ///

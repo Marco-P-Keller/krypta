@@ -193,20 +193,6 @@ class SecureStorageService {
 
   // --- Receipt Privacy Settings ---
 
-  /// Delivery receipts: inform sender that message was received.
-  /// Default: disabled (maximum privacy — sender learns nothing about delivery).
-  Future<void> setDeliveryReceiptsEnabled(bool enabled) async {
-    await _storage.write(
-      key: StorageKeys.deliveryReceiptsEnabled,
-      value: enabled.toString(),
-    );
-  }
-
-  Future<bool> isDeliveryReceiptsEnabled() async {
-    final value = await _storage.read(key: StorageKeys.deliveryReceiptsEnabled);
-    return value == 'true'; // Default: false (disabled)
-  }
-
   /// Read receipts: inform sender that message was read.
   /// Default: disabled (maximum privacy — sender learns nothing about read state).
   Future<void> setReadReceiptsEnabled(bool enabled) async {

@@ -44,6 +44,22 @@ class Chat extends Equatable {
   /// Verlauf im selben Moment weg.
   final DateTime? defaultSelfDestructSetAt;
 
+  /// Ob der Chat auf „Direkt nach dem Lesen" steht.
+  ///
+  /// Keine Frist, sondern ein Ereignis: die gelesene Nachricht verschwindet,
+  /// sobald der Empfaenger den Chat verlaesst — auf beiden Geraeten. Schliesst
+  /// [defaultSelfDestruct] aus; es ist eine Regel, nicht zwei.
+  final bool loeschtNachLesen;
+
+  /// Der Zaehler der Loeschregel.
+  ///
+  /// Die Regel gehoert **beiden** Seiten. Treffen zwei Aenderungen
+  /// aufeinander, entscheidet dieser Zaehler, welche gewinnt — nicht die
+  /// Wanduhr, die auf zwei Geraeten verschieden geht. Er steigt bei jeder
+  /// Aenderung und uebernimmt einen hoeheren Stand der Gegenseite, siehe
+  /// SelfDestructPolicy.fremdeRegelUebernehmen.
+  final int regelVersion;
+
   const Chat({
     required this.id,
     required this.recipientId,
@@ -55,6 +71,8 @@ class Chat extends Equatable {
     this.isTyping = false,
     this.defaultSelfDestruct,
     this.defaultSelfDestructSetAt,
+    this.loeschtNachLesen = false,
+    this.regelVersion = 0,
   });
 
   Chat copyWith({
@@ -66,6 +84,8 @@ class Chat extends Equatable {
     bool? isTyping,
     Object? defaultSelfDestruct = _sentinel,
     Object? defaultSelfDestructSetAt = _sentinel,
+    bool? loeschtNachLesen,
+    int? regelVersion,
   }) {
     return Chat(
       id: id,
@@ -86,8 +106,18 @@ class Chat extends Equatable {
       defaultSelfDestructSetAt: defaultSelfDestructSetAt == _sentinel
           ? this.defaultSelfDestructSetAt
           : defaultSelfDestructSetAt as DateTime?,
+      loeschtNachLesen: loeschtNachLesen ?? this.loeschtNachLesen,
+      regelVersion: regelVersion ?? this.regelVersion,
     );
   }
+
+  /// Ob die Regel dieses Chats seine Nachrichten vergaenglich macht.
+  ///
+  /// Beides zaehlt: eine Frist und „Direkt nach dem Lesen". Nur dann darf
+  /// eine Ablaufmeldung der Gegenseite hier etwas raeumen, siehe
+  /// SelfDestructPolicy.acceptBurn.
+  bool get regelMachtVergaenglich =>
+      loeschtNachLesen || defaultSelfDestruct != null;
 
   Map<String, dynamic> toMap() => {
         'id': id,
@@ -100,6 +130,8 @@ class Chat extends Equatable {
         'defaultSelfDestructMs': defaultSelfDestruct?.inMilliseconds,
         'defaultSelfDestructSetAt':
             defaultSelfDestructSetAt?.millisecondsSinceEpoch,
+        'sdNachLesen': loeschtNachLesen ? 1 : 0,
+        'sdVersion': regelVersion,
       };
 
   factory Chat.fromMap(Map<String, dynamic> map) {
@@ -125,6 +157,10 @@ class Chat extends Equatable {
           ? DateTime.fromMillisecondsSinceEpoch(
               map['defaultSelfDestructSetAt'] as int)
           : null,
+      // Bestandsdatensaetze kennen beide Felder nicht: kein „nach dem Lesen",
+      // und der Zaehler faengt bei null an.
+      loeschtNachLesen: (map['sdNachLesen'] as int?) == 1,
+      regelVersion: (map['sdVersion'] as int?) ?? 0,
     );
   }
 

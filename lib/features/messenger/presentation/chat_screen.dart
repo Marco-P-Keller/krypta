@@ -644,11 +644,13 @@ class _ChatScreenState extends State<ChatScreen>
         onClear: () => setState(() => _einmalig = false),
         isDark: isDark,
       ));
-    } else if (chatDefault != null) {
+    } else if (chatDefault != null || (chat?.loeschtNachLesen ?? false)) {
       bars.add(_buildInfoBar(
         context,
         icon: Icons.timer_outlined,
-        text: l10n.chatDefaultWithTimer(_durationLabel(chatDefault, l10n)),
+        text: l10n.chatDefaultWithTimer(_regelLabel(l10n,
+            frist: chatDefault,
+            nachLesen: chat?.loeschtNachLesen ?? false)),
         // Kein Wegtippen: das ist die Frist des ganzen Chats und wird in den
         // Chat-Einstellungen gesetzt, nicht je Nachricht.
         onClear: null,
@@ -738,8 +740,9 @@ class _ChatScreenState extends State<ChatScreen>
   /// Chat-Einstellungsblatt. Zwei Fassungen laufen frueher oder spaeter
   /// auseinander; genau so stand dort einmal „1 Std." zweimal in der Liste.
   /// Jetzt entscheidet FristLabel, hier wird nur noch uebersetzt.
-  String _durationLabel(Duration? d, AppLocalizations l10n) =>
-      switch (FristLabel.stufe(d)) {
+  String _regelLabel(AppLocalizations l10n,
+          {Duration? frist, bool nachLesen = false}) =>
+      switch (FristLabel.stufeFuerRegel(frist: frist, nachLesen: nachLesen)) {
         FristStufe.aus => l10n.off,
         FristStufe.sekunden30 => l10n.seconds30,
         FristStufe.minuten5 => l10n.minutes5,
@@ -747,6 +750,7 @@ class _ChatScreenState extends State<ChatScreen>
         FristStufe.stunde1 => l10n.hour1,
         FristStufe.tag1 => l10n.day1,
         FristStufe.woche1 => l10n.week1,
+        FristStufe.nachLesen => l10n.autoDeleteAfterRead,
       };
 
   /// Die Leiste, die das Schreibfeld ersetzt, solange die Kontaktanfrage

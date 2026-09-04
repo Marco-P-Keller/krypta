@@ -61,7 +61,12 @@ abstract final class StorageKeys {
   static const String languageCode = 'krypta_cfg_language';
 
   // ── Receipt privacy (metadata minimization) ────────────────────────────
-  /// Whether delivery confirmations are sent. Default: false (disabled).
+  /// Bestand: der Schalter fuer die Zustellbestaetigung.
+  ///
+  /// Seit dem 04.09.2026 gibt es ihn nicht mehr — die Zustellbestaetigung ist
+  /// immer an, weil der Loeschtimer am Zustellzeitpunkt haengt. Der Schluessel
+  /// bleibt nur in dieser Liste, damit ein alter Wert beim Loeschen aller
+  /// Einstellungen mit weggeraeumt wird.
   static const String deliveryReceiptsEnabled = 'krypta_cfg_delivery_receipts';
   /// Whether read receipts are sent. Default: false (disabled).
   static const String readReceiptsEnabled = 'krypta_cfg_read_receipts';

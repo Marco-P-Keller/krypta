@@ -24,6 +24,24 @@ void main() {
             'durch den zweimal "1 Std." dastand: $stufen');
   });
 
+  test('„Direkt nach dem Lesen" ist eine eigene Stufe', () {
+    // Sie ist keine Frist — es gibt keine Dauer, die sie ausdruecken koennte.
+    // Ohne eigene Stufe stuende in der Auswahl „Aus", waehrend der Chat
+    // gelesene Nachrichten wegraeumt.
+    expect(FristLabel.stufeFuerRegel(nachLesen: true), FristStufe.nachLesen);
+    expect(FristLabel.stufeFuerRegel(frist: const Duration(minutes: 5)),
+        FristStufe.minuten5);
+    expect(FristLabel.stufeFuerRegel(), FristStufe.aus);
+  });
+
+  test('die ganze Auswahl bleibt unterscheidbar', () {
+    final stufen = [
+      ...angebotene.map((d) => FristLabel.stufeFuerRegel(frist: d)),
+      FristLabel.stufeFuerRegel(nachLesen: true),
+    ];
+    expect(stufen.toSet().length, stufen.length);
+  });
+
   test('dreissig Minuten heissen dreissig Minuten', () {
     expect(FristLabel.stufe(const Duration(minutes: 30)),
         FristStufe.minuten30);

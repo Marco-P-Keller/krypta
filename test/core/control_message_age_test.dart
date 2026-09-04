@@ -20,8 +20,13 @@ import 'package:kryptaapp/features/messenger/logic/control_message_policy.dart';
 /// Minuten ohnehin wertlos.
 void main() {
   group('Zustandsaendernd — muss lange gelten', () {
+    // `delivered` steht seit dem 04.09.2026 hier und nicht mehr bei der
+    // reinen Anzeige: die Meldung traegt den **Zustellzeitpunkt**, und daran
+    // haengt die Loeschfrist. Wird sie nach fuenf Minuten verworfen, faengt
+    // die Uhr des Absenders nie an zu laufen — seine Fassung bliebe fuer
+    // immer stehen, waehrend sie drueben verschwindet.
     for (final art in ['chatGone', 'burned', 'unlock', 'delete', 'clearMine',
-      'gone', 'accepted']) {
+      'gone', 'accepted', 'delivered']) {
       test('$art gilt auch nach einer Nacht offline', () {
         expect(
           ControlMessagePolicy.maxAge(art),
@@ -39,7 +44,7 @@ void main() {
   });
 
   group('Nur Anzeige — kurzes Fenster reicht', () {
-    for (final art in ['delivered', 'read', 'screenshot', 'recording']) {
+    for (final art in ['read', 'screenshot', 'recording']) {
       test('$art bleibt bei fuenf Minuten', () {
         expect(ControlMessagePolicy.maxAge(art), const Duration(minutes: 5));
       });

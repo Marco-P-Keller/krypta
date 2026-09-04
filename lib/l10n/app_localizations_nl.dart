@@ -259,7 +259,10 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get autoDeleteHint =>
-      'Nieuwe berichten in dit gesprek vernietigen zichzelf na de gekozen tijd.';
+      'Nieuwe berichten in deze chat worden na de gekozen tijd automatisch verwijderd. De instelling geldt voor beide kanten.';
+
+  @override
+  String get autoDeleteAfterRead => 'Direct na het lezen';
 
   @override
   String get chatDefault => 'Standaard voor dit gesprek';
@@ -619,16 +622,6 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get readReceiptsOff => 'Uit – maximale privacy';
-
-  @override
-  String get deliveryReceipts => 'Bezorgbevestigingen';
-
-  @override
-  String get deliveryReceiptsOn =>
-      'Aan – de afzender ziet wanneer het bericht is bezorgd';
-
-  @override
-  String get deliveryReceiptsOff => 'Uit – maximale privacy';
 
   @override
   String get privacyPolicyBody =>

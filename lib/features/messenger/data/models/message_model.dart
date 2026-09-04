@@ -23,6 +23,10 @@ enum SystemEventKind {
   /// Die Löschdauer des Chats wurde geändert. Die neue Dauer steht am
   /// Hinweis selbst in `selfDestructDuration`; `null` heißt ausgeschaltet.
   selfDestructChanged,
+
+  /// Der Chat steht jetzt auf „Direkt nach dem Lesen". Keine Dauer — was
+  /// gelesen ist, geht beim Verlassen des Chats.
+  selfDestructAfterRead,
 }
 
 class Message extends Equatable {
@@ -38,18 +42,31 @@ class Message extends Equatable {
 
   /// Ob [selfDestructDuration] vom **Chat-Timer** stammt.
   ///
-  /// Die beiden Timer starten verschieden. Der Timer einer einzelnen
-  /// Nachricht laeuft ab der **Zustellung** — er soll auch ablaufen, wenn
-  /// die Nachricht nie geoeffnet wird. Der Chat-Timer laeuft ab dem
-  /// **Lesen**; er ist Hausordnung, kein Versprechen.
+  /// Beide Uhren starten bei der **Zustellung** (siehe [deliveredAt]). Der
+  /// Unterschied liegt woanders: eine Chat-Frist folgt der **aktuellen**
+  /// Einstellung des Chats, weil die beiden Seiten gehoert und zwischen ihnen
+  /// abgeglichen wird. Eine eigene Frist der Nachricht behaelt sie.
   ///
   /// Die Frist reist in beiden Faellen mit, damit beide Seiten dieselbe
-  /// kennen. Ohne diese Markierung wuerde eine Chat-Frist beim Empfaenger
-  /// als eigener Timer gelten und ab der Zustellung laufen.
+  /// kennen, auch wenn die Meldung ueber eine Aenderung noch unterwegs ist.
   ///
   /// `false` ist der sichere Vorgabewert: alles, was vor dieser
   /// Unterscheidung gespeichert wurde, war ein eigener Timer.
   final bool selfDestructFromChat;
+
+  /// Wann diese Nachricht auf dem Geraet der Gegenseite angekommen ist.
+  ///
+  /// **Der Startpunkt jeder Loeschfrist**, und der einzige Zeitpunkt, den
+  /// beide Geraete gleich lesen. [timestamp] taugt dafuer nicht: beim
+  /// Absender ist er der Sendezeitpunkt, beim Empfaenger der des Abholens.
+  /// Wartet eine Nachricht auf dem Server, lagen zwischen beiden Stunden —
+  /// und die Fassung des Absenders lief entsprechend frueher ab.
+  ///
+  /// Der Empfaenger setzt ihn beim Abholen, der Absender uebernimmt ihn aus
+  /// der Zustellbestaetigung. `null` heisst: noch nicht zugestellt, es laeuft
+  /// keine Uhr. Bestandsdatensaetze bekommen ihn beim Laden nachgetragen,
+  /// siehe SelfDestructPolicy.zustellungNachtragen.
+  final DateTime? deliveredAt;
 
   final DateTime? readAt;
   final bool burnAfterRead;
@@ -89,6 +106,7 @@ class Message extends Equatable {
     required this.encryptedContent,
     this.decryptedContent,
     required this.timestamp,
+    this.deliveredAt,
     this.status = MessageStatus.sending,
     this.selfDestructDuration,
     this.selfDestructFromChat = false,
@@ -100,23 +118,16 @@ class Message extends Equatable {
     this.systemEvent,
   });
 
-  /// Ob der Timer **dieser Nachricht** abgelaufen ist.
+  /// Ob eine gelesene Nachricht mit `burnAfterRead` faellig ist.
   ///
-  /// Kennt den Chat-Timer nicht. Massgeblich ist SelfDestructPolicy.expired;
-  /// die kennt beide und laesst sich pruefen, weil ihr die Zeit hereingereicht
-  /// wird. Dieser Getter bleibt fuer Anzeige und Bestandsaufrufer.
-  bool get isExpired {
-    final dauer = selfDestructDuration;
-    if (dauer == null) return false;
-    // Eigener Timer: ab der Zustellung. Auf dem Geraet des Empfaengers ist
-    // `timestamp` genau das.
-    if (!selfDestructFromChat) {
-      return DateTime.now().isAfter(timestamp.add(dauer));
-    }
-    final gelesen = readAt;
-    if (gelesen == null) return false;
-    return DateTime.now().isAfter(gelesen.add(dauer));
-  }
+  /// Bestand: aeltere Absender setzen das Feld noch. Die Regel des Chats
+  /// („Direkt nach dem Lesen") liegt in SelfDestructPolicy.nachLesenFaellig.
+  ///
+  /// Ein `isExpired` gab es hier auch einmal. Es rechnete eine Chat-Frist ab
+  /// `readAt` — eine Regel, die es seit dem 02.09.2026 nicht mehr gibt — und
+  /// war damit eine zweite, abweichende Antwort auf dieselbe Frage. Wer
+  /// wissen will, ob eine Nachricht faellig ist, fragt SelfDestructPolicy:
+  /// die kennt beide Fristen und die Zustellung, und sie laesst sich pruefen.
   bool get shouldBurn => burnAfterRead && readAt != null;
 
   /// True when the message is locked and the recipient hasn't entered the password yet.
@@ -125,6 +136,7 @@ class Message extends Equatable {
   Message copyWith({
     Object? decryptedContent = _sentinel,
     MessageStatus? status,
+    DateTime? deliveredAt,
     DateTime? readAt,
     bool? passwordUnlocked,
     bool? selfDestructFromChat,
@@ -139,6 +151,7 @@ class Message extends Equatable {
           ? this.decryptedContent
           : decryptedContent as String?,
       timestamp: timestamp,
+      deliveredAt: deliveredAt ?? this.deliveredAt,
       status: status ?? this.status,
       selfDestructDuration: selfDestructDuration,
       selfDestructFromChat: selfDestructFromChat ?? this.selfDestructFromChat,
@@ -180,6 +193,7 @@ class Message extends Equatable {
             decryptedContent != null)
           'decryptedContent': decryptedContent,
         'timestamp': timestamp.millisecondsSinceEpoch,
+        'deliveredAt': deliveredAt?.millisecondsSinceEpoch,
         'status': status.index,
         'selfDestructMs': selfDestructDuration?.inMilliseconds,
         'sdFromChat': selfDestructFromChat,
@@ -200,6 +214,11 @@ class Message extends Equatable {
       encryptedContent: map['encryptedContent'] as String,
       decryptedContent: map['decryptedContent'] as String?,
       timestamp: DateTime.fromMillisecondsSinceEpoch(map['timestamp'] as int),
+      // Bestandsdatensaetze kennen das Feld nicht. Sie bekommen den
+      // Zeitpunkt beim Laden nachgetragen, sonst laeuft ihre Uhr nie an.
+      deliveredAt: map['deliveredAt'] is int
+          ? DateTime.fromMillisecondsSinceEpoch(map['deliveredAt'] as int)
+          : null,
       status: MessageStatus.values[map['status'] as int],
       // A2: clamp stored milliseconds — non-positive → no self-destruct,
       // cap at 30 days to prevent Duration overflow in downstream timers.

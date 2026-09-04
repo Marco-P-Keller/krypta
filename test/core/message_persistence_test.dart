@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kryptaapp/features/messenger/data/models/message_model.dart';
+import 'package:kryptaapp/features/messenger/data/models/chat_model.dart';
 
 /// Was eine Nachricht ueberlebt, wenn die App geschlossen wird.
 ///
@@ -111,5 +112,45 @@ void main() {
     );
     final karte = Map<String, dynamic>.from(m.toMap())..remove('einmalig');
     expect(Message.fromMap(karte).einmalig, isFalse);
+  });
+
+  group('Die Loeschregel eines Chats ueberlebt den Rundlauf', () {
+    Chat chat({Duration? frist, bool nachLesen = false, int version = 0}) =>
+        Chat(
+          id: 'c1',
+          recipientId: 'marco',
+          recipientName: 'Marco',
+          defaultSelfDestruct: frist,
+          loeschtNachLesen: nachLesen,
+          regelVersion: version,
+        );
+
+    test('eine Frist mit ihrem Zaehler', () {
+      final wieder = Chat.fromMap(
+          chat(frist: const Duration(minutes: 5), version: 4).toMap());
+      expect(wieder.defaultSelfDestruct, const Duration(minutes: 5));
+      expect(wieder.regelVersion, 4);
+      expect(wieder.loeschtNachLesen, isFalse);
+    });
+
+    test('„Direkt nach dem Lesen"', () {
+      final wieder = Chat.fromMap(chat(nachLesen: true, version: 2).toMap());
+      expect(wieder.loeschtNachLesen, isTrue);
+      expect(wieder.defaultSelfDestruct, isNull);
+      expect(wieder.regelVersion, 2);
+    });
+
+    test('ein Bestandsdatensatz kennt beide Felder nicht', () {
+      // Ohne den Vorgabewert stuende ein alter Chat nach dem Update auf
+      // „nach dem Lesen" und raeumte beim ersten Verlassen den Verlauf.
+      final alt = chat(frist: const Duration(minutes: 5)).toMap()
+        ..remove('sdNachLesen')
+        ..remove('sdVersion');
+      final wieder = Chat.fromMap(alt);
+      expect(wieder.loeschtNachLesen, isFalse);
+      expect(wieder.regelVersion, 0);
+      expect(wieder.regelMachtVergaenglich, isTrue,
+          reason: 'die Frist macht ihn weiterhin vergaenglich');
+    });
   });
 }

@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kryptaapp/features/messenger/data/models/message_model.dart';
+import 'package:kryptaapp/features/messenger/logic/self_destruct_policy.dart';
 
 /// Systemeinträge im Chatverlauf: „Du hast einen Screenshot gemacht",
 /// „*Name* nimmt den Bildschirm auf".
@@ -72,7 +73,7 @@ void main() {
       // genau dann, wenn man ihn braucht.
       final m = bauen(ereignis: SystemEventKind.screenshot);
       expect(m.selfDestructDuration, isNull);
-      expect(m.isExpired, isFalse);
+      expect(SelfDestructPolicy.deadline(m), isNull);
       expect(m.burnAfterRead, isFalse);
     });
 

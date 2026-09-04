@@ -9,17 +9,17 @@ import 'package:kryptaapp/features/messenger/logic/self_destruct_policy.dart';
 /// Stellt jemand dreissig Sekunden ein und der Empfaenger schaut erst nach
 /// zwanzig hinein, bleiben ihm zehn.
 ///
-/// **Der Chat-Timer laeuft ab dem Lesen.** Er ist Hausordnung, kein
-/// Versprechen, und gilt auch fuer das, was schon dasteht — dann ab dem
-/// Einschalten, damit nicht mit einem Tipp der halbe Verlauf verschwindet.
+/// **Der Chat-Timer ebenfalls.** Er ist Hausordnung, kein Versprechen, und
+/// gilt auch fuer das, was schon dasteht — dann ab dem Einschalten, damit
+/// nicht mit einem Tipp der halbe Verlauf verschwindet.
 ///
 /// Ein eigener Timer der Nachricht schlaegt den Chat-Timer, in beide
 /// Richtungen.
 ///
-/// Auf dem Geraet des Empfaengers ist `timestamp` der **Zustellzeitpunkt** —
-/// er wird beim Verarbeiten gesetzt. Beim Absender ist er der Sendezeitpunkt;
-/// dessen Fassung raeumt deshalb nicht die eigene Uhr weg, sondern die
-/// Ablaufmeldung der Gegenseite (siehe [SelfDestructPolicy.announceBurn]).
+/// Der Zustellzeitpunkt steht seit dem 04.09.2026 in `deliveredAt` und ist
+/// auf beiden Geraeten derselbe. Vorher wurde ab `timestamp` gerechnet, und
+/// der bedeutet auf den beiden Seiten Verschiedenes — siehe
+/// zustellung_timer_test.dart.
 void main() {
   final zugestellt = DateTime(2026, 8, 31, 12, 0, 0);
   final gelesen = DateTime(2026, 8, 31, 12, 0, 20);
@@ -36,6 +36,7 @@ void main() {
         recipientId: 'ich',
         encryptedContent: 'x',
         timestamp: zugestellt,
+        deliveredAt: zugestellt,
         selfDestructDuration: timer,
         selfDestructFromChat: vomChat,
         readAt: gelesenAm,
