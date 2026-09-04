@@ -192,6 +192,16 @@ class MessengerProvider extends ChangeNotifier {
   /// Whether read receipts are enabled (default: disabled for privacy).
   bool _readReceiptsEnabled = false;
 
+  /// Ob die App gerade vor dem Nutzer liegt.
+  ///
+  /// Gehoert zur Frage, ob eine eintreffende Nachricht als gesehen gilt: die
+  /// Chat-Ansicht bleibt stehen, wenn die App weggewischt wird, und mit ihr
+  /// [_activeChatId]. Ohne diesen Zustand galt eine Nachricht, die bei
+  /// weggelegtem Geraet ankam, als gelesen — und das Badge blieb aus.
+  /// Gefuehrt wird er von [pauseSync] und [resumeSync], den beiden
+  /// definierten Ein- und Ausstiegspunkten des Lebenszyklus.
+  bool _imVordergrund = true;
+
   static final _x25519 = X25519();
 
   StreamSubscription? _inboxSub;
@@ -374,6 +384,11 @@ class MessengerProvider extends ChangeNotifier {
         await _localStore.saveMessages(chat.id, geladen);
       }
       _messagesByChat[chat.id] = geladen;
+      // Den Stand aus den Nachrichten neu zaehlen, statt dem gespeicherten
+      // Zaehler zu glauben. Er konnte falsch sein — das Oeffnen eines Chats
+      // setzte ihn frueher auf null, ohne die Nachrichten als gelesen zu
+      // markieren. Was `readAt` traegt, zaehlt nicht; alles andere schon.
+      _standNachrechnen(chat.id);
       // Load ratchet state for each chat
       final rState = await _localStore.loadRatchetState(chat.id);
       if (rState != null) {
@@ -957,6 +972,18 @@ class MessengerProvider extends ChangeNotifier {
     Duration? dauer,
   }) {
     if (_processedMessageIds.contains(messageId)) return;
+    final jetzt = DateTime.now();
+    // Dieselbe Frage wie bei einer Nachricht, und dieselbe Antwort: was in
+    // den offenen Chat faellt, ist gesehen. Sie steht als `readAt` am
+    // Hinweis, damit der Punkt in der Liste beim Nachrechnen nicht
+    // wiederkehrt.
+    final gelesen = UnreadPolicy.beiZustellungGelesen(
+      senderId: senderId,
+      eigeneId: userId,
+      chatId: chatId,
+      offenerChat: _activeChatId,
+      imVordergrund: _imVordergrund,
+    );
     _addMessageToChat(
       chatId,
       Message(
@@ -965,7 +992,8 @@ class MessengerProvider extends ChangeNotifier {
         senderId: senderId,
         recipientId: recipientId,
         encryptedContent: '',
-        timestamp: DateTime.now(),
+        timestamp: jetzt,
+        readAt: gelesen ? jetzt : null,
         status: MessageStatus.delivered,
         // Die Dauer steht nur bei einem Fristwechsel hier, damit der Text
         // sie nennen kann. Sie raeumt den Hinweis NICHT weg: ein Hinweis, der
@@ -983,16 +1011,8 @@ class MessengerProvider extends ChangeNotifier {
     // Der Punkt kommt nur fuer Hinweise der Gegenseite und nur, wenn der Chat
     // nicht ohnehin offen ist. Was ich selbst getan habe, muss mir die Liste
     // nicht melden.
-    _touchChat(
-      chatId,
-      DateTime.now(),
-      incrementHinweis: UnreadPolicy.meldeHinweis(
-        senderId: senderId,
-        eigeneId: userId,
-        chatId: chatId,
-        offenerChat: _activeChatId,
-      ),
-    );
+    _touchChat(chatId, jetzt);
+    _standNachrechnen(chatId);
     notifyListeners();
   }
 
@@ -2047,15 +2067,47 @@ class MessengerProvider extends ChangeNotifier {
     // Fassung mit null ueberschreiben und die Nachricht dauerhaft
     // unleserlich machen.
     _activeChatId = chatId;
-    if (chatId != null) {
-      final idx = _chats.indexWhere((c) => c.id == chatId);
-      if (idx != -1 && _chats[idx].hatNeues) {
-        _chats[idx] = _chats[idx]
-            .copyWith(unreadCount: 0, hinweisCount: 0, firstUnreadAt: null);
-        _localStore.saveChats(_chats);
-        notifyListeners();
+    if (chatId != null) unawaited(_chatAlsGelesenMarkieren(chatId));
+  }
+
+  /// Alles in diesem Chat als gelesen markieren und den Stand neu zaehlen.
+  ///
+  /// Das ist, was „den Chat oeffnen" heisst. Vorher wurde hier nur der
+  /// Zaehler auf null gesetzt, **ohne die Nachrichten anzufassen** — sie
+  /// trugen weiter kein `readAt`. Beim naechsten Nachrechnen (eine Nachricht
+  /// laeuft ab, eine Ablaufmeldung kommt an, die App startet neu) stand das
+  /// Badge wieder da, obwohl laengst gelesen war. Genau das hat Daniel
+  /// gemeldet.
+  ///
+  /// Die Lesebestaetigung geht wie bisher nur raus, wenn sie eingeschaltet
+  /// ist — sie entscheidet, was die Gegenseite erfaehrt, nicht was mein
+  /// Geraet weiss.
+  Future<void> _chatAlsGelesenMarkieren(String chatId) async {
+    final messages = _messagesByChat[chatId];
+    if (messages == null) return;
+    final jetzt = DateTime.now();
+    final frisch = <Message>[];
+    for (var i = 0; i < messages.length; i++) {
+      final m = messages[i];
+      if (m.senderId == userId || m.readAt != null) continue;
+      messages[i] = m.copyWith(readAt: jetzt, status: MessageStatus.read);
+      frisch.add(messages[i]);
+    }
+    if (frisch.isNotEmpty) {
+      await _localStore.saveMessages(chatId, messages);
+      for (final m in frisch) {
+        // Ein Systemhinweis bekommt keine Lesebestaetigung: er ist keine
+        // Nachricht der Gegenseite, sondern eine Notiz ueber ein Ereignis.
+        if (m.isSystemEvent) continue;
+        _sendeLesebestaetigung(
+            chatId: chatId, senderId: m.senderId, messageId: m.id);
       }
     }
+    // Auch ohne frisch Gelesenes nachrechnen: der Zaehler eines
+    // Bestandsdatensatzes kann falsch stehen, und genau das soll das Oeffnen
+    // des Chats geradeziehen.
+    _standNachrechnen(chatId);
+    notifyListeners();
   }
 
   /// Clear decrypted content from messages no longer being viewed.
@@ -3190,23 +3242,36 @@ class MessengerProvider extends ChangeNotifier {
 
     messages[idx] = msg.copyWith(status: MessageStatus.read, readAt: DateTime.now());
     await _localStore.saveMessages(chatId, messages);
+    _sendeLesebestaetigung(
+        chatId: chatId, senderId: msg.senderId, messageId: msg.id);
+    // Der Zaehler folgt dem `readAt` und wird nicht nebenher gefuehrt.
+    _standNachrechnen(chatId);
+    notifyListeners();
+  }
 
-    // Read receipt: only sent if the user explicitly enabled read receipts.
-    // Default: disabled (maximum privacy — sender learns nothing about read state).
-    if (_readReceiptsEnabled && userId != null) {
-      final contact = contactForId(msg.senderId);
-      if (contact != null) {
-        _pendingJitterTimers.add(
-          TimingProtection.sendReadReceiptWithJitter(() => _sendControlMessage(
+  /// Der Gegenseite melden, dass ihre Nachricht gelesen wurde.
+  ///
+  /// Nur wenn die Lesebestaetigung eingeschaltet ist; sie ist es
+  /// standardmaessig nicht. Sie entscheidet allein darueber, was die
+  /// Gegenseite erfaehrt — **nicht** darueber, ob mein Geraet die Nachricht
+  /// als gelesen fuehrt. Sonst haette das Abschalten der Bestaetigung das
+  /// Badge unloeschbar gemacht.
+  void _sendeLesebestaetigung({
+    required String chatId,
+    required String senderId,
+    required String messageId,
+  }) {
+    if (!_readReceiptsEnabled || userId == null) return;
+    final contact = contactForId(senderId);
+    if (contact == null) return;
+    _pendingJitterTimers.add(
+      TimingProtection.sendReadReceiptWithJitter(() => _sendControlMessage(
             chatId: chatId,
             contact: contact,
             type: 'read',
-            messageId: msg.id,
+            messageId: messageId,
           )),
-        );
-      }
-    }
-    notifyListeners();
+    );
   }
 
   // --- Real-time Sync ---
@@ -3479,6 +3544,16 @@ class MessengerProvider extends ChangeNotifier {
         // Start jeder Loeschfrist — auf beiden Geraeten. Der Absender erfaehrt
         // ihn aus der Zustellbestaetigung, siehe SelfDestructPolicy.deadline.
         final zugestellt = DateTime.now();
+        // Ungelesen oder nicht — hier und nur hier wird das entschieden, und
+        // die Antwort bleibt als `readAt` an der Nachricht stehen. Vorher
+        // hing sie an einem Zaehler, den niemand nachpruefen konnte.
+        final gelesen = UnreadPolicy.beiZustellungGelesen(
+          senderId: senderId,
+          eigeneId: userId,
+          chatId: chat.id,
+          offenerChat: _activeChatId,
+          imVordergrund: _imVordergrund,
+        );
         final message = Message(
           id: messageId,
           chatId: chat.id,
@@ -3488,7 +3563,8 @@ class MessengerProvider extends ChangeNotifier {
           decryptedContent: messageContent,
           timestamp: zugestellt,
           deliveredAt: zugestellt,
-          status: MessageStatus.delivered,
+          readAt: gelesen ? zugestellt : null,
+          status: gelesen ? MessageStatus.read : MessageStatus.delivered,
           selfDestructFromChat: innerPayload['_sdc'] == true,
           selfDestructDuration:
               selfDestructMs != null ? Duration(milliseconds: selfDestructMs) : null,
@@ -3499,13 +3575,17 @@ class MessengerProvider extends ChangeNotifier {
         );
 
         _addMessageToChat(chat.id, message);
-        _touchChat(
-          chat.id, message.timestamp,
-          incrementUnread: _activeChatId != chat.id,
-        );
+        _touchChat(chat.id, message.timestamp);
+        // Der Zaehler wird nicht hochgesetzt, sondern neu gezaehlt. Zwei
+        // Buchfuehrungen fuer dieselbe Zahl waren der Fehler.
+        _standNachrechnen(chat.id);
 
         _sendeZustellbestaetigung(
             chatId: chat.id, contact: contact, messageId: messageId);
+        if (gelesen) {
+          _sendeLesebestaetigung(
+              chatId: chat.id, senderId: senderId, messageId: messageId);
+        }
 
         // Erst die Oberflaeche, dann der Server.
         //
@@ -3732,6 +3812,15 @@ class MessengerProvider extends ChangeNotifier {
       // Start jeder Loeschfrist — auf beiden Geraeten. Der Absender erfaehrt
       // ihn aus der Zustellbestaetigung, siehe SelfDestructPolicy.deadline.
       final zugestellt = DateTime.now();
+      // Siehe die erste Empfangsstelle: eine Frage, eine Antwort, und die
+      // bleibt an der Nachricht.
+      final gelesen = UnreadPolicy.beiZustellungGelesen(
+        senderId: senderId,
+        eigeneId: userId,
+        chatId: chat.id,
+        offenerChat: _activeChatId,
+        imVordergrund: _imVordergrund,
+      );
       final message = Message(
         id: messageId,
         chatId: chat.id,
@@ -3741,7 +3830,8 @@ class MessengerProvider extends ChangeNotifier {
         decryptedContent: messageContent,
         timestamp: zugestellt,
         deliveredAt: zugestellt,
-        status: MessageStatus.delivered,
+        readAt: gelesen ? zugestellt : null,
+        status: gelesen ? MessageStatus.read : MessageStatus.delivered,
         selfDestructFromChat: innerPayload['_sdc'] == true,
         selfDestructDuration:
             selfDestructMs != null ? Duration(milliseconds: selfDestructMs) : null,
@@ -3752,13 +3842,15 @@ class MessengerProvider extends ChangeNotifier {
       );
 
       _addMessageToChat(chat.id, message);
-      _touchChat(
-        chat.id, message.timestamp,
-        incrementUnread: _activeChatId != chat.id,
-      );
+      _touchChat(chat.id, message.timestamp);
+      _standNachrechnen(chat.id);
 
       _sendeZustellbestaetigung(
           chatId: chat.id, contact: contact, messageId: messageId);
+      if (gelesen) {
+        _sendeLesebestaetigung(
+            chatId: chat.id, senderId: senderId, messageId: messageId);
+      }
 
       // Erst die Oberflaeche, dann der Server — siehe _handleInbox.
       notifyListeners();
@@ -4514,33 +4606,21 @@ class MessengerProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Zeitstempel nachziehen, Chat nach oben, ggf. den Zaehler hochsetzen.
+  /// Zeitstempel nachziehen und den Chat nach oben holen.
   ///
   /// Hiess `_updateChatPreview` und schrieb den Klartext der Nachricht in die
   /// Chatliste. Der steht jetzt nur noch im Nachrichtenspeicher; nach aussen
   /// sagt allein der Zaehler, dass etwas da ist.
-  void _touchChat(String chatId, DateTime time,
-      {bool incrementUnread = false, bool incrementHinweis = false}) {
+  ///
+  /// **Den Zaehler fasst diese Funktion nicht mehr an.** Sie hat ihn frueher
+  /// hochgesetzt, waehrend [_standNachrechnen] ihn aus den Nachrichten neu
+  /// zaehlte — zwei Buchfuehrungen fuer dieselbe Zahl, die auseinanderliefen.
+  /// Wer eine Nachricht hinzufuegt, ruft danach [_standNachrechnen].
+  void _touchChat(String chatId, DateTime time) {
     final idx = _chats.indexWhere((c) => c.id == chatId);
     if (idx == -1) return;
     final vorher = _chats[idx];
-    // Die Uhrzeit der ERSTEN ungelesenen Nachricht festhalten. Sie bleibt
-    // stehen, bis der Chat geoeffnet wird — sonst wanderte sie mit jeder
-    // weiteren Nachricht mit, und der Moment, an dem etwas Neues anfing,
-    // waere nicht mehr abzulesen.
-    // Ein Hinweis zaehlt dabei mit: wer wissen will, seit wann etwas liegt,
-    // meint auch den Screenshot von heute morgen.
-    final ersteNeue = (incrementUnread || incrementHinweis) && !vorher.hatNeues
-        ? time
-        : vorher.firstUnreadAt;
-    _chats[idx] = vorher.copyWith(
-      lastMessageTime: time,
-      unreadCount:
-          incrementUnread ? vorher.unreadCount + 1 : vorher.unreadCount,
-      hinweisCount:
-          incrementHinweis ? vorher.hinweisCount + 1 : vorher.hinweisCount,
-      firstUnreadAt: ersteNeue,
-    );
+    _chats[idx] = vorher.copyWith(lastMessageTime: time);
     final chat = _chats.removeAt(idx);
     _chats.insert(0, chat);
     _localStore.saveChats(_chats);
@@ -4617,6 +4697,7 @@ class MessengerProvider extends ChangeNotifier {
   /// [SyncLifecyclePolicy]; ein flüchtiges `inactive` gehört ausdrücklich
   /// nicht dazu.
   void pauseSync() {
+    _imVordergrund = false;
     if (!_isSyncing) return;
     _stopSync(behalteWartendeMeldungen: true);
   }
@@ -4627,6 +4708,12 @@ class MessengerProvider extends ChangeNotifier {
   /// Einstiegspunkt zurück in den Empfang. Vor der Einrichtung ist das ein
   /// No-op — ohne `userId` gibt es keinen Posteingang.
   void resumeSync() {
+    _imVordergrund = true;
+    // Wer zurueckkommt und den Chat noch offen vor sich hat, sieht ihn auch:
+    // was waehrend des Wegwischens ungelesen hereinkam, gilt jetzt als
+    // gelesen. Ohne das bliebe das Badge stehen, obwohl der Chat offen ist.
+    final offen = _activeChatId;
+    if (offen != null) unawaited(_chatAlsGelesenMarkieren(offen));
     if (!_isInitialized || userId == null) return;
     _startSync();
   }

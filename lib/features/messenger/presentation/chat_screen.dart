@@ -65,8 +65,10 @@ class _ChatScreenState extends State<ChatScreen>
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     final messenger = context.read<MessengerProvider>();
+    // `setActiveChat` markiert den ganzen Chat als gelesen — das ist, was
+    // Oeffnen heisst. Hier stand frueher zusaetzlich eine eigene Schleife
+    // durch alle Nachrichten; zwei Wege fuer dieselbe Sache.
     messenger.setActiveChat(widget.chat.id);
-    _markVisibleMessagesAsRead(messenger);
     _listenForScreenshots();
   }
 
@@ -136,15 +138,6 @@ class _ChatScreenState extends State<ChatScreen>
     return chat?.defaultSelfDestruct;
   }
 
-
-  void _markVisibleMessagesAsRead(MessengerProvider messenger) {
-    final messages = messenger.messagesForChat(widget.chat.id);
-    for (final msg in messages) {
-      if (msg.senderId != messenger.userId && msg.readAt == null) {
-        messenger.markAsRead(widget.chat.id, msg.id);
-      }
-    }
-  }
 
   /// Kurz wackeln und sagen, warum nichts rausging.
   void _abgelehnt(String hinweis) {

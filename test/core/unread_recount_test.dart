@@ -166,46 +166,144 @@ void main() {
     expect(z.ersteNeue, frueh);
   });
 
-  // ─── Wann ein Hinweis den Punkt setzt ────────────────────────────────
+  // ─── Wann ein Hinweis den Punkt in der Liste setzt ───────────────────
+  //
+  // Es gibt dafuer keine zweite Regel mehr. Der Hinweis geht denselben Weg
+  // wie eine Nachricht: bei der Zustellung wird entschieden, ob er als
+  // gesehen gilt, die Antwort steht als `readAt` an ihm, und gezaehlt wird
+  // daraus. Frueher entschied hier `meldeHinweis` und dort `readAt` — zwei
+  // Antworten auf dieselbe Frage.
+
+  /// Der Punkt, wie ihn der Provider ermittelt: entscheiden, festschreiben,
+  /// zaehlen.
+  int punkte({required String von, String? offen, bool vorne = true}) {
+    final gelesen = UnreadPolicy.beiZustellungGelesen(
+      senderId: von,
+      eigeneId: 'ich',
+      chatId: 'c1',
+      offenerChat: offen,
+      imVordergrund: vorne,
+    );
+    return UnreadPolicy.zaehle(
+      [hinweis(von: von, zeit: frueh, gelesen: gelesen ? frueh : null)],
+      'ich',
+    ).hinweise;
+  }
 
   test('ein Hinweis der Gegenseite setzt den Punkt', () {
-    expect(
-      UnreadPolicy.meldeHinweis(
-          senderId: 'marco',
-          eigeneId: 'ich',
-          chatId: 'c1',
-          offenerChat: null),
-      isTrue,
-    );
+    expect(punkte(von: 'marco'), 1);
   });
 
   test('mein eigener Hinweis setzt keinen Punkt', () {
-    expect(
-      UnreadPolicy.meldeHinweis(
-          senderId: 'ich', eigeneId: 'ich', chatId: 'c1', offenerChat: null),
-      isFalse,
-    );
+    expect(punkte(von: 'ich'), 0);
   });
 
   test('bei offenem Chat kein Punkt — man sieht den Hinweis ja', () {
-    expect(
-      UnreadPolicy.meldeHinweis(
-          senderId: 'marco',
-          eigeneId: 'ich',
-          chatId: 'c1',
-          offenerChat: 'c1'),
-      isFalse,
-    );
+    expect(punkte(von: 'marco', offen: 'c1'), 0);
   });
 
   test('ein anderer offener Chat schuetzt diesen hier nicht', () {
-    expect(
-      UnreadPolicy.meldeHinweis(
-          senderId: 'marco',
-          eigeneId: 'ich',
-          chatId: 'c1',
-          offenerChat: 'c2'),
-      isTrue,
-    );
+    expect(punkte(von: 'marco', offen: 'c2'), 1);
+  });
+
+  test('offen, aber die App liegt weg: der Punkt kommt', () {
+    expect(punkte(von: 'marco', offen: 'c1', vorne: false), 1);
+  });
+
+  // ─── Ob eine Nachricht ueberhaupt ungelesen ankommt ──────────────────
+  //
+  // Der Kern des Fehlers vom 04.09.2026: „ungelesen" wurde an zwei Stellen
+  // verschieden beantwortet. Beim Eintreffen entschied `_activeChatId` — ein
+  // Wert, der nirgends gespeichert wird —, beim Nachrechnen `readAt` an der
+  // Nachricht. Die beiden liefen auseinander, und der Zaehler sprang je
+  // nachdem, welche Stelle zuletzt lief. Jetzt gibt es nur noch eine Frage,
+  // und ihre Antwort steht an der Nachricht: `readAt`.
+  group('Was bei der Zustellung schon als gelesen gilt', () {
+    test('Fall 1: der Chat ist nicht offen — sie kommt ungelesen an', () {
+      expect(
+        UnreadPolicy.beiZustellungGelesen(
+            senderId: 'marco',
+            eigeneId: 'ich',
+            chatId: 'c1',
+            offenerChat: null,
+            imVordergrund: true),
+        isFalse,
+      );
+    });
+
+    test('Fall 1b: ein anderer Chat ist offen — sie kommt ungelesen an', () {
+      expect(
+        UnreadPolicy.beiZustellungGelesen(
+            senderId: 'marco',
+            eigeneId: 'ich',
+            chatId: 'c1',
+            offenerChat: 'c2',
+            imVordergrund: true),
+        isFalse,
+      );
+    });
+
+    test('Fall 2: der Chat liegt offen vor mir — sie gilt sofort als gelesen',
+        () {
+      // Sie steht in dem Moment auf dem Bildschirm. Sie hinterher als
+      // ungelesen zu zaehlen waere schlicht falsch.
+      expect(
+        UnreadPolicy.beiZustellungGelesen(
+            senderId: 'marco',
+            eigeneId: 'ich',
+            chatId: 'c1',
+            offenerChat: 'c1',
+            imVordergrund: true),
+        isTrue,
+      );
+    });
+
+    test('offen, aber die App liegt im Hintergrund — sie kommt ungelesen an',
+        () {
+      // Der Fall, der das Badge verschluckt hat: die Chat-Ansicht bleibt
+      // stehen, wenn die App weggewischt wird, und `_activeChatId` mit ihr.
+      // Wer nicht hinsieht, hat nicht gelesen.
+      expect(
+        UnreadPolicy.beiZustellungGelesen(
+            senderId: 'marco',
+            eigeneId: 'ich',
+            chatId: 'c1',
+            offenerChat: 'c1',
+            imVordergrund: false),
+        isFalse,
+      );
+    });
+
+    test('meine eigene Nachricht zaehlt nie als ungelesen', () {
+      expect(
+        UnreadPolicy.beiZustellungGelesen(
+            senderId: 'ich',
+            eigeneId: 'ich',
+            chatId: 'c1',
+            offenerChat: null,
+            imVordergrund: true),
+        isTrue,
+      );
+    });
+
+  });
+
+  group('Ueber den Neustart hinweg', () {
+    test('was im offenen Chat ankam, ist auch nach dem Laden gelesen', () {
+      // Die Zusage: gelesene Nachrichten duerfen nach einem Neustart nie
+      // wieder als ungelesen auftauchen. Sie haelt, weil `readAt` auf der
+      // Platte steht — und nicht, weil irgendwo ein Zaehler auf null gesetzt
+      // wurde.
+      final zugestellt = m(von: 'marco', zeit: spaet, gelesen: spaet);
+      final wieder = Message.fromMap(zugestellt.toMap());
+      expect(wieder.readAt, spaet);
+      expect(UnreadPolicy.zaehle([wieder], 'ich').anzahl, 0);
+    });
+
+    test('was ungelesen ankam, ist es nach dem Laden immer noch', () {
+      final wieder = Message.fromMap(m(von: 'marco', zeit: spaet).toMap());
+      expect(UnreadPolicy.zaehle([wieder], 'ich').anzahl, 1);
+      expect(UnreadPolicy.zaehle([wieder], 'ich').ersteNeue, spaet);
+    });
   });
 }

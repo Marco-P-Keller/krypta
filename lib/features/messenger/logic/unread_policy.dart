@@ -53,21 +53,37 @@ abstract final class UnreadPolicy {
     return (anzahl: anzahl, hinweise: hinweise, ersteNeue: erste);
   }
 
-  /// Ob ein eintreffender Systemhinweis den Punkt in der Chatliste setzt.
+  /// Ob eine eintreffende Nachricht in diesem Moment schon als **gelesen**
+  /// gilt.
   ///
-  /// Zwei Faelle sagen nein, und beide aus demselben Grund — die Anzeige soll
-  /// nur melden, was jemand sonst verpassen wuerde:
-  ///   * **Der Hinweis stammt von mir.** Meinen eigenen Screenshot muss mir
-  ///     die Liste nicht melden; im Verlauf steht er trotzdem.
-  ///   * **Der Chat ist gerade offen.** Dann sieht man den Hinweis ja schon.
+  /// Die einzige Stelle, an der das entschieden wird — und die Antwort wandert
+  /// sofort als `readAt` an die Nachricht. Bis zum 04.09.2026 gab es zwei
+  /// Antworten auf dieselbe Frage: beim Eintreffen entschied der gerade
+  /// offene Chat und setzte einen Zaehler hoch, beim Nachrechnen entschied
+  /// `readAt`. Der offene Chat wird nirgends gespeichert; die beiden liefen
+  /// auseinander, und der Zaehler sprang je nachdem, welche Stelle zuletzt
+  /// lief. Ein Badge, das nach einem Neustart wiederkam, obwohl laengst
+  /// gelesen war, kam von hier.
+  ///
+  /// Zwei Faelle gelten als gelesen:
+  ///   * **Sie ist von mir.** Was ich selbst geschrieben habe, muss mir
+  ///     niemand melden.
+  ///   * **Der Chat liegt offen vor mir.** Dann steht sie in dem Moment auf
+  ///     dem Bildschirm.
+  ///
+  /// [imVordergrund] gehoert zwingend dazu. Die Chat-Ansicht bleibt stehen,
+  /// wenn die App weggewischt wird, und mit ihr die Angabe, welcher Chat
+  /// offen ist. Ohne diese Frage verschluckte genau das die Meldung: eine
+  /// Nachricht, die bei weggelegtem Geraet ankam, galt als gesehen.
   ///
   /// Steht als eigene Regel hier, weil der Provider Firebase braucht und
   /// darum nicht im Test laeuft. So ist wenigstens die Entscheidung geprueft.
-  static bool meldeHinweis({
+  static bool beiZustellungGelesen({
     required String senderId,
     required String? eigeneId,
     required String chatId,
     required String? offenerChat,
+    required bool imVordergrund,
   }) =>
-      senderId != eigeneId && offenerChat != chatId;
+      senderId == eigeneId || (imVordergrund && offenerChat == chatId);
 }
