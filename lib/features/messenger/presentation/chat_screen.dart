@@ -616,6 +616,7 @@ class _ChatScreenState extends State<ChatScreen>
             return MessageBubble(
               message: msg,
               isMine: isMine,
+              eigeneId: messenger.userId,
               onOeffnen: msg.einmalig && !isMine
                   ? () => _oeffneEinmalige(msg)
                   : null,

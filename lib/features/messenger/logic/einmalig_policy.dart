@@ -1,3 +1,5 @@
+import '../data/models/message_model.dart';
+
 /// Die einmalige Nachricht: wann sie verborgen wird, und woran sie zu
 /// erkennen ist.
 ///
@@ -28,12 +30,18 @@ abstract final class EinmaligPolicy {
   ///
   /// Nur der Empfaenger. Beim Absender gaebe es nichts zu oeffnen: sein
   /// Klartext wird gar nicht erst gespeichert, siehe [klartextBeimAbsender].
+  ///
+  /// [eigeneId] ist die **angemeldete** Kennung, nicht eine aus der Nachricht
+  /// abgeleitete. Wer hier `senderId` oder `recipientId` je nach Seite
+  /// hereinreicht, prueft nur seinen eigenen Schalter noch einmal und nennt
+  /// es Identitaet. Fehlt die Kennung, gibt es kein Tor: die sichere Antwort
+  /// ist zu, nicht offen fuer jeden.
   static bool oeffenbar({
     required bool einmalig,
     required String senderId,
     required String? eigeneId,
   }) =>
-      einmalig && senderId != eigeneId;
+      einmalig && eigeneId != null && senderId != eigeneId;
 
   /// Ob der Absender den Klartext seiner eigenen Nachricht behaelt.
   ///
@@ -45,6 +53,47 @@ abstract final class EinmaligPolicy {
   /// vom Inhalt, und sobald die Gegenseite geoeffnet hat, verschwindet der
   /// Eintrag auf beiden Geraeten ganz.
   static bool klartextBeimAbsender({required bool einmalig}) => !einmalig;
+
+  /// Ob dieser bereits gespeicherte Eintrag seinen Klartext noch hergeben
+  /// muss.
+  ///
+  /// [klartextBeimAbsender] greift erst beim Senden und damit nur fuer neue
+  /// Nachrichten. Was ich zwischen dem 02.09. und dem 04.09.2026 einmalig
+  /// verschickt habe, liegt weiter mit Klartext auf der Platte: damals wurde
+  /// er beim Senden behalten, und die Ablaufmeldung der Gegenseite verwarf
+  /// SelfDestructPolicy.acceptBurn, weil `_vergaenglich` `einmalig` nicht
+  /// mitzaehlte. Eine zweite Meldung kommt fuer diese Nachrichten nie.
+  ///
+  /// Seit dem 04.09. zeigt die Blase davon nichts mehr — und genau das ist
+  /// die Kosmetik, vor der [klartextBeimAbsender] warnt: unsichtbar, aber im
+  /// Speicher und damit in jedem Auszug daraus. Der Bestand wird deshalb beim
+  /// Laden nachgeraeumt.
+  ///
+  /// Nur **meine eigenen**: die Nachricht der Gegenseite ist einmal zu
+  /// oeffnen, ihr Klartext wird beim Oeffnen verbraucht. Ohne [eigeneId] —
+  /// beim Start noch nicht angemeldet — wird nichts angetastet; eine leere
+  /// Kennung darf nicht auf einen leeren Absender passen.
+  static bool nachzuraeumen(Message m, String eigeneId) =>
+      m.einmalig &&
+      m.decryptedContent != null &&
+      eigeneId.isNotEmpty &&
+      m.senderId == eigeneId;
+
+  /// Raeumt den Bestand eines Chats nach und sagt, ob sich etwas geaendert
+  /// hat.
+  ///
+  /// Nur dann muss der Aufrufer speichern — sonst schriebe jeder Start jeden
+  /// Chat neu. Die Liste wird an Ort und Stelle geaendert, wie sie auch im
+  /// Provider liegt.
+  static bool nachraeumen(List<Message> messages, String eigeneId) {
+    var geaendert = false;
+    for (var i = 0; i < messages.length; i++) {
+      if (!nachzuraeumen(messages[i], eigeneId)) continue;
+      messages[i] = messages[i].copyWith(decryptedContent: null);
+      geaendert = true;
+    }
+    return geaendert;
+  }
 
   /// Ob eine eintreffende Nachricht als einmalig gilt.
   ///

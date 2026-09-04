@@ -357,7 +357,17 @@ class MessengerProvider extends ChangeNotifier {
     } catch (_) {}
 
     for (final chat in _chats) {
-      _messagesByChat[chat.id] = await _localStore.loadMessages(chat.id);
+      final geladen = await _localStore.loadMessages(chat.id);
+      // Bestand nachraeumen: einmalige Nachrichten, die ich zwischen dem
+      // 02.09. und dem 04.09.2026 selbst verschickt habe, tragen ihren
+      // Klartext noch auf der Platte. Die Blase zeigt ihn seit dem 04.09.
+      // nicht mehr an — das allein waere die Kosmetik, vor der
+      // EinmaligPolicy.klartextBeimAbsender warnt. Hier faellt er wirklich
+      // weg. Gespeichert wird nur, wenn es etwas zu raeumen gab.
+      if (EinmaligPolicy.nachraeumen(geladen, userId ?? '')) {
+        await _localStore.saveMessages(chat.id, geladen);
+      }
+      _messagesByChat[chat.id] = geladen;
       // Load ratchet state for each chat
       final rState = await _localStore.loadRatchetState(chat.id);
       if (rState != null) {

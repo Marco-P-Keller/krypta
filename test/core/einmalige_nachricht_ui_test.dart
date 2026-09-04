@@ -19,13 +19,19 @@ void main() {
         einmalig: true,
       );
 
-  Future<void> zeige(WidgetTester t, Message m, {required bool isMine}) =>
+  Future<void> zeige(WidgetTester t, Message m,
+          {required bool isMine, String? eigeneId = 'ich'}) =>
       t.pumpWidget(MaterialApp(
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
         locale: const Locale('de'),
         home: Scaffold(
-          body: MessageBubble(message: m, isMine: isMine, onOeffnen: () {}),
+          body: MessageBubble(
+            message: m,
+            isMine: isMine,
+            eigeneId: eigeneId,
+            onOeffnen: () {},
+          ),
         ),
       ));
 
@@ -54,6 +60,25 @@ void main() {
     expect(find.text('Öffnen'), findsNothing);
     // Uhrzeit und Zustellstand bleiben. Er soll sehen, dass sie raus ist.
     expect(find.text('14:32'), findsOneWidget);
+  });
+
+  testWidgets('das Tor haengt an meiner Kennung, nicht am isMine-Schalter',
+      (t) async {
+    // `isMine` ist eine Anzeige-Entscheidung des Aufrufers. Wer sie auch die
+    // Identitaetsfrage beantworten laesst, prueft nur denselben Schalter
+    // zweimal. Massgeblich ist, wer angemeldet ist: die Nachricht ist von
+    // mir, also gibt es nichts zu oeffnen — egal, wie die Blase eingefaerbt
+    // wird.
+    await zeige(t, nachricht(von: 'ich'), isMine: false, eigeneId: 'ich');
+    expect(find.text('Öffnen'), findsNothing);
+    expect(find.textContaining('GEHEIMER TEXT', findRichText: true),
+        findsNothing);
+  });
+
+  testWidgets('ohne bekannte Kennung bleibt das Tor zu', (t) async {
+    await zeige(t, nachricht(von: 'marco'), isMine: false, eigeneId: null);
+    expect(find.text('Öffnen'), findsNothing,
+        reason: 'solange niemand angemeldet ist, wird nichts geoeffnet');
   });
 
   // ─── Die eigene Ansicht ──────────────────────────────────────────────

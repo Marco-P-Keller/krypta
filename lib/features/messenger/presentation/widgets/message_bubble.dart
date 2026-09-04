@@ -16,6 +16,15 @@ class MessageBubble extends StatelessWidget {
   final bool isMine;
   final bool isLastInGroup;
 
+  /// Die angemeldete Kennung.
+  ///
+  /// Nur fuer die einmalige Nachricht: sie entscheidet, ob es hier ein Tor
+  /// gibt. [isMine] taugt dafuer nicht — das ist die Anzeige-Entscheidung des
+  /// Aufrufers, und sie mit der Identitaetsfrage zu beantworten hiesse,
+  /// denselben Schalter zweimal zu pruefen. Fehlt die Kennung, bleibt das Tor
+  /// zu, siehe EinmaligPolicy.oeffenbar.
+  final String? eigeneId;
+
   /// Wird gerufen, wenn der Empfaenger eine einmalige Nachricht oeffnen will.
   ///
   /// Die Rueckfrage und das Verbrauchen haengen beim Aufrufer, nicht an der
@@ -26,6 +35,7 @@ class MessageBubble extends StatelessWidget {
     super.key,
     required this.message,
     required this.isMine,
+    this.eigeneId,
     this.isLastInGroup = true,
     this.onOeffnen,
   });
@@ -138,6 +148,7 @@ class MessageBubble extends StatelessWidget {
               : _UnlockedBubble(
                   message: message,
                   isMine: isMine,
+                  eigeneId: eigeneId,
                   isDark: isDark,
                   isLast: isLastInGroup,
                   onOeffnen: onOeffnen,
@@ -175,6 +186,9 @@ BorderRadius _bubbleRadius(bool isMine, bool isLast) {
 class _UnlockedBubble extends StatelessWidget {
   final Message message;
   final bool isMine;
+
+  /// Die angemeldete Kennung, siehe MessageBubble.eigeneId.
+  final String? eigeneId;
   final bool isDark;
   final bool isLast;
 
@@ -186,6 +200,7 @@ class _UnlockedBubble extends StatelessWidget {
   const _UnlockedBubble({
     required this.message,
     required this.isMine,
+    required this.eigeneId,
     required this.isDark,
     required this.isLast,
     this.onOeffnen,
@@ -252,6 +267,7 @@ class _UnlockedBubble extends StatelessWidget {
             _EinmaligerInhalt(
               message: message,
               isMine: isMine,
+              eigeneId: eigeneId,
               isDark: isDark,
               onOeffnen: onOeffnen,
             )
@@ -312,12 +328,14 @@ class _UnlockedBubble extends StatelessWidget {
 class _EinmaligerInhalt extends StatelessWidget {
   final Message message;
   final bool isMine;
+  final String? eigeneId;
   final bool isDark;
   final VoidCallback? onOeffnen;
 
   const _EinmaligerInhalt({
     required this.message,
     required this.isMine,
+    required this.eigeneId,
     required this.isDark,
     this.onOeffnen,
   });
@@ -328,7 +346,7 @@ class _EinmaligerInhalt extends StatelessWidget {
     final offen = EinmaligPolicy.oeffenbar(
       einmalig: message.einmalig,
       senderId: message.senderId,
-      eigeneId: isMine ? message.senderId : message.recipientId,
+      eigeneId: eigeneId,
     );
 
     // Auf der eigenen, eingefaerbten Blase traegt Grau nicht — dort gehoert
