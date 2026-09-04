@@ -931,7 +931,7 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get tutDEmergency =>
-      'Wist alles ter plekke. Je contacten horen ervan.';
+      'Wist alles: account, berichten en geschiedenis – alsof je er nooit bent geweest.';
 
   @override
   String get tutDSettings => 'Taal, kluis en codes wijzig je daar.';

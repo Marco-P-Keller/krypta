@@ -934,7 +934,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get tutDEmergency =>
-      'Apaga tudo na hora. Os teus contactos ficam a saber.';
+      'Apaga tudo: conta, mensagens e histórico – como se nunca tivesses estado aqui.';
 
   @override
   String get tutDSettings => 'Idioma, cofre e códigos mudam se aí.';

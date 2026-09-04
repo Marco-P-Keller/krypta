@@ -469,7 +469,7 @@
   "@tutTEmergency": {},
   "tutTEmergency": "Emergency wipe",
   "@tutDEmergency": {},
-  "tutDEmergency": "Deletes everything on the spot. Your contacts are told.",
+  "tutDEmergency": "Deletes everything: account, messages and history – as if you had never been here.",
   "@tutDSettings": {},
   "tutDSettings": "Language, vault and codes are changed there.",
   "@tutTAgain": {},

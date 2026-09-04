@@ -925,7 +925,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get tutDEmergency =>
-      'Deletes everything on the spot. Your contacts are told.';
+      'Deletes everything: account, messages and history – as if you had never been here.';
 
   @override
   String get tutDSettings => 'Language, vault and codes are changed there.';

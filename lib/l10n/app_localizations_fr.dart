@@ -935,7 +935,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get tutDEmergency =>
-      'Efface tout immédiatement. Tes contacts en sont informés.';
+      'Efface tout : compte, messages et historique – comme si tu n’avais jamais été là.';
 
   @override
   String get tutDSettings => 'Langue, coffre et codes se changent là bas.';

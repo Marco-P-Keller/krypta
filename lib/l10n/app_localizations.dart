@@ -1737,7 +1737,7 @@ abstract class AppLocalizations {
   /// No description provided for @tutDEmergency.
   ///
   /// In en, this message translates to:
-  /// **'Deletes everything on the spot. Your contacts are told.'**
+  /// **'Deletes everything: account, messages and history – as if you had never been here.'**
   String get tutDEmergency;
 
   /// No description provided for @tutDSettings.

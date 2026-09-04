@@ -15,6 +15,15 @@ import 'package:flutter_test/flutter_test.dart';
 void main() {
   const sprachen = ['de', 'en', 'es', 'fr', 'it', 'nl', 'pt'];
 
+  /// Texte, die Daniel **selbst** formuliert hat.
+  ///
+  /// Die Stilregel ist meine Auflage von seiner Ansage her, nicht seine
+  /// eigene Schreibweise. Gibt er einen Satz woertlich vor, gilt sein Satz —
+  /// er hat den Gedankenstrich in `tutDEmergency` am 04.09.2026 selbst
+  /// gesetzt. Die Regel bleibt fuer alles andere stehen; nur so faellt auf,
+  /// wenn ich sie wieder unterlaufe.
+  const wortwoertlichVonDaniel = {'tutDEmergency'};
+
   Map<String, dynamic> arb(String code) => jsonDecode(
         File('lib/l10n/app_$code.arb').readAsStringSync(),
       ) as Map<String, dynamic>;
@@ -50,6 +59,7 @@ void main() {
         // Bindestrich in einem Wort wie QR-Code bleibt erlaubt, der traegt
         // Bedeutung.
         tutTexte(code).forEach((k, v) {
+          if (wortwoertlichVonDaniel.contains(k)) return;
           expect(v.contains('—'), isFalse,
               reason: '$k enthaelt einen Geviertstrich: $v');
           expect(v.contains('–'), isFalse,

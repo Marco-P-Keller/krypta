@@ -934,7 +934,7 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get tutDEmergency =>
-      'Cancella tutto all’istante. I tuoi contatti vengono avvisati.';
+      'Cancella tutto: account, messaggi e cronologia – come se non ci fossi mai stato.';
 
   @override
   String get tutDSettings => 'Lingua, cassaforte e codici si cambiano lì.';

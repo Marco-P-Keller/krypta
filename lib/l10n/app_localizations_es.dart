@@ -933,7 +933,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get tutDEmergency =>
-      'Borra todo en el acto. Tus contactos se enteran.';
+      'Borra todo: cuenta, mensajes e historial – como si nunca hubieras estado aquí.';
 
   @override
   String get tutDSettings => 'Idioma, caja fuerte y códigos se cambian ahí.';
