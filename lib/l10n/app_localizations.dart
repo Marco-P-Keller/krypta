@@ -1788,6 +1788,12 @@ abstract class AppLocalizations {
   /// **'Can be opened once'**
   String get onceOnlyHiddenHint;
 
+  /// No description provided for @onceOnlySentHint.
+  ///
+  /// In en, this message translates to:
+  /// **'View-once message sent'**
+  String get onceOnlySentHint;
+
   /// No description provided for @onceOnlyConfirmTitle.
   ///
   /// In en, this message translates to:

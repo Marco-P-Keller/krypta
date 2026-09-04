@@ -2697,7 +2697,12 @@ class MessengerProvider extends ChangeNotifier {
       senderId: userId!,
       recipientId: chat.recipientId,
       encryptedContent: '',
-      decryptedContent: text,
+      // Bei einer einmaligen Nachricht behaelt der Absender nichts. Der Text
+      // geht raus und wird hier fallen gelassen, statt im lokalen Speicher
+      // liegen zu bleiben — siehe EinmaligPolicy.klartextBeimAbsender. Die
+      // Blase zeigt ihm ohnehin nur noch, dass er sie geschickt hat.
+      decryptedContent:
+          EinmaligPolicy.klartextBeimAbsender(einmalig: einmalig) ? text : null,
       timestamp: now,
       status: MessageStatus.sending,
       selfDestructDuration: selfDestruct,

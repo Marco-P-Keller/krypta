@@ -280,6 +280,7 @@
   "onceOnlyMessage": "Voir une fois",
   "openOnceMessage": "Ouvrir",
   "onceOnlyHiddenHint": "Ouvrable une seule fois",
+  "onceOnlySentHint": "Message à usage unique envoyé",
   "onceOnlyConfirmTitle": "Ouvrable une seule fois",
   "onceOnlyConfirmBody": "Ce message ne peut être ouvert qu’une fois. Dès que tu le fermes, il est supprimé définitivement. Cela vaut aussi si quelque chose t’interrompt.",
   "onceOnlyScreenshotHint": "Une capture ne peut pas être empêchée. Tu en seras informé.",

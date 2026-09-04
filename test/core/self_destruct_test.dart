@@ -17,6 +17,7 @@ void main() {
     Duration? timer,
     DateTime? gelesenAm,
     String von = 'marco',
+    bool einmalig = false,
   }) =>
       Message(
         id: 'm1',
@@ -27,6 +28,7 @@ void main() {
         timestamp: DateTime(2026, 8, 31, 11, 0),
         selfDestructDuration: timer,
         readAt: gelesenAm,
+        einmalig: einmalig,
       );
 
   group('Abgelaufen', () {
@@ -92,6 +94,48 @@ void main() {
     test('ohne Timer wird nichts gemeldet', () {
       expect(
         SelfDestructPolicy.announceBurn(nachricht(von: 'marco'), 'ich'),
+        isFalse,
+      );
+    });
+  });
+
+  group('Wessen Nachricht eine Ablaufmeldung raeumen darf', () {
+    // Der Anlass: die einmalige Nachricht verschwand beim Empfaenger und
+    // blieb beim Absender stehen. Sie traegt bewusst keine Frist — sie geht
+    // mit dem Oeffnen, nicht mit der Uhr — und `burnAfterRead` wird seit dem
+    // 02.09.2026 nicht mehr gesetzt. Damit fiel sie durch beide Bedingungen
+    // und die Meldung wurde verworfen.
+
+    test('eine einmalige Nachricht darf geraeumt werden', () {
+      expect(
+        SelfDestructPolicy.acceptBurn(
+            nachricht(von: 'ich', einmalig: true), 'ich'),
+        isTrue,
+      );
+    });
+
+    test('eine Nachricht mit Frist darf geraeumt werden', () {
+      expect(
+        SelfDestructPolicy.acceptBurn(
+            nachricht(von: 'ich', timer: const Duration(seconds: 30)), 'ich'),
+        isTrue,
+      );
+    });
+
+    test('eine gewoehnliche Nachricht nicht', () {
+      // Sonst raeumte die Gegenseite mit erfundenen Meldungen den ganzen
+      // Verlauf von meinem Geraet.
+      expect(
+        SelfDestructPolicy.acceptBurn(nachricht(von: 'ich'), 'ich'),
+        isFalse,
+      );
+    });
+
+    test('und nie eine fremde Nachricht', () {
+      // Gemeldet wird der Ablauf dessen, was ich geschickt habe.
+      expect(
+        SelfDestructPolicy.acceptBurn(
+            nachricht(von: 'marco', einmalig: true), 'ich'),
         isFalse,
       );
     });

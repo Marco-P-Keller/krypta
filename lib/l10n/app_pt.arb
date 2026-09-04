@@ -280,6 +280,7 @@
   "onceOnlyMessage": "Ver uma vez",
   "openOnceMessage": "Abrir",
   "onceOnlyHiddenHint": "Pode ser aberta uma vez",
+  "onceOnlySentHint": "Mensagem de visualização única enviada",
   "onceOnlyConfirmTitle": "Pode ser aberta uma vez",
   "onceOnlyConfirmBody": "Esta mensagem só pode ser aberta uma vez. Assim que a fechares, é removida para sempre. Isso também vale se algo te interromper.",
   "onceOnlyScreenshotHint": "Uma captura não pode ser impedida. Vais saber dela.",

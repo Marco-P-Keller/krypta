@@ -121,9 +121,16 @@ abstract final class SelfDestructPolicy {
   /// Nur solche darf eine Ablaufmeldung der Gegenseite entfernen. Ohne diese
   /// Schranke koennte sie mit erfundenen Meldungen beliebige Nachrichten von
   /// meinem Geraet raeumen.
+  ///
+  /// `einmalig` zaehlt mit, und das fehlte bis zum 04.09.2026. Eine einmalige
+  /// Nachricht traegt bewusst keine Frist — sie geht mit dem Oeffnen, nicht
+  /// mit der Uhr — und `burnAfterRead` wird seit dem 02.09. nicht mehr
+  /// gesetzt. Damit traf die Ablaufmeldung des Empfaengers hier auf zwei
+  /// falsche Antworten und wurde verworfen: die Nachricht verschwand drueben,
+  /// blieb aber beim Absender stehen. Genau das war der zugesagte Fall nicht.
   static bool _vergaenglich(Message m) =>
       !m.isSystemEvent &&
-      (m.selfDestructDuration != null || m.burnAfterRead);
+      (m.selfDestructDuration != null || m.burnAfterRead || m.einmalig);
 
   // ─── Der Hinweis bei einer geaenderten Chat-Frist ──────────────────────
 

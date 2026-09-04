@@ -5,27 +5,53 @@ import 'package:kryptaapp/features/messenger/logic/einmalig_policy.dart';
 void main() {
   group('verbergen', () {
     test('beim Empfaenger wird verborgen', () {
+      expect(EinmaligPolicy.verbergen(einmalig: true), isTrue);
+    });
+
+    test('beim Absender ebenfalls: sein eigener Text steht nicht offen da', () {
+      // Daniels Entscheidung vom 04.09.2026. Vorher las jeder, der dem
+      // Absender ueber die Schulter sah, den Text ohne jedes Tor.
+      expect(EinmaligPolicy.verbergen(einmalig: true), isTrue);
+    });
+
+    test('eine gewoehnliche Nachricht wird nie verborgen', () {
+      expect(EinmaligPolicy.verbergen(einmalig: false), isFalse);
+    });
+  });
+
+  group('oeffenbar', () {
+    test('der Empfaenger darf oeffnen', () {
       expect(
-        EinmaligPolicy.verbergen(
+        EinmaligPolicy.oeffenbar(
             einmalig: true, senderId: 'marco', eigeneId: 'ich'),
         isTrue,
       );
     });
 
-    test('beim Absender nicht: er sieht seinen eigenen Text', () {
+    test('der Absender nicht: bei ihm gibt es nichts mehr zu oeffnen', () {
       expect(
-        EinmaligPolicy.verbergen(
+        EinmaligPolicy.oeffenbar(
             einmalig: true, senderId: 'ich', eigeneId: 'ich'),
         isFalse,
       );
     });
 
-    test('eine gewoehnliche Nachricht wird nie verborgen', () {
+    test('eine gewoehnliche Nachricht hat kein Tor', () {
       expect(
-        EinmaligPolicy.verbergen(
+        EinmaligPolicy.oeffenbar(
             einmalig: false, senderId: 'marco', eigeneId: 'ich'),
         isFalse,
       );
+    });
+  });
+
+  group('klartextBeimAbsender', () {
+    test('eine einmalige Nachricht laesst beim Absender nichts zurueck', () {
+      expect(EinmaligPolicy.klartextBeimAbsender(einmalig: true), isFalse);
+    });
+
+    test('eine gewoehnliche behaelt ihren Text', () {
+      expect(EinmaligPolicy.klartextBeimAbsender(einmalig: false), isTrue);
     });
   });
 

@@ -9,17 +9,42 @@ abstract final class EinmaligPolicy {
   /// Das Feld im inneren Payload.
   static const String feldName = '_once';
 
-  /// Ob die Blase den Inhalt verbergen und stattdessen die Schaltflaeche
-  /// zeigen muss.
+  /// Ob die Blase den Inhalt verbergen muss.
   ///
-  /// Beim Absender nie: er sieht seinen eigenen Text, bis die Gegenseite
-  /// geoeffnet hat. Danach ist die Nachricht auch bei ihm fort.
-  static bool verbergen({
+  /// Auf **beiden** Seiten, seit Daniels Entscheidung vom 04.09.2026. Bis
+  /// dahin sah der Absender seinen eigenen Text weiter in der Blase stehen.
+  /// Das war die schwaechste Stelle der ganzen Zusage: wer dem Absender ueber
+  /// die Schulter sah oder sein Geraet in die Hand bekam, las den Text ohne
+  /// jedes Tor — waehrend der Empfaenger ihn nur ein einziges Mal zu sehen
+  /// bekam. Eine Nachricht, die nur einmal zu oeffnen ist, darf auf keinem
+  /// der beiden Geraete offen herumliegen.
+  ///
+  /// Der Absender sieht darum nur noch, **dass** er eine einmalige Nachricht
+  /// geschickt hat, mit Uhrzeit und Zustellstand. Was drinsteht, weiss er
+  /// ohnehin — er hat es geschrieben.
+  static bool verbergen({required bool einmalig}) => einmalig;
+
+  /// Ob diese Seite die Nachricht oeffnen darf.
+  ///
+  /// Nur der Empfaenger. Beim Absender gaebe es nichts zu oeffnen: sein
+  /// Klartext wird gar nicht erst gespeichert, siehe [klartextBeimAbsender].
+  static bool oeffenbar({
     required bool einmalig,
     required String senderId,
     required String? eigeneId,
   }) =>
       einmalig && senderId != eigeneId;
+
+  /// Ob der Absender den Klartext seiner eigenen Nachricht behaelt.
+  ///
+  /// Bei einer einmaligen Nachricht nicht. Ihn nur in der Blase auszublenden
+  /// waere Kosmetik — der Text laege trotzdem im lokalen Speicher und damit
+  /// in jedem Auszug daraus. Er wird gesendet und danach fallen gelassen.
+  ///
+  /// Das ist kein Verlust: die Blase zeigt beim Absender ohnehin nichts mehr
+  /// vom Inhalt, und sobald die Gegenseite geoeffnet hat, verschwindet der
+  /// Eintrag auf beiden Geraeten ganz.
+  static bool klartextBeimAbsender({required bool einmalig}) => !einmalig;
 
   /// Ob eine eintreffende Nachricht als einmalig gilt.
   ///

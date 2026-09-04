@@ -301,6 +301,7 @@
   "onceOnlyMessage": "Einmal ansehen",
   "openOnceMessage": "Öffnen",
   "onceOnlyHiddenHint": "Nur einmal zu öffnen",
+  "onceOnlySentHint": "Einmalige Nachricht gesendet",
   "onceOnlyConfirmTitle": "Nur einmal zu öffnen",
   "onceOnlyConfirmBody": "Diese Nachricht kann nur einmal geöffnet werden. Sobald du sie schliesst, wird sie dauerhaft entfernt. Das gilt auch, wenn etwas dazwischenkommt.",
   "onceOnlyScreenshotHint": "Ein Screenshot lässt sich nicht verhindern. Du erfährst davon.",

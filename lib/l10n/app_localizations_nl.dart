@@ -960,6 +960,9 @@ class AppLocalizationsNl extends AppLocalizations {
   String get onceOnlyHiddenHint => 'Eenmalig te openen';
 
   @override
+  String get onceOnlySentHint => 'Eenmalig bericht verzonden';
+
+  @override
   String get onceOnlyConfirmTitle => 'Eenmalig te openen';
 
   @override

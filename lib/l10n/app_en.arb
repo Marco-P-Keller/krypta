@@ -484,6 +484,8 @@
   "@openOnceMessage": {},
   "onceOnlyHiddenHint": "Can be opened once",
   "@onceOnlyHiddenHint": {},
+  "onceOnlySentHint": "View-once message sent",
+  "@onceOnlySentHint": {},
   "onceOnlyConfirmTitle": "Can be opened once",
   "@onceOnlyConfirmTitle": {},
   "onceOnlyConfirmBody": "This message can be opened once. As soon as you close it, it is removed for good. That also applies if something interrupts you.",

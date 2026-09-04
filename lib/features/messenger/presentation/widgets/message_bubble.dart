@@ -244,49 +244,16 @@ class _UnlockedBubble extends StatelessWidget {
           // Passt sie auf der letzten Zeile nicht mehr hin, bricht der
           // Platzhalter um und nimmt sie mit auf die naechste — dasselbe
           // Verhalten wie bei WhatsApp.
-          // Eine einmalige Nachricht zeigt beim Empfaenger nichts vom
-          // Inhalt. Erst nach der Rueckfrage wird sie geoeffnet, und mit dem
-          // Bestaetigen ist sie fort. Siehe EinmaligPolicy.
-          if (EinmaligPolicy.verbergen(
-            einmalig: message.einmalig,
-            senderId: message.senderId,
-            eigeneId: isMine ? message.senderId : message.recipientId,
-          ))
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Icon(Icons.visibility_off_rounded,
-                        size: 15, color: AppColors.destructive),
-                    const SizedBox(width: 6),
-                    Flexible(
-                      child: Text(
-                        l10n.onceOnlyHiddenHint,
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w500,
-                          color: isDark
-                              ? AppColors.textSecondaryDark
-                              : AppColors.textSecondaryLight,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                FilledButton(
-                  onPressed: onOeffnen,
-                  style: FilledButton.styleFrom(
-                    backgroundColor: AppColors.destructive,
-                    foregroundColor: Colors.white,
-                    minimumSize: const Size(0, 36),
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                  ),
-                  child: Text(l10n.openOnceMessage),
-                ),
-              ],
+          // Eine einmalige Nachricht zeigt auf **beiden** Seiten nichts vom
+          // Inhalt. Der Empfaenger bekommt das Tor mit der Rueckfrage, der
+          // Absender nur die Notiz, dass er sie geschickt hat. Siehe
+          // EinmaligPolicy.
+          if (EinmaligPolicy.verbergen(einmalig: message.einmalig))
+            _EinmaligerInhalt(
+              message: message,
+              isMine: isMine,
+              isDark: isDark,
+              onOeffnen: onOeffnen,
             )
           else
           Stack(
@@ -328,6 +295,97 @@ class _UnlockedBubble extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+/// Was anstelle einer einmaligen Nachricht in der Blase steht.
+///
+/// Beim Empfaenger das Tor: der Hinweis und die Schaltflaeche, die die
+/// Rueckfrage ausloest. Beim Absender nur die Notiz mit Uhrzeit und
+/// Zustellstand — er soll sehen, **dass** er eine einmalige Nachricht
+/// geschickt hat und wie weit sie gekommen ist, und sonst nichts.
+///
+/// Beim Absender ist das keine Kulisse vor einem noch vorhandenen Text: sein
+/// Klartext wird beim Senden gar nicht erst behalten, siehe
+/// EinmaligPolicy.klartextBeimAbsender.
+class _EinmaligerInhalt extends StatelessWidget {
+  final Message message;
+  final bool isMine;
+  final bool isDark;
+  final VoidCallback? onOeffnen;
+
+  const _EinmaligerInhalt({
+    required this.message,
+    required this.isMine,
+    required this.isDark,
+    this.onOeffnen,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final offen = EinmaligPolicy.oeffenbar(
+      einmalig: message.einmalig,
+      senderId: message.senderId,
+      eigeneId: isMine ? message.senderId : message.recipientId,
+    );
+
+    // Auf der eigenen, eingefaerbten Blase traegt Grau nicht — dort gehoert
+    // der Hinweis in dieselbe Familie wie die Uhrzeit daneben.
+    final textFarbe = isMine
+        ? Colors.white.withValues(alpha: 0.75)
+        : (isDark
+            ? AppColors.textSecondaryDark
+            : AppColors.textSecondaryLight);
+    final symbolFarbe =
+        isMine ? Colors.white.withValues(alpha: 0.75) : AppColors.destructive;
+
+    final zeile = Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(Icons.visibility_off_rounded, size: 15, color: symbolFarbe),
+        const SizedBox(width: 6),
+        Flexible(
+          child: Text(
+            offen ? l10n.onceOnlyHiddenHint : l10n.onceOnlySentHint,
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
+              color: textFarbe,
+            ),
+          ),
+        ),
+        // Die Uhrzeit haengt hier hinten an der Zeile, statt wie sonst ueber
+        // dem Text zu schweben: es gibt keinen Text, ueber dem sie liegen
+        // koennte. Nur beim Absender — der Empfaenger sieht bis zum Oeffnen
+        // ohnehin nichts als das Tor.
+        if (!offen) ...[
+          const SizedBox(width: 8),
+          _Meta(message: message, isMine: isMine, isDark: isDark),
+        ],
+      ],
+    );
+
+    if (!offen) return zeile;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        zeile,
+        const SizedBox(height: 8),
+        FilledButton(
+          onPressed: onOeffnen,
+          style: FilledButton.styleFrom(
+            backgroundColor: AppColors.destructive,
+            foregroundColor: Colors.white,
+            minimumSize: const Size(0, 36),
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+          ),
+          child: Text(l10n.openOnceMessage),
+        ),
+      ],
     );
   }
 }

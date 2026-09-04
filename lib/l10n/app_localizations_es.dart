@@ -962,6 +962,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get onceOnlyHiddenHint => 'Se puede abrir una vez';
 
   @override
+  String get onceOnlySentHint => 'Mensaje de una sola vez enviado';
+
+  @override
   String get onceOnlyConfirmTitle => 'Se puede abrir una vez';
 
   @override

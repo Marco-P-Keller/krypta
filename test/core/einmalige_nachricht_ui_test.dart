@@ -40,11 +40,20 @@ void main() {
     expect(find.text('Öffnen'), findsOneWidget);
   });
 
-  testWidgets('beim Absender steht sein eigener Text', (t) async {
+  testWidgets('beim Absender steht nur, dass er sie geschickt hat', (t) async {
+    // Daniels Entscheidung vom 04.09.2026. Der Nachweis haengt hier bewusst
+    // an einer Nachricht, die den Klartext noch traegt: die Blase darf ihn
+    // auch dann nicht zeigen. Dass beim Senden gar nichts erst gespeichert
+    // wird, ist die zweite Schranke — siehe EinmaligPolicy.
     await zeige(t, nachricht(von: 'ich'), isMine: true);
     expect(find.textContaining('GEHEIMER TEXT', findRichText: true),
-        findsOneWidget);
+        findsNothing,
+        reason: 'der Absender sieht seinen eigenen Text nicht mehr');
+    expect(find.text('Einmalige Nachricht gesendet'), findsOneWidget);
+    // Kein Tor beim Absender: es gaebe nichts zu oeffnen.
     expect(find.text('Öffnen'), findsNothing);
+    // Uhrzeit und Zustellstand bleiben. Er soll sehen, dass sie raus ist.
+    expect(find.text('14:32'), findsOneWidget);
   });
 
   // ─── Die eigene Ansicht ──────────────────────────────────────────────
@@ -149,6 +158,7 @@ void main() {
         'onceOnlyMessage': l.onceOnlyMessage,
         'openOnceMessage': l.openOnceMessage,
         'onceOnlyHiddenHint': l.onceOnlyHiddenHint,
+        'onceOnlySentHint': l.onceOnlySentHint,
         'onceOnlyConfirmTitle': l.onceOnlyConfirmTitle,
         'onceOnlyConfirmBody': l.onceOnlyConfirmBody,
         'onceOnlyScreenshotHint': l.onceOnlyScreenshotHint,

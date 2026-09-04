@@ -280,6 +280,7 @@
   "onceOnlyMessage": "Eenmaal bekijken",
   "openOnceMessage": "Openen",
   "onceOnlyHiddenHint": "Eenmalig te openen",
+  "onceOnlySentHint": "Eenmalig bericht verzonden",
   "onceOnlyConfirmTitle": "Eenmalig te openen",
   "onceOnlyConfirmBody": "Dit bericht kan een keer worden geopend. Zodra je het sluit, is het definitief weg. Dat geldt ook als er iets tussenkomt.",
   "onceOnlyScreenshotHint": "Een schermafbeelding is niet te voorkomen. Je hoort ervan.",
