@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 
 import '../../../l10n/app_localizations.dart';
 import '../../../theme/app_colors.dart';
-import '../../../widgets/emergency_button.dart';
 
 /// Die Sperre, wenn kein Taschenrechner davorsteht.
 ///
@@ -20,20 +19,28 @@ import '../../../widgets/emergency_button.dart';
 /// Gibt es **weder** Tresor-Passwort **noch** Face ID, kommt dieser
 /// Bildschirm gar nicht vor: die App oeffnet dann direkt den Messenger, siehe
 /// KryptaShell. Eine Sperre, die jeder Fingertipp oeffnet, ist keine.
+///
+/// **Keine Notfall-Loeschung hier**, und das war eine Entscheidung gegen den
+/// ersten Entwurf. Ein Knopf dafuer stand hier schon, mit Rueckfrage. Aber
+/// vor dem Entsperren gibt es in dieser App bisher keine Zerstoerung ohne
+/// Wissen: am Rechner braucht sie den Loeschcode, am Tresor-Bildschirm
+/// passiert sie erst nach fuenf falschen Passwoertern. Ein Knopf haette
+/// jedem, der das gesperrte Telefon in die Hand bekommt, mit zwei Tipps das
+/// Konto vernichtet — samt der Meldung an alle Kontakte, dass es einen nicht
+/// mehr gibt.
+///
+/// Der Zwangsfall bleibt bedient, und zwar deniabler als ein Knopf: fuenf
+/// falsche Tresor-Passwoerter loeschen alles, und das sieht aus wie jemand,
+/// der sein Passwort nicht mehr weiss.
 class LockScreen extends StatelessWidget {
   const LockScreen({
     super.key,
     required this.onUnlock,
-    required this.onEmergencyWipe,
     this.laeuft = false,
   });
 
   /// Entsperren: Face ID, danach gegebenenfalls das Tresor-Passwort.
   final VoidCallback onUnlock;
-
-  /// Die Notfall-Loeschung. Ohne Rechner gibt es keinen Loeschcode mehr, und
-  /// ohne diesen Knopf keinen Weg dorthin, solange die App gesperrt ist.
-  final VoidCallback onEmergencyWipe;
 
   /// Ob gerade geprueft wird. Der Knopf bleibt dann stehen, zeigt aber, dass
   /// etwas laeuft: Face ID kann ein paar Sekunden brauchen.
@@ -50,13 +57,6 @@ class LockScreen extends StatelessWidget {
       body: SafeArea(
         child: Stack(
           children: [
-            Align(
-              alignment: Alignment.topRight,
-              child: Padding(
-                padding: const EdgeInsets.all(8),
-                child: EmergencyButton(onWipe: onEmergencyWipe),
-              ),
-            ),
             Center(
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 32),

@@ -160,9 +160,28 @@ beide weg: ein Löschcode, zu dem es keine Eingabe mehr gibt, ist ein
 Geheimnis ohne Tür — und ein Geheimcode wäre eine Zugangsmöglichkeit, von
 der die Einstellungen behaupten, es gebe sie nicht mehr.
 
-Die Notfall-Löschung bleibt auf beiden Wegen erreichbar: in den
-Einstellungen, im Messenger über den Notfallknopf, und auf dem
-Sperrbildschirm oben rechts.
+### Die Notfall-Löschung, und was auf dem Sperrbildschirm nicht steht
+
+Im ersten Entwurf hatte der Sperrbildschirm oben rechts den Notfallknopf,
+mit Rückfrage. Er ist wieder weg, und der Grund ist eine Regel, die diese App
+bisher überall einhält: **vor dem Entsperren gibt es keine Zerstörung ohne
+Wissen.** Am Rechner braucht sie den Löschcode; am Tresor-Bildschirm passiert
+sie erst nach fünf falschen Passwörtern. Ein Knopf hätte jedem, der das
+gesperrte Telefon in die Hand bekommt, mit zwei Tipps das Konto vernichtet —
+samt der Meldung an alle Kontakte, dass es einen nicht mehr gibt.
+
+Der Zwangsfall bleibt bedient, und zwar deniabler als ein Knopf: fünf falsche
+Tresor-Passwörter löschen alles, und das sieht aus wie jemand, der sein
+Passwort vergessen hat.
+
+**Offen gesagt, was das kostet:** wer den Rechner abschaltet und *nur* Face ID
+benutzt, hat vor dem Entsperren gar keinen Weg zur Löschung mehr — weder
+Löschcode noch Fehlversuche. Für den Zwangsfall ist das die schwächste der
+drei Aufstellungen. Wem der wichtig ist, der behält den Rechner oder setzt
+zusätzlich ein Tresor-Passwort.
+
+Nach dem Entsperren ist sie wie immer erreichbar: in den Einstellungen und
+über den Notfallknopf in Chatliste und Chat.
 
 ## Prüfen
 

@@ -768,7 +768,6 @@ class _KryptaShellState extends State<KryptaShell> with WidgetsBindingObserver {
         return LockScreen(
           key: const ValueKey('lock'),
           onUnlock: _zugangPruefen,
-          onEmergencyWipe: _handleEmergencyWipe,
           laeuft: _pruefungLaeuft,
         );
 
