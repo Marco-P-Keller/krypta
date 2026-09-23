@@ -16,7 +16,11 @@ class ChatListScreen extends StatelessWidget {
   final void Function(Chat chat) onChatTap;
   final VoidCallback onNewChat;
   final VoidCallback onEmergencyWipe;
-  final VoidCallback onBack;
+
+  /// Von Hand sperren. `null`, wenn es nichts zu sperren gibt — ohne
+  /// Rechner, ohne Tresor-Passwort und ohne Face ID fuehrt der Pfeil nirgendwo
+  /// hin, und dann steht er auch nicht da.
+  final VoidCallback? onBack;
 
   const ChatListScreen({
     super.key,
@@ -24,7 +28,7 @@ class ChatListScreen extends StatelessWidget {
     required this.onChatTap,
     required this.onNewChat,
     required this.onEmergencyWipe,
-    required this.onBack,
+    this.onBack,
   });
 
   @override
@@ -34,10 +38,12 @@ class ChatListScreen extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 18),
-          onPressed: onBack,
-        ),
+        leading: onBack == null
+            ? null
+            : IconButton(
+                icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 18),
+                onPressed: onBack,
+              ),
         title: Text(
           l10n.chats,
           style: Theme.of(context).textTheme.headlineLarge,
@@ -210,6 +216,10 @@ class ChatListScreen extends StatelessWidget {
             requestState:
                 messenger.contactForId(chat.recipientId)?.requestState,
             requestLabel: AppLocalizations.of(context)!.requestBadge,
+            // Die Vorschau wird aus dem Verlauf im Speicher abgeleitet und
+            // nicht am Chat gespeichert — siehe VorschauPolicy.
+            vorschau: messenger.vorschauFuer(chat.id),
+            eigenerStand: messenger.letzterEigenerStand(chat.id),
           ),
         );
       },

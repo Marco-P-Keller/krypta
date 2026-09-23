@@ -647,7 +647,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get tutAutoDeleteDesc =>
-      'Set a timer for the whole chat. Messages are deleted automatically once they arrive.';
+      'For the whole chat or for a single message. Deleted after delivery.';
 
   @override
   String get tutReadyTitle => 'Ready';
@@ -837,7 +837,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get tutDCalculator =>
-      'The calculator in front really works. Nothing gives it away.';
+      'Optional. The calculator in front of the messenger really calculates, and nothing about it stands out.';
 
   @override
   String get tutTEncrypted => 'End to end';
@@ -854,14 +854,14 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get tutAccessIntro =>
-      'Four things protect the messenger. You set them up next.';
+      'Four things protect the messenger. Each one is optional, each can wait.';
 
   @override
   String get tutTSecretCode => 'Secret code';
 
   @override
   String get tutDSecretCode =>
-      'Type it into the calculator and press equals. The messenger opens.';
+      'Type it into the calculator and press equals. The messenger opens. You can skip this.';
 
   @override
   String get tutTDeleteCode => 'Delete code';
@@ -1039,4 +1039,103 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get secFooter =>
       'These statements describe methods and parameters, never keys. They apply to the version shown above.';
+
+  @override
+  String get yesterday => 'Yesterday';
+
+  @override
+  String get previewYou => 'You';
+
+  @override
+  String get previewLocked => 'Password-protected message';
+
+  @override
+  String get previewScreenshot => 'Screenshot';
+
+  @override
+  String get previewRecording => 'Screen recording';
+
+  @override
+  String get previewAccountGone => 'Account deleted';
+
+  @override
+  String get previewRuleChanged => 'Delete rule changed';
+
+  @override
+  String get chatPreview => 'Message preview';
+
+  @override
+  String get chatPreviewOn => 'The chat list shows the last message';
+
+  @override
+  String get chatPreviewOff =>
+      'The chat list only shows that something is there';
+
+  @override
+  String get messageRuleTitle => 'For this message';
+
+  @override
+  String get messageRuleHint =>
+      'Applies to the next message only. After that the chat setting applies again.';
+
+  @override
+  String get messageRuleDefault => 'Chat setting';
+
+  @override
+  String get messageTimerSection => 'Timer for this message';
+
+  @override
+  String messageTimerWith(String timer) {
+    return 'Timer: $timer';
+  }
+
+  @override
+  String get burnAfterReadingMessage => 'Delete after viewing';
+
+  @override
+  String get burnAfterReadingHint =>
+      'Read and leave the chat: gone, on both devices.';
+
+  @override
+  String get calculatorLock => 'Calculator lock';
+
+  @override
+  String get calculatorLockOn =>
+      'The calculator sits in front of the messenger. Type the secret code and press equals.';
+
+  @override
+  String get calculatorLockOff => 'The app opens the messenger directly.';
+
+  @override
+  String get calculatorLockEnabledHint => 'Calculator set up';
+
+  @override
+  String get calculatorLockDisabledHint => 'Calculator turned off';
+
+  @override
+  String get calculatorLockDisableTitle => 'Turn off the calculator?';
+
+  @override
+  String get calculatorLockDisableBody =>
+      'The app will then open the messenger directly. The secret code and delete code are removed; you can set the calculator up again at any time.';
+
+  @override
+  String get calculatorLockDisableAction => 'Turn off';
+
+  @override
+  String get skipSetup => 'Skip';
+
+  @override
+  String get setupOptionalHint =>
+      'The calculator is optional. You can skip it and set it up later in settings.';
+
+  @override
+  String get lockedHint => 'Unlock to open.';
+
+  @override
+  String get unlockAction => 'Unlock';
+
+  @override
+  String get tutDBurnAfterRead =>
+      'Read and leave the chat: gone, on both devices.';
 }

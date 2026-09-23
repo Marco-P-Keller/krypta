@@ -79,6 +79,25 @@ abstract final class StorageKeys {
   /// Whether read receipts are sent. Default: false (disabled).
   static const String readReceiptsEnabled = 'krypta_cfg_read_receipts';
 
+  // ── Chatliste ──────────────────────────────────────────────────────────
+  /// Ob in der Chatliste der Text der letzten Nachricht steht.
+  ///
+  /// Fehlt der Schluessel, gilt **an** — das ist die Vorgabe seit dem
+  /// 22.09.2026 und entspricht dem, was jeder von WhatsApp kennt. Wer sie
+  /// abschaltet, bekommt ein `'false'` in den Schluesselbund; nur das zaehlt
+  /// als Nein.
+  static const String chatPreviewEnabled = 'krypta_cfg_chat_preview';
+
+  // ── Zugangssperre ──────────────────────────────────────────────────────
+  /// Ob der Taschenrechner vor dem Messenger steht.
+  ///
+  /// **Fehlt der Schluessel, gilt an.** Jedes Geraet, das schon laeuft, hat
+  /// einen Geheimcode vergeben und erwartet den Rechner; ein Nein per Vorgabe
+  /// haette dort die Sperre still abgeschaltet. Geschrieben wird der
+  /// Schluessel deshalb nur, wenn jemand die Wahl trifft — beim Einrichten
+  /// oder in den Einstellungen.
+  static const String calculatorLockEnabled = 'krypta_cfg_calculator_lock';
+
   // ── Vault fail tracking (persistent brute-force protection) ─────────────
   static const String vaultFailCount      = 'krypta_vault_fails';
   static const String vaultLastFailTime   = 'krypta_vault_lastfail';
@@ -113,6 +132,8 @@ abstract final class StorageKeys {
     languageCode,
     deliveryReceiptsEnabled,
     readReceiptsEnabled,
+    chatPreviewEnabled,
+    calculatorLockEnabled,
     vaultFailCount,
     vaultLastFailTime,
   ];

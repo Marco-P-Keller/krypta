@@ -86,7 +86,20 @@ class _SetupScreenState extends State<SetupScreen>
     }
   }
 
-  Future<void> _completeSetup() async {
+  /// Den Taschenrechner ueberspringen.
+  ///
+  /// Daniels Liste vom 22.09.2026: „Die Einrichtung muss übersprungen werden
+  /// können. TR kann später jederzeit über die Einstellungen eingerichtet
+  /// bzw. aktiviert werden." Es entstehen dabei **keine** Codes — weder ein
+  /// Geheimcode noch ein Loeschcode. Ein Code ohne Rechner waere ein
+  /// Schluessel ohne Tuer, und beim spaeteren Einschalten wird er ohnehin neu
+  /// vergeben.
+  ///
+  /// Das Konto entsteht trotzdem: Anmeldung, Schluesselpaar und
+  /// Veroeffentlichung sind der Teil, ohne den niemand schreiben kann.
+  void _ueberspringen() => _completeSetup(mitRechner: false);
+
+  Future<void> _completeSetup({bool mitRechner = true}) async {
     setState(() => _isLoading = true);
     try {
       final storage = context.read<SecureStorageService>();
@@ -104,8 +117,12 @@ class _SetupScreenState extends State<SetupScreen>
       );
 
       await Future.wait([
-        storage.saveSecretCode(_controllers[0].text),
-        storage.saveDeleteCode(_controllers[1].text),
+        if (mitRechner) storage.saveSecretCode(_controllers[0].text),
+        if (mitRechner) storage.saveDeleteCode(_controllers[1].text),
+        // Die Wahl wird immer geschrieben, auch das Ja. Der Schluessel gilt
+        // sonst als „nie gefragt" und faellt auf die Vorgabe zurueck, die
+        // ihrerseits Ja heisst — richtig, aber aus dem falschen Grund.
+        storage.setCalculatorLockEnabled(mitRechner),
         storage.saveUserId(user.uid),
         storage.markSetupComplete(),
       ]);
@@ -223,6 +240,21 @@ class _SetupScreenState extends State<SetupScreen>
                       ),
                     ),
 
+                    // Freiwillig, und das gehoert hierher und nicht nur ins
+                    // Tutorial: wer das Tutorial weggewischt hat, steht sonst
+                    // vor einer Maske, die aussieht, als gaebe es keinen Weg
+                    // daran vorbei.
+                    const SizedBox(height: AppSpacing.sm),
+                    Text(
+                      AppLocalizations.of(context)!.setupOptionalHint,
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: isDark
+                                ? AppColors.textTertiaryDark
+                                : AppColors.textTertiaryLight,
+                            height: 1.4,
+                          ),
+                    ),
+
                     const SizedBox(height: AppSpacing.xl),
 
                     // PIN input
@@ -279,11 +311,14 @@ class _SetupScreenState extends State<SetupScreen>
                 children: [
                   if (_step > 0)
                     TextButton(
-                      onPressed: _back,
+                      onPressed: _isLoading ? null : _back,
                       child: Text(AppLocalizations.of(context)!.back),
                     )
                   else
-                    const SizedBox(width: 80),
+                    TextButton(
+                      onPressed: _isLoading ? null : _ueberspringen,
+                      child: Text(AppLocalizations.of(context)!.skipSetup),
+                    ),
                   const Spacer(),
                   FilledButton(
                     onPressed: _isLoading ? null : _next,
@@ -303,7 +338,11 @@ class _SetupScreenState extends State<SetupScreen>
                             child: CircularProgressIndicator(
                                 strokeWidth: 2, color: Colors.white),
                           )
-                        : Text(_step < 1 ? 'Continue' : 'Finish'),
+                        // Stand hier einmal fest verdrahtet auf Englisch,
+                        // mitten in einer App mit sieben Sprachen.
+                        : Text(_step < 1
+                            ? AppLocalizations.of(context)!.setupContinue
+                            : AppLocalizations.of(context)!.setupComplete),
                   ),
                 ],
               ),

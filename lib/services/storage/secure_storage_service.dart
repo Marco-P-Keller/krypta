@@ -216,6 +216,65 @@ class SecureStorageService {
     return value == 'true'; // Default: false (disabled)
   }
 
+  // --- Chatliste ---
+
+  /// Ob die Chatliste den Text der letzten Nachricht zeigt.
+  ///
+  /// Vorgabe: an. Nur ein ausdrueckliches `'false'` schaltet sie ab —
+  /// deshalb `!= 'false'` und nicht `== 'true'`. Ein Geraet, das den
+  /// Schluessel noch nicht kennt, bekommt die Vorschau.
+  Future<bool> isChatPreviewEnabled() async {
+    final value = await _storage.read(key: StorageKeys.chatPreviewEnabled);
+    return value != 'false';
+  }
+
+  Future<void> setChatPreviewEnabled(bool enabled) async {
+    await _storage.write(
+      key: StorageKeys.chatPreviewEnabled,
+      value: enabled.toString(),
+    );
+  }
+
+  // --- Zugangssperre: der Taschenrechner ---
+
+  /// Ob der Taschenrechner vor dem Messenger steht.
+  ///
+  /// Dieselbe Umkehr wie oben, und aus demselben Grund: wer die App schon
+  /// benutzt, hat einen Geheimcode vergeben und erwartet den Rechner. Eine
+  /// Vorgabe `false` haette bei jedem bestehenden Geraet die Sperre
+  /// abgeschaltet, ohne dass jemand danach gefragt haette.
+  Future<bool> isCalculatorLockEnabled() async {
+    final value = await _storage.read(key: StorageKeys.calculatorLockEnabled);
+    return value != 'false';
+  }
+
+  Future<void> setCalculatorLockEnabled(bool enabled) async {
+    await _storage.write(
+      key: StorageKeys.calculatorLockEnabled,
+      value: enabled.toString(),
+    );
+  }
+
+  /// Ob ueberhaupt ein Geheimcode hinterlegt ist.
+  ///
+  /// Die Einrichtung des Rechners laesst sich seit dem 22.09.2026
+  /// ueberspringen; dann gibt es keinen. Die Einstellungen fragen danach,
+  /// bevor sie anbieten, ihn zu aendern — eine Maske zum Aendern eines
+  /// Codes, den es nicht gibt, fuehrt in die Irre.
+  Future<bool> hasSecretCode() async =>
+      await _storage.read(key: StorageKeys.secretCode) != null;
+
+  /// Geheim- und Loeschcode entfernen.
+  ///
+  /// Gehoert zum Abschalten der Rechner-Sperre: bleibt der Loeschcode
+  /// liegen, waehrend es keinen Rechner mehr gibt, ist er ein Geheimnis ohne
+  /// Tuer — und der Geheimcode eine Zugangsmoeglichkeit, von der die
+  /// Einstellungen behaupten, es gebe sie nicht mehr.
+  Future<void> deleteAccessCodes() async {
+    await _storage.delete(key: StorageKeys.secretCode);
+    await _storage.delete(key: StorageKeys.deleteCode);
+  }
+
   // --- Vault Password (hashed, brute-force protected) ---
 
   /// Maximum vault password attempts before emergency wipe.

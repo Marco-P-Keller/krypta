@@ -8,6 +8,8 @@ import 'core/locale/locale_controller.dart';
 import 'features/auth/presentation/welcome_back_screen.dart';
 import 'features/settings/presentation/language_screen.dart';
 import 'features/messenger/logic/key_publish_status.dart';
+import 'features/auth/logic/zugang_policy.dart';
+import 'features/auth/presentation/lock_screen.dart';
 import 'features/auth/presentation/setup_screen.dart';
 import 'features/auth/presentation/tutorial_screen.dart';
 import 'features/auth/presentation/vault_password_screen.dart';
@@ -75,6 +77,14 @@ class KryptaShell extends StatefulWidget {
 
 enum _AppScreen {
   calculator,
+
+  /// Die Sperre ohne Rechner.
+  ///
+  /// Der Taschenrechner ist seit dem 22.09.2026 freiwillig. Wer ihn
+  /// abschaltet, aber ein Tresor-Passwort oder Face ID benutzt, bekommt
+  /// diesen Bildschirm; wer gar nichts davon hat, landet direkt im
+  /// Messenger. Siehe [_KryptaShellState._sperrziel].
+  lock,
   // Steht vor dem Tutorial: alles danach ist Text, und der soll in der
   // Sprache erscheinen, die der Nutzer versteht.
   language,
@@ -100,6 +110,28 @@ class _KryptaShellState extends State<KryptaShell> with WidgetsBindingObserver {
 
   DeviceIntegrityAction _deviceAction = DeviceIntegrityAction.allow;
   Chat? _selectedChat;
+
+  /// Ob der Taschenrechner vor dem Messenger steht.
+  ///
+  /// Vorgabe `true`, und das ist wichtig: jedes Geraet, das schon laeuft, hat
+  /// einen Geheimcode vergeben und erwartet den Rechner. Erst die Antwort aus
+  /// dem Schluesselbund kann das aendern, siehe
+  /// SecureStorageService.isCalculatorLockEnabled.
+  bool _rechnerSperre = true;
+
+  /// Ob ein Tresor-Passwort gesetzt ist.
+  bool _tresor = false;
+
+  /// Ob Face ID eingeschaltet ist.
+  ///
+  /// Zusammen mit [_tresor] der Unterschied zwischen einem Sperrbildschirm
+  /// und gar keinem: eine Sperre, die jeder Fingertipp oeffnet, ist keine.
+  bool _biometrie = false;
+
+  /// Ob gerade geprueft wird. Face ID braucht ein paar Sekunden, und der
+  /// Sperrbildschirm soll in der Zeit nicht aussehen, als haette der Knopf
+  /// nichts getan.
+  bool _pruefungLaeuft = false;
 
 
   /// Zaehlt jedes Sperren mit.
@@ -160,7 +192,7 @@ class _KryptaShellState extends State<KryptaShell> with WidgetsBindingObserver {
       messenger.resumeSync();
     }
 
-    if (ScreenLockPolicy.shouldLock(state)) _sperreAufRechner();
+    if (ScreenLockPolicy.shouldLock(state)) _sperren();
 
     final isBackgrounded = state == AppLifecycleState.paused ||
         state == AppLifecycleState.hidden;
@@ -258,16 +290,79 @@ class _KryptaShellState extends State<KryptaShell> with WidgetsBindingObserver {
       deleteLegacyKeys: storage.deleteLegacyKeys,
     ).run();
 
+    await _ladeZugang();
+
     if (!mounted) return;
+    // Ohne jede Sperre gibt es nichts zu entsperren. Dann steht hier der
+    // Uebergang, und der Messenger laedt dahinter — wie nach einem Code.
+    final ziel = _sperrziel();
     setState(() {
-      _currentScreen = _AppScreen.calculator;
+      _currentScreen = ziel ?? _AppScreen.welcomeBack;
       _isInitialized = true;
     });
+    if (ziel == null) unawaited(_unlockMessenger());
   }
 
-  Future<void> _onSecretCode() async {
+  /// Nachlesen, was den Zugang gerade schuetzt.
+  ///
+  /// Drei Schalter, die sich in den Einstellungen aendern lassen, und alle
+  /// drei entscheiden, wohin die App beim Sperren faellt. Gelesen wird
+  /// deshalb nicht nur beim Start, sondern auch nach jedem Besuch der
+  /// Einstellungen und nach der Einrichtung.
+  Future<void> _ladeZugang() async {
+    final storage = context.read<SecureStorageService>();
+    final rechner = await storage.isCalculatorLockEnabled();
+    final tresor = await storage.isVaultPasswordEnabled();
+    final biometrie = await storage.isBiometricEnabled();
+    if (!mounted) return;
+    _rechnerSperre = rechner;
+    _tresor = tresor;
+    _biometrie = biometrie;
+  }
+
+  /// Wohin die App faellt, wenn sie sperrt — oder `null`, wenn es nichts zu
+  /// sperren gibt.
+  ///
+  /// Der Rechner geht vor: wer ihn anhat, soll ihn sehen, auch wenn er
+  /// zusaetzlich ein Tresor-Passwort benutzt. Ohne ihn uebernimmt der
+  /// Sperrbildschirm, sofern ueberhaupt etwas zu pruefen ist.
+  _AppScreen? _sperrziel() => switch (ZugangsPolicy.ziel(
+        rechner: _rechnerSperre,
+        tresor: _tresor,
+        biometrie: _biometrie,
+      )) {
+        Sperrziel.rechner => _AppScreen.calculator,
+        Sperrziel.sperrbildschirm => _AppScreen.lock,
+        Sperrziel.offen => null,
+      };
+
+  /// Ob die App ueberhaupt sperren kann.
+  bool get _kannSperren => _sperrziel() != null;
+
+  /// Den Zugang pruefen und, wenn er haelt, den Messenger oeffnen.
+  ///
+  /// Zwei Wege fuehren hierher: der richtige Code im Rechner, und der Knopf
+  /// auf dem Sperrbildschirm, wenn der Rechner abgeschaltet ist. Was danach
+  /// kommt, ist in beiden Faellen dasselbe — Face ID, dann gegebenenfalls das
+  /// Tresor-Passwort.
+  Future<void> _zugangPruefen() async {
     // Defense-in-depth: block messenger access on compromised devices.
     if (_deviceAction == DeviceIntegrityAction.block) return;
+    // Ein zweiter Tipp waehrend der Pruefung startet keinen zweiten
+    // Durchlauf. Der Riegel steht **vor** dem ersten await: zwischen dem
+    // Nachschlagen des Fehlzaehlers und dem Face-ID-Dialog liegen mehrere,
+    // und zwei Dialoge uebereinander sind genau das, was an der einmaligen
+    // Nachricht am 07.09.2026 schon einmal schiefging.
+    if (_pruefungLaeuft) return;
+    if (mounted) setState(() => _pruefungLaeuft = true);
+    try {
+      await _zugangPruefenIntern();
+    } finally {
+      if (mounted) setState(() => _pruefungLaeuft = false);
+    }
+  }
+
+  Future<void> _zugangPruefenIntern() async {
 
     // Der Stand VOR dem ersten await. Face ID, das Nachschlagen der
     // Tresor-Einstellung und die Passwortpruefung dauern; wer die App in
@@ -338,18 +433,34 @@ class _KryptaShellState extends State<KryptaShell> with WidgetsBindingObserver {
   /// er entsprechend länger stehen — er ist auch der Ladebildschirm.
   static const _welcomeBackMinimum = Duration(milliseconds: 900);
 
-  /// Auf den Taschenrechner zurueckfallen.
+  /// Auf die Sperre zurueckfallen: Rechner oder Sperrbildschirm.
   ///
   /// Die Einrichtung ist ausgenommen: wer beim ersten Start kurz die App
   /// verlaesst, soll nicht auf dem Rechner landen, ohne je einen Code
   /// vergeben zu haben. Der Willkommens-Uebergang ist NICHT ausgenommen —
   /// dahinter liegt bereits der entsperrte Messenger.
-  void _sperreAufRechner() {
-    // Zaehlt auch, wenn unten frueh ausgestiegen wird: ein laufendes
-    // Entsperren muss auch dann abbrechen, wenn schon der Rechner steht.
-    _sperrZaehler++;
+  ///
+  /// Schuetzt weder Rechner noch Tresor noch Face ID, wird nicht gesperrt.
+  /// Ein Bildschirm, den ein einziger Tipp oeffnet, waere keine Sperre,
+  /// sondern nur eine Huerde fuer den Besitzer — und er wuerde eine
+  /// Sicherheit behaupten, die es nicht gibt.
+  void _sperren() {
     if (!mounted) return;
-    if (_currentScreen == _AppScreen.calculator ||
+    final ziel = _sperrziel();
+    // Ohne Ziel gibt es nichts zu sperren — und dann darf auch kein
+    // laufendes Entsperren verfallen. Wuerde hier trotzdem gezaehlt, bliebe
+    // eine App ganz ohne Sperre nach einem Wegwischen waehrend des Starts
+    // auf dem Willkommensbildschirm stehen: `_unlockMessenger` prueft am
+    // Ende, ob zwischendurch gesperrt wurde, und faende einen erhoehten
+    // Zaehler ohne jede Sperre dahinter.
+    if (ziel == null) return;
+    // Ab hier zaehlt jedes Sperren mit, auch wenn unten frueh ausgestiegen
+    // wird: ein laufendes Entsperren muss auch dann abbrechen, wenn schon
+    // der Rechner steht.
+    _sperrZaehler++;
+    if (_currentScreen == ziel ||
+        _currentScreen == _AppScreen.calculator ||
+        _currentScreen == _AppScreen.lock ||
         _currentScreen == _AppScreen.setup ||
         _currentScreen == _AppScreen.language ||
         _currentScreen == _AppScreen.tutorial) {
@@ -367,7 +478,7 @@ class _KryptaShellState extends State<KryptaShell> with WidgetsBindingObserver {
     // Do NOT disable screenshot protection here — keep it active until the
     // calculator screen is fully visible.
     setState(() {
-      _currentScreen = _AppScreen.calculator;
+      _currentScreen = ziel;
       _selectedChat = null;
     });
     // Disable screenshot protection AFTER state change, so the calculator is
@@ -375,7 +486,7 @@ class _KryptaShellState extends State<KryptaShell> with WidgetsBindingObserver {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       // Nicht abschalten, wenn inzwischen wieder entsperrt wurde.
-      if (_currentScreen != _AppScreen.calculator) return;
+      if (_currentScreen != ziel) return;
       context.read<PlatformSecurityService>().disableScreenshotProtection();
     });
   }
@@ -438,23 +549,51 @@ class _KryptaShellState extends State<KryptaShell> with WidgetsBindingObserver {
 
     if (mounted) {
       setState(() {
+        // Wie ein frisches Geraet: die Einrichtung entscheidet neu, ob ein
+        // Rechner davorsteht.
+        _rechnerSperre = true;
+        _tresor = false;
+        _biometrie = false;
         _currentScreen = _AppScreen.setup;
         _selectedChat = null;
       });
     }
   }
 
-  void _backToCalculator() {
+  /// Von Hand sperren: der Pfeil links oben in der Chatliste.
+  ///
+  /// Gibt es nichts zu sperren, gibt es den Pfeil auch nicht — siehe
+  /// [_kannSperren]. Eine Schaltflaeche, die auf einen Bildschirm fuehrt, den
+  /// jeder Tipp wieder oeffnet, waere eine Behauptung.
+  void _zurueckZurSperre() {
+    final ziel = _sperrziel();
+    if (ziel == null) return;
     // C6: stop periodic integrity checks — messenger is no longer active.
     context.read<DeviceIntegrityPolicyService>().stopPeriodicChecks();
-    setState(() => _currentScreen = _AppScreen.calculator);
-    // Disable screenshot protection AFTER calculator is rendered
+    setState(() => _currentScreen = ziel);
+    // Disable screenshot protection AFTER the lock screen is rendered
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
         final platform = context.read<PlatformSecurityService>();
         platform.disableScreenshotProtection();
       }
     });
+  }
+
+  /// Nach der Einrichtung: dorthin, wo der frisch gewaehlte Zugang hinfuehrt.
+  ///
+  /// Wer den Rechner uebersprungen hat, soll nicht auf einem Rechner landen,
+  /// fuer den er nie einen Code vergeben hat — das waere eine Tuer ohne
+  /// Schluessel. Siehe SetupScreen.
+  Future<void> _nachDerEinrichtung() async {
+    await _ladeZugang();
+    if (!mounted) return;
+    final ziel = _sperrziel();
+    if (ziel != null) {
+      setState(() => _currentScreen = ziel);
+      return;
+    }
+    await _unlockMessenger();
   }
 
   /// Zwischen den Bildschirmen wechseln.
@@ -469,10 +608,9 @@ class _KryptaShellState extends State<KryptaShell> with WidgetsBindingObserver {
   /// Der einzige Weg heraus ist [_unlockMessenger], und der setzt den
   /// Bildschirm selbst.
   void _navigateTo(_AppScreen screen) {
-    if (_currentScreen == _AppScreen.calculator &&
-        screen != _AppScreen.calculator) {
-      return;
-    }
+    final gesperrt = _currentScreen == _AppScreen.calculator ||
+        _currentScreen == _AppScreen.lock;
+    if (gesperrt && screen != _currentScreen) return;
     setState(() => _currentScreen = screen);
   }
 
@@ -584,7 +722,7 @@ class _KryptaShellState extends State<KryptaShell> with WidgetsBindingObserver {
       case _AppScreen.setup:
         return SetupScreen(
           key: const ValueKey('setup'),
-          onSetupComplete: () => _navigateTo(_AppScreen.calculator),
+          onSetupComplete: () => unawaited(_nachDerEinrichtung()),
         );
 
       case _AppScreen.language:
@@ -614,15 +752,24 @@ class _KryptaShellState extends State<KryptaShell> with WidgetsBindingObserver {
             if (ok && _anmeldungGiltNoch) await _unlockMessenger();
             return ok;
           },
-          onCancel: () => _navigateTo(_AppScreen.calculator),
+          onCancel: () =>
+              _navigateTo(_sperrziel() ?? _AppScreen.vaultPassword),
           onEmergencyWipe: _handleEmergencyWipe,
         );
 
       case _AppScreen.calculator:
         return CalculatorScreen(
           key: const ValueKey('calculator'),
-          onSecretCode: _onSecretCode,
+          onSecretCode: _zugangPruefen,
           onDeleteCode: () => _handleEmergencyWipe(),
+        );
+
+      case _AppScreen.lock:
+        return LockScreen(
+          key: const ValueKey('lock'),
+          onUnlock: _zugangPruefen,
+          onEmergencyWipe: _handleEmergencyWipe,
+          laeuft: _pruefungLaeuft,
         );
 
       case _AppScreen.messenger:
@@ -635,7 +782,8 @@ class _KryptaShellState extends State<KryptaShell> with WidgetsBindingObserver {
           },
           onNewChat: () => _navigateTo(_AppScreen.newChat),
           onEmergencyWipe: _handleEmergencyWipe,
-          onBack: _backToCalculator,
+          // Ohne Sperre kein Pfeil: es gaebe nichts, wohin er fuehrt.
+          onBack: _kannSperren ? _zurueckZurSperre : null,
         );
 
       case _AppScreen.chat:
@@ -675,7 +823,14 @@ class _KryptaShellState extends State<KryptaShell> with WidgetsBindingObserver {
         return SettingsScreen(
           key: const ValueKey('settings'),
           onEmergencyWipe: _handleEmergencyWipe,
-          onBack: () => _navigateTo(_AppScreen.messenger),
+          // Der Zugang wird beim Verlassen neu gelesen: in den Einstellungen
+          // laesst sich der Rechner abschalten, ein Tresor-Passwort setzen
+          // oder Face ID umlegen. Ohne diesen Schritt fiele die App danach
+          // auf die Sperre von vorhin.
+          onBack: () async {
+            await _ladeZugang();
+            if (mounted) _navigateTo(_AppScreen.messenger);
+          },
           userId: context.read<MessengerProvider>().userId,
         );
     }

@@ -13,6 +13,7 @@ import '../data/models/message_model.dart';
 import '../data/models/contact_model.dart';
 import '../logic/einmalig_policy.dart';
 import '../logic/frist_stufe.dart';
+import '../logic/nachrichtenregel.dart';
 import '../logic/messenger_provider.dart';
 import 'einmalige_nachricht_screen.dart';
 import 'widgets/chat_settings_sheet.dart';
@@ -50,13 +51,32 @@ class _ChatScreenState extends State<ChatScreen>
   final _controller = TextEditingController();
   final _scrollController = ScrollController();
   final _focusNode = FocusNode();
-  /// Ob die naechste Nachricht nur einmal geoeffnet werden darf.
+  /// Was fuer die **naechste** Nachricht gilt.
   ///
-  /// Loeste am 02.09.2026 den Einzeltimer und Burn after read ab. Drei
-  /// Konzepte fuer „geht wieder weg" wurden eines. Die Frist des ganzen Chats
-  /// bleibt davon unberuehrt und gilt weiterhin fuer jede Nachricht, die
-  /// nicht einmalig ist.
-  bool _einmalig = false;
+  /// Am 02.09.2026 waren daraus drei Konzepte eines geworden: nur noch die
+  /// einmalige Nachricht, alles andere unter der Frist des Chats. Daniels
+  /// Liste vom 22.09. unterscheidet wieder vier Faelle, und sie sind nicht
+  /// dasselbe:
+  ///
+  ///   * die Frist des **Chats** — gilt fuer jede Nachricht darin;
+  ///   * eine Frist fuer **diese** Nachricht — laeuft ab Zustellung, wie die
+  ///     des Chats, gehoert aber nur ihr;
+  ///   * **nach Ansehen loeschen** — keine Uhr, sondern ein Ereignis: gelesen
+  ///     und Chat verlassen;
+  ///   * **einmal ansehen** — der Inhalt bleibt verborgen, bis der Empfaenger
+  ///     ihn oeffnet, und ist damit verbraucht.
+  ///
+  /// Drei davon stehen hier, weil sie je Nachricht gewaehlt werden. Die des
+  /// Chats steht in den Chat-Einstellungen und gilt, solange hier nichts
+  /// anderes gewaehlt ist.
+  Nachrichtenregel _regel = Nachrichtenregel.chatregel;
+
+  /// Die Frist, wenn [_regel] auf [Nachrichtenregel.frist] steht.
+  ///
+  /// Getrennt gehalten und nicht in der Aufzaehlung untergebracht: die Regel
+  /// sagt, *dass* diese Nachricht eine eigene Frist hat, die Dauer sagt,
+  /// welche.
+  Duration? _einzelFrist;
 
   /// Je einmaliger Nachricht nur ein Durchlauf, siehe EinmaligeOeffnung.
   final _oeffnungen = EinmaligeOeffnung();
@@ -131,16 +151,24 @@ class _ChatScreenState extends State<ChatScreen>
     });
   }
 
-  /// Die Frist dieser Nachricht.
+  /// Welche Frist an der naechsten Nachricht haengt — und woher sie kommt.
   ///
-  /// Seit dem Wegfall des Einzeltimers gibt es nur noch eine Quelle: die
-  /// Frist des Chats. Eine einmalige Nachricht traegt keine, sie geht mit
-  /// dem Oeffnen.
-  Duration? get _frist {
-    if (_einmalig) return null;
-    final chat = context.read<MessengerProvider>().chatById(widget.chat.id);
-    return chat?.defaultSelfDestruct;
-  }
+  /// Die Herkunft reist mit und entscheidet spaeter, welche Uhr gilt: eine
+  /// Chat-Frist folgt der **aktuellen** Einstellung des Chats, weil sie
+  /// beiden Seiten gehoert; eine eigene behaelt die Nachricht. Siehe
+  /// SelfDestructPolicy.deadline.
+  ///
+  /// Eine einmalige Nachricht traegt gar keine Frist: sie geht mit dem
+  /// Oeffnen. „Nach Ansehen loeschen" ebensowenig — das ist ein Ereignis,
+  /// keine Uhr.
+  Sendeauftrag get _auftrag => RegelPolicy.auftrag(
+        regel: _regel,
+        einzelFrist: _einzelFrist,
+        chatFrist: context
+            .read<MessengerProvider>()
+            .chatById(widget.chat.id)
+            ?.defaultSelfDestruct,
+      );
 
 
   /// Kurz wackeln und sagen, warum nichts rausging.
@@ -175,20 +203,28 @@ class _ChatScreenState extends State<ChatScreen>
      // Zugang zur App schützt, gelten die Regeln weiterhin.
 
     final messenger = context.read<MessengerProvider>();
+    final auftrag = _auftrag;
     messenger.sendMessage(
       chatId: widget.chat.id,
       text: text,
-      selfDestruct: _frist,
-      // Jede Frist kommt jetzt vom Chat-Timer, also laeuft sie ab dem Lesen.
-      selfDestructFromChat: true,
-      einmalig: _einmalig,
+      selfDestruct: auftrag.frist,
+      selfDestructFromChat: auftrag.vomChat,
+      einmalig: auftrag.einmalig,
+      burnAfterRead: auftrag.nachAnsehen,
       password: _messagePassword,
     );
     messenger.stopLocalTyping(widget.chat.recipientId);
     _controller.clear();
+    // Die Wahl gilt fuer **eine** Nachricht. Sie stehen zu lassen waere die
+    // gefaehrlichere Vorgabe: wer einmal etwas Vergaengliches geschickt hat,
+    // schickt danach meist wieder Gewoehnliches — und eine still
+    // weiterwirkende Frist raeumt eine Nachricht weg, von der niemand wusste,
+    // dass sie eine trug. Die Frist des **Chats** bleibt davon unberuehrt,
+    // sie ist die Vorgabe und steht in den Chat-Einstellungen.
     setState(() {
       _messagePassword = null;
-      _einmalig = false;
+      _regel = Nachrichtenregel.chatregel;
+      _einzelFrist = null;
     });
     _scrollToBottom();
   }
@@ -650,15 +686,35 @@ class _ChatScreenState extends State<ChatScreen>
     final chat = messenger.chatById(widget.chat.id);
     final chatDefault = chat?.defaultSelfDestruct;
 
-    // Entweder die Nachricht ist einmalig, dann gilt keine Frist. Oder es
-    // gilt die Frist des Chats. Beides nebeneinander waere falsch.
-    if (_einmalig) {
+    // Genau eine Zeile: was fuer die naechste Nachricht gilt. Entweder eine
+    // Regel fuer diese eine — dann steht sie da, mit einem Kreuz zum
+    // Zuruecknehmen — oder die des Chats, die niemand hier wegtippen kann.
+    // Beides nebeneinander waere falsch: sie schliessen einander aus.
+    if (_regel == Nachrichtenregel.einmalig) {
       bars.add(_buildInfoBar(
         context,
         icon: Icons.visibility_off_rounded,
         text: l10n.onceOnlyMessage,
         color: AppColors.destructive,
-        onClear: () => setState(() => _einmalig = false),
+        onClear: _regelZuruecknehmen,
+        isDark: isDark,
+      ));
+    } else if (_regel == Nachrichtenregel.nachAnsehen) {
+      bars.add(_buildInfoBar(
+        context,
+        icon: Icons.drafts_outlined,
+        text: l10n.burnAfterReadingMessage,
+        color: AppColors.destructive,
+        onClear: _regelZuruecknehmen,
+        isDark: isDark,
+      ));
+    } else if (_regel == Nachrichtenregel.frist && _einzelFrist != null) {
+      bars.add(_buildInfoBar(
+        context,
+        icon: Icons.timer_outlined,
+        text: l10n.messageTimerWith(_regelLabel(l10n, frist: _einzelFrist)),
+        color: AppColors.warning,
+        onClear: _regelZuruecknehmen,
         isDark: isDark,
       ));
     } else if (chatDefault != null || (chat?.loeschtNachLesen ?? false)) {
@@ -688,6 +744,169 @@ class _ChatScreenState extends State<ChatScreen>
 
     if (bars.isEmpty) return const SizedBox.shrink();
     return Column(mainAxisSize: MainAxisSize.min, children: bars);
+  }
+
+  /// Die Wahl fuer diese eine Nachricht zuruecknehmen — zurueck auf die
+  /// Regel des Chats.
+  void _regelZuruecknehmen() => setState(() {
+        _regel = Nachrichtenregel.chatregel;
+        _einzelFrist = null;
+      });
+
+  /// Die Fristen, die fuer eine einzelne Nachricht zur Wahl stehen.
+  ///
+  /// Dieselben Stufen wie beim Chat-Timer, ohne „aus" und ohne „direkt nach
+  /// dem Lesen" — beides steht in der Auswahl schon als eigener Eintrag.
+  static const _einzelFristen = <Duration>[
+    Duration(seconds: 30),
+    Duration(minutes: 5),
+    Duration(minutes: 30),
+    Duration(hours: 1),
+    Duration(days: 1),
+    Duration(days: 7),
+  ];
+
+  /// Was mit der naechsten Nachricht geschehen soll.
+  ///
+  /// Als Blatt und nicht als Aufklappmenue: es sind vier Faelle, drei davon
+  /// brauchen einen Satz Erklaerung, und die Fristen darunter sind sechs
+  /// Zeilen. In ein Aufklappmenue am Rand des Bildschirms passt das nicht,
+  /// ohne dass die Haelfte abgeschnitten wird — genau daran krankte die alte
+  /// Liste mit sechs Fristen und Burn after read.
+  Future<void> _zeigeRegelAuswahl() async {
+    final l10n = AppLocalizations.of(context)!;
+    final chat = context.read<MessengerProvider>().chatById(widget.chat.id);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor:
+          isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) {
+        final gewaehlt = _regel;
+        return SafeArea(
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const SizedBox(height: 8),
+                Container(
+                  width: 36,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: isDark
+                        ? AppColors.dividerDark
+                        : AppColors.dividerLight,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  child: Text(
+                    l10n.messageRuleTitle,
+                    style: Theme.of(ctx).textTheme.titleMedium,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 20, vertical: 4),
+                  child: Text(
+                    l10n.messageRuleHint,
+                    style: Theme.of(ctx).textTheme.bodySmall,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                ListTile(
+                  leading: const Icon(Icons.chat_bubble_outline_rounded),
+                  title: Text(l10n.messageRuleDefault),
+                  subtitle: Text(_regelLabel(l10n,
+                      frist: chat?.defaultSelfDestruct,
+                      nachLesen: chat?.loeschtNachLesen ?? false)),
+                  trailing: gewaehlt == Nachrichtenregel.chatregel
+                      ? const Icon(Icons.check_rounded,
+                          color: AppColors.accent)
+                      : null,
+                  onTap: () {
+                    Navigator.of(ctx).pop();
+                    _regelZuruecknehmen();
+                  },
+                ),
+                const Divider(height: 1),
+                ListTile(
+                  leading: const Icon(Icons.drafts_outlined),
+                  title: Text(l10n.burnAfterReadingMessage),
+                  subtitle: Text(l10n.burnAfterReadingHint),
+                  trailing: gewaehlt == Nachrichtenregel.nachAnsehen
+                      ? const Icon(Icons.check_rounded,
+                          color: AppColors.accent)
+                      : null,
+                  onTap: () {
+                    Navigator.of(ctx).pop();
+                    setState(() {
+                      _regel = Nachrichtenregel.nachAnsehen;
+                      _einzelFrist = null;
+                    });
+                  },
+                ),
+                ListTile(
+                  leading: const Icon(Icons.visibility_off_rounded,
+                      color: AppColors.destructive),
+                  title: Text(l10n.onceOnlyMessage),
+                  subtitle: Text(l10n.onceOnlyHiddenHint),
+                  trailing: gewaehlt == Nachrichtenregel.einmalig
+                      ? const Icon(Icons.check_rounded,
+                          color: AppColors.accent)
+                      : null,
+                  onTap: () {
+                    Navigator.of(ctx).pop();
+                    setState(() {
+                      _regel = Nachrichtenregel.einmalig;
+                      _einzelFrist = null;
+                    });
+                  },
+                ),
+                const Divider(height: 1),
+                Align(
+                  alignment: AlignmentDirectional.centerStart,
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(20, 12, 20, 4),
+                    child: Text(
+                      l10n.messageTimerSection,
+                      style: Theme.of(ctx).textTheme.labelMedium,
+                    ),
+                  ),
+                ),
+                for (final d in _einzelFristen)
+                  ListTile(
+                    dense: true,
+                    leading: const Icon(Icons.timer_outlined),
+                    title: Text(_regelLabel(l10n, frist: d)),
+                    trailing: gewaehlt == Nachrichtenregel.frist &&
+                            _einzelFrist == d
+                        ? const Icon(Icons.check_rounded,
+                            color: AppColors.accent)
+                        : null,
+                    onTap: () {
+                      Navigator.of(ctx).pop();
+                      setState(() {
+                        _regel = Nachrichtenregel.frist;
+                        _einzelFrist = d;
+                      });
+                    },
+                  ),
+                const SizedBox(height: 8),
+              ],
+            ),
+          ),
+        );
+      },
+    );
   }
 
   Widget _buildInfoBar(
@@ -1001,47 +1220,33 @@ class _ChatScreenState extends State<ChatScreen>
               ),
             ),
           ),
-          // Timer icon
+          // Was mit dieser Nachricht geschehen soll: Frist, nach Ansehen,
+          // einmalig — oder was der Chat vorgibt.
           Padding(
             padding: const EdgeInsets.only(bottom: 6),
             child: SizedBox(
               width: 36,
               height: 36,
-              child: PopupMenuButton<String>(
+              child: IconButton(
+                tooltip: l10n.messageRuleTitle,
                 icon: Icon(
-                  _einmalig
-                      ? Icons.visibility_off_rounded
-                      : Icons.visibility_off_outlined,
-                  color: _einmalig ? AppColors.destructive : dimColor,
+                  switch (_regel) {
+                    Nachrichtenregel.einmalig => Icons.visibility_off_rounded,
+                    Nachrichtenregel.nachAnsehen => Icons.drafts_rounded,
+                    Nachrichtenregel.frist => Icons.timer_rounded,
+                    Nachrichtenregel.chatregel => Icons.timer_outlined,
+                  },
+                  color: switch (_regel) {
+                    Nachrichtenregel.einmalig ||
+                    Nachrichtenregel.nachAnsehen =>
+                      AppColors.destructive,
+                    Nachrichtenregel.frist => AppColors.warning,
+                    Nachrichtenregel.chatregel => dimColor,
+                  },
                   size: 22,
                 ),
                 padding: EdgeInsets.zero,
-                onSelected: (value) {
-                  setState(() => _einmalig = value == 'once');
-                },
-                itemBuilder: (context) {
-                  // Vorher standen hier sechs Fristen und Burn after read,
-                  // also drei Konzepte fuer „geht wieder weg". Uebrig bleibt
-                  // eines. Die Frist des Chats steht weiter oben in der
-                  // Leiste und wird in den Chat-Einstellungen gesetzt.
-                  return [
-                    PopupMenuItem(
-                      value: 'off',
-                      child: Text(l10n.off),
-                    ),
-                    PopupMenuItem(
-                      value: 'once',
-                      child: Row(
-                        children: [
-                          const Icon(Icons.visibility_off_rounded,
-                              color: AppColors.destructive, size: 18),
-                          const SizedBox(width: 8),
-                          Flexible(child: Text(l10n.onceOnlyMessage)),
-                        ],
-                      ),
-                    ),
-                  ];
-                },
+                onPressed: _zeigeRegelAuswahl,
               ),
             ),
           ),

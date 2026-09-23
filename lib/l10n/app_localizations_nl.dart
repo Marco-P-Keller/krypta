@@ -651,7 +651,7 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get tutAutoDeleteDesc =>
-      'Stel een timer in voor de hele chat. Berichten worden na bezorging vanzelf gewist.';
+      'Voor de hele chat of voor één bericht. Wordt na bezorging verwijderd.';
 
   @override
   String get tutReadyTitle => 'Klaar';
@@ -842,7 +842,7 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get tutDCalculator =>
-      'De rekenmachine werkt echt. Niets verraadt hem.';
+      'Optioneel. De rekenmachine voor de messenger rekent echt en valt niet op.';
 
   @override
   String get tutTEncrypted => 'End to end';
@@ -859,14 +859,14 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get tutAccessIntro =>
-      'Vier dingen beschermen de messenger. Je stelt ze nu in.';
+      'Vier dingen beschermen de messenger. Elk is optioneel en kan later.';
 
   @override
   String get tutTSecretCode => 'Geheime code';
 
   @override
   String get tutDSecretCode =>
-      'Tik hem in de rekenmachine en druk op is gelijk aan. De messenger gaat open.';
+      'Typ hem in de rekenmachine en druk op is-gelijk. De messenger opent. Je kunt dit overslaan.';
 
   @override
   String get tutTDeleteCode => 'Wiscode';
@@ -1045,4 +1045,102 @@ class AppLocalizationsNl extends AppLocalizations {
   @override
   String get secFooter =>
       'Deze gegevens beschrijven methoden en parameters, nooit sleutels. Ze gelden voor de versie die hierboven staat.';
+
+  @override
+  String get yesterday => 'Gisteren';
+
+  @override
+  String get previewYou => 'Jij';
+
+  @override
+  String get previewLocked => 'Wachtwoordbeveiligd bericht';
+
+  @override
+  String get previewScreenshot => 'Schermafbeelding';
+
+  @override
+  String get previewRecording => 'Schermopname';
+
+  @override
+  String get previewAccountGone => 'Account verwijderd';
+
+  @override
+  String get previewRuleChanged => 'Verwijderregel gewijzigd';
+
+  @override
+  String get chatPreview => 'Berichtvoorbeeld';
+
+  @override
+  String get chatPreviewOn => 'De chatlijst toont het laatste bericht';
+
+  @override
+  String get chatPreviewOff => 'De chatlijst laat alleen zien dát er iets is';
+
+  @override
+  String get messageRuleTitle => 'Voor dit bericht';
+
+  @override
+  String get messageRuleHint =>
+      'Geldt alleen voor het volgende bericht. Daarna geldt weer de instelling van de chat.';
+
+  @override
+  String get messageRuleDefault => 'Instelling van de chat';
+
+  @override
+  String get messageTimerSection => 'Timer voor dit bericht';
+
+  @override
+  String messageTimerWith(String timer) {
+    return 'Timer: $timer';
+  }
+
+  @override
+  String get burnAfterReadingMessage => 'Verwijderen na bekijken';
+
+  @override
+  String get burnAfterReadingHint =>
+      'Gelezen en chat verlaten: weg, op beide apparaten.';
+
+  @override
+  String get calculatorLock => 'Rekenmachinevergrendeling';
+
+  @override
+  String get calculatorLockOn =>
+      'De rekenmachine staat voor de messenger. Typ de geheime code en druk op is-gelijk.';
+
+  @override
+  String get calculatorLockOff => 'De app opent de messenger direct.';
+
+  @override
+  String get calculatorLockEnabledHint => 'Rekenmachine ingesteld';
+
+  @override
+  String get calculatorLockDisabledHint => 'Rekenmachine uitgeschakeld';
+
+  @override
+  String get calculatorLockDisableTitle => 'Rekenmachine uitschakelen?';
+
+  @override
+  String get calculatorLockDisableBody =>
+      'De app opent dan direct de messenger. De geheime code en de wiscode worden verwijderd; je kunt de rekenmachine altijd opnieuw instellen.';
+
+  @override
+  String get calculatorLockDisableAction => 'Uitschakelen';
+
+  @override
+  String get skipSetup => 'Overslaan';
+
+  @override
+  String get setupOptionalHint =>
+      'De rekenmachine is optioneel. Je kunt hem overslaan en later instellen in de instellingen.';
+
+  @override
+  String get lockedHint => 'Ontgrendel om te openen.';
+
+  @override
+  String get unlockAction => 'Ontgrendelen';
+
+  @override
+  String get tutDBurnAfterRead =>
+      'Gelezen en chat verlaten: weg, op beide apparaten.';
 }

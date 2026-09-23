@@ -622,7 +622,7 @@ class _Meta extends StatelessWidget {
     )..layout();
 
     var breite = maler.width;
-    if (message.selfDestructDuration != null) breite += 11 + 3; // Sanduhr
+    if (_markeFuer(message) != null) breite += 11 + 3; // Sanduhr/Umschlag
     if (isMine) breite += 3 + _symbolgroesse; // Haken
     breite += 8; // Luft zwischen Text und Uhrzeit
 
@@ -635,6 +635,26 @@ class _Meta extends StatelessWidget {
     return faktor > 0 ? breite / faktor : breite;
   }
 
+  /// Das Zeichen neben der Uhrzeit, oder `null`, wenn diese Nachricht bleibt.
+  ///
+  /// Zwei Arten von „geht wieder weg" haben zwei Zeichen: die Sanduhr steht
+  /// fuer eine Frist — gleich ob sie vom Chat kommt oder nur dieser Nachricht
+  /// gehoert — der Umschlag fuer „nach Ansehen loeschen". Ohne das zweite sah
+  /// eine Nachricht, die beim Verlassen des Chats verschwindet, aus wie jede
+  /// andere.
+  ///
+  /// Die einmalige Nachricht braucht hier nichts: sie zeigt statt Inhalt ein
+  /// ganzes Tor, siehe EinmaligeBlase.
+  /// Statisch, weil [breite] es ebenfalls braucht — und die Rechnung muss
+  /// mit dem Bild mitwandern, sonst legt sich die Uhrzeit ueber den Text.
+  static IconData? _markeFuer(Message message) {
+    if (message.selfDestructDuration != null) return Icons.timer_outlined;
+    if (message.burnAfterRead) return Icons.drafts_outlined;
+    return null;
+  }
+
+  IconData? get _marke => _markeFuer(message);
+
   @override
   Widget build(BuildContext context) {
     final color = isMine
@@ -644,10 +664,10 @@ class _Meta extends StatelessWidget {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        if (message.selfDestructDuration != null)
+        if (_marke != null)
           Padding(
             padding: const EdgeInsets.only(right: 3),
-            child: Icon(Icons.timer_outlined, size: 11, color: color),
+            child: Icon(_marke, size: 11, color: color),
           ),
         Text(
           _fmtZeit(message.timestamp),

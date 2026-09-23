@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
+import '../../../../l10n/app_localizations.dart';
 import '../../../../theme/app_colors.dart';
 import '../../../../theme/app_spacing.dart';
 import '../../data/models/chat_model.dart';
 import '../../data/models/contact_model.dart';
+import '../../data/models/message_model.dart';
+import '../../logic/chatliste_policy.dart';
 
 const _avatarGradients = [
   [Color(0xFF0A84FF), Color(0xFF5856D6)],
@@ -26,6 +30,22 @@ class ChatTile extends StatelessWidget {
   /// Beschriftung der Markierung, lokalisiert vom Aufrufer gereicht.
   final String? requestLabel;
 
+  /// Was unter dem Namen steht, siehe [VorschauPolicy].
+  ///
+  /// Kommt vom Aufrufer, weil sie aus dem Verlauf im Provider abgeleitet wird
+  /// und nicht am Chat haengt — der Klartext soll weiterhin nur an einer
+  /// Stelle auf der Platte liegen.
+  final Vorschau vorschau;
+
+  /// Der Zustellstand der letzten Nachricht, wenn sie von mir ist.
+  ///
+  /// Nur dann: was die Gegenseite mir geschickt hat, braucht kein Haekchen.
+  final MessageStatus? eigenerStand;
+
+  /// Wann die Kachel gebaut wird. Nur fuer den Test — er darf sich nicht
+  /// darauf verlassen muessen, welcher Tag heute ist.
+  final DateTime? jetzt;
+
   const ChatTile({
     super.key,
     required this.chat,
@@ -33,6 +53,14 @@ class ChatTile extends StatelessWidget {
     this.onLongPress,
     this.requestState,
     this.requestLabel,
+    this.vorschau = (
+      art: VorschauArt.keine,
+      text: null,
+      vonMir: false,
+      ereignis: null
+    ),
+    this.eigenerStand,
+    this.jetzt,
   });
 
   List<Color> _gradientFor(String name) {
@@ -48,6 +76,8 @@ class ChatTile extends StatelessWidget {
     final hasUnread = chat.hatNeues;
     final hatHinweis = chat.hinweisCount > 0;
     final colors = _gradientFor(chat.recipientName);
+    final offeneAnfrage =
+        requestState != null && requestState != ContactRequestState.established;
 
     return InkWell(
       onTap: onTap,
@@ -96,21 +126,20 @@ class ChatTile extends StatelessWidget {
                       Expanded(
                         child: Text(
                           chat.recipientName,
-                          style: Theme.of(context)
-                              .textTheme
-                              .titleMedium
-                              ?.copyWith(
-                                fontWeight: hasUnread
-                                    ? FontWeight.w700
-                                    : FontWeight.w500,
-                              ),
+                          style:
+                              Theme.of(context).textTheme.titleMedium?.copyWith(
+                                    fontWeight: hasUnread
+                                        ? FontWeight.w700
+                                        : FontWeight.w500,
+                                  ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
                       ),
                       if (chat.displayTime != null)
                         Text(
-                          _formatTimestamp(chat.displayTime!),
+                          zeitText(context, chat.displayTime!,
+                              jetzt: jetzt ?? DateTime.now()),
                           style:
                               Theme.of(context).textTheme.bodySmall?.copyWith(
                                     color: hasUnread
@@ -128,11 +157,10 @@ class ChatTile extends StatelessWidget {
                   ),
                   const SizedBox(height: 3),
 
-                  // Preview + unread badge
+                  // Vorschau + Ballon
                   Row(
                     children: [
-                      if (requestState != null &&
-                          requestState != ContactRequestState.established)
+                      if (offeneAnfrage)
                         Expanded(
                           child: Row(
                             children: [
@@ -140,8 +168,8 @@ class ChatTile extends StatelessWidget {
                                 padding: const EdgeInsets.symmetric(
                                     horizontal: 8, vertical: 2),
                                 decoration: BoxDecoration(
-                                  color: AppColors.accent.withValues(
-                                      alpha: 0.15),
+                                  color:
+                                      AppColors.accent.withValues(alpha: 0.15),
                                   borderRadius: BorderRadius.circular(6),
                                 ),
                                 child: Text(
@@ -157,20 +185,18 @@ class ChatTile extends StatelessWidget {
                           ),
                         )
                       else
-                      // Hier stand einmal der Klartext der letzten Nachricht.
-                      // Die Chatliste ist die eine Ansicht, die jemand sieht,
-                      // ohne einen Chat zu oeffnen — ueber die Schulter, oder
-                      // weil das entsperrte Telefon kurz aus der Hand gegeben
-                      // wurde. Was noetig ist, sagt der Ballon rechts: dass
-                      // etwas da ist, und wie viel. Nicht, was drinsteht.
-                      //
-                      // Die Zeile bleibt, weil die Anfrage-Markierung und die
-                      // Tipp-Anzeige darin sitzen.
-                      Expanded(
-                        child: chat.isTyping
-                            ? _TypingIndicator(isDark: isDark)
-                            : const SizedBox.shrink(),
-                      ),
+                        // Die Tipp-Anzeige geht vor: was gerade geschrieben
+                        // wird, ist neuer als alles, was dasteht.
+                        Expanded(
+                          child: chat.isTyping
+                              ? _TypingIndicator(isDark: isDark)
+                              : _Vorschauzeile(
+                                  vorschau: vorschau,
+                                  eigenerStand: eigenerStand,
+                                  hasUnread: hasUnread,
+                                  isDark: isDark,
+                                ),
+                        ),
                       // Der Punkt sagt: hier ist etwas passiert. Die Zahl
                       // daneben sagt, wie viele echte Nachrichten liegen.
                       // Bewusst zwei verschiedene Zeichen — ein Screenshot ist
@@ -225,19 +251,162 @@ class ChatTile extends StatelessWidget {
     );
   }
 
-  String _formatTimestamp(DateTime time) {
-    final now = DateTime.now();
-    final diff = now.difference(time);
-    if (diff.inDays == 0) {
-      return '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}';
-    } else if (diff.inDays == 1) {
-      return 'Yesterday';
-    } else if (diff.inDays < 7) {
-      const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-      return days[time.weekday - 1];
-    } else {
-      return '${time.day}.${time.month}';
+  /// Die Uhrzeit rechts in der Kachel, in der Sprache des Nutzers.
+  ///
+  /// Hier stand einmal eine eigene Rechnung mit `Yesterday` und einer festen
+  /// Liste `['Mon', 'Tue', …]` — englisch, in einer App mit sieben Sprachen,
+  /// und die Grenze lief ueber `difference(...).inDays`. Um zehn nach
+  /// Mitternacht stand deshalb fuer eine Nachricht von gestern 23:50 immer
+  /// noch `23:50` da. Welche Form gilt, entscheidet jetzt [ChatlistZeit] nach
+  /// Kalendertagen; die Woerter kommen aus der Uebersetzung und aus `intl`.
+  static String zeitText(BuildContext context, DateTime zeit,
+      {required DateTime jetzt}) {
+    final sprache = Localizations.localeOf(context).toString();
+    switch (ChatlistZeit.form(zeit, jetzt)) {
+      case ZeitForm.uhrzeit:
+        // Ueber MaterialLocalizations, nicht selbst formatiert: nur so
+        // richtet sich die Anzeige nach der 24-Stunden-Einstellung des
+        // Geraets.
+        return MaterialLocalizations.of(context).formatTimeOfDay(
+          TimeOfDay.fromDateTime(zeit),
+          alwaysUse24HourFormat: MediaQuery.of(context).alwaysUse24HourFormat,
+        );
+      case ZeitForm.gestern:
+        // Erst hier nachgeschlagen: die drei anderen Formen kommen ohne
+        // Uebersetzung aus, und eine Kachel soll nicht daran scheitern, dass
+        // ein Aufrufer die Delegates vergessen hat.
+        return AppLocalizations.of(context)?.yesterday ?? 'Yesterday';
+      case ZeitForm.wochentag:
+        return DateFormat.E(sprache).format(zeit);
+      case ZeitForm.datum:
+        return DateFormat.yMd(sprache).format(zeit);
     }
+  }
+}
+
+/// Die Zeile unter dem Namen: Haekchen, Symbol, Text.
+///
+/// Der Text kommt aus dem Verlauf im Speicher und steht nur hier — er wird
+/// nicht am Chat gespeichert, siehe VorschauPolicy. Eine einmalige und eine
+/// passwortgeschuetzte Nachricht zeigen nie ihren Inhalt, sondern sagen nur,
+/// dass sie da sind: den Inhalt gibt es genau einmal, und zwar im Chat.
+class _Vorschauzeile extends StatelessWidget {
+  const _Vorschauzeile({
+    required this.vorschau,
+    required this.eigenerStand,
+    required this.hasUnread,
+    required this.isDark,
+  });
+
+  final Vorschau vorschau;
+  final MessageStatus? eigenerStand;
+  final bool hasUnread;
+  final bool isDark;
+
+  @override
+  Widget build(BuildContext context) {
+    if (vorschau.art == VorschauArt.keine) return const SizedBox.shrink();
+    final l10n = AppLocalizations.of(context)!;
+    final farbe = hasUnread
+        ? (isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight)
+        : (isDark ? AppColors.textTertiaryDark : AppColors.textTertiaryLight);
+
+    final symbol = switch (vorschau.art) {
+      VorschauArt.einmalig => Icons.visibility_off_rounded,
+      VorschauArt.passwort => Icons.lock_rounded,
+      VorschauArt.hinweis => _hinweisSymbol(vorschau.ereignis),
+      _ => null,
+    };
+
+    final text = switch (vorschau.art) {
+      VorschauArt.text => vorschau.text ?? '',
+      VorschauArt.einmalig => l10n.onceOnlyMessage,
+      VorschauArt.passwort => l10n.previewLocked,
+      VorschauArt.hinweis => _hinweisText(l10n, vorschau.ereignis),
+      VorschauArt.keine => '',
+    };
+
+    return Row(
+      children: [
+        // Das Haekchen gehoert nur an eine eigene Nachricht, und nur an eine
+        // gewoehnliche: bei einem Hinweis gibt es nichts zuzustellen.
+        if (eigenerStand != null && vorschau.art != VorschauArt.hinweis) ...[
+          _Haekchen(status: eigenerStand!, farbe: farbe),
+          const SizedBox(width: 3),
+        ],
+        if (vorschau.vonMir && vorschau.art != VorschauArt.hinweis)
+          Text(
+            '${l10n.previewYou}: ',
+            style: TextStyle(fontSize: 13, color: farbe),
+          ),
+        if (symbol != null) ...[
+          Icon(symbol, size: 14, color: farbe),
+          const SizedBox(width: 4),
+        ],
+        Expanded(
+          child: Text(
+            text,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              fontSize: 13,
+              color: farbe,
+              fontStyle: vorschau.art == VorschauArt.text
+                  ? FontStyle.normal
+                  : FontStyle.italic,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  static IconData _hinweisSymbol(SystemEventKind? art) => switch (art) {
+        SystemEventKind.screenshot => Icons.screenshot_rounded,
+        SystemEventKind.screenRecording => Icons.videocam_rounded,
+        SystemEventKind.accountDeleted => Icons.person_off_rounded,
+        SystemEventKind.selfDestructChanged => Icons.timer_outlined,
+        SystemEventKind.selfDestructAfterRead => Icons.drafts_outlined,
+        null => Icons.info_outline_rounded,
+      };
+
+  /// Knapp, nicht der ganze Satz aus dem Verlauf.
+  ///
+  /// „Marco hat einen Screenshot vom Chat gemacht" passt in die Blase im
+  /// Chat, aber nicht in eine Zeile neben einem Ballon — dort bliebe von
+  /// jedem Hinweis dasselbe abgeschnittene „Marco hat einen Screensh…".
+  static String _hinweisText(AppLocalizations l10n, SystemEventKind? art) =>
+      switch (art) {
+        SystemEventKind.screenshot => l10n.previewScreenshot,
+        SystemEventKind.screenRecording => l10n.previewRecording,
+        SystemEventKind.accountDeleted => l10n.previewAccountGone,
+        SystemEventKind.selfDestructChanged ||
+        SystemEventKind.selfDestructAfterRead =>
+          l10n.previewRuleChanged,
+        null => '',
+      };
+}
+
+/// Ein Haken, zwei Haken, zwei blaue Haken — wie man es kennt.
+class _Haekchen extends StatelessWidget {
+  const _Haekchen({required this.status, required this.farbe});
+
+  final MessageStatus status;
+  final Color farbe;
+
+  @override
+  Widget build(BuildContext context) {
+    return switch (status) {
+      MessageStatus.sending =>
+        Icon(Icons.schedule_rounded, size: 13, color: farbe),
+      MessageStatus.failed => const Icon(Icons.error_outline_rounded,
+          size: 13, color: AppColors.destructive),
+      MessageStatus.sent => Icon(Icons.check_rounded, size: 13, color: farbe),
+      MessageStatus.delivered =>
+        Icon(Icons.done_all_rounded, size: 13, color: farbe),
+      MessageStatus.read => const Icon(Icons.done_all_rounded,
+          size: 13, color: AppColors.accent),
+    };
   }
 }
 
