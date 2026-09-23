@@ -654,7 +654,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get tutAutoDeleteDesc =>
-      'Règle un minuteur pour toute la discussion. Les messages sont supprimés après la remise.';
+      'Pour tout le chat ou pour un seul message. Supprimé après la remise.';
 
   @override
   String get tutReadyTitle => 'Prêt';
@@ -844,7 +844,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get tutDCalculator =>
-      'La calculatrice fonctionne vraiment. Rien ne la trahit.';
+      'Facultative. La calculatrice devant la messagerie calcule vraiment et ne se remarque pas.';
 
   @override
   String get tutTEncrypted => 'De bout en bout';
@@ -861,14 +861,14 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get tutAccessIntro =>
-      'Quatre choses protègent la messagerie. Tu les règles maintenant.';
+      'Quatre choses protègent la messagerie. Chacune est facultative et peut attendre.';
 
   @override
   String get tutTSecretCode => 'Code secret';
 
   @override
   String get tutDSecretCode =>
-      'Tape le dans la calculatrice et appuie sur égal. La messagerie s’ouvre.';
+      'Saisis-le dans la calculatrice et appuie sur égal. La messagerie s’ouvre. Tu peux l’ignorer.';
 
   @override
   String get tutTDeleteCode => 'Code d’effacement';
@@ -1048,4 +1048,103 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get secFooter =>
       'Ces indications décrivent des méthodes et des paramètres, jamais des clés. Elles valent pour la version affichée ci-dessus.';
+
+  @override
+  String get yesterday => 'Hier';
+
+  @override
+  String get previewYou => 'Vous';
+
+  @override
+  String get previewLocked => 'Message protégé par mot de passe';
+
+  @override
+  String get previewScreenshot => 'Capture d’écran';
+
+  @override
+  String get previewRecording => 'Enregistrement d’écran';
+
+  @override
+  String get previewAccountGone => 'Compte supprimé';
+
+  @override
+  String get previewRuleChanged => 'Règle de suppression modifiée';
+
+  @override
+  String get chatPreview => 'Aperçu des messages';
+
+  @override
+  String get chatPreviewOn => 'La liste des chats affiche le dernier message';
+
+  @override
+  String get chatPreviewOff =>
+      'La liste des chats indique seulement qu’il y a quelque chose';
+
+  @override
+  String get messageRuleTitle => 'Pour ce message';
+
+  @override
+  String get messageRuleHint =>
+      'S’applique uniquement au prochain message. Ensuite, le réglage du chat s’applique à nouveau.';
+
+  @override
+  String get messageRuleDefault => 'Réglage du chat';
+
+  @override
+  String get messageTimerSection => 'Minuteur pour ce message';
+
+  @override
+  String messageTimerWith(String timer) {
+    return 'Minuteur : $timer';
+  }
+
+  @override
+  String get burnAfterReadingMessage => 'Supprimer après lecture';
+
+  @override
+  String get burnAfterReadingHint =>
+      'Lu puis chat quitté : supprimé, sur les deux appareils.';
+
+  @override
+  String get calculatorLock => 'Verrouillage par calculatrice';
+
+  @override
+  String get calculatorLockOn =>
+      'La calculatrice précède la messagerie. Saisis le code secret et appuie sur égal.';
+
+  @override
+  String get calculatorLockOff => 'L’app ouvre directement la messagerie.';
+
+  @override
+  String get calculatorLockEnabledHint => 'Calculatrice configurée';
+
+  @override
+  String get calculatorLockDisabledHint => 'Calculatrice désactivée';
+
+  @override
+  String get calculatorLockDisableTitle => 'Désactiver la calculatrice ?';
+
+  @override
+  String get calculatorLockDisableBody =>
+      'L’app ouvrira alors directement la messagerie. Le code secret et le code de suppression sont effacés ; tu peux reconfigurer la calculatrice à tout moment.';
+
+  @override
+  String get calculatorLockDisableAction => 'Désactiver';
+
+  @override
+  String get skipSetup => 'Ignorer';
+
+  @override
+  String get setupOptionalHint =>
+      'La calculatrice est facultative. Tu peux l’ignorer et la configurer plus tard dans les réglages.';
+
+  @override
+  String get lockedHint => 'Déverrouille pour ouvrir.';
+
+  @override
+  String get unlockAction => 'Déverrouiller';
+
+  @override
+  String get tutDBurnAfterRead =>
+      'Lu puis chat quitté : supprimé, sur les deux appareils.';
 }

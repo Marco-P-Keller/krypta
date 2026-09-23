@@ -1263,7 +1263,7 @@ abstract class AppLocalizations {
   /// No description provided for @tutAutoDeleteDesc.
   ///
   /// In en, this message translates to:
-  /// **'Set a timer for the whole chat. Messages are deleted automatically once they arrive.'**
+  /// **'For the whole chat or for a single message. Deleted after delivery.'**
   String get tutAutoDeleteDesc;
 
   /// No description provided for @tutReadyTitle.
@@ -1587,7 +1587,7 @@ abstract class AppLocalizations {
   /// No description provided for @tutDCalculator.
   ///
   /// In en, this message translates to:
-  /// **'The calculator in front really works. Nothing gives it away.'**
+  /// **'Optional. The calculator in front of the messenger really calculates, and nothing about it stands out.'**
   String get tutDCalculator;
 
   /// No description provided for @tutTEncrypted.
@@ -1617,7 +1617,7 @@ abstract class AppLocalizations {
   /// No description provided for @tutAccessIntro.
   ///
   /// In en, this message translates to:
-  /// **'Four things protect the messenger. You set them up next.'**
+  /// **'Four things protect the messenger. Each one is optional, each can wait.'**
   String get tutAccessIntro;
 
   /// No description provided for @tutTSecretCode.
@@ -1629,7 +1629,7 @@ abstract class AppLocalizations {
   /// No description provided for @tutDSecretCode.
   ///
   /// In en, this message translates to:
-  /// **'Type it into the calculator and press equals. The messenger opens.'**
+  /// **'Type it into the calculator and press equals. The messenger opens. You can skip this.'**
   String get tutDSecretCode;
 
   /// No description provided for @tutTDeleteCode.
@@ -1931,6 +1931,186 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'These statements describe methods and parameters, never keys. They apply to the version shown above.'**
   String get secFooter;
+
+  /// No description provided for @yesterday.
+  ///
+  /// In en, this message translates to:
+  /// **'Yesterday'**
+  String get yesterday;
+
+  /// No description provided for @previewYou.
+  ///
+  /// In en, this message translates to:
+  /// **'You'**
+  String get previewYou;
+
+  /// No description provided for @previewLocked.
+  ///
+  /// In en, this message translates to:
+  /// **'Password-protected message'**
+  String get previewLocked;
+
+  /// No description provided for @previewScreenshot.
+  ///
+  /// In en, this message translates to:
+  /// **'Screenshot'**
+  String get previewScreenshot;
+
+  /// No description provided for @previewRecording.
+  ///
+  /// In en, this message translates to:
+  /// **'Screen recording'**
+  String get previewRecording;
+
+  /// No description provided for @previewAccountGone.
+  ///
+  /// In en, this message translates to:
+  /// **'Account deleted'**
+  String get previewAccountGone;
+
+  /// No description provided for @previewRuleChanged.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete rule changed'**
+  String get previewRuleChanged;
+
+  /// No description provided for @chatPreview.
+  ///
+  /// In en, this message translates to:
+  /// **'Message preview'**
+  String get chatPreview;
+
+  /// No description provided for @chatPreviewOn.
+  ///
+  /// In en, this message translates to:
+  /// **'The chat list shows the last message'**
+  String get chatPreviewOn;
+
+  /// No description provided for @chatPreviewOff.
+  ///
+  /// In en, this message translates to:
+  /// **'The chat list only shows that something is there'**
+  String get chatPreviewOff;
+
+  /// No description provided for @messageRuleTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'For this message'**
+  String get messageRuleTitle;
+
+  /// No description provided for @messageRuleHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Applies to the next message only. After that the chat setting applies again.'**
+  String get messageRuleHint;
+
+  /// No description provided for @messageRuleDefault.
+  ///
+  /// In en, this message translates to:
+  /// **'Chat setting'**
+  String get messageRuleDefault;
+
+  /// No description provided for @messageTimerSection.
+  ///
+  /// In en, this message translates to:
+  /// **'Timer for this message'**
+  String get messageTimerSection;
+
+  /// No description provided for @messageTimerWith.
+  ///
+  /// In en, this message translates to:
+  /// **'Timer: {timer}'**
+  String messageTimerWith(String timer);
+
+  /// No description provided for @burnAfterReadingMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete after viewing'**
+  String get burnAfterReadingMessage;
+
+  /// No description provided for @burnAfterReadingHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Read and leave the chat: gone, on both devices.'**
+  String get burnAfterReadingHint;
+
+  /// No description provided for @calculatorLock.
+  ///
+  /// In en, this message translates to:
+  /// **'Calculator lock'**
+  String get calculatorLock;
+
+  /// No description provided for @calculatorLockOn.
+  ///
+  /// In en, this message translates to:
+  /// **'The calculator sits in front of the messenger. Type the secret code and press equals.'**
+  String get calculatorLockOn;
+
+  /// No description provided for @calculatorLockOff.
+  ///
+  /// In en, this message translates to:
+  /// **'The app opens the messenger directly.'**
+  String get calculatorLockOff;
+
+  /// No description provided for @calculatorLockEnabledHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Calculator set up'**
+  String get calculatorLockEnabledHint;
+
+  /// No description provided for @calculatorLockDisabledHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Calculator turned off'**
+  String get calculatorLockDisabledHint;
+
+  /// No description provided for @calculatorLockDisableTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Turn off the calculator?'**
+  String get calculatorLockDisableTitle;
+
+  /// No description provided for @calculatorLockDisableBody.
+  ///
+  /// In en, this message translates to:
+  /// **'The app will then open the messenger directly. The secret code and delete code are removed; you can set the calculator up again at any time.'**
+  String get calculatorLockDisableBody;
+
+  /// No description provided for @calculatorLockDisableAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Turn off'**
+  String get calculatorLockDisableAction;
+
+  /// No description provided for @skipSetup.
+  ///
+  /// In en, this message translates to:
+  /// **'Skip'**
+  String get skipSetup;
+
+  /// No description provided for @setupOptionalHint.
+  ///
+  /// In en, this message translates to:
+  /// **'The calculator is optional. You can skip it and set it up later in settings.'**
+  String get setupOptionalHint;
+
+  /// No description provided for @lockedHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Unlock to open.'**
+  String get lockedHint;
+
+  /// No description provided for @unlockAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Unlock'**
+  String get unlockAction;
+
+  /// No description provided for @tutDBurnAfterRead.
+  ///
+  /// In en, this message translates to:
+  /// **'Read and leave the chat: gone, on both devices.'**
+  String get tutDBurnAfterRead;
 }
 
 class _AppLocalizationsDelegate

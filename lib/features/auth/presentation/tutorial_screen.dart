@@ -338,6 +338,13 @@ class _PageMessages extends StatelessWidget {
         ),
         _FeatureRow(
           isDark: isDark,
+          icon: Icons.drafts_rounded,
+          color: AppColors.warning,
+          title: l10n.burnAfterReadingMessage,
+          description: l10n.tutDBurnAfterRead,
+        ),
+        _FeatureRow(
+          isDark: isDark,
           icon: Icons.visibility_off_rounded,
           color: AppColors.destructive,
           title: l10n.onceOnlyMessage,

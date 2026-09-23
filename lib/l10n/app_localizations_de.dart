@@ -653,7 +653,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get tutAutoDeleteDesc =>
-      'Lege einen Timer für den ganzen Chat fest. Nachrichten werden nach der Zustellung automatisch gelöscht.';
+      'Für den ganzen Chat oder für eine einzelne Nachricht. Gelöscht wird nach der Zustellung.';
 
   @override
   String get tutReadyTitle => 'Fertig';
@@ -844,7 +844,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get tutDCalculator =>
-      'Der Rechner vor dem Messenger rechnet wirklich. Niemand sieht ihm etwas an.';
+      'Freiwillig. Der Rechner vor dem Messenger rechnet wirklich, und niemand sieht ihm etwas an.';
 
   @override
   String get tutTEncrypted => 'Ende zu Ende';
@@ -861,14 +861,14 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get tutAccessIntro =>
-      'Vier Dinge schützen den Messenger. Du richtest sie gleich ein.';
+      'Vier Dinge schützen den Messenger. Jedes ist freiwillig, jedes geht auch später.';
 
   @override
   String get tutTSecretCode => 'Geheimcode';
 
   @override
   String get tutDSecretCode =>
-      'Im Rechner eintippen und Gleich drücken. Der Messenger geht auf.';
+      'Im Rechner eintippen und Gleich drücken. Der Messenger geht auf. Du kannst das überspringen.';
 
   @override
   String get tutTDeleteCode => 'Löschcode';
@@ -1047,4 +1047,102 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String get secFooter =>
       'Stand dieser Angaben: die eingebaute Version oben. Sie beschreiben Verfahren und Parameter, keine Schlüssel.';
+
+  @override
+  String get yesterday => 'Gestern';
+
+  @override
+  String get previewYou => 'Du';
+
+  @override
+  String get previewLocked => 'Passwortgeschützte Nachricht';
+
+  @override
+  String get previewScreenshot => 'Screenshot';
+
+  @override
+  String get previewRecording => 'Bildschirmaufnahme';
+
+  @override
+  String get previewAccountGone => 'Konto gelöscht';
+
+  @override
+  String get previewRuleChanged => 'Löschregel geändert';
+
+  @override
+  String get chatPreview => 'Nachrichtenvorschau';
+
+  @override
+  String get chatPreviewOn => 'Die Chatliste zeigt die letzte Nachricht';
+
+  @override
+  String get chatPreviewOff => 'Die Chatliste zeigt nur, dass etwas da ist';
+
+  @override
+  String get messageRuleTitle => 'Für diese Nachricht';
+
+  @override
+  String get messageRuleHint =>
+      'Gilt nur für die nächste Nachricht. Danach gilt wieder, was für den Chat eingestellt ist.';
+
+  @override
+  String get messageRuleDefault => 'Einstellung des Chats';
+
+  @override
+  String get messageTimerSection => 'Timer für diese Nachricht';
+
+  @override
+  String messageTimerWith(String timer) {
+    return 'Timer: $timer';
+  }
+
+  @override
+  String get burnAfterReadingMessage => 'Nach Ansehen löschen';
+
+  @override
+  String get burnAfterReadingHint =>
+      'Gelesen und Chat verlassen: weg, auf beiden Geräten.';
+
+  @override
+  String get calculatorLock => 'Taschenrechner-Sperre';
+
+  @override
+  String get calculatorLockOn =>
+      'Der Rechner steht vor dem Messenger. Geheimcode eintippen und Gleich drücken.';
+
+  @override
+  String get calculatorLockOff => 'Die App öffnet den Messenger direkt.';
+
+  @override
+  String get calculatorLockEnabledHint => 'Taschenrechner eingerichtet';
+
+  @override
+  String get calculatorLockDisabledHint => 'Taschenrechner abgeschaltet';
+
+  @override
+  String get calculatorLockDisableTitle => 'Taschenrechner abschalten?';
+
+  @override
+  String get calculatorLockDisableBody =>
+      'Die App öffnet dann direkt den Messenger. Geheimcode und Löschcode werden gelöscht; du kannst den Rechner jederzeit wieder einrichten.';
+
+  @override
+  String get calculatorLockDisableAction => 'Abschalten';
+
+  @override
+  String get skipSetup => 'Überspringen';
+
+  @override
+  String get setupOptionalHint =>
+      'Der Taschenrechner ist freiwillig. Du kannst ihn überspringen und später in den Einstellungen einrichten.';
+
+  @override
+  String get lockedHint => 'Zum Öffnen entsperren.';
+
+  @override
+  String get unlockAction => 'Entsperren';
+
+  @override
+  String get tutDBurnAfterRead =>
+      'Gelesen und Chat verlassen: weg, auf beiden Geräten.';
 }

@@ -2,9 +2,13 @@ name: Security Gate
 
 on:
   push:
-    branches: [main, security/*, release/*]
+    branches: [main, dev-Daniele, security/*, release/*]
+  # Auch gegen dev-Daniele. Dort laeuft die Entwicklung — 99 Commits vor
+  # `main`, und jede Zeile davon kam bisher ungeprueft durch, weil der Gate
+  # nur auf `main` hoerte. Ein Tor, an dem niemand vorbeikommt, aber auch
+  # niemand vorbeikommen muss, ist keines.
   pull_request:
-    branches: [main]
+    branches: [main, dev-Daniele]
 
 jobs:
   security-gate:

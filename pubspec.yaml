@@ -64,6 +64,12 @@ dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^6.0.0
+  # Nur fuer den Test: der Schluesselbund wird durch eine Attrappe ersetzt,
+  # damit sich die Vorgaben der Zugangsschalter pruefen lassen (siehe
+  # test/security/zugangs_vorgaben_test.dart). Ueber die Plattform-
+  # Schnittstelle statt ueber den Methodenkanal, damit der Test nicht an
+  # einem Kanalnamen haengt, den das Paket jederzeit aendern darf.
+  flutter_secure_storage_platform_interface:
 
 flutter:
   generate: true

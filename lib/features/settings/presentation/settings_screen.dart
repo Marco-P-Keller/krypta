@@ -48,6 +48,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
   bool _vaultPasswordEnabled = false;
   bool _pushBenachrichtigungen = true;
   bool _readReceiptsEnabled = false;
+
+  /// Ob der Taschenrechner vor dem Messenger steht.
+  ///
+  /// Freiwillig seit dem 22.09.2026. Der Schalter richtet ihn beim
+  /// Einschalten gleich ein — ohne Geheimcode waere er eine Tuer ohne
+  /// Schluessel.
+  bool _rechnerSperre = true;
+
+  /// Ob die Chatliste den Text der letzten Nachricht zeigt.
+  bool _chatVorschau = true;
   DeviceIntegrityLevel? _deviceIntegrityLevel;
   HardwareSecurityLevel? _hardwareSecurityLevel;
   bool _isHardwareWrapped = false;
@@ -76,6 +86,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final vaultPw = await storage.isVaultPasswordEnabled();
     final push = await storage.isPushNotificationsEnabled();
     final readReceipts = await storage.isReadReceiptsEnabled();
+    final rechner = await storage.isCalculatorLockEnabled();
+    final vorschau = await storage.isChatPreviewEnabled();
 
     if (mounted) {
       setState(() {
@@ -84,6 +96,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
         _vaultPasswordEnabled = vaultPw;
         _pushBenachrichtigungen = push;
         _readReceiptsEnabled = readReceipts;
+        _rechnerSperre = rechner;
+        _chatVorschau = vorschau;
         _deviceIntegrityLevel = integrity.lastResult?.level;
         _hardwareSecurityLevel = hardware.level;
         _isHardwareWrapped = localStore.isHardwareWrapped;
@@ -251,6 +265,170 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final messenger = context.read<MessengerProvider>();
     await messenger.setReadReceiptsEnabled(value);
     if (mounted) setState(() => _readReceiptsEnabled = value);
+  }
+
+  /// Den Taschenrechner ein- oder ausschalten.
+  ///
+  /// Beides ist eine Sicherheitsaenderung und laeuft deshalb durch dieselbe
+  /// Rueckfrage wie ein Codewechsel. Einschalten heisst: zwei Codes vergeben,
+  /// sonst stuende ein Rechner da, den nichts oeffnet. Ausschalten heisst:
+  /// beide Codes loeschen, sonst bliebe ein Loeschcode liegen, zu dem es
+  /// keine Eingabe mehr gibt.
+  Future<void> _rechnerSperreUmschalten(bool an) async {
+    if (!await _reAuthenticate()) return;
+    if (!mounted) return;
+    if (an) {
+      await _rechnerEinrichten();
+    } else {
+      await _rechnerAbschalten();
+    }
+  }
+
+  Future<void> _rechnerEinrichten() async {
+    final l10n = AppLocalizations.of(context)!;
+    final storage = context.read<SecureStorageService>();
+
+    final geheim = await _codeAbfragen(
+      titel: l10n.secretCodeLabel,
+      hinweis: l10n.setupSecretCodeSubtitle,
+    );
+    if (geheim == null || !mounted) return;
+
+    final loesch = await _codeAbfragen(
+      titel: l10n.deleteCodeLabel,
+      hinweis: l10n.setupDeleteCodeSubtitle,
+    );
+    if (loesch == null || !mounted) return;
+
+    // Dieselbe Regel wie bei der Einrichtung: der Loeschcode wird zuerst
+    // geprueft, ein gleicher Geheimcode waere damit nie erreichbar.
+    if (loesch == geheim) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(l10n.deleteCodeMustDiffer)),
+        );
+      }
+      return;
+    }
+
+    await storage.saveSecretCode(geheim);
+    await storage.saveDeleteCode(loesch);
+    await storage.setCalculatorLockEnabled(true);
+    if (!mounted) return;
+    setState(() => _rechnerSperre = true);
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(l10n.calculatorLockEnabledHint)),
+    );
+  }
+
+  Future<void> _rechnerAbschalten() async {
+    final l10n = AppLocalizations.of(context)!;
+    final storage = context.read<SecureStorageService>();
+
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        scrollable: true,
+        title: Text(l10n.calculatorLockDisableTitle),
+        content: Text(l10n.calculatorLockDisableBody),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: Text(l10n.cancel),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            style: FilledButton.styleFrom(
+                backgroundColor: AppColors.destructive),
+            child: Text(l10n.calculatorLockDisableAction),
+          ),
+        ],
+      ),
+    );
+    if (ok != true || !mounted) return;
+
+    await storage.setCalculatorLockEnabled(false);
+    await storage.deleteAccessCodes();
+    if (!mounted) return;
+    setState(() => _rechnerSperre = false);
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(l10n.calculatorLockDisabledHint)),
+    );
+  }
+
+  /// Einen Zifferncode abfragen. `null`, wenn abgebrochen wurde.
+  ///
+  /// Eigene Maske statt [_showChangeCodeDialog]: der dortige Ablauf fragt
+  /// vorher noch einmal nach dem Tresor-Passwort und prueft gegen einen
+  /// bestehenden Code. Hier werden beide gerade erst vergeben.
+  Future<String?> _codeAbfragen({
+    required String titel,
+    required String hinweis,
+  }) async {
+    final l10n = AppLocalizations.of(context)!;
+    final controller = TextEditingController();
+    String? fehler;
+    try {
+      return await showDialog<String>(
+        context: context,
+        builder: (ctx) => StatefulBuilder(
+          builder: (ctx, setDialogState) => AlertDialog(
+            scrollable: true,
+            title: Text(titel),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(hinweis, style: Theme.of(ctx).textTheme.bodySmall),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: controller,
+                  keyboardType: TextInputType.number,
+                  obscureText: true,
+                  autofocus: true,
+                  inputFormatters: [
+                    FilteringTextInputFormatter.digitsOnly,
+                    LengthLimitingTextInputFormatter(
+                        AppConstants.maxCodeLength),
+                  ],
+                  decoration: InputDecoration(
+                    hintText: '••••',
+                    errorText: fehler,
+                  ),
+                ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(ctx).pop(),
+                child: Text(l10n.cancel),
+              ),
+              ElevatedButton(
+                onPressed: () {
+                  final code = controller.text;
+                  if (code.length < AppConstants.minCodeLength) {
+                    setDialogState(() => fehler =
+                        l10n.codeMinDigits(AppConstants.minCodeLength));
+                    return;
+                  }
+                  Navigator.of(ctx).pop(code);
+                },
+                child: Text(l10n.save),
+              ),
+            ],
+          ),
+        ),
+      );
+    } finally {
+      controller.dispose();
+    }
+  }
+
+  /// Die Vorschau in der Chatliste umschalten.
+  Future<void> _vorschauUmschalten(bool an) async {
+    final messenger = context.read<MessengerProvider>();
+    await messenger.setChatPreviewEnabled(an);
+    if (mounted) setState(() => _chatVorschau = an);
   }
 
   void _showChangeCodeDialog(
@@ -791,22 +969,38 @@ class _SettingsScreenState extends State<SettingsScreen> {
           // Security Codes
           _SectionHeader(l10n.securitySettings),
           _Card(isDark: isDark, children: [
-            _NavTile(
-              icon: Icons.lock_outline_rounded,
-              title: l10n.changeSecretCode,
-              onTap: () => _showChangeCodeDialog(
-                  l10n.changeSecretCode, storage.saveSecretCode,
-                  currentKey: StorageKeys.secretCode),
+            // Der Rechner ist freiwillig, und der Schalter steht deshalb
+            // ueber den Codes: ohne ihn gibt es keine, und beide Masten
+            // darunter waeren sinnlos.
+            _SwitchTile(
+              icon: Icons.calculate_outlined,
+              title: l10n.calculatorLock,
+              subtitle: _rechnerSperre
+                  ? l10n.calculatorLockOn
+                  : l10n.calculatorLockOff,
+              value: _rechnerSperre,
+              onChanged: _rechnerSperreUmschalten,
+              isDark: isDark,
             ),
-            _Divider(isDark: isDark),
-            _NavTile(
-              icon: Icons.delete_outline_rounded,
-              title: l10n.changeDeleteCode,
-              iconColor: AppColors.destructive,
-              onTap: () => _showChangeCodeDialog(
-                  l10n.changeDeleteCode, storage.saveDeleteCode,
-                  currentKey: StorageKeys.deleteCode),
-            ),
+            if (_rechnerSperre) ...[
+              _Divider(isDark: isDark),
+              _NavTile(
+                icon: Icons.lock_outline_rounded,
+                title: l10n.changeSecretCode,
+                onTap: () => _showChangeCodeDialog(
+                    l10n.changeSecretCode, storage.saveSecretCode,
+                    currentKey: StorageKeys.secretCode),
+              ),
+              _Divider(isDark: isDark),
+              _NavTile(
+                icon: Icons.delete_outline_rounded,
+                title: l10n.changeDeleteCode,
+                iconColor: AppColors.destructive,
+                onTap: () => _showChangeCodeDialog(
+                    l10n.changeDeleteCode, storage.saveDeleteCode,
+                    currentKey: StorageKeys.deleteCode),
+              ),
+            ],
           ]),
           const SizedBox(height: 28),
 
@@ -850,6 +1044,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   : l10n.pushNotificationsOff,
               value: _pushBenachrichtigungen,
               onChanged: _togglePushBenachrichtigungen,
+              isDark: isDark,
+            ),
+            _Divider(isDark: isDark),
+            _SwitchTile(
+              icon: Icons.chat_bubble_outline_rounded,
+              title: l10n.chatPreview,
+              subtitle:
+                  _chatVorschau ? l10n.chatPreviewOn : l10n.chatPreviewOff,
+              value: _chatVorschau,
+              onChanged: _vorschauUmschalten,
               isDark: isDark,
             ),
             _Divider(isDark: isDark),

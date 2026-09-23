@@ -25,6 +25,7 @@ import 'self_destruct_policy.dart';
 import 'einmalig_policy.dart';
 import 'ausstehende_meldungen.dart';
 import 'unread_policy.dart';
+import 'chatliste_policy.dart';
 import 'gone_policy.dart';
 import 'verification_policy.dart';
 import 'qr_payload_policy.dart';
@@ -213,6 +214,14 @@ class MessengerProvider extends ChangeNotifier {
   /// Whether read receipts are enabled (default: disabled for privacy).
   bool _readReceiptsEnabled = false;
 
+  /// Ob in der Chatliste der Text der letzten Nachricht steht.
+  ///
+  /// Standardmaessig an, wie bei WhatsApp — Daniels Vorgabe. Der Text wird
+  /// dabei **nur im Speicher** aus dem geladenen Verlauf abgeleitet und nie
+  /// ein zweites Mal auf die Platte geschrieben; genau daran scheiterte die
+  /// alte Vorschau am 30.08.2026, siehe VorschauPolicy.
+  bool _chatVorschau = true;
+
   /// Ob die App gerade vor dem Nutzer liegt.
   ///
   /// Gehoert zur Frage, ob eine eintreffende Nachricht als gesehen gilt: die
@@ -279,6 +288,41 @@ class MessengerProvider extends ChangeNotifier {
   bool get isPushNotificationsEnabled => _pushBenachrichtigungen;
   bool get isReadReceiptsEnabled => _readReceiptsEnabled;
 
+  /// Ob die Chatliste den Text der letzten Nachricht zeigt.
+  bool get isChatPreviewEnabled => _chatVorschau;
+
+  /// Was in der Chatliste unter dem Namen dieses Chats steht.
+  ///
+  /// Abgeleitet aus dem Verlauf im Speicher — die Nachrichten aller Chats
+  /// liegen seit [initialize] ohnehin dort. Kein Feld am Chat, keine zweite
+  /// Kopie auf der Platte.
+  Vorschau vorschauFuer(String chatId) => VorschauPolicy.fuer(
+        _messagesByChat[chatId] ?? const <Message>[],
+        eigeneId: userId,
+        zeigen: _chatVorschau,
+      );
+
+  /// Ob in diesem Chat ueberhaupt noch etwas liegt.
+  ///
+  /// Ohne Kopie der Liste, weil die Chatliste das fuer jede sichtbare Kachel
+  /// fragt: `messagesForChat` gibt eine unveraenderliche Kopie zurueck und
+  /// waere hier bei jedem Bildaufbau eine Allokation je Zeile.
+  bool hatInhalt(String chatId) => _messagesByChat[chatId]?.isNotEmpty ?? false;
+
+  /// Der Zustellstand der letzten eigenen Nachricht eines Chats, fuer die
+  /// Haekchen in der Kachel. `null`, wenn die letzte Nachricht nicht von mir
+  /// ist — dann gibt es dort nichts zu melden.
+  MessageStatus? letzterEigenerStand(String chatId) {
+    // Dieselbe Suche wie die Vorschau, und ausdruecklich dieselbe Funktion:
+    // sonst gehoert das Haekchen irgendwann zu einer anderen Nachricht als
+    // der Text darunter.
+    final letzte =
+        VorschauPolicy.juengste(_messagesByChat[chatId] ?? const <Message>[]);
+    if (letzte == null || letzte.senderId != userId) return null;
+    if (letzte.isSystemEvent) return null;
+    return letzte.status;
+  }
+
   List<Message> messagesForChat(String chatId) =>
       List.unmodifiable(_messagesByChat[chatId] ?? []);
 
@@ -325,6 +369,7 @@ class MessengerProvider extends ChangeNotifier {
     // Init local store and load persisted data
     await _localStore.init();
     _chats = await _localStore.loadChats();
+    ChatOrder.sortiere(_chats);
     _contacts = await _localStore.loadContacts();
     await _trageFehlendeLoeschzeitpunkteNach();
 
@@ -487,6 +532,7 @@ class MessengerProvider extends ChangeNotifier {
       // Die Zustellbestaetigung nicht mehr: sie ist seit dem 04.09.2026 immer
       // an, siehe _sendeZustellbestaetigung.
       _readReceiptsEnabled = await _secureStorage.isReadReceiptsEnabled();
+      _chatVorschau = await _secureStorage.isChatPreviewEnabled();
 
       // Load persisted control message counters for replay prevention
       try {
@@ -1377,6 +1423,7 @@ class MessengerProvider extends ChangeNotifier {
           recipientName: updated.displayName,
         );
         _chats.insert(0, chat);
+        ChatOrder.sortiere(_chats);
         _messagesByChat[chat.id] = [];
         await _localStore.saveChats(_chats);
       }
@@ -2085,6 +2132,7 @@ class MessengerProvider extends ChangeNotifier {
       recipientName: contact.displayName,
     );
     _chats.insert(0, chat);
+    ChatOrder.sortiere(_chats);
     _messagesByChat[chat.id] = [];
     _localStore.saveChats(_chats);
     notifyListeners();
@@ -2382,8 +2430,24 @@ class MessengerProvider extends ChangeNotifier {
       unreadCount: stand.anzahl,
       hinweisCount: stand.hinweise,
       firstUnreadAt: stand.ersteNeue,
-      lastMessageTime: letzte,
+      // Ist **nichts** mehr da, bleibt die alte Uhrzeit stehen. Das ist der
+      // Unterschied zwischen „die neueste ist weg, jetzt gilt die davor" und
+      // „es ist gar nichts mehr da": im zweiten Fall gibt es keine bessere
+      // Angabe, und die Reihenfolge der Liste haengt daran. Sonst faellt
+      // genau der Chat nach ganz unten, in dem man gerade schreibt — bei
+      // einer Chat-Frist von fuenf Minuten ist das der Normalfall und nicht
+      // die Ausnahme.
+      //
+      // Angezeigt wird sie dann trotzdem nicht: die Kachel bekommt
+      // `hatInhalt: false` und laesst die Stelle leer. Die Liste zeigt also
+      // weiterhin nicht auf einen Zeitpunkt, zu dem nichts mehr steht — sie
+      // erinnert sich nur, wohin der Chat gehoert.
+      lastMessageTime: letzte ?? _chats[idx].lastMessageTime,
     );
+    // Die Uhrzeit kann dabei nach hinten wandern — eine abgelaufene
+    // Nachricht war vielleicht die neueste. Dann gehoert der Chat nicht mehr
+    // nach oben.
+    ChatOrder.sortiere(_chats);
     // Und festschreiben: sonst steht nach dem naechsten Start wieder der
     // alte Zaehler da.
     _localStore.saveChats(_chats);
@@ -2779,9 +2843,18 @@ class MessengerProvider extends ChangeNotifier {
     required String chatId,
     required String text,
     Duration? selfDestruct,
-    /// Nur einmal zu oeffnen. Loeste am 02.09.2026 burnAfterRead ab; das
-    /// alte Feld wird nur noch gelesen, siehe EinmaligPolicy.
+    /// Nur einmal zu oeffnen, siehe EinmaligPolicy.
     bool einmalig = false,
+    /// „Nach Ansehen loeschen" fuer **diese eine** Nachricht: der Inhalt ist
+    /// normal zu lesen und geht, sobald der Empfaenger den Chat verlaesst.
+    ///
+    /// Reist als `_bar` im inneren Payload — dasselbe Feld, das aeltere
+    /// Fassungen schon schicken und das die Empfangsseite immer gelesen hat.
+    /// Zwischen dem 02.09. und dem 22.09.2026 wurde es nicht geschrieben,
+    /// weil die einmalige Nachricht es abgeloest hatte; Daniels Liste
+    /// unterscheidet beides wieder, und ein Geraet mit einer aelteren
+    /// Fassung versteht es ohne Umbau.
+    bool burnAfterRead = false,
     String? password,
     bool selfDestructFromChat = false,
     bool asContactRequest = false,
@@ -2798,6 +2871,7 @@ class MessengerProvider extends ChangeNotifier {
           text: text,
           selfDestruct: selfDestruct,
           einmalig: einmalig,
+          burnAfterRead: burnAfterRead,
           selfDestructFromChat: selfDestructFromChat,
           password: password,
           asContactRequest: asContactRequest,
@@ -2810,9 +2884,10 @@ class MessengerProvider extends ChangeNotifier {
     required String chatId,
     required String text,
     Duration? selfDestruct,
-    /// Nur einmal zu oeffnen. Loeste am 02.09.2026 burnAfterRead ab; das
-    /// alte Feld wird nur noch gelesen, siehe EinmaligPolicy.
+    /// Nur einmal zu oeffnen, siehe EinmaligPolicy.
     bool einmalig = false,
+    /// „Nach Ansehen loeschen" fuer diese eine Nachricht, siehe oben.
+    bool burnAfterRead = false,
     String? password,
     bool selfDestructFromChat = false,
     bool asContactRequest = false,
@@ -2864,6 +2939,11 @@ class MessengerProvider extends ChangeNotifier {
       status: MessageStatus.sending,
       selfDestructDuration: selfDestruct,
       selfDestructFromChat: selfDestructFromChat,
+      // Eine einmalige Nachricht traegt kein „nach Ansehen": sie geht mit
+      // dem Oeffnen, und zwei Zusagen an derselben Nachricht waeren eine zu
+      // viel. Die Oberflaeche laesst beides ohnehin nicht zusammen waehlen —
+      // hier steht es noch einmal, weil die Regel hier gilt und nicht dort.
+      burnAfterRead: burnAfterRead && !einmalig,
       einmalig: einmalig,
       isPasswordProtected: hasPassword,
       passwordUnlocked: !hasPassword, // Both sides start locked
@@ -3000,8 +3080,10 @@ class MessengerProvider extends ChangeNotifier {
       // Die Herkunft muss mit: ohne sie liefe eine Chat-Frist beim
       // Empfaenger als eigener Timer ab der Zustellung statt ab dem Lesen.
       if (selfDestructFromChat) innerPayload['_sdc'] = true;
-      // `_bar` wird nicht mehr geschrieben, aber weiter gelesen: aeltere
-      // Absender schicken es noch, und ihre Zusage gilt.
+      // `_bar` ist „nach Ansehen loeschen" fuer diese eine Nachricht. Die
+      // Empfangsseite hat es immer gelesen; seit dem 22.09.2026 wird es auch
+      // wieder geschrieben, siehe sendMessage.
+      if (burnAfterRead && !einmalig) innerPayload['_bar'] = true;
       if (einmalig) innerPayload[EinmaligPolicy.feldName] = true;
       if (hasPassword) innerPayload['_pw'] = true;
 
@@ -3276,6 +3358,16 @@ class MessengerProvider extends ChangeNotifier {
   Future<void> setReadReceiptsEnabled(bool enabled) async {
     _readReceiptsEnabled = enabled;
     await _secureStorage.setReadReceiptsEnabled(enabled);
+    notifyListeners();
+  }
+
+  /// Die Vorschau in der Chatliste ein- oder ausschalten.
+  ///
+  /// Wirkt sofort auf die Liste: der Text steht nur im Speicher, es ist
+  /// nichts nachzuladen und nichts zu loeschen.
+  Future<void> setChatPreviewEnabled(bool enabled) async {
+    _chatVorschau = enabled;
+    await _secureStorage.setChatPreviewEnabled(enabled);
     notifyListeners();
   }
 
@@ -4530,8 +4622,16 @@ class MessengerProvider extends ChangeNotifier {
     if (idx == -1) return;
     final vorher = _chats[idx];
     _chats[idx] = vorher.copyWith(lastMessageTime: time);
-    final chat = _chats.removeAt(idx);
-    _chats.insert(0, chat);
+    // Geordnet wird nach der Uhrzeit, nicht mehr durch Vorsetzen.
+    //
+    // Das Vorsetzen stand hier, weil diese Funktion bei jeder ankommenden
+    // Nachricht laeuft — und dabei stimmte es auch. Es stimmte nur nicht bei
+    // den anderen Aufrufern: `deleteMessageForMe` und die Ablaufmeldung der
+    // Gegenseite rufen sie, um die Uhrzeit auf die letzte verbliebene
+    // Nachricht **zurueck**zusetzen. Ein Chat von vorletzter Woche sprang
+    // dadurch an die Spitze der Liste, weil darin etwas geloescht wurde.
+    // Siehe ChatOrder.
+    ChatOrder.sortiere(_chats);
     _localStore.saveChats(_chats);
   }
 
