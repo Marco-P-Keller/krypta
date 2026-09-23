@@ -42,6 +42,14 @@ class ChatTile extends StatelessWidget {
   /// Nur dann: was die Gegenseite mir geschickt hat, braucht kein Haekchen.
   final MessageStatus? eigenerStand;
 
+  /// Ob im Chat ueberhaupt noch etwas liegt.
+  ///
+  /// Ist alles abgelaufen, steht rechts **keine** Uhrzeit: sie zeigte sonst
+  /// auf einen Zeitpunkt, zu dem nichts mehr da ist. Der Chat behaelt dabei
+  /// seinen Platz in der Liste — die Uhrzeit dafuer merkt sich der Provider,
+  /// siehe `_standNachrechnen`.
+  final bool hatInhalt;
+
   /// Wann die Kachel gebaut wird. Nur fuer den Test — er darf sich nicht
   /// darauf verlassen muessen, welcher Tag heute ist.
   final DateTime? jetzt;
@@ -60,6 +68,7 @@ class ChatTile extends StatelessWidget {
       ereignis: null
     ),
     this.eigenerStand,
+    this.hatInhalt = true,
     this.jetzt,
   });
 
@@ -136,7 +145,7 @@ class ChatTile extends StatelessWidget {
                           overflow: TextOverflow.ellipsis,
                         ),
                       ),
-                      if (chat.displayTime != null)
+                      if (chat.displayTime != null && hatInhalt)
                         Text(
                           zeitText(context, chat.displayTime!,
                               jetzt: jetzt ?? DateTime.now()),

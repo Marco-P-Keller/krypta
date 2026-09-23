@@ -302,6 +302,13 @@ class MessengerProvider extends ChangeNotifier {
         zeigen: _chatVorschau,
       );
 
+  /// Ob in diesem Chat ueberhaupt noch etwas liegt.
+  ///
+  /// Ohne Kopie der Liste, weil die Chatliste das fuer jede sichtbare Kachel
+  /// fragt: `messagesForChat` gibt eine unveraenderliche Kopie zurueck und
+  /// waere hier bei jedem Bildaufbau eine Allokation je Zeile.
+  bool hatInhalt(String chatId) => _messagesByChat[chatId]?.isNotEmpty ?? false;
+
   /// Der Zustellstand der letzten eigenen Nachricht eines Chats, fuer die
   /// Haekchen in der Kachel. `null`, wenn die letzte Nachricht nicht von mir
   /// ist — dann gibt es dort nichts zu melden.
@@ -2423,7 +2430,19 @@ class MessengerProvider extends ChangeNotifier {
       unreadCount: stand.anzahl,
       hinweisCount: stand.hinweise,
       firstUnreadAt: stand.ersteNeue,
-      lastMessageTime: letzte,
+      // Ist **nichts** mehr da, bleibt die alte Uhrzeit stehen. Das ist der
+      // Unterschied zwischen „die neueste ist weg, jetzt gilt die davor" und
+      // „es ist gar nichts mehr da": im zweiten Fall gibt es keine bessere
+      // Angabe, und die Reihenfolge der Liste haengt daran. Sonst faellt
+      // genau der Chat nach ganz unten, in dem man gerade schreibt — bei
+      // einer Chat-Frist von fuenf Minuten ist das der Normalfall und nicht
+      // die Ausnahme.
+      //
+      // Angezeigt wird sie dann trotzdem nicht: die Kachel bekommt
+      // `hatInhalt: false` und laesst die Stelle leer. Die Liste zeigt also
+      // weiterhin nicht auf einen Zeitpunkt, zu dem nichts mehr steht — sie
+      // erinnert sich nur, wohin der Chat gehoert.
+      lastMessageTime: letzte ?? _chats[idx].lastMessageTime,
     );
     // Die Uhrzeit kann dabei nach hinten wandern — eine abgelaufene
     // Nachricht war vielleicht die neueste. Dann gehoert der Chat nicht mehr

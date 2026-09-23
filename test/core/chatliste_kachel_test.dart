@@ -36,6 +36,7 @@ void main() {
       ereignis: null
     ),
     MessageStatus? stand,
+    bool hatInhalt = true,
     DateTime? jetzt,
     String sprache = 'de',
   }) =>
@@ -49,6 +50,7 @@ void main() {
             onTap: () {},
             vorschau: vorschau,
             eigenerStand: stand,
+            hatInhalt: hatInhalt,
             jetzt: jetzt ?? DateTime(2026, 9, 22, 18, 0),
           ),
         ),
@@ -130,6 +132,16 @@ void main() {
       expect(find.text('Tue'), findsNothing);
       expect(find.text('Sat'), findsNothing);
     });
+  });
+
+  testWidgets('ist alles abgelaufen, steht rechts keine Uhrzeit', (t) async {
+    // Die Uhrzeit bleibt im Chat gespeichert, damit er seinen Platz in der
+    // Liste behaelt — angezeigt wird sie nicht, sie zeigte sonst auf einen
+    // Zeitpunkt, zu dem nichts mehr dasteht.
+    await zeige(t,
+        c: chat(zeit: DateTime(2026, 9, 22, 14, 32)), hatInhalt: false);
+    expect(find.text('14:32'), findsNothing);
+    expect(find.text('Marco'), findsOneWidget);
   });
 
   testWidgets('der Ballon steht weiterhin rechts', (t) async {

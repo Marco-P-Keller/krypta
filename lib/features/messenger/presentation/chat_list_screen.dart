@@ -220,6 +220,7 @@ class ChatListScreen extends StatelessWidget {
             // nicht am Chat gespeichert — siehe VorschauPolicy.
             vorschau: messenger.vorschauFuer(chat.id),
             eigenerStand: messenger.letzterEigenerStand(chat.id),
+            hatInhalt: messenger.hatInhalt(chat.id),
           ),
         );
       },
