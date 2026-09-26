@@ -1,5 +1,6 @@
 import Foundation
 import KryptaCore
+import KryptaWallet
 
 public enum TrustState: String, Codable, Sendable {
     case unverified, verified, keyChanged, blocked
@@ -43,6 +44,13 @@ public struct Contact: Codable, Identifiable, Equatable, Sendable {
     /// Der Kontakt hat schon ML-KEM gezeigt (signiert im Bündel oder im
     /// Handschlag). Ab dann wird kein Handschlag ohne mehr angenommen.
     public var postQuantum: Bool?
+    /// Bitcoin im Chat (`_btc`): Der Kontakt hat eine Wallet und nimmt
+    /// Zahlungen an. `nil`: noch nichts gehört (oder Flutter-App).
+    public var acceptsBitcoin: Bool?
+    /// Seine aktuelle Empfangsadresse für mich, verschlüsselt mitgeschickt.
+    public var bitcoinAddress: String?
+    /// Das Netz dieser Adresse (`main`, `test4`, `signet`, `regtest`).
+    public var bitcoinNetwork: String?
 
     public init(id: String, publicKey: Data, requestState: RequestState, trustState: TrustState = .unverified, now: Date = Date()) {
         self.id = id
@@ -95,6 +103,10 @@ public struct Contact: Codable, Identifiable, Equatable, Sendable {
             // Schutz vor Herabstufung abschalten.
             sealedKey = nil
             postQuantum = nil
+            // Neues Gerät, womöglich neue Wallet: die alte Adresse nicht mehr benutzen.
+            acceptsBitcoin = nil
+            bitcoinAddress = nil
+            bitcoinNetwork = nil
         }
         verifiedAt = nil
         verificationMethod = nil
@@ -130,6 +142,8 @@ public struct Message: Codable, Identifiable, Equatable, Sendable {
     public var isPasswordProtected = false
     public var passwordUnlocked = true
     public var systemEvent: SystemEventKind?
+    /// Eine Bitcoin-Zahlung (`_pay`); der Text ist dann die Notiz dazu.
+    public var payment: ChatPayment?
 
     public var isSystemEvent: Bool { systemEvent != nil }
     public func isMine(_ me: String) -> Bool { senderId == me }
