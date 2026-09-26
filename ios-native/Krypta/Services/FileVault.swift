@@ -1,0 +1,62 @@
+import Foundation
+import KryptaCore
+import KryptaMessenger
+
+/// Der lokale Speicher: ein Blob je Slot, XChaCha20-Poly1305 mit dem Slot
+/// als AAD, der Schlüssel im Schlüsselbund.
+///
+/// Dateinamen sind Hashes der Slots, damit auf der Platte nicht einmal
+/// steht, wie viele Chats es gibt und wie sie heißen.
+final class FileVault: Vault, @unchecked Sendable {
+    private let directory: URL
+    private let key: Data
+    private let lock = NSLock()
+
+    init() throws {
+        let base = try FileManager.default.url(for: .applicationSupportDirectory, in: .userDomainMask, appropriateFor: nil, create: true)
+        directory = base.appendingPathComponent("Vault", isDirectory: true)
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true, attributes: [
+            .protectionKey: FileProtectionType.completeUntilFirstUserAuthentication,
+        ])
+        var dir = directory
+        var values = URLResourceValues()
+        values.isExcludedFromBackup = true
+        try? dir.setResourceValues(values)
+
+        if let existing = Keychain.data(.vaultKey), existing.count == 32 {
+            key = existing
+        } else {
+            key = Data.random(count: 32)
+            Keychain.set(key, for: .vaultKey)
+        }
+    }
+
+    private func url(_ slot: String) -> URL {
+        let name = Primitives.sha256(Data("krypta-vault|\(slot)".utf8)).prefix(16).map { String(format: "%02x", $0) }.joined()
+        return directory.appendingPathComponent(name)
+    }
+
+    func load(_ slot: String) throws -> Data? {
+        try lock.withLock {
+            guard let blob = try? Data(contentsOf: url(slot)) else { return nil }
+            return try Envelope.openLocal(blob, key: key, slot: slot)
+        }
+    }
+
+    func save(_ data: Data, slot: String) throws {
+        try lock.withLock {
+            let blob = try Envelope.sealLocal(data, key: key, slot: slot)
+            try blob.write(to: url(slot), options: [.atomic, .completeFileProtectionUntilFirstUserAuthentication])
+        }
+    }
+
+    func delete(_ slot: String) throws {
+        _ = lock.withLock { try? FileManager.default.removeItem(at: url(slot)) }
+    }
+
+    func wipe() throws {
+        lock.withLock {
+            try? FileManager.default.removeItem(at: directory)
+        }
+    }
+}
