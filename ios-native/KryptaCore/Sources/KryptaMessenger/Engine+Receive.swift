@@ -86,6 +86,7 @@ extension MessengerEngine {
             return
         }
         guard finalizeAccepted(chatId: chat.id, messageId: env.messageId, payload: env.payload) else { return }
+        processGossip(from: env.senderId, inner: inner)
 
         let now = Date()
         let isRead = activeChatId == chat.id && isForeground
@@ -169,6 +170,7 @@ extension MessengerEngine {
         }
         guard finalizeAccepted(chatId: chatId, messageId: env.messageId, payload: env.payload) else { return }
         markProcessed(env.messageId)
+        if existing == nil { Task { [weak self] in await self?.verifyTransparency(contact.id) } }
 
         if contact.requestState == .established {
             await sendControl(chatId: chatId, contact: contact, type: "accepted", messageId: UUID().uuidString.lowercased())

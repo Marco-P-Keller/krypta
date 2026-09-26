@@ -36,13 +36,13 @@ enum AccessCodes {
         }.value
     }
 
-    private static func hash(_ code: String) throws -> String {
+    static func hash(_ code: String) throws -> String {
         let salt = Data.random(count: 16)
         let hash = try Primitives.argon2id(password: Data(code.utf8), salt: salt)
         return "\(salt.base64):\(hash.base64)"
     }
 
-    private static func verify(_ candidate: String, against stored: String) -> Bool {
+    static func verify(_ candidate: String, against stored: String) -> Bool {
         let parts = stored.split(separator: ":").map(String.init)
         guard parts.count == 2, let salt = Data(base64: parts[0]), let expected = Data(base64: parts[1]),
               let hash = try? Primitives.argon2id(password: Data(candidate.utf8), salt: salt) else { return false }

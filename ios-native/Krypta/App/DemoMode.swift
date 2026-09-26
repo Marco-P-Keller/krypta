@@ -12,6 +12,37 @@ import KryptaMessenger
 enum DemoMode {
     static var isActive: Bool { ProcessInfo.processInfo.arguments.contains("-KryptaDemo") }
 
+    /// Die echte App, aber gegen einen Server im Speicher (UI-Tests).
+    static var isOffline: Bool { ProcessInfo.processInfo.arguments.contains("-KryptaOffline") }
+
+    /// `-KryptaSeedFlutter <pfad>`: vor dem Start einen Flutter-Speicher
+    /// anlegen (flutter_store.json aus test/interop) und alles Native
+    /// löschen — so, als käme das Update gerade aus dem App Store.
+    static func seedFlutterStoreIfRequested() {
+        let args = ProcessInfo.processInfo.arguments
+        // `-KryptaReset`: frisch wie nach der Installation (UI-Tests).
+        if args.contains("-KryptaReset") {
+            try? FileVault().wipe()
+            Keychain.wipe()
+            NotificationIndexStore.delete()
+            UserDefaults.standard.removeObject(forKey: "AppleLanguages")
+        }
+        guard let i = args.firstIndex(of: "-KryptaSeedFlutter"), i + 1 < args.count,
+              let data = try? Data(contentsOf: URL(fileURLWithPath: args[i + 1])),
+              let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+              var secrets = json["secrets"] as? [String: String],
+              let files = json["files"] as? [String: String] else { return }
+        try? FileVault().wipe()
+        Keychain.wipe()
+        // Die Codes im Testspeicher sind Attrappen; ohne sie öffnet die App direkt.
+        UserDefaults.standard.removeObject(forKey: "AppleLanguages")
+        for key in ["krypta_code_secret", "krypta_code_delete", "krypta_vault_hash", "krypta_vault_enabled", "krypta_cfg_biometric", "krypta_cfg_language"] {
+            secrets.removeValue(forKey: key)
+        }
+        secrets["krypta_cfg_calculator_lock"] = "false"
+        FlutterMigration.seedForTesting(secrets: secrets, files: files.compactMapValues { Data(base64Encoded: $0) })
+    }
+
     /// Hält die Gegenseite am Leben.
     private static var peers: [MessengerEngine] = []
 

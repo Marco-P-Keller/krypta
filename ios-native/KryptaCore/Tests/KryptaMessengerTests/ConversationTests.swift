@@ -5,7 +5,7 @@ import KryptaCore
 
 /// Zwei vollständige Messenger über einen Server im Speicher.
 @MainActor
-final class ConversationTests: XCTestCase {
+class TwoMessengers: XCTestCase {
     let aliceId = "aliceUid00000000000001"
     let bobId = "bobUid0000000000000002"
     var relay: MemoryRelay!
@@ -49,6 +49,10 @@ final class ConversationTests: XCTestCase {
         return (try XCTUnwrap(alice.chat(forContact: bobId)?.id), try XCTUnwrap(bob.chat(forContact: aliceId)?.id))
     }
 
+}
+
+@MainActor
+final class ConversationTests: TwoMessengers {
     func testRequestAcceptAndConversation() async throws {
         let (a, b) = try await connect()
 

@@ -9,6 +9,8 @@ import SwiftUI
 ///
 /// Zugang wie ZugangsPolicy der Flutter-Fassung: mit Rechner-Tarnung
 /// öffnet der Rechner, sonst mit Face ID der Sperrbildschirm, sonst direkt.
+/// Ist ein Tresor-Passwort gesetzt, kommt es nach Rechner und Face ID als
+/// letzte Tür.
 @MainActor
 @Observable
 final class AppModel {
@@ -17,6 +19,7 @@ final class AppModel {
         case onboarding
         case calculator
         case locked
+        case vaultPassword
         case unlocking
         case unlocked
     }
@@ -25,6 +28,13 @@ final class AppModel {
     private(set) var engine: MessengerEngine?
     /// Verdeckt den Inhalt, sobald die App nicht vorne ist (App-Umschalter).
     var privacyCover = false
+    /// Der Bildschirm wird aufgezeichnet oder gespiegelt.
+    var isCaptured = UIScreen.main.isCaptured
+
+    /// Chats aus Bildschirmfotos und Aufnahmen heraushalten. Vorgabe: an.
+    var screenshotShield: Bool = !UserDefaults.standard.bool(forKey: "shield.off") {
+        didSet { UserDefaults.standard.set(!screenshotShield, forKey: "shield.off") }
+    }
 
     var calculatorLock: Bool { Keychain.bool(.calculatorLock) }
     var biometricLock: Bool { Keychain.bool(.biometricLock) }
@@ -36,6 +46,7 @@ final class AppModel {
         #endif
         if calculatorLock { return .calculator }
         if biometricLock { return .locked }
+        if VaultPassword.isSet { return .vaultPassword }
         return nil
     }
 
@@ -51,6 +62,14 @@ final class AppModel {
             return
         }
         #endif
+        #if DEBUG
+        DemoMode.seedFlutterStoreIfRequested()
+        #endif
+        // Erster Start nach dem Update von der Flutter-App: deren Daten
+        // übernehmen, bevor irgendetwas anderes passiert.
+        if FlutterMigration.isPending {
+            FlutterMigration.run()
+        }
         guard Keychain.string(.userId) != nil, identity() != nil else {
             phase = .onboarding
             return
@@ -77,11 +96,20 @@ final class AppModel {
 
     /// Anonym anmelden, Identität erzeugen, Zugang festlegen.
     func completeOnboarding(_ choice: SetupChoice) async throws {
-        let user = try await Auth.auth().signInAnonymously().user
+        let uid: String
+        #if DEBUG
+        if DemoMode.isOffline {
+            uid = "offline" + UUID().uuidString.replacingOccurrences(of: "-", with: "").prefix(21)
+        } else {
+            uid = try await Auth.auth().signInAnonymously().user.uid
+        }
+        #else
+        uid = try await Auth.auth().signInAnonymously().user.uid
+        #endif
         let pair = KeyPair.generate()
         Keychain.set(pair.privateKey, for: .identityPrivate)
         Keychain.set(pair.publicKey, for: .identityPublic)
-        Keychain.set(user.uid, for: .userId)
+        Keychain.set(uid, for: .userId)
         if let codes = choice.codes {
             try AccessCodes.set(secret: codes.secret, delete: codes.delete)
             Keychain.set(true, for: .calculatorLock)
@@ -103,15 +131,27 @@ final class AppModel {
         }
         if engine == nil || engine?.userId != uid {
             guard let vault = try? FileVault() else { return }
-            engine = MessengerEngine(userId: uid, identity: identity, relay: FirebaseRelay(), vault: vault)
+            var relay: Relay = FirebaseRelay()
+            #if DEBUG
+            if DemoMode.isOffline { relay = MemoryRelay() }
+            #endif
+            engine = MessengerEngine(userId: uid, identity: identity, relay: relay, vault: vault)
         }
         await engine?.start()
         withAnimation(.smooth) { phase = .unlocked }
+        #if DEBUG
+        if DemoMode.isOffline, let engine { PushService.shared.attach(engine) }
+        if DemoMode.isActive || DemoMode.isOffline { return }
+        #endif
+        if let engine { await PushService.shared.start(userId: uid, engine: engine) }
     }
 
     /// Firebase merkt sich die anonyme Anmeldung selbst. Ist sie weg (neu
     /// installiert, Schlüsselbund aber erhalten), gibt es eine neue Kennung.
     private func currentUserId() async -> String? {
+        #if DEBUG
+        if DemoMode.isOffline { return Keychain.string(.userId) }
+        #endif
         if let user = Auth.auth().currentUser { return user.uid }
         guard let user = try? await Auth.auth().signInAnonymously().user else { return Keychain.string(.userId) }
         Keychain.set(user.uid, for: .userId)
@@ -120,20 +160,46 @@ final class AppModel {
 
     /// Mit Face ID vom Sperrbildschirm.
     func unlockWithBiometrics() async {
-        guard await Biometrics.authenticate(reason: "Krypta entsperren") else { return }
-        await unlock()
+        guard await Biometrics.authenticate(reason: String(localized: "Krypta entsperren")) else { return }
+        await passedGate()
     }
 
     /// Nach dem Rechner: Face ID folgt, wenn eingerichtet.
     func secretCodeEntered() async {
         if biometricLock {
-            guard await Biometrics.authenticate(reason: "Krypta entsperren") else { return }
+            guard await Biometrics.authenticate(reason: String(localized: "Krypta entsperren")) else { return }
         }
-        await unlock()
+        await passedGate()
+    }
+
+    /// Rechner und Face ID sind durch — fehlt noch das Tresor-Passwort?
+    private func passedGate() async {
+        if VaultPassword.isSet {
+            withAnimation(.smooth) { phase = .vaultPassword }
+        } else {
+            await unlock()
+        }
+    }
+
+    /// Die letzte Tür. Beim fünften Fehlversuch wird alles gelöscht.
+    func submitVaultPassword(_ password: String) async -> VaultPassword.Attempt {
+        let result = await VaultPassword.attempt(password)
+        switch result {
+        case .unlocked: await unlock()
+        case .wipe: await emergencyWipe()
+        case .wrong, .lockedOut: break
+        }
+        return result
+    }
+
+    /// „Zurück" vom Tresor-Passwort: wieder vor die erste Tür.
+    func cancelVaultPassword() {
+        guard phase == .vaultPassword, let target = lockTarget, target != .vaultPassword else { return }
+        withAnimation(.smooth) { phase = target }
     }
 
     func lock() {
-        guard let target = lockTarget, phase == .unlocked || phase == .unlocking else { return }
+        guard let target = lockTarget, phase == .unlocked || phase == .unlocking || phase == .vaultPassword else { return }
         engine?.stop()
         phase = target
     }
@@ -146,6 +212,7 @@ final class AppModel {
             lock()
         case .active:
             Task { await engine?.setForeground(true) }
+            if phase == .unlocked { PushService.shared.clearDelivered() }
         default:
             break
         }
@@ -164,7 +231,7 @@ final class AppModel {
     }
 
     func setBiometric(_ on: Bool) async -> Bool {
-        if on, !(await Biometrics.authenticate(reason: "\(Biometrics.name) für Krypta aktivieren")) { return false }
+        if on, !(await Biometrics.authenticate(reason: String(localized: "\(Biometrics.name) für Krypta aktivieren"))) { return false }
         Keychain.set(on, for: .biometricLock)
         return true
     }
@@ -179,6 +246,7 @@ final class AppModel {
             try? await FirebaseRelay().deleteAllUserData(uid: uid)
         }
         try? FileVault().wipe()
+        await PushService.shared.wipe()
         Keychain.wipe()
         engine = nil
         withAnimation(.smooth) { phase = .onboarding }

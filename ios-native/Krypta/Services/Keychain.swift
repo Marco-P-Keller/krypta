@@ -18,6 +18,9 @@ enum Keychain {
         case calculatorLock = "lock.calculator"
         case biometricLock = "lock.biometric"
         case failedUnlocks = "lock.failures"
+        case vaultPassword = "vault.password"
+        case vaultFailures = "vault.failures"
+        case vaultLastFail = "vault.lastfail"
     }
 
     static func data(_ key: Key) -> Data? {

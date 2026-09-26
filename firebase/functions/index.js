@@ -89,10 +89,40 @@ const COVER_NOTIFICATION = {
  *   bar  = burn after read
  *   pw   = password protected
  */
+/**
+ * What a push carries, decided by the `nt` field inside the encrypted
+ * payload `p` (written by the native iOS app, see
+ * ios-native/KryptaCore/Sources/KryptaCore/Messaging/NotificationTag.swift):
+ *
+ * - `nt` missing (Flutter senders): the cover text, as before.
+ * - `nt === ""`: a control message (delivered, read, deleted, ...). No push
+ *   at all. Before this, every read receipt woke the recipient's phone with
+ *   "Du hast eine neue Nachricht erhalten".
+ * - `nt` a short base64 tag: forwarded as `data.nt`. The tag is 8 random
+ *   bytes plus an HMAC under a key only sender and recipient share; it changes
+ *   with every message and names nobody. The recipient's Notification Service
+ *   Extension matches it against its contacts and shows
+ *   "Neue Nachricht von Mami" - on the device, never here.
+ *
+ * `mutable-content` lets that extension run. The Flutter app has none, so for
+ * it nothing changes.
+ */
+function pushPlan(p) {
+  const nt = p && Object.prototype.hasOwnProperty.call(p, "nt") ? p.nt : undefined;
+  if (nt === "") return { send: false };
+  if (typeof nt === "string" && nt.length <= 64 && /^[A-Za-z0-9+/=]+$/.test(nt)) {
+    return { send: true, tag: nt };
+  }
+  return { send: true, tag: null };
+}
+exports.pushPlan = pushPlan;
+
 exports.onNewMessage = functions.firestore
   .document("messages/{recipientId}/inbox/{messageId}")
   .onCreate(async (snap, context) => {
     const { recipientId } = context.params;
+    const plan = pushPlan((snap.data() || {}).p);
+    if (!plan.send) return;
 
     const tokenDoc = await db.collection("fcmTokens").doc(recipientId).get();
     if (!tokenDoc.exists) return;
@@ -105,16 +135,17 @@ exports.onNewMessage = functions.firestore
       // FCM payloads are logged by Google — including sender ID would leak
       // who is communicating with whom (communication pattern metadata).
       // The app retrieves sender info from its encrypted inbox on wake.
+      const data = { type: "new_message" };
+      if (plan.tag) data.nt = plan.tag;
       await admin.messaging().send({
         token,
         notification: COVER_NOTIFICATION,
-        data: {
-          type: "new_message",
-        },
+        data,
         apns: {
           payload: {
             aps: {
               "content-available": 1,
+              "mutable-content": 1,
               sound: "default",
             },
           },

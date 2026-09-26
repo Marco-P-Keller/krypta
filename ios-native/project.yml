@@ -18,6 +18,8 @@ settings:
     CURRENT_PROJECT_VERSION: "1"
     ENABLE_USER_SCRIPT_SANDBOXING: YES
     SWIFT_STRICT_CONCURRENCY: complete
+    SWIFT_EMIT_LOC_STRINGS: YES
+    LOCALIZATION_PREFERS_STRING_CATALOGS: YES
 packages:
   KryptaCore:
     path: KryptaCore
@@ -30,6 +32,7 @@ targets:
     platform: iOS
     sources:
       - path: Krypta
+      - path: Shared
     dependencies:
       - package: KryptaCore
         product: KryptaCore
@@ -39,6 +42,18 @@ targets:
         product: FirebaseAuth
       - package: Firebase
         product: FirebaseFirestore
+      - package: Firebase
+        product: FirebaseMessaging
+      - target: KryptaNotifications
+    entitlements:
+      path: Krypta/Krypta.entitlements
+      properties:
+        aps-environment: development
+        # Erster Eintrag: wie in der Flutter-App (ios/Runner), damit deren
+        # Schlüsselbund lesbar bleibt. Zweiter: geteilt mit der Extension.
+        keychain-access-groups:
+          - $(AppIdentifierPrefix)com.calcchat.ww
+          - $(AppIdentifierPrefix)com.calcchat.ww.shared
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.calcchat.ww
@@ -54,6 +69,38 @@ targets:
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         CODE_SIGN_STYLE: Automatic
         TARGETED_DEVICE_FAMILY: "1"
+  # Notification Service Extension: macht aus „Neue Nachricht" ein
+  # „Neue Nachricht von Mami", ohne den Inhalt zu kennen. Siehe
+  # KryptaCore/Messaging/NotificationTag.swift.
+  KryptaNotifications:
+    type: app-extension
+    platform: iOS
+    sources:
+      - path: KryptaNotifications
+      - path: Shared
+    dependencies:
+      - package: KryptaCore
+        product: KryptaCore
+    entitlements:
+      path: KryptaNotifications/KryptaNotifications.entitlements
+      properties:
+        keychain-access-groups:
+          - $(AppIdentifierPrefix)com.calcchat.ww.shared
+    info:
+      path: KryptaNotifications/Info.plist
+      properties:
+        CFBundleDisplayName: Krypta
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.usernotifications.service
+          NSExtensionPrincipalClass: $(PRODUCT_MODULE_NAME).NotificationService
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.calcchat.ww.NotificationService
+        CODE_SIGN_STYLE: Automatic
+        TARGETED_DEVICE_FAMILY: "1"
+        SKIP_INSTALL: YES
   KryptaUITests:
     type: bundle.ui-testing
     platform: iOS
@@ -65,6 +112,8 @@ targets:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.calcchat.ww.uitests
         GENERATE_INFOPLIST_FILE: YES
+        # XCUIElement ist @MainActor; UI-Tests laufen ohnehin auf dem Main Thread.
+        SWIFT_STRICT_CONCURRENCY: minimal
         TEST_TARGET_NAME: Krypta
 schemes:
   Krypta:

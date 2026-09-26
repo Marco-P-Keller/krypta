@@ -20,7 +20,7 @@ enum Biometrics {
         case .faceID: "Face ID"
         case .touchID: "Touch ID"
         case .opticID: "Optic ID"
-        case .none: "Biometrie"
+        case .none: String(localized: "Biometrie")
         }
     }
 

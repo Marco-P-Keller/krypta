@@ -127,6 +127,11 @@ public final class MessengerEngine {
     @ObservationIgnored var inboxTask: Task<Void, Never>?
     @ObservationIgnored var timerTask: Task<Void, Never>?
     @ObservationIgnored var jitterTasks: [Task<Void, Never>] = []
+    @ObservationIgnored var transparency: [String: TransparencyChain] = [:]
+
+    /// Meldet jede gespeicherte Änderung an den Kontakten — die App hält
+    /// damit den Index für die Mitteilungen aktuell.
+    @ObservationIgnored public var onContactsChanged: (@MainActor () -> Void)?
 
     static let maxAcceptedEks = 100
     static let maxProcessedIds = 1000
@@ -185,6 +190,7 @@ public final class MessengerEngine {
         chats = vault.loadValue([Chat].self, slot: "chats") ?? []
         preKeys = vault.loadValue(PreKeyStore.self, slot: "prekeys") ?? PreKeyStore()
         counters = vault.loadValue(ControlCounter.self, slot: "control") ?? ControlCounter()
+        loadTransparency()
         for chat in chats {
             messages[chat.id] = vault.loadValue([Message].self, slot: "messages.\(chat.id)") ?? []
             if let slot = vault.loadValue(RatchetSlot.self, slot: "ratchet.\(chat.id)"),
@@ -196,8 +202,15 @@ public final class MessengerEngine {
         }
     }
 
-    func saveContacts() { vault.saveValue(contacts, slot: "contacts") }
-    func saveChats() { vault.saveValue(chats, slot: "chats") }
+    func saveContacts() {
+        vault.saveValue(contacts, slot: "contacts")
+        onContactsChanged?()
+    }
+    func saveChats() {
+        vault.saveValue(chats, slot: "chats")
+        // Der Name in der Mitteilung ist der Chatname.
+        onContactsChanged?()
+    }
     func saveMessages(_ chatId: String) { vault.saveValue(messages[chatId] ?? [], slot: "messages.\(chatId)") }
     func saveMeta() { vault.saveValue(meta, slot: "meta") }
     func savePreKeys() { vault.saveValue(preKeys, slot: "prekeys") }
@@ -285,6 +298,7 @@ public final class MessengerEngine {
         startInbox()
         startTimer()
         retryPendingBurns()
+        verifyAllTransparency()
     }
 
     /// Hintergrund: Empfang und Uhr anhalten. Offene Meldungen bleiben liegen.
@@ -311,6 +325,7 @@ public final class MessengerEngine {
         // Das Zustell-Token für Sealed Sender: Flutter-Absender holen es sich.
         try? await relay.publishDeliveryToken(uid: userId, token: Data.random(count: 32).base64)
         keysPublished = ok
+        await syncOwnTransparency()
     }
 
     func startInbox() {

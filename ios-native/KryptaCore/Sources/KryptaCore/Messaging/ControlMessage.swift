@@ -102,6 +102,11 @@ public struct ControlCounter: Codable, Equatable, Sendable {
 
     public init() {}
 
+    public init(sent: [String: Int], lastSeen: [String: Int]) {
+        self.sent = sent
+        self.lastSeen = lastSeen
+    }
+
     public mutating func next(for chatId: String) -> Int {
         let n = (sent[chatId] ?? 0) + 1
         sent[chatId] = n

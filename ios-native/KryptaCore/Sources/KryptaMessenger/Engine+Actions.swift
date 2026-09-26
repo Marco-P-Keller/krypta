@@ -33,6 +33,7 @@ extension MessengerEngine {
                 updateContact(id) { $0.markKeyChanged(newKey: key) }
                 invalidateHmacKey(id)
                 discardSessions(contactId: id)
+                resetTransparency(id)
             }
             return contact(id).map(AddContactResult.added) ?? .notFound
         }
@@ -41,6 +42,7 @@ extension MessengerEngine {
         contacts.append(contact)
         saveContacts()
         await sendRequest(to: contact, preverifiedKey: keyB64)
+        await verifyTransparency(id)
         return .added(self.contact(id) ?? contact)
     }
 
@@ -63,6 +65,7 @@ extension MessengerEngine {
             }
             invalidateHmacKey(qr.userId)
             discardSessions(contactId: qr.userId)
+            resetTransparency(qr.userId)
             return .keyMismatch
         }
 
@@ -76,10 +79,12 @@ extension MessengerEngine {
             moved.safetyNumberVersion = SafetyNumber.currentVersion
             moved.previousPublicKey = nil
             updateContact(qr.userId) { $0 = moved }
+            resetTransparency(qr.userId)
             if !moved.isBlocked {
                 discardSessions(contactId: qr.userId)
                 await sendRequest(to: moved, qrToken: qr.requestToken, preverifiedKey: serverB64)
             }
+            await verifyTransparency(qr.userId)
             return .verified(contact(qr.userId) ?? moved)
         }
 
@@ -91,6 +96,7 @@ extension MessengerEngine {
         contacts.append(c)
         saveContacts()
         await sendRequest(to: c, qrToken: qr.requestToken, preverifiedKey: serverB64)
+        await verifyTransparency(qr.userId)
         return .verified(contact(qr.userId) ?? c)
     }
 
@@ -148,6 +154,9 @@ extension MessengerEngine {
             $0.safetyNumberVersion = SafetyNumber.currentVersion
             $0.previousPublicKey = nil
         }
+        // Selbst verglichen: die Schlüsselkette beginnt von vorn.
+        resetTransparency(contactId)
+        Task { [weak self] in await self?.verifyTransparency(contactId) }
         return true
     }
 
@@ -450,6 +459,7 @@ extension MessengerEngine {
         contacts.removeAll()
         chats.removeAll()
         messages.removeAll()
+        transparency.removeAll()
         meta = EngineMeta()
         try? vault.wipe()
     }

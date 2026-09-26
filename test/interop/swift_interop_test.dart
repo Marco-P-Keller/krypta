@@ -27,6 +27,7 @@ import 'package:kryptaapp/security/ratchet/double_ratchet.dart';
 import 'package:kryptaapp/security/ratchet/ratchet_message.dart';
 import 'package:kryptaapp/security/ratchet/ratchet_state.dart';
 import 'package:kryptaapp/security/session/session_handshake_service.dart';
+import 'package:kryptaapp/security/transparency/key_commitment.dart';
 import 'package:kryptaapp/security/verification/safety_number.dart';
 
 const _vectorDir = 'ios-native/KryptaCore/Tests/KryptaCoreTests/Vectors';
@@ -228,6 +229,24 @@ void main() {
       },
     };
 
+    // Key Transparency: Alices Kette mit zwei Einträgen.
+    final kt0 = await KeyCommitment.create(
+      epoch: 0,
+      identityPublicKey: alice.publicKey,
+      identityPrivateKey: alice.privateKey,
+      previousHash: KeyCommitment.genesisHash,
+    );
+    final kt1 = await KeyCommitment.create(
+      epoch: 1,
+      identityPublicKey: alice.publicKey,
+      identityPrivateKey: alice.privateKey,
+      previousHash: kt0.commitHash,
+    );
+    vectors['kt'] = {
+      'log': [kt0.toMap(), kt1.toMap()],
+      'hashes': [_b64(kt0.commitHash), _b64(kt1.commitHash)],
+    };
+
     if (Platform.environment['KRYPTA_GEN_VECTORS'] == '1') {
       await Directory(_vectorDir).create(recursive: true);
       await File('$_vectorDir/dart_vectors.json').writeAsString(
@@ -312,6 +331,20 @@ void main() {
 
     // 6. Sicherheitsnummer: beide Seiten kommen auf dieselbe Zahl.
     expect(s['safetyNumber'], d['safetyNumber']);
+
+    // 7. Schlüsselprotokoll aus Swift: Signatur, Hash und Verkettung.
+    final kt = Map<String, dynamic>.from(s['kt'] as Map);
+    final log = (kt['log'] as List)
+        .map((m) => KeyCommitment.fromMap(Map<String, dynamic>.from(m as Map)))
+        .toList();
+    expect(log, hasLength(2));
+    expect(log[0].isGenesis, isTrue);
+    for (var i = 0; i < log.length; i++) {
+      expect(await log[i].verifySignature(), isTrue);
+      expect(_b64(log[i].commitHash), (kt['hashes'] as List)[i]);
+      expect(log[i].identityPublicKey, bob.publicKey);
+    }
+    expect(log[1].verifiesAgainst(log[0].commitHash), isTrue);
   });
 }
 

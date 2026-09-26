@@ -5,12 +5,10 @@ import XCTest
 final class OnboardingUITests: XCTestCase {
     func testWelcomeLeadsToDisguiseChoice() {
         let app = XCUIApplication()
+        app.launchArguments = ["-AppleLanguages", "(de)", "-KryptaOffline", "-KryptaReset"]
         app.launch()
         let next = app.buttons["onboarding.continue"]
-        guard next.waitForExistence(timeout: 10) else {
-            // Schon eingerichtet — dann gibt es nichts zu prüfen.
-            return
-        }
+        XCTAssertTrue(next.waitForExistence(timeout: 10))
         next.tap()
         XCTAssertTrue(app.buttons["onboarding.disguise.yes"].waitForExistence(timeout: 5))
         XCTAssertTrue(app.buttons["onboarding.disguise.no"].exists)

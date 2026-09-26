@@ -119,6 +119,21 @@ final class InteropTests: XCTestCase {
         let swiftBundle = try store.bundle(identity: bob)
         let safety = SafetyNumber.generate(localUserId: bobId, localIdentity: bob.publicKey, remoteUserId: aliceId, remoteIdentity: alice.publicKey)
 
+        // Schlüsselprotokoll: Dart-Kette prüfen, eigene für Dart schreiben.
+        let dartKt = try XCTUnwrap(vectors["kt"]?.objectValue)
+        var dartChain = TransparencyChain()
+        for (i, value) in try XCTUnwrap(dartKt["log"]?.arrayValue).enumerated() {
+            let c = try KeyCommitment(json: try XCTUnwrap(value.objectValue))
+            XCTAssertEqual(c.commitHash.base64, dartKt["hashes"]?.arrayValue?[i].stringValue)
+            XCTAssertEqual(dartChain.verifyAndAppend(c, expectedPublicKey: alice.publicKey), .valid)
+        }
+        XCTAssertNil(dartChain.audit())
+        var ktChain = TransparencyChain()
+        let kt0 = try KeyCommitment.create(epoch: 0, identity: bob, previousHash: KeyCommitment.genesisHash)
+        let kt1 = try KeyCommitment.create(epoch: 1, identity: bob, previousHash: kt0.commitHash)
+        XCTAssertEqual(ktChain.verifyAndAppend(kt0, expectedPublicKey: bob.publicKey), .valid)
+        XCTAssertEqual(ktChain.verifyAndAppend(kt1, expectedPublicKey: bob.publicKey), .valid)
+
         let out: JSONObject = [
             "replies": .array(replies),
             "outbound": .object(["payload": .object(firstOut), "text": "Sitzung aus Swift"]),
@@ -126,6 +141,10 @@ final class InteropTests: XCTestCase {
             "control": .object(ctrl.json),
             "bundle": .object(swiftBundle.json),
             "safetyNumber": .string(safety),
+            "kt": .object([
+                "log": .array([.object(kt0.json), .object(kt1.json)]),
+                "hashes": .array([.string(kt0.commitHash.base64), .string(kt1.commitHash.base64)]),
+            ]),
         ]
         let data = try JSONSerialization.data(withJSONObject: out.anyDictionary, options: [.prettyPrinted, .sortedKeys, .withoutEscapingSlashes])
         let target = URL(fileURLWithPath: #filePath).deletingLastPathComponent().appendingPathComponent("Vectors/swift_vectors.json")

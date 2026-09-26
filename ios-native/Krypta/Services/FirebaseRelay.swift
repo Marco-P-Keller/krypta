@@ -85,6 +85,34 @@ final class FirebaseRelay: Relay, @unchecked Sendable {
         try await db.collection("messages").document(uid).collection("inbox").document(docId).delete()
     }
 
+    // MARK: Key Transparency — nur anlegen, nie ändern (siehe firestore.rules)
+
+    func publishKeyCommitment(uid: String, commitment: JSONObject, epoch: Int) async throws {
+        try await db.collection("keyCommitments").document(uid).collection("log").document(String(epoch))
+            .setData(commitment.anyDictionary)
+    }
+
+    func keyCommitments(uid: String, since: Int?) async throws -> [JSONObject] {
+        var query: Query = db.collection("keyCommitments").document(uid).collection("log")
+        if let since { query = query.whereField("e", isGreaterThan: since) }
+        let snapshot = try await query.order(by: "e").getDocuments()
+        return snapshot.documents.map { JSONObject(any: $0.data()) }
+    }
+
+    // MARK: Push
+
+    /// Das FCM-Token, an das die Cloud Function die Mitteilungen schickt.
+    func registerPushToken(uid: String, token: String) async throws {
+        try await db.collection("fcmTokens").document(uid).setData([
+            "token": token,
+            "updatedAt": FieldValue.serverTimestamp(),
+        ])
+    }
+
+    func deletePushToken(uid: String) async throws {
+        try await db.collection("fcmTokens").document(uid).delete()
+    }
+
     /// Alles auf dem Server löschen, dann das Konto. Der Posteingang wird nur
     /// bis zum Start geleert, damit ein Flut-Angreifer die Löschung nicht
     /// endlos am Laufen hält (siehe Dart: deleteAllUserData).

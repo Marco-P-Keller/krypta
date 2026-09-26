@@ -32,7 +32,8 @@ let package = Package(
         ),
         .testTarget(
             name: "KryptaMessengerTests",
-            dependencies: ["KryptaMessenger"]
+            dependencies: ["KryptaMessenger"],
+            resources: [.copy("Vectors")]
         ),
         .testTarget(
             name: "KryptaCoreTests",

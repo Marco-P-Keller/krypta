@@ -1,15 +1,17 @@
 import SwiftUI
+import UserNotifications
 
-/// Einrichtung: Willkommen → Tarnung → Geheimcode → Löschcode → Face ID.
+/// Einrichtung: Willkommen → Tarnung → Geheimcode → Löschcode → Face ID → Mitteilungen.
 struct OnboardingFlow: View {
     @Environment(AppModel.self) private var app
 
-    enum Step: Hashable { case disguise, secretCode, deleteCode, biometrics }
+    enum Step: Hashable { case disguise, secretCode, deleteCode, biometrics, notifications }
 
     @State private var path: [Step] = []
     @State private var secret = ""
     @State private var deleteCode = ""
     @State private var useCalculator = true
+    @State private var useBiometrics = false
     @State private var isWorking = false
     @State private var failed = false
 
@@ -45,8 +47,17 @@ struct OnboardingFlow: View {
                             return nil
                         }
                     case .biometrics:
-                        BiometricsOfferView(isWorking: isWorking) { biometric in
-                            finish(biometric: biometric)
+                        BiometricsOfferView { biometric in
+                            useBiometrics = biometric
+                            path.append(.notifications)
+                        }
+                    case .notifications:
+                        NotificationsOfferView(isWorking: isWorking) { allow in
+                            PushService.isEnabled = allow
+                            if allow {
+                                _ = try? await UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .badge])
+                            }
+                            finish(biometric: useBiometrics)
                         }
                     }
                 }
@@ -180,7 +191,6 @@ private struct DisguiseView: View {
 // MARK: - Face ID
 
 private struct BiometricsOfferView: View {
-    let isWorking: Bool
     let finish: (Bool) -> Void
 
     var body: some View {
@@ -194,7 +204,7 @@ private struct BiometricsOfferView: View {
                     .font(.largeTitle.weight(.bold))
                     .multilineTextAlignment(.center)
                 Text(Biometrics.available == .none
-                     ? "Krypta erzeugt jetzt deine Schlüssel. Sie verlassen dieses Gerät nie."
+                     ? "Deine Schlüssel entstehen gleich auf diesem iPhone und verlassen es nie."
                      : "Zusätzlich zum Code fragt Krypta nach \(Biometrics.name), bevor sich deine Chats öffnen.")
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
@@ -202,12 +212,10 @@ private struct BiometricsOfferView: View {
             .padding(.horizontal, 32)
             Spacer()
             VStack(spacing: 12) {
-                if isWorking {
-                    ProgressView("Schlüssel werden erzeugt …")
-                        .frame(height: 50)
-                } else if Biometrics.available == .none {
-                    Button { finish(false) } label: { Text("Fertig").frame(maxWidth: .infinity) }
+                if Biometrics.available == .none {
+                    Button { finish(false) } label: { Text("Weiter").frame(maxWidth: .infinity) }
                         .buttonStyle(.borderedProminent)
+                        .accessibilityIdentifier("onboarding.biometrics.skip")
                 } else {
                     Button {
                         Task {
@@ -217,6 +225,50 @@ private struct BiometricsOfferView: View {
                         .buttonStyle(.borderedProminent)
                     Button("Nicht jetzt") { finish(false) }
                         .accessibilityIdentifier("onboarding.biometrics.skip")
+                }
+            }
+            .controlSize(.large)
+            .padding(.horizontal, 24)
+            .padding(.bottom, 12)
+        }
+    }
+}
+
+// MARK: - Mitteilungen
+
+private struct NotificationsOfferView: View {
+    let isWorking: Bool
+    let finish: (Bool) async -> Void
+
+    var body: some View {
+        VStack(spacing: 0) {
+            Spacer()
+            VStack(spacing: 20) {
+                Image(systemName: "bell.badge.fill")
+                    .font(.system(size: 64))
+                    .foregroundStyle(.tint)
+                    .symbolRenderingMode(.hierarchical)
+                Text("Mitteilungen erlauben?")
+                    .font(.largeTitle.weight(.bold))
+                    .multilineTextAlignment(.center)
+                Text("Du erfährst, von wem eine Nachricht kommt — zum Beispiel „Neue Nachricht von Mami“. Was drinsteht, sieht nur, wer Krypta öffnet.")
+                    .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.center)
+            }
+            .padding(.horizontal, 32)
+            Spacer()
+            VStack(spacing: 12) {
+                if isWorking {
+                    ProgressView("Schlüssel werden erzeugt …")
+                        .frame(height: 50)
+                } else {
+                    Button { Task { await finish(true) } } label: {
+                        Text("Mitteilungen erlauben").frame(maxWidth: .infinity)
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .accessibilityIdentifier("onboarding.notifications.allow")
+                    Button("Nicht jetzt") { Task { await finish(false) } }
+                        .accessibilityIdentifier("onboarding.notifications.skip")
                 }
             }
             .controlSize(.large)

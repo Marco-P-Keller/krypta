@@ -4,6 +4,7 @@ import SwiftUI
 /// Ein Chat — aufgebaut wie Nachrichten.
 struct ConversationView: View {
     @Environment(MessengerEngine.self) private var engine
+    @Environment(AppModel.self) private var app
     let chatId: String
 
     @State private var draft = ""
@@ -95,7 +96,10 @@ struct ConversationView: View {
             Button("Löschen", role: .destructive) { engine.deleteForMe(chatId: chatId, messageId: m.id) }
         }
         .fullScreenCover(isPresented: Binding(get: { oneTimeText != nil }, set: { if !$0 { oneTimeText = nil } })) {
-            OneTimeReveal(text: oneTimeText ?? "") { oneTimeText = nil }
+            ScreenshotShield(isEnabled: app.screenshotShield) {
+                OneTimeReveal(text: oneTimeText ?? "") { oneTimeText = nil }
+            }
+            .ignoresSafeArea()
         }
     }
 
@@ -202,6 +206,10 @@ struct ConversationView: View {
             BannerAction(symbol: "exclamationmark.shield.fill", tint: .red,
                          text: "Die Sicherheitsnummer von \(contact.displayName) hat sich geändert. Überprüfe sie, bevor du weiterschreibst.",
                          action: "Überprüfen", route: .contact(contact.id))
+        } else if contact.transparencyVerified == false {
+            BannerAction(symbol: "exclamationmark.triangle.fill", tint: .red,
+                         text: "Das Schlüsselprotokoll von \(contact.displayName) zeigt einen Widerspruch. Vergleicht die Sicherheitsnummer.",
+                         action: "Details", route: .contact(contact.id))
         } else if contact.isBlocked {
             Banner(symbol: "hand.raised.fill", text: "Du hast diesen Kontakt blockiert.", tint: .red)
         } else if contact.isGone {
@@ -275,7 +283,7 @@ struct ConversationView: View {
 private struct BannerAction: View {
     let symbol: String
     let tint: Color
-    let text: String
+    let text: LocalizedStringKey
     let action: LocalizedStringKey
     let route: Route
 

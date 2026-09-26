@@ -118,15 +118,15 @@ struct CalculatorView: View {
 
     private func accessibility(for key: Key) -> String {
         switch key {
-        case .clear: calc.clearLabel == "AC" ? "Alles löschen" : "Löschen"
-        case .sign: "Vorzeichen"
-        case .percent: "Prozent"
-        case .op(.add): "Plus"
-        case .op(.subtract): "Minus"
-        case .op(.multiply): "Mal"
-        case .op(.divide): "Geteilt durch"
-        case .equals: "Ist gleich"
-        case .point: "Komma"
+        case .clear: calc.clearLabel == "AC" ? String(localized: "Alles löschen") : String(localized: "Löschen")
+        case .sign: String(localized: "Vorzeichen")
+        case .percent: String(localized: "Prozent")
+        case .op(.add): String(localized: "Plus")
+        case .op(.subtract): String(localized: "Minus")
+        case .op(.multiply): String(localized: "Mal")
+        case .op(.divide): String(localized: "Geteilt durch")
+        case .equals: String(localized: "Ist gleich")
+        case .point: String(localized: "Komma")
         case .digit(let d): "\(d)"
         }
     }

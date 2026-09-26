@@ -1,0 +1,44 @@
+{
+  "aliceId": "aliceFlutter00000000001",
+  "bobId": "bobFlutter0000000000002",
+  "chatId": "5b1e4c2a-0000-4000-8000-00000000c4a7",
+  "bobPub": "uXH/vpK2jMtSlWgumeKtyta2Koxawyoko9vAXTZwDwg=",
+  "secrets": {
+    "krypta_id_priv": "EBPHaZpC0vVZTG1cBA0F+YqdyoLk0NgGPd1J8n1/Ym8=",
+    "krypta_id_pub": "dt/0vf9kvG9yhfRJbQCFZ4LenyVXhzlY6ktqGsyOYlM=",
+    "krypta_cfg_userid": "aliceFlutter00000000001",
+    "krypta_db_key": "A9DIR9AU166ldw8dNFd22u7iCg2RSSpdmg3wJQb00xw=",
+    "krypta_code_secret": "c2FsdA==:aGFzaA==",
+    "krypta_code_delete": "c2FsdDI=:aGFzaDI=",
+    "krypta_cfg_biometric": "true",
+    "krypta_vault_hash": "dmF1bHQ=:aGFzaA==",
+    "krypta_vault_enabled": "true",
+    "krypta_vault_fails": "2",
+    "krypta_cfg_push_privacy": "true",
+    "krypta_cfg_read_receipts": "true",
+    "krypta_cfg_chat_preview": "false",
+    "krypta_cfg_language": "it"
+  },
+  "files": {
+    "contacts.enc": "AvSDlC4r+f1ogGCwjBJL+ZuvGXdxoPUAzM38Fg24KiMOQMZ+mzQLlfs3CiMDqREqfJYIAHgv7ktgNCzsUYqD32h2cdCLp7gJYqmtwT7sjRXQX8ioZuSoDaBXRC7N6qFewcTsrDoxw94T0fmw7MqK0MQ12dXaVZeazvBj5N2e1sAgDUD772e0bzgG/16pP4hmNEOR8NXPRTp3bgpqzu7bUsCUqfDH9iMeJA5rOaJ2aaUM1V4098MI6Mzt0hB9pr3GQs2ua99/Vk3qIETWidxOcEfoRXluYYqxdkFkv1WUfaNQ/CLFZBJryl+vzLtoz+D1898mb0k/0y8Yu6h9NU/gW96NxKiff7p3rddQo1VLb8udvG3TGxhN2rGhrlgCuoK4bwprrfWFU2XC4Jfw7baiTqNO5lncOEJI6Rg2Au2dS/2wH+8xcpqSdExv2vTOLV7JGL2U50Lcnfh+AdE7RI9EAt6a5W/Icnof/rnTEg2oxm706/r+WNyqSKG8P1kIMBlEl92/j7GXCRLCFT/cQwbA/zicTJfz0KqU3VaHinYnA7mii7T6FCVebecrQ08ofszd0EVW0cU33w742eKJod8mL0haRjHpAxb9",
+    "chats.enc": "dXrQ6NHWEYEIbHX1AgexzCv1WgFoNZS8fw1O37LCxrHheHt0HgwPUUhY/1LQi7O3Hn/8K5f7PLTGHtg+uUwIPZjLrpVOQpZZTa6OLMqS9feJwtG4ByEC0ckUXLI8C6q8ZhadKhcTJFkHJrYGXwOlciGwLjccJMrQRzXGU1KjWmBl/2gLAaFdI2DWn9E8bEqpi0QrqTw4HKKrQF94IGFwLxLWAXBG40Fd30NnLx83RUC85+AGhcUcpYb4M2/m26rTHjWrmaatagIUeWDl95pyCgh8b41LWBc6T1yIog1gGmleEdH9T4e/vgFSwqJRirEGQG6bgZd4T4ct4eOZDiSw8naHCiwG30mUiFoV06Bk661TRrD7PQ1h1i5m5J4FcmAhi190kAblt6KcBg1oAgj04A9xlFqW1Hk7vFz6ohfEuAb7KpIYqTnRDmxG8EK3dz9eDN53",
+    "msg_5b1e4c2a-0000-4000-8000-00000000c4a7.enc": "AkAHD7LRrfAvqBZQPpI/XOwKCOISRuAUd67jC4MhOpCpeGg3gTiLCPMtIwDhYlOQ9q00aOVNRvxpsdtAFy9XqsYio6U9poT7Jyv3gI2I72jr4mWxLAspCE36zYICfOQpxVRLTSWujxeuZjdmpLE+FUEFwY3JU4axk33JlXLfG5dywdePOSpbXrCwSnLgubJeTdH6uFmyWkcd0n++wjErARUXmdDsQqZk+5nBbOPn/lWDa9HUgEW3tmZpNtUPBQ2jSjfEo6CvdsDUuuXkJQPXVCsqfCdARh+B3ygD+ANvaSzhrYfJTYWe6RSAseBbIUlM5YgkuJtE1miNQWpf04emw5qMbiSZ90Vip3J9CcCYEn5m1X8bcDgpcoDT75BDCL0zNwAfLURjujBNywZcD5hnSVToKju3LHERad0Bbge9XIxB1h9OiHe6kVMQMyHZ5figKYIFmY5ZtlUqOw67SKs1hhVZUCUhhobwG3BJDClHOFPgZwtB0XMWhIRXHK4fJDqxQvJhwUyG48DQRKdgl7luxV0xwU2pW1bRGUxpHnI6rBZS9KiRIBTen+6EEqctY1NmffmUF6lbxXHgSX58ZLHRYcVqSGQYSqhSQGprOjb48jcA4sZ2zQWRNB+JvKHMis5fbl2cDwribjTJtjb+Q512F9raDg71fU5Qp5AcIAHoEXhxF7o6RtX3VLBNtIGldNdZB9gIVN1VzzA/gxr8jT6qadT8ZgUL+2R4i3Q1qfmSf7OlpWGsmrgwyQ34vP1F02+BItmmm8OVlnoxp6/R3mlkL1wQt3SmOlHy7LLLSQeR9pZz8EZUF6Bo4Ntgwsmc1VUY2h/Ocswt0CUUESAIJyfVDhLZjDcRNsEIk9vRd+gDvzk+1V+QlDNQLTfm5h+mfKYMKZem9Egh8tR7VImGP6seAKkVSUTyln4GGcxdrcuR1SiopgYwOsWgastJsO2eSEzrDGP0CJRh8yWCLwlKrzn6jWbBOgW7NKtLAurY/iwegHIasVZoUuADWLVmndETjujwz2ppfmk5O7SgXjLbNqpwILqns556U+Bq3Naf6nRcCInw5kSaT87MMkdvFCgxI1lRbI26CXeiGohDe9Twn+O+RNFgWGUuwqoFNGFYU1gcLtvfoAs/H8JUvkAtM181R3hjEgVxN3nanoJpj8I3fiOAZDqzD62HOXGliYMMPxJ/o/2c5IOMaC6wpRhXbxobh9g/xHRJ1EIyN7kEvx12rsM7ujlvtc8PaDvT2KWNK8C7ICtojVmXeQVxtLtC+18y/C4s2A7HcHs1kvoO6A2NljQUaWADBC8JHE7vZ/JIcTms0o5I8OWfxGeu6aPoku40VJJcpUdr/+fgjDgOjoOCtZY57n4d23/rA2uCgb+8qXtTzaOfOhq9XoyP1M9Xw331IDTxuXz71zKpoBsDo0D19X2jXPqzKwsrdFnpUno7Az25hS7iRDdojZEHvn7Ahy6fNy0g7gSUJmfieJiHifHIJybezCfNCKffo7AYsenwshqcpA==",
+    "ratchet_5b1e4c2a-0000-4000-8000-00000000c4a7.enc": "AlLdAvhMvN9kb9DxzvPXSUcNHt96wZcr3tFzCgI3cnBiKLaYcsmFocB3pwdu0GW8ONQkmFDVs1uGwQjiOhNUGQsILbdWkmDVHE+hkVKhsnMQSk9dzX0+qZk50sx9N5ftejCIvJNGZw2X6V9dQrQ+VW/5edyA/SVgcDqdDOcPQ3kU0Mi5xTxvjx0jIxkPGgQn4+5CI5LFG2ZOr3KncWQ+rhEOF0CrHY7pg047PsV++otKYT3+Ua/eE67xxJ2o9ZN07RagFb7LzW4CN/jx9KJlFcLEa98UOYg3qLb81qz3zrQMdmxlYz5/y7c0Yzhm8tcNJuvkVQjLkIj1y+CF1zrlyRHC7S7MI2lkxxWOlbqIbplUeooiB9bhrpck6oTB/S90pqfTsKxhIlHal4uPMjVze+Kdbeut3McqriQJFYwPvbf6ZQN9uCVkyXPdD5ism3NsCILKqojN3H66q5iFjI/SFA3OJDDgBQjQnqA+bO/NMPh7t+gGUwzj05I9FtDdK1nDhhaUr1h2W7YMtA==",
+    "prekey_state.enc": "ApEH1UPwfFsKpTXAoZaF88vkpPvPRpenkNCOxdu1L3w51uSTj1GNXixNg0IokXdnXQY/mqxyFiDzQQ3hKAMo8ys3bGClOMKdFYODH9Z4Pi/6QFpNp9kfJnIid2LYkKAT9IOR4JVuXOEsNEBx4raYz5ScggL214Tc045lOGNAzAQ9hLG1adXCkJb+Ej87BDoqXVfBnCMqKe1lMIXxAoCYysOP+NOVtBBp51fnoLdbvmi0U3jCS+A8/ukaB3iDZ8sL2TrMF/uG3MEimeqGJo4CxFgEn2z37OiYDqM=",
+    "control_counters.enc": "ApxdFjGNzIHY1HwAV1d9Sh+a+DfeYKT4oyK7ScKApZBO48ODXhf190YPDLWkWFE7q4fUFSh8Jxbuix8+LF/+fHAjR5sYTz+NdZyGllpyY3WljFp4+/0M6MpzyqEb+gPzUMVLKhbeyjH543w6aO69D3x2N/JrmLslLByxlYzXhKOTD3BcZe+YbEqiHz/wmL+HAlQmKPya",
+    "processed_ids.enc": "Ag1XmAuCboPRSTvr9r77EZBn9yEENp56+BJJrC0g9aiNUbO7GAizHBm+DXO4EXKDNRsohZPB6IIymw==",
+    "peer_psid_lineage.enc": "AsRK+7krOvqYyahUIAae/QPYVPceytgxTd3+GFC3FfbRwdhffm4Lt316kejHHt+1O1lHjKLfExBj7mbJzrsxj4TCOrTIGmyqrFhL7VfcuQ==",
+    "kt_log_aliceFlutter00000000001.enc": "Ar4fWX97QkxfSebbwp1QgFeB+eo1Vrt51TfWIXi9ir1Df7QEshC54KVO0H8NMfY65d0RK4uqSiphcv6hKzwSigL6eQuOExSQK6gVMUcQ2DdqVfddWIBKpO6+lri3ZabeRBVw57VE4xzIceTQb/gLFd1oI1A2wLGlrlWj2dgT3c970CZTxRGmmppS3M7cAOl2Zvo0NsAS64fWTr9+kJHduvKwhi+wyBSK6Lif8/uyxaOWoJfkWYgM12lLW+zlmDrLcDumYYJ+EQX8qFaWJXP1sDj+KrCvYiwaK+lkUMbhRiqusTubRojRZ95TopfF0zLyPiH4TXCg/M+c4ZVe6K53ndNzstMdBukQE0D/FAR+wlotw8b0r5ShWPviCmlsgGZpn8wCNAMejUKkK4VBs5jWiDM6HTIsWWQq1ylj0dDqQKS+bysJ",
+    "kt_pin_aliceFlutter00000000001.enc": "AszZCf7n/EelPIZvDZSl6hhSAv27u+sTzIQMRqP7uoMEtnoiywV9gwKFn6I7FObFhVuoUei4f+En62KEU6GwlnFHBfLeRlh3vQWFE4r9WageDAIcbDF6"
+  },
+  "reply": {
+    "v": 3,
+    "dh": "ybVu6+CB9vSg4c8H6g6eK2yk7dlinDKK7Xh+PvuyFXY=",
+    "n": 0,
+    "pn": 0,
+    "c": "3F+sNv0J66alQQeZxniHChxhetMojMtYxxJw7emhYDjiPz96OsMrNHOupw3UHHLFaIoMBjtSfUKhFIRiNuATQrCH5tY+zBh0xknIINqvLzqKISkschOcTHfLcSxB9bGGNbURUhvpu+VqN3xh+Vxkw5Shgg3NbjLPginLtc5/JRsR57KSziWKiP7XbC7l8tJeiI907kfOzZD+eDqKB1LpQ+ErmpYcd79zhc8upybnaufi17p43LgTxQAtAhkbQzJ8k1bWlNDmESD9ix4YhWobvQh4y5RIInnNSqKlEK9Qgb0TeOJoDelYYOHjoYOj50Ee26cHqCA4J1LmzTUo2gVdcg==",
+    "nc": "hj7hOYEL8fEie7vK3/1lcSdz3fdAEajm",
+    "m": "WVHMvjQetlncyi9Oqn0TVA=="
+  },
+  "replyText": "Nach dem Update"
+}

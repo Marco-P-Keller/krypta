@@ -273,16 +273,26 @@ struct Composer: View {
 
 /// Texte der Systemhinweise im Verlauf.
 enum SystemEventText {
+    /// Ganze Sätze je Fall — zusammengesetzte Bruchstücke ließen sich nicht
+    /// in jede Sprache übersetzen.
     static func text(_ kind: SystemEventKind, mine: Bool, timer: TimeInterval?, name: String = "") -> String {
-        let who = mine ? String(localized: "Du hast") : (name.isEmpty ? String(localized: "Dein Kontakt hat") : String(localized: "\(name) hat"))
+        let who = name.isEmpty ? String(localized: "Dein Kontakt") : name
         switch kind {
-        case .screenshot: return "\(who) " + String(localized: "ein Bildschirmfoto gemacht.")
-        case .screenRecording: return "\(who) " + String(localized: "eine Bildschirmaufnahme gestartet.")
-        case .accountDeleted: return String(localized: "Dieses Konto wurde gelöscht.")
-        case .selfDestructAfterRead: return "\(who) " + String(localized: "festgelegt, dass Nachrichten nach dem Lesen gelöscht werden.")
+        case .screenshot:
+            return mine ? String(localized: "Du hast ein Bildschirmfoto gemacht.") : String(localized: "\(who) hat ein Bildschirmfoto gemacht.")
+        case .screenRecording:
+            return mine ? String(localized: "Du hast eine Bildschirmaufnahme gestartet.") : String(localized: "\(who) hat eine Bildschirmaufnahme gestartet.")
+        case .accountDeleted:
+            return String(localized: "Dieses Konto wurde gelöscht.")
+        case .selfDestructAfterRead:
+            return mine ? String(localized: "Du hast festgelegt, dass Nachrichten nach dem Lesen gelöscht werden.")
+                : String(localized: "\(who) hat festgelegt, dass Nachrichten nach dem Lesen gelöscht werden.")
         case .selfDestructChanged:
-            if let timer { return "\(who) " + String(localized: "die Löschfrist auf \(Format.duration(timer)) gesetzt.") }
-            return "\(who) " + String(localized: "die Löschfrist ausgeschaltet.")
+            if let timer {
+                let d = Format.duration(timer)
+                return mine ? String(localized: "Du hast die Löschfrist auf \(d) gesetzt.") : String(localized: "\(who) hat die Löschfrist auf \(d) gesetzt.")
+            }
+            return mine ? String(localized: "Du hast die Löschfrist ausgeschaltet.") : String(localized: "\(who) hat die Löschfrist ausgeschaltet.")
         }
     }
 }

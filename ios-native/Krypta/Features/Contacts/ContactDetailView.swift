@@ -1,6 +1,61 @@
 import KryptaMessenger
 import SwiftUI
 
+extension ContactDetailView {
+    @ViewBuilder
+    func transparencyStatus(_ c: Contact) -> some View {
+        switch c.transparencyVerified {
+        case true?: Label("Geprüft", systemImage: "checkmark.seal.fill").labelStyle(.titleAndIcon).foregroundStyle(.green)
+        case false?: Label("Widerspruch", systemImage: "exclamationmark.triangle.fill").labelStyle(.titleAndIcon).foregroundStyle(.red)
+        case nil: Text("Noch nicht geprüft")
+        }
+    }
+}
+
+/// Das Schlüsselprotokoll eines Kontakts — Key Transparency in Worten.
+struct TransparencyView: View {
+    @Environment(MessengerEngine.self) private var engine
+    let contactId: String
+
+    var body: some View {
+        let contact = engine.contact(contactId)
+        let chain = engine.transparencyChain(contactId)
+        List {
+            Section {
+                switch contact?.transparencyVerified {
+                case true?:
+                    Label("Der Server zeigt dir für diesen Kontakt dieselbe lückenlose, signierte Schlüsselkette wie allen anderen, und sie endet bei dem Schlüssel, den du kennst.", systemImage: "checkmark.seal.fill")
+                        .foregroundStyle(.primary)
+                case false?:
+                    Label("Die Schlüsselkette dieses Kontakts passt nicht zu dem, was du kennst, oder dein Kontakt hat eine andere Kette gesehen als du. Jemand könnte sich zwischen euch geschaltet haben. Vergleicht die Sicherheitsnummer persönlich.", systemImage: "exclamationmark.triangle.fill")
+                        .foregroundStyle(.red)
+                case nil:
+                    Label("Noch nicht geprüft. Krypta holt die Kette beim nächsten Start oder sobald der Server erreichbar ist.", systemImage: "clock")
+                }
+            } footer: {
+                Text("Jedes Krypta-Konto veröffentlicht eine Kette signierter Einträge zu seinem Schlüssel. Jede Nachricht trägt verschlüsselt mit, welche Kette die Gegenseite sieht. Zeigt der Server zwei Leuten verschiedene Schlüssel, fällt das auf.")
+            }
+            if let chain, !chain.entries.isEmpty {
+                Section("Einträge") {
+                    ForEach(chain.entries, id: \.epoch) { entry in
+                        LabeledContent("Eintrag \(entry.epoch)") {
+                            Text(Date(timeIntervalSince1970: Double(entry.timestampMs) / 1000), format: .dateTime.day().month().year())
+                        }
+                    }
+                    if let fp = engine.transparencyFingerprint(contactId) {
+                        LabeledContent("Fingerabdruck") {
+                            Text(fp).font(.caption2.monospaced()).multilineTextAlignment(.trailing)
+                        }
+                    }
+                }
+            }
+        }
+        .navigationTitle("Schlüsselprotokoll")
+        .navigationBarTitleDisplayMode(.inline)
+        .refreshable { await engine.verifyTransparency(contactId) }
+    }
+}
+
 /// Kontaktinfo: Vertrauen, Löschfrist, Blockieren, Löschen.
 struct ContactDetailView: View {
     @Environment(MessengerEngine.self) private var engine
@@ -61,6 +116,15 @@ struct ContactDetailView: View {
                     }
                     LabeledContent("Schlüssel") {
                         Text(contact.shortFingerprint).font(.footnote.monospaced())
+                    }
+                    NavigationLink {
+                        TransparencyView(contactId: contact.id)
+                    } label: {
+                        LabeledContent {
+                            transparencyStatus(contact)
+                        } label: {
+                            Label("Schlüsselprotokoll", systemImage: "list.bullet.rectangle")
+                        }
                     }
                 }
 

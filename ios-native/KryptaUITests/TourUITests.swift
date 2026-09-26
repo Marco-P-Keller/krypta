@@ -4,7 +4,8 @@ import XCTest
 /// Einstellungen, eigener Code, Sperren, Rechner, Entsperren.
 ///
 /// Legt an jeder Station ein Bildschirmfoto ab, wenn KRYPTA_SHOTS gesetzt
-/// ist (Verzeichnis auf dem Mac). Braucht Netz für die anonyme Anmeldung.
+/// ist (Verzeichnis auf dem Mac). Läuft gegen einen Server im Speicher
+/// (`-KryptaOffline`) — es entsteht kein Konto in Firebase.
 final class TourUITests: XCTestCase {
     private var app: XCUIApplication!
     private let code = "246810"
@@ -32,9 +33,10 @@ final class TourUITests: XCTestCase {
     }
 
     func testTour() throws {
+        app.launchArguments = ["-AppleLanguages", "(de)", "-KryptaOffline", "-KryptaReset"]
         app.launch()
         let next = app.buttons["onboarding.continue"]
-        guard next.waitForExistence(timeout: 10) else { throw XCTSkip("Schon eingerichtet") }
+        XCTAssertTrue(next.waitForExistence(timeout: 10))
         shot("01-welcome")
         next.tap()
 
@@ -52,12 +54,15 @@ final class TourUITests: XCTestCase {
         sleep(1)
         typeCode(deleteCode)
 
-        // Ohne eingerichtete Biometrie heißt der Knopf "Fertig".
-        let done = app.buttons["Fertig"]
         let skip = app.buttons["onboarding.biometrics.skip"]
-        XCTAssertTrue(done.waitForExistence(timeout: 5) || skip.exists)
+        XCTAssertTrue(skip.waitForExistence(timeout: 5))
         shot("05-biometrics")
-        (skip.exists ? skip : done).tap()
+        skip.tap()
+
+        let noPush = app.buttons["onboarding.notifications.skip"]
+        XCTAssertTrue(noPush.waitForExistence(timeout: 5))
+        shot("05b-notifications")
+        noPush.tap()
 
         XCTAssertTrue(app.navigationBars["Chats"].waitForExistence(timeout: 30))
         sleep(2)

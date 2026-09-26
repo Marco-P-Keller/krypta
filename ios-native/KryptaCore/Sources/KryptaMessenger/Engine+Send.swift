@@ -101,8 +101,10 @@ extension MessengerEngine {
             if options.burnAfterRead && !oneTime { inner["_bar"] = true }
             if oneTime { inner["_once"] = true }
             if password != nil { inner["_pw"] = true }
+            if !asRequest, let kt = gossip(for: contact.id) { inner["_kt"] = .object(kt) }
 
-            let payload = try encrypt(chatId: chatId, content: try inner.jsonString())
+            var payload = try encrypt(chatId: chatId, content: try inner.jsonString())
+            payload["nt"] = .string(notificationTag(for: contact, request: asRequest))
             ratchets[chatId]?.globalSendSeqNo += 1
             saveRatchet(chatId)
 
@@ -156,7 +158,9 @@ extension MessengerEngine {
         let ctrl = ControlMessage.create(type: type, chatId: chatId, messageId: messageId, senderId: userId, counter: counter, key: key)
         let inner: JSONObject = ["_ctrl": .object(ctrl.json), "_sid": .string(userId)]
         do {
-            let payload = try encrypt(chatId: chatId, content: try inner.jsonString())
+            var payload = try encrypt(chatId: chatId, content: try inner.jsonString())
+            // Steuernachrichten lösen keine Mitteilung aus.
+            payload["nt"] = .string(NotificationTag.quiet)
             try await relay.send(from: userId, to: current.id, messageId: UUID().uuidString.lowercased(), payload: payload)
             handshakeDelivered(chatId: chatId)
             return true

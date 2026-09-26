@@ -14,7 +14,7 @@ final class ConversationUITests: XCTestCase {
 
     func testDemoConversation() {
         let app = XCUIApplication()
-        app.launchArguments = ["-KryptaDemo"]
+        app.launchArguments = ["-AppleLanguages", "(de)", "-KryptaDemo"]
         app.launch()
 
         let lena = app.staticTexts["Lena"].firstMatch

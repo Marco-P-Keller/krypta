@@ -1,28 +1,54 @@
 {
   "bundle" : {
-    "ik" : "0uVXCkhMaFtoIUFnYcrivmm8nLacr3EMu1ONu9G0mU4=",
-    "sigPk" : "VQ7ZeV4sSU2Ge4Fb2td4e0fB4E/2G9cE6Gctnp3Nzrw=",
-    "spk" : "jQskV79yjCvbDjS1C09fo8TZXoZdsBw7Hxw05Lec8Ts=",
+    "ik" : "/Ju8fhxzucaW2xo4PLXVii63op6YBKYpiUbRS9xpxDU=",
+    "sigPk" : "lf8pToJxcGvREkFOm1Fu0cKyxvKY9/9DsYybfxdksZM=",
+    "spk" : "MEB82+iTMM5fehCDFi+TkES8YOmXFn2GnnX3heOjzC0=",
     "spkId" : 0,
-    "spks" : "4lWqS40F9kOjqGv910MR5VrSJTxDD0kSavN4epEK4RfSdmPgs4VvdTNZafWv8+Zkk4EMtQQfP19UFXLCOUsIAQ=="
+    "spks" : "eQyxiF7gxOxJew8AaaIi36rHE6jJee6evlqxZWGRklxkET9NVeUydQfUUGvX+m5uHAgOJ4Q7loPxG1BCpcw1AA=="
   },
   "control" : {
     "chatId" : "swift-chat",
     "ctr" : 3,
     "mid" : "msg-9",
     "sid" : "aliceUid0000000000000001",
-    "sig" : "LGSj4TdlsHhvy3AlXaU+X1NJ7D3GIxXQ0+7emb3HOQE=",
-    "ts" : 1790420206898,
+    "sig" : "IiXZqwg7Kkm5LCU9OE86xGYQZIKADtMTQI2uVmjaToM=",
+    "ts" : 1790433835697,
     "type" : "read"
+  },
+  "kt" : {
+    "hashes" : [
+      "TEq2PX3a5FRmhcHgl2cTPSR0zbFfC2wiWKfdihAJlHg=",
+      "M4vgLPYvmjILPd11kMdrR77XfqYrIXnQ2/Oto33Tqf8="
+    ],
+    "log" : [
+      {
+        "e" : 0,
+        "k" : "/Ju8fhxzucaW2xo4PLXVii63op6YBKYpiUbRS9xpxDU=",
+        "p" : "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=",
+        "s" : "6iKTtwIHaeRBGHZ1v1F3Y0Ktk+/XMWhwjRKyutvE0TKrqa7DadZL+KGkPa0hT1/StJUt04N0HmIvIsZmXIlwCw==",
+        "sp" : "lf8pToJxcGvREkFOm1Fu0cKyxvKY9/9DsYybfxdksZM=",
+        "ts" : 1790433835730,
+        "v" : 2
+      },
+      {
+        "e" : 1,
+        "k" : "/Ju8fhxzucaW2xo4PLXVii63op6YBKYpiUbRS9xpxDU=",
+        "p" : "TEq2PX3a5FRmhcHgl2cTPSR0zbFfC2wiWKfdihAJlHg=",
+        "s" : "llRobb/qnbwIzbMzoGsYsfMDIkOeVjtBUYdavYAPPteZkeWcF6y62Kjre/cJY3rX5pGkxbH1Cn+qu7EkY0tsAg==",
+        "sp" : "lf8pToJxcGvREkFOm1Fu0cKyxvKY9/9DsYybfxdksZM=",
+        "ts" : 1790433835730,
+        "v" : 2
+      }
+    ]
   },
   "outbound" : {
     "payload" : {
-      "c" : "lEgJRi4ioparZJ8CD/SXdtNZTwG7j6fXEtdbzxVo831R4U60PPXzsCwveuUYqs7WFWUi/1i3A7ZhBvhKDHgUQY+Q8UaMSTn7gDHE+I//e6FYhcX9FAd5mAMojBcMPckaAMQF28f2omhNIzBdx4uMyihszgJiERoViXfVGUk+Z8laiFl47Q2ZCM0LkO5J+4HCWEUYT6/aDtAEXVmVKbY6j/9MavL4OJ8RduCYCTfDTheWY82zoa8Am+a2FtPvcFmGk4F8xMhH9Eg3BFbm5YdwzvGRrylT9lxnsCDuiKsMP5ePEEB1azvCEMs8qcC0dgOnsSQNHXomTPZvao2Lwjwpnw==",
-      "dh" : "vk1I1d7pDZOwp3zMHRG7ciMSl9q4zvHufdGcdxoVaVU=",
-      "ek" : "gzhQn9EiKwyBHo/lJEjOpGYKrnmDkiOgcGHak5hrHig=",
-      "m" : "quozcsq9iantl+v2jfzLuw==",
+      "c" : "cbjpWsC25k+NtVCx/x3J0xLGvP6bo7rg87mNMvkfDVprGe3hNKxcuxXGUmRrdDZAcz1fBdVQPOkVzhGe74KCc6uGGj53qmAM08SBRSbGuT/wAaBvyEbiptg4DH9Jb6tohvAPnDg3tmG1c8CvJ2sTnA5fWRMNU8CyLhSxpwZdUi1aYvqQ5WJYTzufBJqxyo3LBPGDMSRRQjWcvPy4WDXVFGJKhaJNPB3NMkciM6FvBV9t0TrA9bSoCyjYaFFfcgmLa8UId1PKd9YQnKJmLEIMs+IpqLVdirYSVqFKHyfc68fN5QydPgYZuXkmQQ+/aek0mX1rQEEG7ETF/okhu35V6w==",
+      "dh" : "9KuHBoVSXVY2yKBqMdSF7cxweJNPXTd7lVyLibDa0S4=",
+      "ek" : "ipVEFDhBZHnljEZcfMMA4hTY244CPAzVbxHBWFB3pGA=",
+      "m" : "Pi18ppaXY3BTLL3tJvMhVQ==",
       "n" : 0,
-      "nc" : "8fnrIbex+/gGJYSQ6WmLcYEs1GHLCirP",
+      "nc" : "qnyL3CyUWr6b4+LBYOtcq67NBKI5X6jp",
       "pn" : 0,
       "spkId" : 11,
       "v" : 3
@@ -31,18 +57,18 @@
   },
   "password" : {
     "aad" : "pwd-v1|bobUid00000000000000000002|aliceUid0000000000000001|msg-9",
-    "blob" : "eyJjIjoib0FXUUh0UEorNjgxSXR4SDdGM1JKd3BVIiwidiI6MywicyI6IjBuS2tRcWlabldVamozcnNDQk4xdUE9PSIsIm4iOiJoZy84WGt1YjYyVjR2OXJjZHJtSkk5R3hxUlBvUVcyeiIsIm0iOiJuMlJlSUxjQ00vUDBJWm5LUG03M3dRPT0ifQ==",
+    "blob" : "eyJ2IjozLCJjIjoici9JQ1J0WkZ6YUtQbU55M0pjaDczM1FrIiwibiI6IllMeUU2UGJNMHhHM0RjcHdtN3RVZlUxcWF6VzMwS3V5IiwibSI6IitCR2Q3SWRWa09wZjdMdlJka2JUZ3c9PSIsInMiOiJXZWhRYzFDVmExY2RScC9tK1BhMXJRPT0ifQ==",
     "password" : "zweites pferd",
     "plaintext" : "Passwort aus Swift"
   },
   "replies" : [
     {
       "payload" : {
-        "c" : "rTHUi0OV9rpsgr4hG57mqjYPXm/qm2aykdMZvDuwUxo/TvWsMZDeKHAq/QOIaEPwz532IZXnRl+EKRl9ic4A8rwXc3R1FatxrTV0A5YuQ76RLd5ZDoSxDrbIs/Fsxtt2Xf7aqP51SY3XX9quDStkLgT6qrHaiSi594vzxMkYFgkfHxq75fTm18yRfGqniVPeyKmF0qzRPZnLNkSqHHmMSnPYFlmRetbW/xTTlPmUsrylJM+OVLbfKAld47DIkw3vNG1gacMINLkhBGR5bpDqvBcEXnoHtBCo3KkYMR08QnAGxOeZFjG/a1hgeArgQ5t0+ksJHpPNhdQ4KlTo7WbQ4g==",
-        "dh" : "PUsyd0nJdmUP+89LqOLZu9P6OBm5r2v75KAZpRSqjHU=",
-        "m" : "0ixNxlLp8znN/DNpq7joDQ==",
+        "c" : "RhAxlnYWamw8TWjWZ+EpfLtDtkMuk5GA424h5jJPf+n+vAXYut9Tt/RLyRpj1AMrjUAepuzlgGCXf+Ba7O1a71WY2B77x8+XF3CBiTuGs8mJx2HncJKw1rHpJK4lTu45xN7CnpizdkvaVetFhzFc8vA77z05uSp3y216SYOAxs1X748nwZMlyOKVwD2quFgdzCJAF8GOn2pRAGfgpwDnfVZ++F3LxFTCGAPapMqaQJDZYOgjb4J8BN2ddoyknTFwqOqi7y/8M5/rzYQRP/opoxYvstKMvwiz6rFplER4fJc9baAd7vEfOXr/nL0xkJ7X+G0ULroB12GDxMi5nIsEKA==",
+        "dh" : "eK3u9d9LaPF1rJcg99fA/zwIapV5QL4XMFfvbGlwbVE=",
+        "m" : "SX/i1Zdh5JwVfRFLg5xurQ==",
         "n" : 0,
-        "nc" : "1A0u4CbLUuvOZOw8eAA1i3p+CuZlVWwX",
+        "nc" : "aWCQQVlLqJhIq/+fRJOVTKKk2zdEbbvi",
         "pn" : 0,
         "v" : 3
       },
@@ -50,16 +76,16 @@
     },
     {
       "payload" : {
-        "c" : "PW/NJyruFtJUPpwqAPVVy/op6bMc54igIvK2zYFGBwSXKBUbJ7HNHziUsxmicB21kkYm9irZOnIL5fQ2HfCDIRUpFH8Ku807hy+EXRxrBaFK/QqY1In6qitSQsSz1gC9s3YyIpXYLcqtMwvRaxW6jWAR6aOp+Ey8PoL2ArMSfmcit4eDvJstrUzBkjVk+D71bKiMF6OJ7gqKO53m5uOzWbfhiBdxCRT5Qv8G7UpHQyNZC8LphdJ7gk5WcCM/yIESbV28eRI2o1McaK67McVPFbWzXGtrkW3gPnQxEHZoV45Xaoe4PuWNBXzJF2zeanvx3w07HFafmWRu2+YJiOdvug==",
-        "dh" : "PUsyd0nJdmUP+89LqOLZu9P6OBm5r2v75KAZpRSqjHU=",
-        "m" : "schwqkH0imdzZ9PBg1m4HA==",
+        "c" : "ZMZmZH9n1TETXdLqHGhFVQmU3yb5n6fsXy+zK3Sr3fAxMysRQOKT10EhE7k26x11FPcnrEDklFTT39vkKSnSS/gYbXJSQygJM1HoSwkcCMLg2pHtqo3so7W5kXJhiThtAlMJeIp4VqBfpyn17VkJLw6dEtwVs366hgvw0z0uLEt0Lat+zZPVX2tDAC2lVNf6dRkYfsZdr03rqoKx8K2dIa1w0fULOTevrYaRxe9MVCXpvXGIiuhF3Ew2l68Q0DhEOXay7OLo/vCvQHLFPJrYMt4vBwG2x/aTtTxs3La8Dtp+gUo2RT0Jpj03I4s+MWeyKLSnrrTwE9kADZY6jJFdvQ==",
+        "dh" : "eK3u9d9LaPF1rJcg99fA/zwIapV5QL4XMFfvbGlwbVE=",
+        "m" : "O/3OgWzPCE5is9TqULGBGw==",
         "n" : 1,
-        "nc" : "H8XdXshTnOkWXeUIMGV1sLYulw+0S91L",
+        "nc" : "K1Ic/C39HirSXPBexxJM1bSRewgX5QR5",
         "pn" : 0,
         "v" : 3
       },
       "text" : "Noch eine 🍏"
     }
   ],
-  "safetyNumber" : "492885801005647421580859427517649415992163946065032098809508"
+  "safetyNumber" : "276872336718550065081143230796255744225262357032036466725019"
 }

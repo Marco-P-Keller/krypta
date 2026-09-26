@@ -33,6 +33,10 @@ public struct Contact: Codable, Identifiable, Equatable, Sendable {
     public var keyChangeCount = 0
     public var isGone = false
     public var goneAt: Date?
+    /// Key Transparency: `nil` noch nicht geprüft, `false` Widerspruch
+    /// gefunden, `true` Kette geprüft bis `lastVerifiedEpoch`.
+    public var transparencyVerified: Bool?
+    public var lastVerifiedEpoch: Int?
 
     public init(id: String, publicKey: Data, requestState: RequestState, trustState: TrustState = .unverified, now: Date = Date()) {
         self.id = id

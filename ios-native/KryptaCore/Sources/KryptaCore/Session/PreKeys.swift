@@ -60,6 +60,13 @@ public struct SignedPreKey: Equatable, Sendable, Codable {
     public let publicKey: Data
     public let privateKey: Data
     public let createdAt: Date
+
+    public init(id: Int, publicKey: Data, privateKey: Data, createdAt: Date) {
+        self.id = id
+        self.publicKey = publicKey
+        self.privateKey = privateKey
+        self.createdAt = createdAt
+    }
 }
 
 /// Verwaltet die eigenen signierten Vorabschlüssel.
@@ -75,6 +82,13 @@ public struct PreKeyStore: Equatable, Sendable, Codable {
     public private(set) var nextId = 0
 
     public init() {}
+
+    /// Übernahme eines vorhandenen Zustands (Flutter-Daten).
+    public init(current: SignedPreKey?, previous: [SignedPreKey], nextId: Int) {
+        self.current = current
+        self.previous = previous
+        self.nextId = max(nextId, (([current].compactMap { $0 } + previous).map(\.id).max() ?? -1) + 1)
+    }
 
     public func needsRotation(now: Date = Date()) -> Bool {
         guard let current else { return true }

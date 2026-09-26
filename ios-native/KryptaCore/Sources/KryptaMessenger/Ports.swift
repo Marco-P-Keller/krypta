@@ -31,6 +31,10 @@ public protocol Relay: AnyObject, Sendable {
     func inbox(uid: String) -> AsyncThrowingStream<[InboxEnvelope], Error>
     func deleteFromInbox(uid: String, docId: String) async throws
     func deleteAllUserData(uid: String) async throws
+    /// Key Transparency: `keyCommitments/{uid}/log/{epoch}`.
+    func publishKeyCommitment(uid: String, commitment: JSONObject, epoch: Int) async throws
+    /// Einträge nach Epoche sortiert; mit `since` nur die danach.
+    func keyCommitments(uid: String, since: Int?) async throws -> [JSONObject]
 }
 
 /// Verschlüsselter lokaler Speicher, pro Slot ein Blob.
@@ -93,8 +97,11 @@ public final class MemoryRelay: Relay, @unchecked Sendable {
     private var bundles: [String: JSONObject] = [:]
     private var tokens: [String: String] = [:]
     private var inboxes: [String: [InboxEnvelope]] = [:]
+    private var commitments: [String: [Int: JSONObject]] = [:]
     private var listeners: [String: AsyncThrowingStream<[InboxEnvelope], Error>.Continuation] = [:]
     public private(set) var sentCount = 0
+    /// Für Tests: jede gesendete Nutzlast mit Empfänger.
+    public private(set) var sentPayloads: [(to: String, payload: JSONObject)] = []
     /// Für Tests: schlägt jedes Senden fehl, solange `true`.
     public var failSends = false
 
@@ -112,6 +119,7 @@ public final class MemoryRelay: Relay, @unchecked Sendable {
         let (envelope, listener): (InboxEnvelope, AsyncThrowingStream<[InboxEnvelope], Error>.Continuation?) = try lock.withLock {
             if failSends { throw Offline() }
             sentCount += 1
+            sentPayloads.append((to, payload))
             let env = InboxEnvelope(docId: UUID().uuidString, senderId: from, messageId: messageId, payload: payload)
             inboxes[to, default: []].append(env)
             return (env, listeners[to])
@@ -142,7 +150,27 @@ public final class MemoryRelay: Relay, @unchecked Sendable {
             bundles.removeValue(forKey: uid)
             tokens.removeValue(forKey: uid)
             inboxes.removeValue(forKey: uid)
+            commitments.removeValue(forKey: uid)
         }
+    }
+
+    public func publishKeyCommitment(uid: String, commitment: JSONObject, epoch: Int) async throws {
+        try lock.withLock {
+            // Wie die Regel in Firestore: nur anlegen, nie überschreiben.
+            if commitments[uid]?[epoch] != nil { throw Offline() }
+            commitments[uid, default: [:]][epoch] = commitment
+        }
+    }
+
+    public func keyCommitments(uid: String, since: Int?) async throws -> [JSONObject] {
+        lock.withLock {
+            (commitments[uid] ?? [:]).filter { since == nil || $0.key > since! }.sorted { $0.key < $1.key }.map(\.value)
+        }
+    }
+
+    /// Für Tests: der Server tauscht einen Eintrag aus (Split View).
+    public func forgeKeyCommitment(uid: String, epoch: Int, _ commitment: JSONObject) {
+        lock.withLock { commitments[uid, default: [:]][epoch] = commitment }
     }
 
     /// Wie viele Nachrichten noch im Posteingang liegen.

@@ -10,8 +10,10 @@ dasselbe Firebase-Projekt.
 |---|---|
 | `KryptaCore/Sources/KryptaCore` | Protokoll: X3DH, Double Ratchet, Replay-Schutz, Steuernachrichten, Passwort-Nachrichten, Sicherheitsnummern. CryptoKit plus libsodium (XChaCha20-Poly1305, Argon2id). |
 | `KryptaCore/Sources/KryptaMessenger` | Messenger-Logik ohne Oberfläche: Kontakte, Anfragen, Senden, Empfangen, Löschfristen. Server hinter `Relay`, Speicher hinter `Vault`. |
-| `Krypta/` | Die App: SwiftUI, Firestore-Relay, Schlüsselbund, verschlüsselter Dateitresor, Rechner-Tarnung. |
-| `KryptaUITests/` | Rundgang durch die App, Chat im Demo-Modus. |
+| `Krypta/` | Die App: SwiftUI, Firestore-Relay, Schlüsselbund, verschlüsselter Dateitresor, Rechner-Tarnung, Tresor-Passwort, Screenshot-Schutz, Push, Übernahme der Flutter-Daten. |
+| `KryptaNotifications/` | Notification Service Extension: „Neue Nachricht von Mami" statt „Neue Nachricht", ohne Inhalt. |
+| `Shared/` | Was App und Extension teilen (Index der Mitteilungen im Schlüsselbund). |
+| `KryptaUITests/` | Rundgang, Chat im Demo-Modus, Übernahme aus Flutter, Tresor-Passwort, Mitteilungen. |
 
 ## Loslegen
 
@@ -29,7 +31,7 @@ open Krypta.xcodeproj
 cd ios-native/KryptaCore && swift test
 
 # Kompatibilität mit der Flutter-Fassung, in beide Richtungen
-KRYPTA_GEN_VECTORS=1 flutter test test/interop   # Dart erzeugt Nachrichten
+KRYPTA_GEN_VECTORS=1 flutter test test/interop   # Dart erzeugt Nachrichten, KT-Ketten, Flutter-Speicher
 (cd ios-native/KryptaCore && swift test)          # Swift liest sie, antwortet
 flutter test test/interop                         # Dart liest die Antworten
 
@@ -44,11 +46,83 @@ In Debug-Builds startet `-KryptaDemo` (Scheme → Arguments) die App gegen
 einen Server im Speicher, mit zwei echten Messengern im selben Prozess als
 Kontakten. Kein Firebase, kein Schlüsselbund.
 
-## Noch offen gegenüber der Flutter-App
+## Mitteilungen
 
-- Push-Benachrichtigungen (FCM/APNs)
-- Tresor-Passwort als zusätzliche Sperre, Fehlversuch-Zähler mit Löschung
-- Schutz vor Bildschirmfotos (die Gegenseite wird bereits benachrichtigt)
-- Key-Transparency-Log und Gossip (`_kt`)
-- Weitere Sprachen (bisher Deutsch)
-- Übernahme vorhandener Daten aus der Flutter-App (derzeit Neueinrichtung)
+Auf dem Sperrbildschirm steht, **von wem** eine Nachricht kommt („Neue
+Nachricht von Mami"), nie, was drinsteht.
+
+1. Der Absender legt in die Nachricht (`p.nt`) einen Anhänger: acht
+   Zufallsbytes plus HMAC mit einem Schlüssel, den nur die beiden kennen
+   (Diffie-Hellman der Identitäten). Er ändert sich mit jeder Nachricht und
+   nennt niemanden. Kontaktanfragen tragen einen Anhänger aus dem Schlüssel
+   der Empfängerin, Steuernachrichten (zugestellt, gelesen …) einen leeren.
+2. Die Cloud Function (`firebase/functions/index.js`, `pushPlan`) schickt bei
+   leerem Anhänger **keine** Mitteilung mehr und reicht sonst den Anhänger als
+   `data.nt` mit `mutable-content` weiter.
+3. Die Extension prüft ihn gegen den Index im geteilten Schlüsselbund
+   (Schlüssel und Name je Kontakt, geschrieben von der App) und setzt den Text.
+
+Flutter-Absender setzen keinen Anhänger; ihre Nachrichten erscheinen wie
+bisher als „Du hast eine neue Nachricht erhalten". Für die Flutter-App ändert
+sich nichts.
+
+**Deployen:** `firebase deploy --only functions:onNewMessage --project kryptaecc`
+
+In den Einstellungen: Mitteilungen an/aus, „Absender nennen" an/aus. Ist die
+App vorne, gibt es kein Banner (auch nicht über dem Rechner).
+
+## Screenshot-Schutz
+
+Der Chat liegt in der Zeichenfläche eines Passwortfelds, die iOS aus
+Bildschirmfotos, Aufnahmen und Spiegelungen herausnimmt; dort erscheint
+„Inhalt geschützt". Undokumentiertes Verhalten: `ScreenshotProtection.isEffective`
+prüft, ob die Fläche gefunden wurde, und die Einstellungen sagen ehrlich, wenn
+nicht. Dann deckt die App bei laufender Aufnahme alles ab. Die Meldung an die
+Gegenseite läuft in jedem Fall. Im Simulator unter iOS 26.1 geprüft
+(Bildschirmfoto im Gerät ist leer); auf echten Geräten mit neuerem iOS
+nachprüfen — die Flutter-Fassung hatte mit einer anderen Variante desselben
+Tricks ab iOS 26.6 Probleme.
+
+## Tresor-Passwort
+
+Nach Rechner-Code und Face ID die letzte Tür. Argon2id wie die Codes,
+Fehlversuche überstehen Neustarts, Pause 2 / 4 / 8 / 16 s, beim fünften Fehler
+wird alles gelöscht. Festlegen, ändern, entfernen in den Einstellungen.
+
+## Key Transparency
+
+Wie `lib/security/transparency/`: jede Identität veröffentlicht eine signierte,
+verkettete Liste (`keyCommitments/{uid}/log`), die Engine prüft die Kette jedes
+Kontakts und tauscht in jeder Nachricht die Köpfe aus (`_kt`). Ein Widerspruch
+erscheint im Chat und auf der Kontaktseite („Schlüsselprotokoll"). Swift prüft
+Dart-Ketten und umgekehrt (Interop-Vektoren).
+
+## Übernahme aus der Flutter-App
+
+Beim ersten Start nach dem Update liest die App den Schlüsselbund von
+flutter_secure_storage, den Datenbankschlüssel (auch den in der Secure Enclave
+verpackten) und `Documents/krypta_store/*.enc` und übernimmt Identität,
+Kennung, Codes, Tresor-Passwort samt Fehlversuchen, Einstellungen, Sprache,
+Kontakte, Chats, Nachrichten, Sitzungen, Vorabschlüssel und Schlüsselprotokoll.
+Die Tür bleibt dieselbe (gleicher Geheim- und Löschcode). Danach werden die
+alten Daten gelöscht. Nur Schlüsselbund ohne Datenordner heißt „App war
+gelöscht" — dann wird wie in Flutter nur aufgeräumt.
+
+Beweis: `test/interop/flutter_store_fixture_test.dart` schreibt einen echten
+Speicher mit dem Dart-Code, `FlutterImportTests` übernimmt ihn und entschlüsselt
+danach mit der alten Sitzung eine neue Nachricht von Bob.
+
+## Sprachen
+
+Deutsch, Englisch, Spanisch, Französisch, Italienisch, Niederländisch,
+Portugiesisch (`Localizable.xcstrings`, auch in der Extension und für
+Info.plist). Umschalten über Einstellungen → Sprache (iOS-Einstellungen der App).
+
+## Test-Schalter (nur Debug)
+
+| Argument | Wirkung |
+|---|---|
+| `-KryptaDemo` | Chat mit Beispielkontakten, Server im Speicher |
+| `-KryptaOffline` | echte App gegen Server im Speicher, kein Firebase |
+| `-KryptaReset` | alles Native löschen, wie frisch installiert |
+| `-KryptaSeedFlutter <pfad>` | Flutter-Speicher aus `flutter_store.json` anlegen (Update-Test) |
