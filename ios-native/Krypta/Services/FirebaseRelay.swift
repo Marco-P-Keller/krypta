@@ -1,4 +1,5 @@
 import FirebaseAuth
+import FirebaseCore
 @preconcurrency import FirebaseFirestore
 import Foundation
 import KryptaCore
@@ -12,6 +13,26 @@ import KryptaMessenger
 /// request.time`; deshalb überall `FieldValue.serverTimestamp()`.
 final class FirebaseRelay: Relay, @unchecked Sendable {
     private let db = Firestore.firestore()
+
+    /// Sealed Sender: eine zweite Firebase-App mit denselben Einstellungen,
+    /// bei der sich nie jemand anmeldet. Was über sie geschrieben wird, trägt
+    /// kein Konto — der Server sieht nicht, von wem es kommt.
+    private static let sealedAppName = "krypta-sealed"
+
+    /// Einmal beim Start, direkt nach `FirebaseApp.configure()`.
+    static func configureSealedApp() {
+        guard FirebaseApp.app(name: sealedAppName) == nil, let options = FirebaseApp.app()?.options else { return }
+        FirebaseApp.configure(name: sealedAppName, options: options)
+        guard let app = FirebaseApp.app(name: sealedAppName) else { return }
+        let sealed = Firestore.firestore(app: app)
+        let settings = sealed.settings
+        settings.cacheSettings = MemoryCacheSettings()
+        sealed.settings = settings
+    }
+
+    private var sealedDb: Firestore? {
+        FirebaseApp.app(name: Self.sealedAppName).map { Firestore.firestore(app: $0) }
+    }
 
     func publishPublicKey(uid: String, publicKey: String) async throws {
         try await db.collection("publicKeys").document(uid).setData([
@@ -54,6 +75,42 @@ final class FirebaseRelay: Relay, @unchecked Sendable {
         ]).documentID
     }
 
+    // MARK: Sealed Sender — siehe firestore.rules und Engine+Sealed
+
+    /// Nur der Hash; der Schlüssel selbst reist verschlüsselt zu den Kontakten.
+    func publishSealedAccess(uid: String, keyHash: Data) async throws {
+        try await db.collection("sealedAccess").document(uid).setData([
+            "h": keyHash,
+            "updatedAt": FieldValue.serverTimestamp(),
+        ])
+    }
+
+    /// Ohne Anmeldung: `p.s` ist der Umschlag, `p.nt` der Anhänger für die
+    /// Mitteilung (die Cloud Function liest ihn wie bisher aus `p`), `ak` der
+    /// Zustellschlüssel, den die Regel gegen den Hash prüft.
+    @discardableResult
+    func sendSealed(to: String, accessKey: Data, envelope: Data, tag: String?) async throws -> String {
+        guard let sealedDb else { throw RelayError.accessDenied }
+        var p: [String: Any] = ["s": envelope.base64EncodedString()]
+        if let tag { p["nt"] = tag }
+        do {
+            return try await sealedDb.collection("messages").document(to).collection("inbox").addDocument(data: [
+                "p": p,
+                "ts": FieldValue.serverTimestamp(),
+                "ak": accessKey,
+            ]).documentID
+        } catch let error as NSError where error.domain == FirestoreErrorDomain && error.code == FirestoreErrorCode.permissionDenied.rawValue {
+            throw RelayError.accessDenied
+        }
+    }
+
+    /// Versiegelte Dokumente darf löschen, wer ihren Pfad kennt — also nur
+    /// Absender und Empfängerin. Auch das ohne Anmeldung.
+    func retractSealed(to: String, docId: String) async throws {
+        guard let sealedDb else { return }
+        try await sealedDb.collection("messages").document(to).collection("inbox").document(docId).delete()
+    }
+
     func inbox(uid: String) -> AsyncThrowingStream<[InboxEnvelope], Error> {
         AsyncThrowingStream { continuation in
             let registration = db.collection("messages").document(uid).collection("inbox")
@@ -67,6 +124,11 @@ final class FirebaseRelay: Relay, @unchecked Sendable {
                     let batch = snapshot.documentChanges.compactMap { change -> InboxEnvelope? in
                         guard change.type == .added else { return nil }
                         let data = change.document.data()
+                        // Versiegelt: Absender und Kennung stecken im Umschlag.
+                        if data["sid"] == nil, let p = data["p"] as? [String: Any], let s = p["s"] as? String {
+                            return InboxEnvelope(docId: change.document.documentID, senderId: "", messageId: "", payload: [:],
+                                                 sealed: Data(base64Encoded: s) ?? Data())
+                        }
                         guard let sid = data["sid"] as? String, let mid = data["mid"] as? String,
                               let p = data["p"] as? [String: Any] else {
                             // Unlesbar: trotzdem als leere Nachricht weiterreichen,
@@ -144,7 +206,7 @@ final class FirebaseRelay: Relay, @unchecked Sendable {
             if page.documents.count < 500 { break }
         }
         let batch = db.batch()
-        for collection in ["publicKeys", "prekeys", "fcmTokens", "deliveryTokens"] {
+        for collection in ["publicKeys", "prekeys", "fcmTokens", "deliveryTokens", "sealedAccess"] {
             batch.deleteDocument(db.collection(collection).document(uid))
         }
         try await batch.commit()

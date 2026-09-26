@@ -2,18 +2,29 @@ import Foundation
 import KryptaCore
 
 /// Eine Nachricht im Posteingang auf dem Server.
+///
+/// Versiegelt (`sealed`) kennt der Server weder Absender noch Kennung;
+/// `senderId`, `messageId` und `payload` stehen dann erst nach dem Öffnen fest.
 public struct InboxEnvelope: Sendable, Equatable {
     public let docId: String
     public let senderId: String
     public let messageId: String
     public let payload: JSONObject
+    public let sealed: Data?
 
-    public init(docId: String, senderId: String, messageId: String, payload: JSONObject) {
+    public init(docId: String, senderId: String, messageId: String, payload: JSONObject, sealed: Data? = nil) {
         self.docId = docId
         self.senderId = senderId
         self.messageId = messageId
         self.payload = payload
+        self.sealed = sealed
     }
+}
+
+public enum RelayError: Error, Equatable {
+    /// Der Server lehnt ab — beim versiegelten Senden: der Zustellschlüssel
+    /// ist veraltet, oder die neuen Regeln sind noch nicht ausgerollt.
+    case accessDenied
 }
 
 /// Der Server — in der App Firestore, in Tests ein Wörterbuch.
@@ -34,6 +45,15 @@ public protocol Relay: AnyObject, Sendable {
     func deleteFromInbox(uid: String, docId: String) async throws
     /// Der Absender löscht seine eigene Nachricht aus dem Posteingang von `to`.
     func retract(to: String, docId: String) async throws
+    /// Sealed Sender: nur der SHA-256 des eigenen Zustellschlüssels liegt auf dem Server.
+    func publishSealedAccess(uid: String, keyHash: Data) async throws
+    /// Versiegelt und ohne Anmeldung in den Posteingang von `to`. Der Server
+    /// sieht nur Empfängerin, Zeit, Größe und den Anhänger für die Mitteilung.
+    /// Wirft `RelayError.accessDenied`, wenn der Schlüssel nicht passt.
+    @discardableResult
+    func sendSealed(to: String, accessKey: Data, envelope: Data, tag: String?) async throws -> String
+    /// Die eigene versiegelte Nachricht wieder löschen, ebenfalls ohne Anmeldung.
+    func retractSealed(to: String, docId: String) async throws
     func deleteAllUserData(uid: String) async throws
     /// Key Transparency: `keyCommitments/{uid}/log/{epoch}`.
     func publishKeyCommitment(uid: String, commitment: JSONObject, epoch: Int) async throws
@@ -100,12 +120,18 @@ public final class MemoryRelay: Relay, @unchecked Sendable {
     private var publicKeys: [String: String] = [:]
     private var bundles: [String: JSONObject] = [:]
     private var tokens: [String: String] = [:]
+    private var sealedAccess: [String: Data] = [:]
     private var inboxes: [String: [InboxEnvelope]] = [:]
     private var commitments: [String: [Int: JSONObject]] = [:]
     private var listeners: [String: AsyncThrowingStream<[InboxEnvelope], Error>.Continuation] = [:]
     public private(set) var sentCount = 0
-    /// Für Tests: jede gesendete Nutzlast mit Empfänger.
+    /// Für Tests: jede gesendete Nutzlast mit Empfänger — so, wie der Server
+    /// sie sieht (versiegelt nur `s` und `nt`).
     public private(set) var sentPayloads: [(to: String, payload: JSONObject)] = []
+    /// Für Tests: wie viele Nachrichten versiegelt ankamen.
+    public private(set) var sealedCount = 0
+    /// Für Tests: der Server kennt die Regeln für Sealed Sender noch nicht.
+    public var rejectSealed = false
     /// Für Tests: schlägt jedes Senden fehl, solange `true`.
     public var failSends = false
     /// Für Tests: bei diesen Empfängern schlägt das Löschen aus dem Posteingang fehl.
@@ -133,6 +159,35 @@ public final class MemoryRelay: Relay, @unchecked Sendable {
         }
         listener?.yield([envelope])
         return envelope.docId
+    }
+
+    public func publishSealedAccess(uid: String, keyHash: Data) async throws {
+        lock.withLock { sealedAccess[uid] = keyHash }
+    }
+
+    /// Wie die Regel in Firestore: SHA-256(Schlüssel) muss zum Eintrag passen.
+    @discardableResult
+    public func sendSealed(to: String, accessKey: Data, envelope: Data, tag: String?) async throws -> String {
+        let (env, listener): (InboxEnvelope, AsyncThrowingStream<[InboxEnvelope], Error>.Continuation?) = try lock.withLock {
+            if failSends { throw Offline() }
+            guard !rejectSealed, let hash = sealedAccess[to], SealedSender.accessKeyHash(accessKey) == hash else {
+                throw RelayError.accessDenied
+            }
+            sentCount += 1
+            sealedCount += 1
+            var seen: JSONObject = ["s": .string(envelope.base64)]
+            if let tag { seen["nt"] = .string(tag) }
+            sentPayloads.append((to, seen))
+            let env = InboxEnvelope(docId: UUID().uuidString, senderId: "", messageId: "", payload: [:], sealed: envelope)
+            inboxes[to, default: []].append(env)
+            return (env, listeners[to])
+        }
+        listener?.yield([env])
+        return env.docId
+    }
+
+    public func retractSealed(to: String, docId: String) async throws {
+        lock.withLock { inboxes[to]?.removeAll { $0.docId == docId && $0.sealed != nil } }
     }
 
     public func inbox(uid: String) -> AsyncThrowingStream<[InboxEnvelope], Error> {
@@ -164,6 +219,7 @@ public final class MemoryRelay: Relay, @unchecked Sendable {
             publicKeys.removeValue(forKey: uid)
             bundles.removeValue(forKey: uid)
             tokens.removeValue(forKey: uid)
+            sealedAccess.removeValue(forKey: uid)
             inboxes.removeValue(forKey: uid)
             commitments.removeValue(forKey: uid)
         }
@@ -194,7 +250,7 @@ public final class MemoryRelay: Relay, @unchecked Sendable {
     /// Für Tests: der Server spielt eine Nachricht absichtlich erneut ein.
     public func replay(_ envelope: InboxEnvelope, to uid: String) {
         let listener = lock.withLock { () -> AsyncThrowingStream<[InboxEnvelope], Error>.Continuation? in
-            let copy = InboxEnvelope(docId: UUID().uuidString, senderId: envelope.senderId, messageId: envelope.messageId, payload: envelope.payload)
+            let copy = InboxEnvelope(docId: UUID().uuidString, senderId: envelope.senderId, messageId: envelope.messageId, payload: envelope.payload, sealed: envelope.sealed)
             inboxes[uid, default: []].append(copy)
             return listeners[uid]
         }

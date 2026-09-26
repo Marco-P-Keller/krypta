@@ -42,6 +42,7 @@ struct VaultPasswordView: View {
                 .background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
                 .padding(.horizontal, 24)
                 .modifier(Shake(animatableData: CGFloat(shake)))
+                .sensoryFeedback(.error, trigger: shake)
                 .disabled(checking || lockedUntil != nil)
                 .accessibilityIdentifier("vault.password")
 

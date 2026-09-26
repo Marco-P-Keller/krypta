@@ -110,6 +110,7 @@ struct ChatsView: View {
             titleVisibility: .visible, presenting: chatToDelete
         ) { chat in
             Button("Chat löschen", role: .destructive) {
+                Haptics.destructive()
                 Task { await engine.deleteChat(chat.id) }
             }
         } message: { chat in

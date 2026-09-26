@@ -7,6 +7,11 @@ import KryptaMessenger
 ///
 /// Dateinamen sind Hashes der Slots, damit auf der Platte nicht einmal
 /// steht, wie viele Chats es gibt und wie sie heißen.
+///
+/// Datenschutzklasse "complete unless open": Ist das iPhone gesperrt, lässt
+/// sich keine Datei mehr öffnen — neue schreiben geht aber, damit ein
+/// Speichervorgang kurz nach dem Sperren nicht verloren geht (der Schlüssel
+/// liegt dann noch im Arbeitsspeicher).
 final class FileVault: Vault, @unchecked Sendable {
     private let directory: URL
     private let key: Data
@@ -16,8 +21,9 @@ final class FileVault: Vault, @unchecked Sendable {
         let base = try FileManager.default.url(for: .applicationSupportDirectory, in: .userDomainMask, appropriateFor: nil, create: true)
         directory = base.appendingPathComponent("Vault", isDirectory: true)
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true, attributes: [
-            .protectionKey: FileProtectionType.completeUntilFirstUserAuthentication,
+            .protectionKey: FileProtectionType.completeUnlessOpen,
         ])
+        Self.tightenProtection(directory)
         var dir = directory
         var values = URLResourceValues()
         values.isExcludedFromBackup = true
@@ -46,12 +52,21 @@ final class FileVault: Vault, @unchecked Sendable {
     func save(_ data: Data, slot: String) throws {
         try lock.withLock {
             let blob = try Envelope.sealLocal(data, key: key, slot: slot)
-            try blob.write(to: url(slot), options: [.atomic, .completeFileProtectionUntilFirstUserAuthentication])
+            try blob.write(to: url(slot), options: [.atomic, .completeFileProtectionUnlessOpen])
         }
     }
 
     func delete(_ slot: String) throws {
         _ = lock.withLock { try? FileManager.default.removeItem(at: url(slot)) }
+    }
+
+    /// Ordner und Dateien älterer Fassungen auf die strengere Klasse heben.
+    private static func tightenProtection(_ directory: URL) {
+        let fm = FileManager.default
+        try? fm.setAttributes([.protectionKey: FileProtectionType.completeUnlessOpen], ofItemAtPath: directory.path)
+        for file in (try? fm.contentsOfDirectory(at: directory, includingPropertiesForKeys: nil)) ?? [] {
+            try? fm.setAttributes([.protectionKey: FileProtectionType.completeUnlessOpen], ofItemAtPath: file.path)
+        }
     }
 
     /// Notfall: Schlüssel und Dateien weg, ohne den Tresor erst zu öffnen.

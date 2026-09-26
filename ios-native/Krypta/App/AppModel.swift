@@ -78,6 +78,12 @@ final class AppModel {
     // MARK: - Start
 
     func launch() {
+        guard phase == .launching else { return }
+        // Identität und Tresorschlüssel sind nur bei entsperrtem iPhone
+        // lesbar. Startet iOS die App bei gesperrtem Gerät, sähe es sonst aus,
+        // als gäbe es kein Konto — und die App böte die Einrichtung an.
+        // Warten, bis entsperrt ist (RootView ruft dann erneut).
+        guard UIApplication.shared.isProtectedDataAvailable else { return }
         // Eine Notfall-Löschung wurde unterbrochen (App beendet): zu Ende bringen.
         if EmergencyWipe.isPending {
             phase = .wiping
@@ -161,6 +167,7 @@ final class AppModel {
             return
         }
         guard phase == .unlocking else { return }
+        Keychain.tightenProtection()
         if engine == nil || engine?.userId != uid {
             guard let vault = try? FileVault() else { return }
             var relay: Relay = FirebaseRelay()

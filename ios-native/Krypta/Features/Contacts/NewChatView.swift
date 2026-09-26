@@ -88,10 +88,11 @@ struct NewChatView: View {
             isAdding = false
             switch result {
             case .added(let contact):
+                Haptics.success()
                 if let chat = engine.chat(forContact: contact.id) { open(chat.id) } else { dismiss() }
-            case .notFound: error = String(localized: "Zu dieser Kennung gibt es kein Konto.")
-            case .invalidId: error = String(localized: "Das ist keine gültige Kennung.")
-            case .isSelf: error = String(localized: "Das ist deine eigene Kennung.")
+            case .notFound: Haptics.error(); error = String(localized: "Zu dieser Kennung gibt es kein Konto.")
+            case .invalidId: Haptics.error(); error = String(localized: "Das ist keine gültige Kennung.")
+            case .isSelf: Haptics.error(); error = String(localized: "Das ist deine eigene Kennung.")
             }
         }
     }
@@ -105,8 +106,10 @@ struct NewChatView: View {
             case .verified(let contact):
                 if let chat = engine.chat(forContact: contact.id) { open(chat.id) } else { dismiss() }
             case .keyMismatch:
+                Haptics.error()
                 error = String(localized: "Der Schlüssel im QR-Code passt nicht zu dem auf dem Server. Möglicher Angriff — der Kontakt wurde gesperrt.")
             case .notFound:
+                Haptics.error()
                 error = String(localized: "Zu diesem QR-Code gibt es kein Konto.")
             }
         }
@@ -171,19 +174,19 @@ struct RequestsView: View {
                     Spacer()
                 }
                 .swipeActions(edge: .trailing) {
-                    Button(role: .destructive) { Task { await engine.declineRequest(contact.id) } } label: {
+                    Button(role: .destructive) { Haptics.destructive(); Task { await engine.declineRequest(contact.id) } } label: {
                         Label("Ablehnen", systemImage: "xmark")
                     }
                 }
                 .swipeActions(edge: .leading) {
-                    Button { Task { await engine.acceptRequest(contact.id) } } label: {
+                    Button { Haptics.success(); Task { await engine.acceptRequest(contact.id) } } label: {
                         Label("Annehmen", systemImage: "checkmark")
                     }
                     .tint(.green)
                 }
                 .contextMenu {
-                    Button { Task { await engine.acceptRequest(contact.id) } } label: { Label("Annehmen", systemImage: "checkmark") }
-                    Button(role: .destructive) { Task { await engine.declineRequest(contact.id) } } label: { Label("Ablehnen", systemImage: "xmark") }
+                    Button { Haptics.success(); Task { await engine.acceptRequest(contact.id) } } label: { Label("Annehmen", systemImage: "checkmark") }
+                    Button(role: .destructive) { Haptics.destructive(); Task { await engine.declineRequest(contact.id) } } label: { Label("Ablehnen", systemImage: "xmark") }
                 }
             }
         }

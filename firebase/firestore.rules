@@ -39,8 +39,38 @@ service cloud.firestore {
     // Sender creates (authenticated). Only recipient reads; recipient or sender deletes.
     // Server timestamps enforced. Required fields validated.
     // Max payload size ~64 KiB to prevent abuse.
+    //
+    // Zwei Wege hinein:
+    // 1. Mit Absender (Flutter, ältere native Fassungen, Kontaktanfragen per
+    //    Kennung): angemeldet, `sid` muss die eigene Kennung sein.
+    // 2. Versiegelt (native App, ios-native/…/Engine+Sealed.swift): ohne
+    //    Anmeldung, ohne `sid` und `mid` — Absender und Kennung liegen im
+    //    Umschlag `p.s`, den nur die Empfängerin öffnen kann. Wer schreiben
+    //    darf, zeigt der Zustellschlüssel `ak`: sein SHA-256 muss dem
+    //    Eintrag in sealedAccess/{recipientId} entsprechen. Der Schlüssel ist
+    //    für alle Kontakte derselbe und verrät deshalb niemanden.
     match /messages/{recipientId}/inbox/{messageId} {
-      allow create: if request.auth != null
+      function isSealedDrop() {
+        let d = request.resource.data;
+        let access = /databases/$(database)/documents/sealedAccess/$(recipientId);
+        return d.keys().hasOnly(['p', 'ts', 'ak'])
+            && d.keys().hasAll(['p', 'ts', 'ak'])
+            && d.p is map
+            && d.p.keys().hasOnly(['s', 'nt'])
+            && d.p.s is string
+            && d.p.s.size() > 0
+            && d.p.s.size() <= 131072
+            && (!('nt' in d.p) || (d.p.nt is string && d.p.nt.size() <= 64))
+            && d.ts == request.time
+            && d.ak is bytes
+            && d.ak.size() == 32
+            && recipientId.size() >= 10
+            && recipientId.size() <= 128
+            && exists(access)
+            && hashing.sha256(d.ak) == get(access).data.h;
+      }
+
+      allow create: if isSealedDrop() || (request.auth != null
                     && request.resource.data.keys().hasOnly(['sid', 'mid', 'p', 'ts', 'sd', 'bar', 'pw'])
                     && request.resource.data.sid is string
                     && request.resource.data.sid == request.auth.uid
@@ -62,15 +92,33 @@ service cloud.firestore {
                     // Optional field type enforcement (prevents type-confusion attacks)
                     && (!('sd' in request.resource.data) || (request.resource.data.sd is int && request.resource.data.sd > 0 && request.resource.data.sd <= 604800000))
                     && (!('bar' in request.resource.data) || request.resource.data.bar is bool)
-                    && (!('pw' in request.resource.data) || request.resource.data.pw is bool);
+                    && (!('pw' in request.resource.data) || request.resource.data.pw is bool));
       allow read: if request.auth != null
                   && request.auth.uid == recipientId;
       // Der Empfänger löscht beim Abholen. Der Absender darf seine eigene
       // Kopie löschen, sobald die Zustellung gemeldet ist — doppelte
       // Sicherheit, dass nach dem Empfang nichts auf dem Server bleibt.
-      allow delete: if request.auth != null
-                    && (request.auth.uid == recipientId
-                        || (resource != null && resource.data.sid == request.auth.uid));
+      // Versiegelte Nachrichten löscht der Absender ohne Anmeldung: wer den
+      // Pfad kennt (zufällige Dokument-ID, lesen darf nur die Empfängerin),
+      // hat sie geschrieben oder empfangen.
+      allow delete: if (request.auth != null
+                        && (request.auth.uid == recipientId
+                            || resource.data.get('sid', '') == request.auth.uid))
+                    || (!('sid' in resource.data) && 'ak' in resource.data);
+    }
+
+    // ── Sealed Sender: Zustellschlüssel ──────────────────────────────────────
+    // Nur der SHA-256 (`h`, 32 Bytes). Niemand liest ihn direkt; die Regel
+    // oben holt ihn mit get(). Nur die Eigentümerin schreibt oder löscht.
+    match /sealedAccess/{userId} {
+      allow read: if false;
+      allow create, update: if request.auth != null
+                            && request.auth.uid == userId
+                            && request.resource.data.keys().hasOnly(['h', 'updatedAt'])
+                            && request.resource.data.h is bytes
+                            && request.resource.data.h.size() == 32
+                            && request.resource.data.updatedAt == request.time;
+      allow delete: if request.auth != null && request.auth.uid == userId;
     }
 
     // ── Delivery / Read Acknowledgments ──────────────────────────────────────

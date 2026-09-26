@@ -10,6 +10,8 @@ public enum CryptoError: Error, Equatable {
     case authenticationFailed
     case malformed(String)
     case kdfFailed
+    /// ML-KEM fehlt auf diesem System (vor iOS 26).
+    case postQuantumUnavailable
 }
 
 /// Ein X25519-Schlüsselpaar. Die Bytes sind im selben Format wie in der

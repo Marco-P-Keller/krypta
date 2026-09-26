@@ -92,6 +92,7 @@ struct ContactDetailView: View {
                         Picker(selection: Binding(
                             get: { chat.deleteAfterRead ? -1 : (chat.timer ?? 0) },
                             set: { value in
+                                Haptics.selection()
                                 Task { await engine.setChatRule(chat.id, timer: value > 0 ? value : nil, afterRead: value < 0) }
                             }
                         )) {
@@ -132,17 +133,17 @@ struct ContactDetailView: View {
                     if let chat {
                         Button("Chat leeren", role: .destructive) { confirmClear = true }
                             .confirmationDialog("Chat leeren?", isPresented: $confirmClear, titleVisibility: .visible) {
-                                Button("Chat leeren", role: .destructive) { Task { await engine.clearChat(chat.id) } }
+                                Button("Chat leeren", role: .destructive) { Haptics.destructive(); Task { await engine.clearChat(chat.id) } }
                             } message: {
                                 Text("Alle Nachrichten verschwinden hier. Deine eigenen werden auch bei \(chat.name) entfernt.")
                             }
                     }
                     if contact.isBlocked {
-                        Button("Nicht mehr blockieren") { engine.unblock(contact.id) }
+                        Button("Nicht mehr blockieren") { Haptics.confirm(); engine.unblock(contact.id) }
                     } else {
                         Button("Kontakt blockieren", role: .destructive) { confirmBlock = true }
                             .confirmationDialog("Kontakt blockieren?", isPresented: $confirmBlock, titleVisibility: .visible) {
-                                Button("Blockieren", role: .destructive) { engine.block(contact.id) }
+                                Button("Blockieren", role: .destructive) { Haptics.destructive(); engine.block(contact.id) }
                             } message: {
                                 Text("Du bekommst keine Nachrichten mehr von diesem Kontakt.")
                             }
@@ -151,6 +152,7 @@ struct ContactDetailView: View {
                         Button("Chat löschen", role: .destructive) { confirmDelete = true }
                             .confirmationDialog("Chat löschen?", isPresented: $confirmDelete, titleVisibility: .visible) {
                                 Button("Chat löschen", role: .destructive) {
+                                    Haptics.destructive()
                                     Task {
                                         await engine.deleteChat(chat.id)
                                         dismiss()
@@ -223,7 +225,7 @@ struct ContactDetailView: View {
                 Label("Code des Kontakts scannen", systemImage: "qrcode.viewfinder")
             }
             if !contact.isVerified {
-                Button { engine.markVerified(contact.id) } label: {
+                Button { if engine.markVerified(contact.id) { Haptics.success() } } label: {
                     Label("Als verifiziert markieren", systemImage: "checkmark.seal")
                 }
             }
@@ -237,10 +239,12 @@ struct ContactDetailView: View {
     /// Verifizieren per QR: der Schlüssel im Code muss der hinterlegte sein.
     private func verify(with raw: String, contact: Contact) {
         guard let payload = try? QRPayload.parse(raw), payload.userId == contact.id else {
+            Haptics.error()
             scanResult = String(localized: "Das ist nicht der Code dieses Kontakts.")
             return
         }
         guard payload.publicKey == contact.publicKey else {
+            Haptics.error()
             scanResult = String(localized: "Die Schlüssel stimmen nicht überein. Schreibe diesem Kontakt nichts Vertrauliches.")
             return
         }

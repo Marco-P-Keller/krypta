@@ -60,3 +60,4 @@ ios/Podfile [0-9]*.lock
 
 # Firebase Cloud Functions dependencies (package-lock.json wird committed).
 firebase/functions/node_modules/
+firebase/rules-tests/node_modules/

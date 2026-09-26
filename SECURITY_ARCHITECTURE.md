@@ -19,6 +19,8 @@ See [THREAT_MODEL.md](THREAT_MODEL.md) for the full adversary model and attack s
 | Layer | Algorithm | Purpose |
 |-------|-----------|---------|
 | Key Agreement | X25519 (Curve25519) | ECDH key agreement (X3DH + Double Ratchet) |
+| Post-Quantum KEM | ML-KEM-768 (FIPS 203, CryptoKit) | Hybrid handshake, native iOS 26+ ↔ native iOS 26+ only (see ios-native/README.md) |
+| Sealed Sender | X25519 + HKDF-SHA256 + XChaCha20-Poly1305 | Native: sender and message ID sealed to the recipient's identity, written without authentication |
 | Signing | Ed25519 | PreKey signatures, Key Transparency commitments |
 | Key Derivation | HKDF-SHA256 | Root key → chain key derivation |
 | Chain KDF | HMAC-SHA256 | Chain key → message key derivation |

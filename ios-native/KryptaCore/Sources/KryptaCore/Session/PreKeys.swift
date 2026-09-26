@@ -8,13 +8,20 @@ public struct PreKeyBundle: Equatable, Sendable {
     public let signedPreKeyId: Int
     /// Ed25519-Schlüssel zur Signaturprüfung. Ohne ihn (v1) wird abgelehnt.
     public let signingPublicKey: Data?
+    /// ML-KEM-768 zum selben `spkId` (`pqpk`), nur von nativen Geräten ab
+    /// iOS 26. Die Flutter-Fassung liest das Feld nicht.
+    public let postQuantumPreKey: Data?
+    public let postQuantumSignature: Data?
 
-    public init(identityPublicKey: Data, signedPreKeyPublic: Data, signedPreKeySignature: Data, signedPreKeyId: Int, signingPublicKey: Data?) {
+    public init(identityPublicKey: Data, signedPreKeyPublic: Data, signedPreKeySignature: Data, signedPreKeyId: Int, signingPublicKey: Data?,
+                postQuantumPreKey: Data? = nil, postQuantumSignature: Data? = nil) {
         self.identityPublicKey = identityPublicKey
         self.signedPreKeyPublic = signedPreKeyPublic
         self.signedPreKeySignature = signedPreKeySignature
         self.signedPreKeyId = signedPreKeyId
         self.signingPublicKey = signingPublicKey
+        self.postQuantumPreKey = postQuantumPreKey
+        self.postQuantumSignature = postQuantumSignature
     }
 
     /// Einmal-Vorabschlüssel (`opk`) werden bewusst weder geschrieben noch
@@ -27,6 +34,10 @@ public struct PreKeyBundle: Equatable, Sendable {
             "spkId": .int(signedPreKeyId),
         ]
         if let signingPublicKey { map["sigPk"] = .string(signingPublicKey.base64) }
+        if let postQuantumPreKey, let postQuantumSignature {
+            map["pqpk"] = .string(postQuantumPreKey.base64)
+            map["pqs"] = .string(postQuantumSignature.base64)
+        }
         return map
     }
 
@@ -42,7 +53,9 @@ public struct PreKeyBundle: Equatable, Sendable {
             signedPreKeyPublic: spk,
             signedPreKeySignature: spks,
             signedPreKeyId: spkId,
-            signingPublicKey: map["sigPk"]?.stringValue.flatMap(Data.init(base64:))
+            signingPublicKey: map["sigPk"]?.stringValue.flatMap(Data.init(base64:)),
+            postQuantumPreKey: map["pqpk"]?.stringValue.flatMap(Data.init(base64:)),
+            postQuantumSignature: map["pqs"]?.stringValue.flatMap(Data.init(base64:))
         )
     }
 
@@ -52,6 +65,32 @@ public struct PreKeyBundle: Equatable, Sendable {
         guard let signingPublicKey else { return false }
         return Primitives.ed25519Verify(signature: signedPreKeySignature, message: signedPreKeyPublic, publicKey: signingPublicKey)
     }
+
+    /// Der ML-KEM-Schlüssel ist da, hat die richtige Länge und ist mit
+    /// demselben Ed25519-Schlüssel signiert wie der Vorabschlüssel — an
+    /// dessen `spkId` gebunden, damit der Server nicht alt und neu mischt.
+    public var hasValidPostQuantumKey: Bool {
+        guard hasValidSignature, let signingPublicKey, let postQuantumPreKey, let postQuantumSignature,
+              postQuantumPreKey.count == PostQuantum.publicKeyLength else { return false }
+        return Primitives.ed25519Verify(
+            signature: postQuantumSignature,
+            message: Self.postQuantumSigningMessage(id: signedPreKeyId, key: postQuantumPreKey),
+            publicKey: signingPublicKey
+        )
+    }
+
+    static func postQuantumSigningMessage(id: Int, key: Data) -> Data {
+        "KryptaPQ-v1".utf8Data + Data.bigEndian(UInt32(truncatingIfNeeded: id)) + key
+    }
+}
+
+/// ML-KEM-768-Vorabschlüssel. Er gehört zum signierten Vorabschlüssel mit
+/// derselben `id`, wird mit ihm rotiert und mit ihm verworfen.
+public struct PostQuantumPreKey: Equatable, Sendable, Codable {
+    public let id: Int
+    public let publicKey: Data
+    public let seed: Data
+    public let createdAt: Date
 }
 
 /// Ein signierter Vorabschlüssel mit privatem Teil (bleibt auf dem Gerät).
@@ -80,6 +119,8 @@ public struct PreKeyStore: Equatable, Sendable, Codable {
     public private(set) var current: SignedPreKey?
     public private(set) var previous: [SignedPreKey] = []
     public private(set) var nextId = 0
+    /// Optional, damit ältere gespeicherte Stände weiter lesbar sind.
+    public private(set) var postQuantumKeys: [PostQuantumPreKey]?
 
     public init() {}
 
@@ -114,6 +155,25 @@ public struct PreKeyStore: Equatable, Sendable, Codable {
 
     public mutating func prune(now: Date = Date()) {
         previous.removeAll { now.timeIntervalSince($0.createdAt) > Self.overlap }
+        let live = Set(([current].compactMap { $0 } + previous).map(\.id))
+        postQuantumKeys?.removeAll { !live.contains($0.id) }
+    }
+
+    /// Sorgt dafür, dass zum aktuellen Vorabschlüssel ein ML-KEM-Schlüssel
+    /// existiert (ab iOS 26). `true`, wenn sich etwas geändert hat.
+    public mutating func ensurePostQuantum(now: Date = Date()) -> Bool {
+        guard PostQuantum.isAvailable, let current,
+              postQuantumKeys?.contains(where: { $0.id == current.id }) != true,
+              let pair = try? PostQuantum.generate() else { return false }
+        postQuantumKeys = (postQuantumKeys ?? []) + [PostQuantumPreKey(id: current.id, publicKey: pair.publicKey, seed: pair.seed, createdAt: now)]
+        prune(now: now)
+        return true
+    }
+
+    /// Der ML-KEM-Schlüssel zu einem noch gültigen Vorabschlüssel.
+    public func findPostQuantum(id: Int, now: Date = Date()) -> PostQuantumPreKey? {
+        guard find(id: id, now: now) != nil else { return nil }
+        return postQuantumKeys?.first { $0.id == id }
     }
 
     public func find(id: Int, now: Date = Date()) -> SignedPreKey? {
@@ -125,12 +185,21 @@ public struct PreKeyStore: Equatable, Sendable, Codable {
     public func bundle(identity: KeyPair) throws -> PreKeyBundle {
         guard let current else { throw CryptoError.malformed("no signed prekey") }
         let (signature, signingKey) = try Primitives.ed25519Sign(message: current.publicKey, seed: identity.privateKey)
+        var pqKey: Data?, pqSignature: Data?
+        if let pq = postQuantumKeys?.first(where: { $0.id == current.id }) {
+            pqKey = pq.publicKey
+            pqSignature = try Primitives.ed25519Sign(
+                message: PreKeyBundle.postQuantumSigningMessage(id: current.id, key: pq.publicKey), seed: identity.privateKey
+            ).signature
+        }
         return PreKeyBundle(
             identityPublicKey: identity.publicKey,
             signedPreKeyPublic: current.publicKey,
             signedPreKeySignature: signature,
             signedPreKeyId: current.id,
-            signingPublicKey: signingKey
+            signingPublicKey: signingKey,
+            postQuantumPreKey: pqKey,
+            postQuantumSignature: pqSignature
         )
     }
 }

@@ -40,7 +40,7 @@
 | Adversary | Can Learn | Cannot Learn |
 |-----------|-----------|--------------|
 | **T1** | That Krypta traffic exists, timing patterns | Message content, who talks to whom (Sealed Sender), message types |
-| **T2** | Encrypted message blobs, public keys, timing | Message content, sender identity (Sealed Sender), message metadata (inside E2E envelope) |
+| **T2** | Encrypted message blobs, public keys, timing, recipient of each message. Sender identity only for messages that are not sealed (Flutter devices, contact requests by ID) | Message content, message metadata (inside E2E envelope), sender identity of sealed messages between native devices (written without authentication, sender inside `p.s`) |
 | **T3** | Same as T2 + can attempt key substitution | Message content (key substitution detected by Safety Numbers + Key Transparency) |
 | **T4** | Device exists, calculator app is installed | Encrypted data (if device locked), secret code, message content |
 | **T5** | Calculator app, possibly decoy messenger | Real messenger (if decoy code entered), message content (if secret code not entered) |
@@ -59,6 +59,7 @@
 | **Downgrade attack** | v1 messages rejected entirely. v1 prekey bundles rejected. No fallback paths. | None — strict v2-only enforcement |
 | **Small-subgroup attack** | All-zero DH outputs rejected. Key lengths strictly validated (32 bytes). | None |
 | **Ratchet skip DoS** | Max 200 skipped messages. Skipped keys pruned after 7 days. Oldest-first eviction. | Legitimate message loss if >200 messages skipped |
+| **Harvest now, decrypt later (quantum)** | Native ↔ native on iOS 26+: hybrid X3DH with ML-KEM-768 (signed `pqpk` per signed prekey, secret mixed into HKDF). Once a contact has shown ML-KEM, sessions without it are refused both ways (no downgrade by stripping `pqpk`) | Flutter and iOS < 26 stay classical. Ratchet steps after the handshake are classical DH (no post-quantum PCS) |
 | **Weak PRNG** | Platform CSPRNG via `dart:math` `Random.secure()` and cryptography package | Platform PRNG quality (out of scope) |
 
 ### 3.2 Key Management
@@ -77,7 +78,7 @@
 | Attack | Mitigation | Residual Risk |
 |--------|-----------|---------------|
 | **Traffic analysis** | Message padding to power-of-2 blocks (min 256B). Privacy polling with randomized intervals. | Timing correlation still possible at endpoints |
-| **Sender identification** | Sealed Sender: delivery tokens, sender identity inside encrypted envelope only | Server sees delivery token (rotated every 24h) |
+| **Sender identification** | Native ↔ native: Sealed Sender — unauthenticated write, sender and message ID inside an envelope sealed to the recipient's identity (`SealedSender.swift`), access gated by SHA-256 of a per-recipient access key (`sealedAccess/{uid}`), key rotated on block. Flutter and requests by ID still carry `sid` (rules require `sid == auth.uid`) | Server sees IP addresses and timing and can correlate them; Flutter-involved traffic still names the sender |
 | **Timing side channels** | TimingProtection adds random delay (50-200ms) to decryption. Constant-time byte comparisons throughout. | Dart's JIT may introduce non-constant-time paths |
 | **Push notification metadata** | Push Privacy Mode: generic "new_message" notification only, no sender ID in FCM payload | FCM infrastructure sees device token |
 | **Typing indicator leaks** | Typing indicators are local-only — never sent to server | None |

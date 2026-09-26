@@ -15,6 +15,8 @@ struct ServerCopy: Codable, Equatable {
     let to: String
     let docId: String
     let at: Date
+    /// Versiegelt gesendet: gelöscht wird dann ebenfalls ohne Anmeldung.
+    var sealed: Bool?
 }
 
 extension MessengerEngine {
@@ -46,8 +48,8 @@ extension MessengerEngine {
     }
 
     /// Absender: wo die gerade gesendete Nachricht auf dem Server liegt.
-    func rememberServerCopy(messageId: String, to: String, docId: String) {
-        serverCopies[messageId] = ServerCopy(to: to, docId: docId, at: Date())
+    func rememberServerCopy(messageId: String, to: String, delivery: Delivery) {
+        serverCopies[messageId] = ServerCopy(to: to, docId: delivery.docId, at: Date(), sealed: delivery.sealed)
         if serverCopies.count > Self.maxServerCopies {
             let oldest = serverCopies.sorted { $0.value.at < $1.value.at }.prefix(serverCopies.count - Self.maxServerCopies)
             for (id, _) in oldest { serverCopies.removeValue(forKey: id) }
@@ -60,6 +62,12 @@ extension MessengerEngine {
     func retractServerCopy(messageId: String) {
         guard let copy = serverCopies.removeValue(forKey: messageId) else { return }
         saveServerCopies()
-        Task { [relay] in try? await relay.retract(to: copy.to, docId: copy.docId) }
+        Task { [relay] in
+            if copy.sealed == true {
+                try? await relay.retractSealed(to: copy.to, docId: copy.docId)
+            } else {
+                try? await relay.retract(to: copy.to, docId: copy.docId)
+            }
+        }
     }
 }

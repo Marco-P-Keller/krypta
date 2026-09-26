@@ -11,6 +11,7 @@ struct KryptaApp: App {
     init() {
         FirebaseApp.configure()
         Self.keepFirestoreInMemory()
+        FirebaseRelay.configureSealedApp()
         PushService.shared.configure()
         _model = State(initialValue: AppModel())
     }
@@ -34,6 +35,9 @@ struct KryptaApp: App {
                 .environment(model)
                 .background { EmergencyOverlayInstaller(model: model) }
                 .onAppear { model.launch() }
+                .onReceive(NotificationCenter.default.publisher(for: UIApplication.protectedDataDidBecomeAvailableNotification)) { _ in
+                    model.launch()
+                }
                 .onChange(of: scenePhase) { _, phase in model.scenePhaseChanged(phase) }
                 .onReceive(NotificationCenter.default.publisher(for: UIScreen.capturedDidChangeNotification)) { _ in
                     model.isCaptured = UIScreen.main.isCaptured
@@ -90,6 +94,11 @@ struct RootView: View {
             }
         }
         .animation(.smooth(duration: 0.25), value: model.phase)
+        // Durch die Tür (Rechner-Code, Face ID, Passwort): ein kurzes „Klick".
+        // Ohne eingerichtete Sperre öffnet die App still.
+        .sensoryFeedback(trigger: model.phase) { _, new in
+            new == .unlocked && model.lockTarget != nil ? .success : nil
+        }
         .animation(.easeOut(duration: 0.15), value: model.privacyCover)
     }
 }

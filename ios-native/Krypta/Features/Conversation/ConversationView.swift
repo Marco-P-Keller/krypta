@@ -33,6 +33,10 @@ struct ConversationView: View {
             if let contactId = engine.chat(chatId)?.recipientId { PushService.shared.clearDelivered(contactId: contactId) }
         }
         .onDisappear { Task { await engine.closeChat(chatId) } }
+        // Leise, wenn im offenen Chat etwas ankommt; deutlich, wenn etwas
+        // von mir nicht zugestellt wurde.
+        .sensoryFeedback(.impact(flexibility: .soft, intensity: 0.35), trigger: incomingCount) { old, new in new > old }
+        .sensoryFeedback(.error, trigger: failedCount) { old, new in new > old }
         .onReceive(NotificationCenter.default.publisher(for: UIApplication.userDidTakeScreenshotNotification)) { _ in
             Task { await engine.reportSystemEvent(chatId: chatId, kind: .screenshot) }
         }
@@ -41,6 +45,14 @@ struct ConversationView: View {
                 Task { await engine.reportSystemEvent(chatId: chatId, kind: .screenRecording) }
             }
         }
+    }
+
+    private var incomingCount: Int {
+        engine.messages(in: chatId).filter { $0.senderId != engine.userId && !$0.isSystemEvent }.count
+    }
+
+    private var failedCount: Int {
+        engine.messages(in: chatId).filter { $0.senderId == engine.userId && $0.status == .failed }.count
     }
 
     @ViewBuilder
@@ -96,8 +108,8 @@ struct ConversationView: View {
             Text(unlockError ?? String(localized: "Gib das Passwort ein, das du bekommen hast."))
         }
         .confirmationDialog("Nachricht wurde nicht zugestellt", isPresented: Binding(get: { resendTarget != nil }, set: { if !$0 { resendTarget = nil } }), titleVisibility: .visible, presenting: resendTarget) { m in
-            Button("Erneut senden") { Task { await engine.resend(chatId: chatId, messageId: m.id) } }
-            Button("Löschen", role: .destructive) { engine.deleteForMe(chatId: chatId, messageId: m.id) }
+            Button("Erneut senden") { Haptics.confirm(); Task { await engine.resend(chatId: chatId, messageId: m.id) } }
+            Button("Löschen", role: .destructive) { Haptics.destructive(); engine.deleteForMe(chatId: chatId, messageId: m.id) }
         }
         .alert("Einmalige Nachricht öffnen?", isPresented: Binding(get: { oneTimeTarget != nil }, set: { if !$0 { oneTimeTarget = nil } }), presenting: oneTimeTarget) { m in
             Button("Abbrechen", role: .cancel) {}
@@ -162,18 +174,18 @@ struct ConversationView: View {
     private func menu(for m: Message) -> some View {
         let mine = m.senderId == engine.userId
         if let text = m.text, !m.oneTime, m.passwordUnlocked {
-            Button { UIPasteboard.general.string = text } label: { Label("Kopieren", systemImage: "doc.on.doc") }
+            Button { SecurePasteboard.copy(text); Haptics.confirm() } label: { Label("Kopieren", systemImage: "doc.on.doc") }
         }
         if mine && m.status == .failed {
-            Button { Task { await engine.resend(chatId: chatId, messageId: m.id) } } label: {
+            Button { Haptics.confirm(); Task { await engine.resend(chatId: chatId, messageId: m.id) } } label: {
                 Label("Erneut senden", systemImage: "arrow.clockwise")
             }
         }
-        Button(role: .destructive) { engine.deleteForMe(chatId: chatId, messageId: m.id) } label: {
+        Button(role: .destructive) { Haptics.destructive(); engine.deleteForMe(chatId: chatId, messageId: m.id) } label: {
             Label("Für mich löschen", systemImage: "trash")
         }
         if mine && m.status != .failed {
-            Button(role: .destructive) { Task { await engine.deleteForEveryone(chatId: chatId, messageId: m.id) } } label: {
+            Button(role: .destructive) { Haptics.destructive(); Task { await engine.deleteForEveryone(chatId: chatId, messageId: m.id) } } label: {
                 Label("Für alle löschen", systemImage: "trash.slash")
             }
         }
@@ -197,8 +209,10 @@ struct ConversationView: View {
         unlockInput = ""
         switch engine.unlock(chatId: chatId, messageId: m.id, password: input) {
         case .unlocked:
+            Haptics.success()
             unlockTarget = nil
         case .wrongPassword:
+            Haptics.error()
             unlockError = String(localized: "Falsches Passwort.")
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) { unlockTarget = m }
         case .coolingDown:
@@ -230,7 +244,7 @@ struct ConversationView: View {
                 Text("Anfrage gesendet. Ihr könnt schreiben, sobald \(contact.displayName) annimmt.")
                     .font(.footnote)
                 Spacer(minLength: 0)
-                Button("Erneut") { Task { await engine.resendRequest(contact.id) } }
+                Button("Erneut") { Haptics.confirm(); Task { await engine.resendRequest(contact.id) } }
                     .font(.footnote.weight(.semibold))
             }
             .padding(.horizontal, 16)
@@ -249,11 +263,11 @@ struct ConversationView: View {
                     .font(.footnote)
                     .foregroundStyle(.secondary)
                 HStack(spacing: 12) {
-                    Button(role: .destructive) { Task { await engine.declineRequest(contact.id) } } label: {
+                    Button(role: .destructive) { Haptics.destructive(); Task { await engine.declineRequest(contact.id) } } label: {
                         Text("Ablehnen").frame(maxWidth: .infinity)
                     }
                     .buttonStyle(.bordered)
-                    Button { Task { await engine.acceptRequest(contact.id) } } label: {
+                    Button { Haptics.success(); Task { await engine.acceptRequest(contact.id) } } label: {
                         Text("Annehmen").frame(maxWidth: .infinity)
                     }
                     .buttonStyle(.borderedProminent)
@@ -285,6 +299,7 @@ struct ConversationView: View {
         draft = ""
         option = .chatRule
         password = nil
+        Haptics.confirm()
         Task { await engine.send(chatId: chatId, text: text, options: options) }
     }
 }

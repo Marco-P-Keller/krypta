@@ -170,4 +170,11 @@ final class AppDelegate: NSObject, UIApplicationDelegate {
     func application(_ application: UIApplication, didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data) {
         MainActor.assumeIsolated { PushService.shared.didRegister(deviceToken: deviceToken) }
     }
+
+    /// Keine Tastaturen von Drittanbietern: sie sähen jeden getippten
+    /// Buchstaben, und manche schicken ihn in die Cloud. In Krypta tippt
+    /// man immer mit der Tastatur von Apple.
+    func application(_ application: UIApplication, shouldAllowExtensionPointIdentifier extensionPointIdentifier: UIApplication.ExtensionPointIdentifier) -> Bool {
+        extensionPointIdentifier != .keyboard
+    }
 }

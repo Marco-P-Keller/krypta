@@ -77,6 +77,80 @@ In den Einstellungen: Mitteilungen an/aus, „Absender nennen" an/aus. Ohne
 Namen stapelt iOS auch nicht je Absender — sonst verriete die Zahl der Stapel,
 wie viele Leute geschrieben haben.
 
+## Sealed Sender
+
+Firebase erfährt nicht mehr, **wer** wem schreibt — nur noch, wer etwas
+bekommt, wann und wie viel.
+
+1. Jede Seite hat einen Zustellschlüssel (32 Zufallsbytes). Auf dem Server
+   liegt nur sein SHA-256 (`sealedAccess/{uid}`, für niemanden lesbar).
+2. Jede Nachricht trägt den eigenen Schlüssel verschlüsselt mit (`_dk`), der
+   QR-Code auch (`dk`). Flutter ignoriert beides — so erkennt ein natives
+   Gerät, dass die Gegenseite versiegelt empfangen kann.
+3. Kennt der Absender den Schlüssel der Empfängerin, schreibt er über eine
+   zweite Firebase-App **ohne Anmeldung**: `{p: {s: Umschlag, nt}, ts, ak}`.
+   Absender, Nachrichtenkennung und Ratchet-Nachricht stecken im Umschlag
+   (`SealedSender`, X25519 + XChaCha20-Poly1305 an die Identität der
+   Empfängerin). Die Regel prüft `sha256(ak)` gegen den Eintrag.
+4. Lehnt der Server ab (Schlüssel veraltet, Regeln noch nicht ausgerollt),
+   geht die Nachricht wie bisher mit Absender hinaus. Netzfehler fallen
+   **nicht** zurück, sonst ließe sich der Absender durch Stören erzwingen.
+5. Wer blockiert wird, verliert den Zugang: Blockieren erzeugt einen neuen
+   Schlüssel, die übrigen Kontakte bekommen ihn mit der nächsten Nachricht.
+
+Mit Absender laufen weiterhin: alles mit Flutter-Geräten und Anfragen über die
+Kennung (per QR-Code ist schon die Anfrage versiegelt). Was bleibt: Firebase
+sieht die IP-Adresse beider Verbindungen und kann über Zeitpunkte raten.
+
+**Regeln deployen** (sonst bleibt alles beim alten Weg):
+
+```sh
+cd firebase/rules-tests && npm install && npm test   # Emulator, braucht Java
+firebase deploy --only firestore:rules --project kryptaecc
+```
+
+## Post-Quanten-Handschlag
+
+Ab iOS 26 hängt an jedem signierten Vorabschlüssel ein ML-KEM-768-Schlüssel
+(`pqpk`, signiert als `pqs`, gebunden an `spkId`). Der Absender kapselt
+dagegen, und das Geheimnis fließt in die Ableitung ein:
+`HKDF(DH1 ‖ DH2 ‖ DH3 ‖ SS, "KryptaPQXDH-v1")` — hybrid wie Signals PQXDH.
+Wer heute mitschneidet, müsste später X25519 **und** ML-KEM brechen. Das
+Chiffrat reist hinter dem Ephemeral in `ek` (32 + 1088 Bytes), weil `p` laut
+Regeln höchstens zehn Felder hat.
+
+Hat ein Kontakt einmal ML-KEM gezeigt (`Contact.postQuantum`), nimmt die
+Engine keinen Handschlag ohne mehr an und baut keinen ohne auf — ein Server,
+der `pqpk` aus dem Bündel entfernt, bekommt keine schwächere Sitzung,
+sondern gar keine. Mit Flutter und iOS < 26 bleibt der Handschlag klassisch.
+
+Tests: `swift test` überspringt die ML-KEM-Fälle auf macOS < 26; vollständig
+im Simulator:
+
+```sh
+cd ios-native/KryptaCore
+xcodebuild test -scheme KryptaCore-Package -destination 'platform=iOS Simulator,name=iPhone 17 Pro'
+```
+
+## Gerät
+
+- Identität und Tresorschlüssel sind nur bei **entsperrtem** iPhone lesbar
+  (`WhenUnlockedThisDeviceOnly`), die Tresordateien ebenso
+  (`completeUnlessOpen`). Ein gesperrtes Gerät gibt die Chats auch Forensik-
+  Werkzeugen nicht heraus. Startet iOS die App bei gesperrtem Gerät, wartet sie
+  aufs Entsperren, statt die Einrichtung anzubieten.
+- Keine Tastaturen von Drittanbietern.
+- Kopierte Nachrichten bleiben auf dem Gerät (keine universelle
+  Zwischenablage) und verschwinden nach einer Minute, die Kennung nach fünf.
+
+## Haptik
+
+Schlicht und nur, wo es zählt: Senden, Kopieren, leise beim Eintreffen im
+offenen Chat, Erfolg beim Entsperren und Hinzufügen, Fehler bei falschem
+Passwort oder nicht zugestellter Nachricht, ein kurzer Ruck beim Löschen und
+Blockieren. Der Rechner tippt bei jeder Taste gleich weich, Geheimcode
+eingeschlossen. Aus mit der iOS-Einstellung „Systemhaptik".
+
 ## Screenshot-Schutz
 
 Der Chat liegt in der Zeichenfläche eines Passwortfelds, die iOS aus

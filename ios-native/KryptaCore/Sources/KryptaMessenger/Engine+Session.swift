@@ -5,6 +5,8 @@ enum SessionFailure: Error {
     case bundleUnavailable
     case noSession
     case identityMismatch
+    /// Die Gegenseite hatte ML-KEM, das Bündel jetzt nicht mehr.
+    case postQuantumDowngrade
 }
 
 extension MessengerEngine {
@@ -23,16 +25,23 @@ extension MessengerEngine {
             throw SessionFailure.bundleUnavailable
         }
 
+        // Hat die Gegenseite schon ML-KEM gezeigt, darf weder ein Bündel ohne
+        // noch der Rückfallweg ohne Bündel eine schwächere Sitzung ergeben.
+        let requirePQ = requiresPostQuantum(contact)
         let session: OutboundSession
         if let bundleMap {
             let bundle = try PreKeyBundle(json: bundleMap)
             do {
-                session = try SessionHandshake.outbound(identity: identity, bundle: bundle, pinnedIdentityPublicKey: contact.publicKey)
+                session = try SessionHandshake.outbound(identity: identity, bundle: bundle, pinnedIdentityPublicKey: contact.publicKey, requirePostQuantum: requirePQ)
             } catch HandshakeError.identityMismatch {
                 bundleIdentityMismatch(contact)
                 throw SessionFailure.identityMismatch
+            } catch HandshakeError.postQuantumMissing {
+                throw SessionFailure.postQuantumDowngrade
             }
+            if session.isPostQuantum { notePostQuantum(contact.id) }
         } else {
+            guard !requirePQ else { throw SessionFailure.postQuantumDowngrade }
             session = try SessionHandshake.outboundFallback(identity: identity, recipientIdentityPublicKey: contact.publicKey)
         }
 
@@ -62,7 +71,8 @@ extension MessengerEngine {
     func deriveInbound(chatId: String, contact: Contact, payload: JSONObject) throws -> RatchetState {
         var state = try SessionHandshake.inbound(
             identity: identity, preKeys: preKeys,
-            senderIdentityPublicKey: contact.publicKey, header: payload
+            senderIdentityPublicKey: contact.publicKey, header: payload,
+            requirePostQuantum: requiresPostQuantum(contact)
         )
         let old = ratchets[chatId]
         state.sessionId = UUID().uuidString.lowercased()
@@ -167,7 +177,7 @@ extension MessengerEngine {
 
     /// _tryHealSession: nur mit Kopf, nur mit einem noch nie angenommenen `ek`.
     func tryHeal(chatId: String, contact: Contact, payload: JSONObject, message: RatchetMessage, ad: Data) -> (RatchetState, Data)? {
-        guard let ek = payload["ek"]?.stringValue else { return nil }
+        guard let ek = SessionHandshake.handshakeId(payload) else { return nil }
         if meta.acceptedEks[chatId]?.contains(ek) == true { return nil }
         guard let fresh = try? deriveInbound(chatId: chatId, contact: contact, payload: payload) else { return nil }
         return try? DoubleRatchet.decrypt(state: fresh, message: message, associatedData: ad)
@@ -176,7 +186,7 @@ extension MessengerEngine {
     /// Commit-Punkt für eine angenommene Nachricht — _finalizeAcceptedMessage.
     /// `false`: Duplikat eines schon übernommenen Neu-Handschlags.
     func finalizeAccepted(chatId: String, messageId: String, payload: JSONObject) -> Bool {
-        let ek = payload["ek"]?.stringValue
+        let ek = SessionHandshake.handshakeId(payload)
         if let pending = pendingHeals.removeValue(forKey: Self.healKey(chatId, messageId)) {
             if let ek, meta.acceptedEks[chatId]?.contains(ek) == true { return false }
             ratchets[chatId] = pending
@@ -184,6 +194,10 @@ extension MessengerEngine {
             saveRatchet(chatId)
         }
         if let ek { markAcceptedEk(chatId: chatId, ek: ek) }
+        // Ein angenommener Handschlag mit ML-KEM: die Gegenseite kann es.
+        if SessionHandshake.isPostQuantum(payload), let contactId = chat(chatId)?.recipientId {
+            notePostQuantum(contactId)
+        }
         return true
     }
 

@@ -37,6 +37,12 @@ public struct Contact: Codable, Identifiable, Equatable, Sendable {
     /// gefunden, `true` Kette geprüft bis `lastVerifiedEpoch`.
     public var transparencyVerified: Bool?
     public var lastVerifiedEpoch: Int?
+    /// Sealed Sender: der Zustellschlüssel dieses Kontakts (`_dk`). Mit ihm
+    /// gehen Nachrichten an ihn ohne Absender auf den Server.
+    public var sealedKey: Data?
+    /// Der Kontakt hat schon ML-KEM gezeigt (signiert im Bündel oder im
+    /// Handschlag). Ab dann wird kein Handschlag ohne mehr angenommen.
+    public var postQuantum: Bool?
 
     public init(id: String, publicKey: Data, requestState: RequestState, trustState: TrustState = .unverified, now: Date = Date()) {
         self.id = id
@@ -83,6 +89,12 @@ public struct Contact: Codable, Identifiable, Equatable, Sendable {
             previousPublicKey = publicKey
             publicKey = newKey
             keyChangeCount += 1
+            // Neuer Schlüssel, neues Gerät: was wir über das alte wussten,
+            // gilt nicht mehr. Ohne neuen Schlüssel (der Server hat nur ein
+            // fremdes Bündel gezeigt) bleibt es — sonst ließe sich so der
+            // Schutz vor Herabstufung abschalten.
+            sealedKey = nil
+            postQuantum = nil
         }
         verifiedAt = nil
         verificationMethod = nil
@@ -271,22 +283,28 @@ public enum ContactRequestPolicy {
     }
 }
 
-/// Der Inhalt eines Krypta-QR-Codes: {v, uid, ik, fp[, rt]}.
+/// Der Inhalt eines Krypta-QR-Codes: {v, uid, ik, fp[, rt][, dk]}.
+///
+/// `dk` ist der Zustellschlüssel: Wer den Code scannt, kann schon die Anfrage
+/// versiegelt schicken, und Firebase sieht nicht, wer sich mit wem verbindet.
+/// Die Flutter-Fassung liest das Feld nicht.
 public struct QRPayload: Equatable, Sendable {
     public let userId: String
     public let publicKey: Data
     public let fingerprint: String
     public let requestToken: String?
+    public let accessKey: Data?
 
     public enum ParseError: Error, Equatable {
         case invalidFormat, unsupportedVersion, fingerprintMismatch
     }
 
-    public init(userId: String, publicKey: Data, requestToken: String?) {
+    public init(userId: String, publicKey: Data, requestToken: String?, accessKey: Data? = nil) {
         self.userId = userId
         self.publicKey = publicKey
         self.fingerprint = Contact.fullFingerprint(publicKey)
         self.requestToken = requestToken
+        self.accessKey = accessKey
     }
 
     public var encoded: String {
@@ -297,6 +315,7 @@ public struct QRPayload: Equatable, Sendable {
             "fp": .string(fingerprint),
         ]
         if let requestToken { map["rt"] = .string(requestToken) }
+        if let accessKey { map["dk"] = .string(accessKey.base64) }
         return (try? map.jsonString()) ?? ""
     }
 
@@ -313,7 +332,14 @@ public struct QRPayload: Equatable, Sendable {
         else { throw ParseError.invalidFormat }
         guard Contact.fullFingerprint(key) == fp else { throw ParseError.fingerprintMismatch }
         let rt = map["rt"]?.stringValue.flatMap { $0.isEmpty ? nil : $0 }
-        return QRPayload(userId: uid, publicKey: key, requestToken: rt)
+        var dk: Data?
+        if let raw = map["dk"] {
+            guard let b64 = raw.stringValue, let key = Data(base64: b64), key.count == SealedSender.accessKeyLength else {
+                throw ParseError.invalidFormat
+            }
+            dk = key
+        }
+        return QRPayload(userId: uid, publicKey: key, requestToken: rt, accessKey: dk)
     }
 
     /// Kennung im Format von Firebase Auth.

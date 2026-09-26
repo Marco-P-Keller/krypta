@@ -6,9 +6,11 @@ extension MessengerEngine {
     ///
     /// Was nicht angenommen wird, wird trotzdem vom Server gelöscht: der
     /// Posteingang ist ein Durchgang, kein Archiv.
-    func receive(_ env: InboxEnvelope) async {
-        defer { purgeFromInbox(env.docId) }
+    func receive(_ incoming: InboxEnvelope) async {
+        defer { purgeFromInbox(incoming.docId) }
         guard isRunning else { return }
+        // Versiegelt: Absender und Kennung stehen erst nach dem Öffnen fest.
+        guard let env = unseal(incoming) else { return }
 
         // Übergroße Nutzlasten gar nicht erst entschlüsseln.
         guard let size = try? env.payload.jsonString().utf8.count, size <= 65_536 else { return }
@@ -60,6 +62,7 @@ extension MessengerEngine {
         if version >= 3, inner["_ctrl"] != nil {
             if await processControl(chatId: chat.id, contact: contact, inner: inner) {
                 _ = finalizeAccepted(chatId: chat.id, messageId: env.messageId, payload: env.payload)
+                learnSealedKey(from: contact.id, inner: inner)
             } else {
                 discardPendingHeal(chatId: chat.id, messageId: env.messageId)
             }
@@ -77,6 +80,7 @@ extension MessengerEngine {
             let state = ContactRequestPolicy.stateAfterIncoming(contact)
             if state != contact.requestState { updateContact(contact.id) { $0.requestState = state } }
             _ = finalizeAccepted(chatId: chat.id, messageId: env.messageId, payload: env.payload)
+            learnSealedKey(from: contact.id, inner: inner)
             markProcessed(env.messageId)
             return
         }
@@ -87,6 +91,7 @@ extension MessengerEngine {
         }
         guard finalizeAccepted(chatId: chat.id, messageId: env.messageId, payload: env.payload) else { return }
         processGossip(from: env.senderId, inner: inner)
+        learnSealedKey(from: env.senderId, inner: inner)
 
         let now = Date()
         let isRead = activeChatId == chat.id && isForeground
@@ -169,6 +174,7 @@ extension MessengerEngine {
             saveRatchet(chatId)
         }
         guard finalizeAccepted(chatId: chatId, messageId: env.messageId, payload: env.payload) else { return }
+        learnSealedKey(from: contact.id, inner: inner)
         markProcessed(env.messageId)
         if existing == nil { Task { [weak self] in await self?.verifyTransparency(contact.id) } }
 

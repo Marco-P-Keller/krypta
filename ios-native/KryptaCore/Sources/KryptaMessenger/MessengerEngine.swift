@@ -36,6 +36,8 @@ struct EngineMeta: Codable {
     var unlockAttempts: [String: UnlockAttempt] = [:]
     var readReceipts = false
     var chatPreview = true
+    /// Sealed Sender: der eigene Zustellschlüssel (Engine+Sealed).
+    var sealedAccessKey: Data?
 
     struct PendingBurn: Codable, Equatable {
         let chatId: String
@@ -130,6 +132,8 @@ public final class MessengerEngine {
     @ObservationIgnored var timerTask: Task<Void, Never>?
     @ObservationIgnored var jitterTasks: [Task<Void, Never>] = []
     @ObservationIgnored var transparency: [String: TransparencyChain] = [:]
+    /// Wann der Server versiegeltes Senden an einen Kontakt zuletzt abgelehnt hat.
+    @ObservationIgnored var sealedDeniedAt: [String: Date] = [:]
 
     /// Meldet jede gespeicherte Änderung an den Kontakten — die App hält
     /// damit den Index für die Mitteilungen aktuell.
@@ -182,7 +186,9 @@ public final class MessengerEngine {
         return SafetyNumber.generate(localUserId: userId, localIdentity: identity.publicKey, remoteUserId: c.id, remoteIdentity: c.publicKey)
     }
 
-    public var myQRPayload: QRPayload { QRPayload(userId: userId, publicKey: identity.publicKey, requestToken: issueQRToken()) }
+    public var myQRPayload: QRPayload {
+        QRPayload(userId: userId, publicKey: identity.publicKey, requestToken: issueQRToken(), accessKey: sealedAccessKey)
+    }
 
     // MARK: - Laden und Speichern
 
@@ -318,6 +324,8 @@ public final class MessengerEngine {
             _ = preKeys.rotate()
             savePreKeys()
         }
+        // Ab iOS 26 gehört zu jedem Vorabschlüssel ein ML-KEM-Schlüssel.
+        if preKeys.ensurePostQuantum() { savePreKeys() }
         var ok = true
         do {
             try await relay.publishPublicKey(uid: userId, publicKey: identity.publicKey.base64)
@@ -327,6 +335,7 @@ public final class MessengerEngine {
         } catch { ok = false }
         // Das Zustell-Token für Sealed Sender: Flutter-Absender holen es sich.
         try? await relay.publishDeliveryToken(uid: userId, token: Data.random(count: 32).base64)
+        await publishSealedAccess()
         keysPublished = ok
         await syncOwnTransparency()
     }

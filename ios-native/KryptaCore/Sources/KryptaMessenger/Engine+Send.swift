@@ -102,16 +102,17 @@ extension MessengerEngine {
             if oneTime { inner["_once"] = true }
             if password != nil { inner["_pw"] = true }
             if !asRequest, let kt = gossip(for: contact.id) { inner["_kt"] = .object(kt) }
+            inner["_dk"] = .string(sealedAccessKey.base64)
 
             var payload = try encrypt(chatId: chatId, content: try inner.jsonString())
             if let tag = notificationTag(for: contact, request: asRequest) { payload["nt"] = .string(tag) }
             ratchets[chatId]?.globalSendSeqNo += 1
             saveRatchet(chatId)
 
-            let docId = try await relay.send(from: userId, to: contact.id, messageId: messageId, payload: payload)
+            let delivery = try await deliver(to: contact.id, messageId: messageId, payload: payload)
             handshakeDelivered(chatId: chatId)
             if !asRequest {
-                rememberServerCopy(messageId: messageId, to: contact.id, docId: docId)
+                rememberServerCopy(messageId: messageId, to: contact.id, delivery: delivery)
                 updateMessage(chatId, messageId) { if $0.status == .sending { $0.status = .sent } }
             }
         } catch SessionFailure.identityMismatch {
@@ -159,12 +160,12 @@ extension MessengerEngine {
         let counter = counters.next(for: chatId)
         saveCounters()
         let ctrl = ControlMessage.create(type: type, chatId: chatId, messageId: messageId, senderId: userId, counter: counter, key: key)
-        let inner: JSONObject = ["_ctrl": .object(ctrl.json), "_sid": .string(userId)]
+        let inner: JSONObject = ["_ctrl": .object(ctrl.json), "_sid": .string(userId), "_dk": .string(sealedAccessKey.base64)]
         do {
             var payload = try encrypt(chatId: chatId, content: try inner.jsonString())
             // Steuernachrichten lösen keine Mitteilung aus.
             payload["nt"] = .string(NotificationTag.quiet)
-            try await relay.send(from: userId, to: current.id, messageId: UUID().uuidString.lowercased(), payload: payload)
+            _ = try await deliver(to: current.id, messageId: UUID().uuidString.lowercased(), payload: payload)
             handshakeDelivered(chatId: chatId)
             return true
         } catch {

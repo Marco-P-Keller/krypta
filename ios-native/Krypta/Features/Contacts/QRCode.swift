@@ -33,7 +33,7 @@ struct MyCodeView: View {
                 VStack(spacing: 6) {
                     Text("Deine Kennung").font(.caption).foregroundStyle(.secondary)
                     Button {
-                        UIPasteboard.general.string = engine.userId
+                        SecurePasteboard.copy(engine.userId, lifetime: SecurePasteboard.idLifetime)
                         copied = true
                     } label: {
                         Label(engine.userId, systemImage: copied ? "checkmark" : "doc.on.doc")

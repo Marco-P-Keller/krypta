@@ -78,6 +78,7 @@ extension MessengerEngine {
             moved.verifiedFingerprint = qr.fingerprint
             moved.safetyNumberVersion = SafetyNumber.currentVersion
             moved.previousPublicKey = nil
+            if let dk = qr.accessKey { moved.sealedKey = dk }
             updateContact(qr.userId) { $0 = moved }
             resetTransparency(qr.userId)
             if !moved.isBlocked {
@@ -93,6 +94,7 @@ extension MessengerEngine {
         c.verificationMethod = .qrCode
         c.verifiedFingerprint = qr.fingerprint
         c.safetyNumberVersion = SafetyNumber.currentVersion
+        c.sealedKey = qr.accessKey
         contacts.append(c)
         saveContacts()
         await sendRequest(to: c, qrToken: qr.requestToken, preverifiedKey: serverB64)
@@ -167,11 +169,13 @@ extension MessengerEngine {
     }
 
     public func block(_ contactId: String) {
+        guard let c = contact(contactId), c.trustState != .blocked else { return }
         updateContact(contactId) { c in
-            guard c.trustState != .blocked else { return }
             c.trustBeforeBlock = c.trustState
             c.trustState = .blocked
         }
+        // Wer gesperrt ist, soll nicht weiter unangemeldet schreiben können.
+        rotateSealedAccessKey()
     }
 
     public func unblock(_ contactId: String) {
