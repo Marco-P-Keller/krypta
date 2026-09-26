@@ -106,6 +106,12 @@ Standard ist [mempool.space](https://mempool.space) (Esplora-Schnittstelle),
 in den Wallet-Einstellungen lässt sich ein eigener Server eintragen (nur
 HTTPS), etwa der eigene Knoten mit Esplora oder mempool.
 
+Krypta spricht mit diesem Server nur, wenn du die Wallet öffnest, wenn im
+Chat eine Zahlung ankommt oder solange eine Zahlung unterwegs ist (dann
+jede Minute). Beim bloßen Öffnen der App nie: der Netzverkehr der als
+Rechner getarnten App verrät so nicht bei jedem Start, dass es eine
+Bitcoin-Wallet gibt.
+
 | Der Server kann … | Folge |
 |---|---|
 | sehen, welche Adressen die Wallet abfragt, und die IP-Adresse | Datenschutz: er kann die Adressen einer Wallet verknüpfen. Abhilfe: eigener Server. |
