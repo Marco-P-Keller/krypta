@@ -317,19 +317,29 @@ public final class WalletEngine {
 
     // MARK: - Laufen lassen
 
-    /// Abgleich jetzt und danach in Abständen, solange die App offen ist.
+    /// Im Hintergrund abgleichen, aber nur, solange etwas unterwegs ist:
+    /// eigene Zahlungen ohne Bestätigung, eingehende im Mempool, Zahlungen
+    /// aus dem Chat in Prüfung. Sonst spricht die Wallet mit dem Server nur,
+    /// wenn sie geöffnet wird (`sync()` aus der Oberfläche). So verrät der
+    /// Netzverkehr einer als Rechner getarnten App nicht bei jedem Öffnen,
+    /// dass es eine Bitcoin-Wallet gibt.
     public func start() {
         guard loopTask == nil else { return }
         loopTask = Task { [weak self] in
             while !Task.isCancelled {
                 guard let self else { return }
-                await self.sync()
-                let busy = self.state.outgoing.values.contains { $0.state != .failed && self.state.history[$0.txid]?.isConfirmed != true }
-                    || self.state.claims.values.contains(where: { self.isOpen($0.check) })
-                    || self.balance.incoming > 0
-                try? await Task.sleep(for: .seconds(busy ? 30 : 300))
+                if self.hasPendingActivity { await self.sync() }
+                try? await Task.sleep(for: .seconds(60))
             }
         }
+    }
+
+    /// Etwas, das sich ohne Zutun ändern wird.
+    var hasPendingActivity: Bool {
+        state.outgoing.values.contains { $0.state != .failed && state.history[$0.txid]?.isConfirmed != true }
+            || state.claims.values.contains(where: { isOpen($0.check) })
+            || balance.incoming > 0
+            || balance.ownPending > 0
     }
 
     public func stop() {

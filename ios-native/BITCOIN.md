@@ -106,6 +106,12 @@ Standard ist [mempool.space](https://mempool.space) (Esplora-Schnittstelle),
 in den Wallet-Einstellungen lässt sich ein eigener Server eintragen (nur
 HTTPS), etwa der eigene Knoten mit Esplora oder mempool.
 
+Krypta spricht mit diesem Server nur, wenn du die Wallet öffnest, wenn im
+Chat eine Zahlung ankommt oder solange eine Zahlung unterwegs ist (dann
+jede Minute). Beim bloßen Öffnen der App nie: der Netzverkehr der als
+Rechner getarnten App verrät so nicht bei jedem Start, dass es eine
+Bitcoin-Wallet gibt.
+
 | Der Server kann … | Folge |
 |---|---|
 | sehen, welche Adressen die Wallet abfragt, und die IP-Adresse | Datenschutz: er kann die Adressen einer Wallet verknüpfen. Abhilfe: eigener Server. |
@@ -155,11 +161,12 @@ cd ios-native/KryptaCore && swift test
   nur verschlüsselt (der Server sieht keine), Zahlung im Chat bis zur
   Bestätigung, „erneut senden" ohne zweite Transaktion, Kontakte ohne
   Wallet, gefälschte Zahlungsnachricht.
-- Gegen **Bitcoin Core 29.1** (Regtest, einmalig beim Bau): 22 mit
-  `KryptaBitcoin` signierte Transaktionen, an alle Adressarten, mit mehreren
-  Eingängen, unbestätigten Ketten, „alles senden", 1 bis 150 sat/vB. Alle
-  von `testmempoolaccept` angenommen und gemined, Gebühr auf den Satoshi
-  wie geplant, Größenschätzung nie zu klein.
+- Gegen **Bitcoin Core 29.1** (Regtest, [`Tools/BitcoinRegtest`](Tools/BitcoinRegtest/README.md),
+  `./run.sh`): über 20 mit `KryptaBitcoin` signierte Transaktionen, an alle
+  Adressarten, mit mehreren Eingängen, unbestätigten Ketten, „alles senden",
+  1 bis 150 sat/vB. Alle von `testmempoolaccept` angenommen und gemined,
+  Gebühr auf den Satoshi wie geplant, Größenschätzung nie zu klein. Dazu
+  zwei Wallets über Esplora-HTTP mit echten Merkle-Beweisen.
 
 ## Demo-Modus
 
