@@ -10,6 +10,8 @@ struct SettingsView: View {
 
     @State private var showMyCode = false
     @State private var setupCalculator = false
+    @State private var changeCode: AccessCodes.Kind?
+    @State private var codeChanged = false
     @State private var confirmDisableCalculator = false
     @State private var confirmWipe = false
     @State private var biometric = Keychain.bool(.biometricLock)
@@ -26,18 +28,20 @@ struct SettingsView: View {
                 Section {
                     Button { showMyCode = true } label: {
                         HStack(spacing: 14) {
-                            Avatar(id: engine.userId, name: "User \(engine.userId)", size: 56)
+                            Avatar(id: engine.userId, name: "User \(engine.userId)", size: 60)
                             VStack(alignment: .leading, spacing: 3) {
                                 Text("Meine Kennung").font(.title3.weight(.semibold)).foregroundStyle(.primary)
-                                Text(engine.userId).font(.caption.monospaced()).foregroundStyle(.secondary).lineLimit(1)
+                                Text(engine.userId).font(.caption.monospaced()).foregroundStyle(.secondary).lineLimit(1).truncationMode(.middle)
+                                Text("QR-Code zeigen und teilen").font(.caption).foregroundStyle(.tint)
                             }
-                            Spacer()
+                            Spacer(minLength: 0)
                             Image(systemName: "qrcode").font(.title2).foregroundStyle(.tint)
                         }
                         .padding(.vertical, 4)
                         .contentShape(Rectangle())
                     }
                     .buttonStyle(.plain)
+                    .accessibilityIdentifier("settings.mycode")
                 }
 
                 Section {
@@ -48,7 +52,7 @@ struct SettingsView: View {
                             await refreshPushPermission()
                         }
                     })) {
-                        Label("Mitteilungen", systemImage: "bell.badge")
+                        SettingsLabel("Mitteilungen", symbol: "bell.badge.fill", color: .red)
                     }
                     .accessibilityIdentifier("settings.push")
                     if push {
@@ -57,33 +61,34 @@ struct SettingsView: View {
                             PushService.showsNames = on
                             PushService.shared.updateIndex(engine)
                         })) {
-                            Label("Absender nennen", systemImage: "person.text.rectangle")
+                            SettingsLabel("Absender nennen", symbol: "person.crop.circle.fill", color: .orange)
                         }
                     }
                     if push && pushDenied {
                         Button {
                             if let url = URL(string: UIApplication.openNotificationSettingsURLString) { UIApplication.shared.open(url) }
                         } label: {
-                            Label("In den iOS-Einstellungen erlauben", systemImage: "gear")
+                            SettingsLabel("In den iOS-Einstellungen erlauben", symbol: "gearshape.fill", color: .gray)
                         }
+                        .foregroundStyle(.primary)
                     }
                 } header: {
                     Text("Mitteilungen")
                 } footer: {
                     Text(push && pushNames
-                         ? "Auf dem Sperrbildschirm steht „Neue Nachricht von …“ mit dem Namen, den du dem Kontakt gegeben hast. Was in der Nachricht steht, erfahren weder die Mitteilung noch Apple oder Google."
+                         ? "Auf dem Sperrbildschirm steht nur, wer dir geschrieben hat — mit dem Namen, den du dem Kontakt gegeben hast. Was in der Nachricht steht, erfahren weder die Mitteilung noch Apple oder Google."
                          : "Auf dem Sperrbildschirm steht nur „Neue Nachricht“ — ohne Absender und ohne Inhalt.")
                 }
 
                 Section {
                     Toggle(isOn: $engine.readReceiptsEnabled) {
-                        Label("Lesebestätigungen", systemImage: "checkmark.message")
+                        SettingsLabel("Lesebestätigungen", symbol: "checkmark.message.fill", color: .blue)
                     }
                     Toggle(isOn: $engine.chatPreviewEnabled) {
-                        Label("Vorschau in der Chatliste", systemImage: "text.bubble")
+                        SettingsLabel("Vorschau in der Chatliste", symbol: "text.bubble.fill", color: .green)
                     }
                     Toggle(isOn: Binding(get: { app.screenshotShield }, set: { app.screenshotShield = $0 })) {
-                        Label("Bildschirmfotos verhindern", systemImage: "eye.slash")
+                        SettingsLabel("Bildschirmfotos verhindern", symbol: "eye.slash.fill", color: .indigo)
                     }
                     .accessibilityIdentifier("settings.shield")
                 } header: {
@@ -103,7 +108,24 @@ struct SettingsView: View {
                     Toggle(isOn: Binding(get: { calculator }, set: { on in
                         if on { setupCalculator = true } else { confirmDisableCalculator = true }
                     })) {
-                        Label("Als Rechner tarnen", systemImage: "plus.forwardslash.minus")
+                        SettingsLabel("Als Rechner tarnen", symbol: "plus.forwardslash.minus", color: .orange)
+                    }
+                    if calculator {
+                        Button { changeCode = .secret } label: {
+                            SettingsRow("Geheimcode ändern", symbol: "lock.fill", color: .gray)
+                        }
+                        .foregroundStyle(.primary)
+                        Button { changeCode = .delete } label: {
+                            SettingsRow("Löschcode ändern", symbol: "trash.fill", color: .red)
+                        }
+                        .foregroundStyle(.primary)
+                    }
+                    if Biometrics.available != .none {
+                        Toggle(isOn: Binding(get: { biometric }, set: { on in
+                            Task { if await app.setBiometric(on) { biometric = on } }
+                        })) {
+                            SettingsLabel(verbatim: Biometrics.name, symbol: Biometrics.symbol, color: .green)
+                        }
                     }
                     NavigationLink {
                         VaultPasswordSettings(isSet: $vaultPassword)
@@ -111,17 +133,10 @@ struct SettingsView: View {
                         LabeledContent {
                             Text(vaultPassword ? "An" : "Aus")
                         } label: {
-                            Label("Tresor-Passwort", systemImage: "lock.rectangle.stack")
+                            SettingsLabel("Tresor-Passwort", symbol: "key.fill", color: .blue)
                         }
                     }
                     .accessibilityIdentifier("settings.vault")
-                    if Biometrics.available != .none {
-                        Toggle(isOn: Binding(get: { biometric }, set: { on in
-                            Task { if await app.setBiometric(on) { biometric = on } }
-                        })) {
-                            Label(Biometrics.name, systemImage: Biometrics.symbol)
-                        }
-                    }
                 } header: {
                     Text("Sperre")
                 } footer: {
@@ -137,29 +152,40 @@ struct SettingsView: View {
                         LabeledContent {
                             Text(Locale.current.localizedString(forLanguageCode: Bundle.main.preferredLocalizations.first ?? "de")?.localizedCapitalized ?? "")
                         } label: {
-                            Label("Sprache", systemImage: "globe")
+                            SettingsLabel("Sprache", symbol: "globe", color: .blue)
                         }
                     }
                     .foregroundStyle(.primary)
                     NavigationLink {
                         SecurityInfoView()
                     } label: {
-                        Label("So schützt Krypta dich", systemImage: "lock.shield")
+                        SettingsLabel("So schützt Krypta dich", symbol: "lock.shield.fill", color: .teal)
+                    }
+                    NavigationLink {
+                        PrivacyPolicyView()
+                    } label: {
+                        SettingsLabel("Datenschutzerklärung", symbol: "hand.raised.fill", color: .blue)
+                    }
+                    NavigationLink {
+                        LicensesView()
+                    } label: {
+                        SettingsLabel("Open-Source-Lizenzen", symbol: "doc.text.fill", color: .gray)
                     }
                 }
 
                 Section {
                     Button(role: .destructive) { confirmWipe = true } label: {
-                        Label("Alles löschen", systemImage: "trash")
-                            .foregroundStyle(.red)
+                        Text("Alles löschen")
+                            .frame(maxWidth: .infinity)
                     }
+                    .accessibilityIdentifier("settings.wipe")
                 } footer: {
                     Text("Löscht Schlüssel, Chats und dein Konto auf dem Server. Deine Kontakte erfahren, dass es dich nicht mehr gibt.")
                 }
 
                 Section {
                 } footer: {
-                    Text("Krypta \(Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "")")
+                    Text("Krypta Chat \(Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "") (\(Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String ?? ""))")
                         .frame(maxWidth: .infinity)
                 }
             }
@@ -170,12 +196,22 @@ struct SettingsView: View {
             }
             .sheet(isPresented: $showMyCode) { MyCodeView() }
             .task { await refreshPushPermission() }
+            .onReceive(NotificationCenter.default.publisher(for: UIApplication.didBecomeActiveNotification)) { _ in
+                Task { await refreshPushPermission() }
+            }
             .sheet(isPresented: $setupCalculator) {
                 CalculatorSetupSheet { secret, delete in
                     if (try? app.setCalculator(secret: secret, delete: delete)) != nil { calculator = true }
                     setupCalculator = false
                 }
             }
+            .sheet(item: $changeCode) { kind in
+                ChangeCodeSheet(kind: kind) {
+                    changeCode = nil
+                    codeChanged = true
+                }
+            }
+            .sensoryFeedback(.success, trigger: codeChanged)
             .confirmationDialog("Tarnung ausschalten?", isPresented: $confirmDisableCalculator, titleVisibility: .visible) {
                 Button("Ausschalten", role: .destructive) {
                     app.disableCalculator()
@@ -199,6 +235,115 @@ extension SettingsView {
     private func refreshPushPermission() async {
         let status = await UNUserNotificationCenter.current().notificationSettings().authorizationStatus
         pushDenied = status == .denied
+    }
+}
+
+extension AccessCodes.Kind: Identifiable {
+    var id: Self { self }
+}
+
+/// Symbol in einer farbigen Kachel, wie in der Einstellungen-App.
+struct SettingsIcon: View {
+    let symbol: String
+    let color: Color
+
+    var body: some View {
+        Image(systemName: symbol)
+            .font(.system(size: 15, weight: .semibold))
+            .foregroundStyle(.white)
+            .frame(width: 29, height: 29)
+            .background(color.gradient, in: RoundedRectangle(cornerRadius: 7, style: .continuous))
+            .accessibilityHidden(true)
+    }
+}
+
+/// Titel mit Kachel — für Schalter und Verweise.
+struct SettingsLabel: View {
+    let title: Text
+    let symbol: String
+    let color: Color
+
+    init(_ title: LocalizedStringKey, symbol: String, color: Color) {
+        self.title = Text(title)
+        self.symbol = symbol
+        self.color = color
+    }
+
+    /// Für Namen, die nicht übersetzt werden (Face ID).
+    init(verbatim title: String, symbol: String, color: Color) {
+        self.title = Text(verbatim: title)
+        self.symbol = symbol
+        self.color = color
+    }
+
+    var body: some View {
+        Label { title } icon: { SettingsIcon(symbol: symbol, color: color) }
+    }
+}
+
+/// Zeile, die ein Blatt öffnet — mit Pfeil wie ein Verweis.
+struct SettingsRow: View {
+    let title: LocalizedStringKey
+    let symbol: String
+    let color: Color
+
+    init(_ title: LocalizedStringKey, symbol: String, color: Color) {
+        self.title = title
+        self.symbol = symbol
+        self.color = color
+    }
+
+    var body: some View {
+        HStack {
+            SettingsLabel(title, symbol: symbol, color: color)
+            Spacer()
+            Image(systemName: "chevron.right")
+                .font(.footnote.weight(.semibold))
+                .foregroundStyle(.tertiary)
+        }
+        .contentShape(Rectangle())
+    }
+}
+
+/// Geheim- oder Löschcode neu festlegen.
+private struct ChangeCodeSheet: View {
+    @Environment(\.dismiss) private var dismiss
+    let kind: AccessCodes.Kind
+    let done: () -> Void
+
+    var body: some View {
+        NavigationStack {
+            Group {
+                if kind == .secret {
+                    PasscodeEntryView(
+                        title: "Neuer Geheimcode",
+                        message: "Gib diesen Code im Rechner ein und tippe auf =, um Krypta zu öffnen.",
+                        symbol: "lock.fill", tint: .accentColor
+                    ) { code in save(code) }
+                } else {
+                    PasscodeEntryView(
+                        title: "Neuer Löschcode",
+                        message: "Im Notfall: dieser Code + = löscht sofort alles — ohne Rückfrage.",
+                        symbol: "trash.fill", tint: .red
+                    ) { code in save(code) }
+                }
+            }
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) { Button("Abbrechen") { dismiss() } }
+            }
+        }
+    }
+
+    private func save(_ code: String) -> String? {
+        do {
+            guard try AccessCodes.change(kind, to: code) else {
+                return String(localized: "Der Löschcode muss sich vom Geheimcode unterscheiden.")
+            }
+            done()
+            return nil
+        } catch {
+            return String(localized: "Der Code konnte nicht gespeichert werden.")
+        }
     }
 }
 
@@ -360,5 +505,70 @@ private struct SecurityInfoView: View {
             }
         }
         .padding(.vertical, 6)
+    }
+}
+
+/// Die Datenschutzerklärung — derselbe Text wie in der Flutter-Fassung
+/// (privacyPolicyBody in lib/l10n), in allen sieben Sprachen.
+struct PrivacyPolicyView: View {
+    var body: some View {
+        ScrollView {
+            Text(String(localized: "privacy.policy.body"))
+                .font(.callout)
+                .textSelection(.enabled)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(20)
+        }
+        .navigationTitle("Datenschutzerklärung")
+        .navigationBarTitleDisplayMode(.inline)
+    }
+}
+
+/// Fremder Code in Krypta und unter welcher Lizenz er steht.
+struct LicensesView: View {
+    private struct Library: Identifiable {
+        let name: String
+        let license: String
+        let url: String
+        var id: String { name }
+    }
+
+    private let libraries: [Library] = [
+        .init(name: "libsodium", license: "ISC", url: "https://github.com/jedisct1/libsodium"),
+        .init(name: "swift-sodium", license: "ISC", url: "https://github.com/jedisct1/swift-sodium"),
+        .init(name: "Firebase iOS SDK", license: "Apache 2.0", url: "https://github.com/firebase/firebase-ios-sdk"),
+        .init(name: "gRPC", license: "Apache 2.0", url: "https://github.com/grpc/grpc"),
+        .init(name: "Abseil", license: "Apache 2.0", url: "https://github.com/abseil/abseil-cpp"),
+        .init(name: "BoringSSL", license: "OpenSSL / ISC", url: "https://boringssl.googlesource.com/boringssl"),
+        .init(name: "LevelDB", license: "BSD-3-Clause", url: "https://github.com/google/leveldb"),
+        .init(name: "nanopb", license: "zlib", url: "https://github.com/nanopb/nanopb"),
+        .init(name: "GoogleUtilities", license: "Apache 2.0", url: "https://github.com/google/GoogleUtilities"),
+        .init(name: "GoogleDataTransport", license: "Apache 2.0", url: "https://github.com/google/GoogleDataTransport"),
+        .init(name: "GTMSessionFetcher", license: "Apache 2.0", url: "https://github.com/google/gtm-session-fetcher"),
+        .init(name: "Promises", license: "Apache 2.0", url: "https://github.com/google/promises"),
+        .init(name: "App Check Core", license: "Apache 2.0", url: "https://github.com/google/app-check"),
+        .init(name: "SwiftProtobuf", license: "Apache 2.0", url: "https://github.com/apple/swift-protobuf"),
+    ]
+
+    var body: some View {
+        List {
+            Section {
+                ForEach(libraries) { lib in
+                    if let url = URL(string: lib.url) {
+                        Link(destination: url) {
+                            LabeledContent {
+                                Text(lib.license)
+                            } label: {
+                                Text(verbatim: lib.name).foregroundStyle(.primary)
+                            }
+                        }
+                    }
+                }
+            } footer: {
+                Text("Krypta verwendet diese Bibliotheken. Ihre Lizenztexte stehen in den verlinkten Quellen.")
+            }
+        }
+        .navigationTitle("Open-Source-Lizenzen")
+        .navigationBarTitleDisplayMode(.inline)
     }
 }

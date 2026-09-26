@@ -15,6 +15,17 @@ enum AccessCodes {
         Keychain.set(try hash(delete), for: .deleteCode)
     }
 
+    enum Kind { case secret, delete }
+
+    /// Einen der beiden Codes ersetzen. `false`, wenn der neue Code schon
+    /// der andere ist — sonst öffnete der Löschcode die Chats oder umgekehrt.
+    static func change(_ kind: Kind, to code: String) throws -> Bool {
+        let other = Keychain.string(kind == .secret ? .deleteCode : .secretCode)
+        if let other, verify(code, against: other) { return false }
+        Keychain.set(try hash(code), for: kind == .secret ? .secretCode : .deleteCode)
+        return true
+    }
+
     static func clear() {
         Keychain.delete(.secretCode)
         Keychain.delete(.deleteCode)

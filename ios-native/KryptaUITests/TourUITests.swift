@@ -99,5 +99,34 @@ final class TourUITests: XCTestCase {
         app.buttons["Ist gleich"].tap()
         XCTAssertTrue(app.navigationBars["Chats"].waitForExistence(timeout: 15))
         shot("11-unlocked")
+
+        // Geheimcode ändern: danach öffnet nur noch der neue.
+        let newCode = "975310"
+        app.buttons["Einstellungen"].tap()
+        let change = app.buttons["Geheimcode ändern"]
+        XCTAssertTrue(change.waitForExistence(timeout: 5))
+        change.tap()
+        typeCode(deleteCode)
+        typeCode(deleteCode)
+        XCTAssertTrue(app.staticTexts["Der Löschcode muss sich vom Geheimcode unterscheiden."].waitForExistence(timeout: 5),
+                      "Der Löschcode darf nicht zum Geheimcode werden")
+        typeCode(newCode)
+        typeCode(newCode)
+        XCTAssertTrue(app.navigationBars["Einstellungen"].waitForExistence(timeout: 5))
+        shot("12-code-changed")
+        app.buttons["Fertig"].tap()
+
+        XCUIDevice.shared.press(.home)
+        sleep(2)
+        app.activate()
+        XCTAssertTrue(app.staticTexts["calculator.display"].waitForExistence(timeout: 5))
+        for d in code { app.buttons[String(d)].tap() }
+        app.buttons["Ist gleich"].tap()
+        sleep(2)
+        XCTAssertFalse(app.navigationBars["Chats"].exists, "Der alte Geheimcode öffnet nicht mehr")
+        app.buttons["Alles löschen"].tap()
+        for d in newCode { app.buttons[String(d)].tap() }
+        app.buttons["Ist gleich"].tap()
+        XCTAssertTrue(app.navigationBars["Chats"].waitForExistence(timeout: 15))
     }
 }

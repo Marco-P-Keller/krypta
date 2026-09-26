@@ -14,8 +14,10 @@ settings:
   base:
     DEVELOPMENT_TEAM: B97SQSQBMR
     SWIFT_VERSION: "5.10"
-    MARKETING_VERSION: "2.0.0"
-    CURRENT_PROJECT_VERSION: "1"
+    # Über der Flutter-Fassung im Store (4.2.0); die Build-Nummer zählt dort
+    # weiter (zuletzt 104, siehe ios-testflight.yml).
+    MARKETING_VERSION: "5.0.0"
+    CURRENT_PROJECT_VERSION: "105"
     ENABLE_USER_SCRIPT_SANDBOXING: YES
     SWIFT_STRICT_CONCURRENCY: complete
     SWIFT_EMIT_LOC_STRINGS: YES
@@ -45,6 +47,28 @@ targets:
       - package: Firebase
         product: FirebaseMessaging
       - target: KryptaNotifications
+    # Nur, was sich nicht über INFOPLIST_KEY_* setzen lässt; der Rest wird
+    # erzeugt (GENERATE_INFOPLIST_FILE) und zusammengeführt.
+    info:
+      path: Krypta/Info.plist
+      properties:
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        # Wie ios/Runner/Info.plist: nur HTTPS, und Firebase/Google nur mit
+        # den Google-Wurzeln GTS Root R1 und R4.
+        NSAppTransportSecurity:
+          NSAllowsArbitraryLoads: false
+          NSPinnedDomains:
+            firebaseio.com:
+              NSIncludesSubdomains: true
+              NSPinnedCAIdentities:
+                - SPKI-SHA256-BASE64: hxqRlPTu1bMS/0DITB1SSu0vd4u/8l8TjPgfaAp63Gc=
+                - SPKI-SHA256-BASE64: mEflZT5enoR1FuXLgYYGqnVEoZvmf9c2bVBpiOjYQ0c=
+            googleapis.com:
+              NSIncludesSubdomains: true
+              NSPinnedCAIdentities:
+                - SPKI-SHA256-BASE64: hxqRlPTu1bMS/0DITB1SSu0vd4u/8l8TjPgfaAp63Gc=
+                - SPKI-SHA256-BASE64: mEflZT5enoR1FuXLgYYGqnVEoZvmf9c2bVBpiOjYQ0c=
     entitlements:
       path: Krypta/Krypta.entitlements
       properties:
@@ -58,7 +82,9 @@ targets:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.calcchat.ww
         PRODUCT_NAME: Krypta
-        INFOPLIST_KEY_CFBundleDisplayName: Krypta
+        # Wie die Flutter-App und der Store-Eintrag. Nur „Krypta" kollidiert
+        # mit fremden Apps (ITMS-90129, siehe ios/Runner/Info.plist).
+        INFOPLIST_KEY_CFBundleDisplayName: Krypta Chat
         GENERATE_INFOPLIST_FILE: YES
         INFOPLIST_KEY_UILaunchScreen_Generation: YES
         INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents: YES
@@ -89,7 +115,7 @@ targets:
     info:
       path: KryptaNotifications/Info.plist
       properties:
-        CFBundleDisplayName: Krypta
+        CFBundleDisplayName: Krypta Chat
         CFBundleShortVersionString: $(MARKETING_VERSION)
         CFBundleVersion: $(CURRENT_PROJECT_VERSION)
         NSExtension:

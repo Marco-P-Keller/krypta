@@ -29,6 +29,18 @@ final class PushService: NSObject {
     private var userId: String?
     private let relay = FirebaseRelay()
 
+    /// Wohin ein Tippen auf die Mitteilung führt.
+    enum Target: Equatable {
+        case chat(contactId: String)
+        case requests
+    }
+
+    /// Setzt die App: wohin nach dem Tippen, und ob gerade ein Banner passt.
+    var open: ((Target) -> Void)?
+    var shouldPresent: ((Target?) -> Bool)?
+    /// Getippt, bevor die App so weit war (Kaltstart aus der Mitteilung).
+    private var pendingTarget: Target?
+
     func configure() {
         UNUserNotificationCenter.current().delegate = self
         Messaging.messaging().delegate = self
@@ -83,6 +95,31 @@ final class PushService: NSObject {
     func clearDelivered() {
         UNUserNotificationCenter.current().removeAllDeliveredNotifications()
         UNUserNotificationCenter.current().setBadgeCount(0)
+        NotificationIndexStore.resetBadge()
+    }
+
+    /// Ein Chat ist offen: seine Mitteilungen braucht niemand mehr.
+    func clearDelivered(contactId: String) {
+        Task {
+            let center = UNUserNotificationCenter.current()
+            let ids = await center.deliveredNotifications()
+                .filter { Self.target(of: $0.request.content.userInfo) == .chat(contactId: contactId) }
+                .map(\.request.identifier)
+            if !ids.isEmpty { center.removeDeliveredNotifications(withIdentifiers: ids) }
+        }
+    }
+
+    /// Die App ist bereit: eine vorher angetippte Mitteilung jetzt öffnen.
+    func deliverPendingTarget() {
+        guard let target = pendingTarget, let open else { return }
+        pendingTarget = nil
+        open(target)
+    }
+
+    nonisolated static func target(of userInfo: [AnyHashable: Any]) -> Target? {
+        if let id = userInfo["contact"] as? String, !id.isEmpty { return .chat(contactId: id) }
+        if userInfo["request"] as? Bool == true { return .requests }
+        return nil
     }
 
     private func uploadToken() async {
@@ -97,10 +134,26 @@ final class PushService: NSObject {
 }
 
 extension PushService: @preconcurrency UNUserNotificationCenterDelegate {
-    /// Ist die App vorne, kommt die Nachricht ohnehin sichtbar an — und über
-    /// dem Rechner hätte ein Banner nichts zu suchen.
+    /// Ist die App vorne, zeigt sie ein Banner nur, wenn die Chats offen
+    /// sind und die Nachricht aus einem anderen Chat kommt — wie Nachrichten.
+    /// Über dem Rechner oder der Sperre hat ein Banner nichts zu suchen.
     func userNotificationCenter(_ center: UNUserNotificationCenter, willPresent notification: UNNotification) async -> UNNotificationPresentationOptions {
-        []
+        let target = Self.target(of: notification.request.content.userInfo)
+        // Die Extension hat schon mitgezählt; wer in der App ist, sieht es.
+        NotificationIndexStore.resetBadge()
+        guard shouldPresent?(target) == true else { return [] }
+        return [.banner, .list, .sound]
+    }
+
+    /// Angetippt: nach dem Entsperren direkt in den Chat.
+    func userNotificationCenter(_ center: UNUserNotificationCenter, didReceive response: UNNotificationResponse) async {
+        guard response.actionIdentifier == UNNotificationDefaultActionIdentifier,
+              let target = Self.target(of: response.notification.request.content.userInfo) else { return }
+        if let open {
+            open(target)
+        } else {
+            pendingTarget = target
+        }
     }
 }
 

@@ -101,8 +101,8 @@ final class TransparencyTests: TwoMessengers {
         XCTAssertFalse(tag.contains("geheim"))
         XCTAssertLessThanOrEqual(sent?.payload.count ?? 99, 10, "Firestore erlaubt höchstens zehn Felder in p")
 
-        XCTAssertEqual(bob.notificationIndex(showNames: true).resolve(tag), .contact(name: "Mami"))
-        XCTAssertEqual(bob.notificationIndex(showNames: false).resolve(tag), .contact(name: nil))
+        XCTAssertEqual(bob.notificationIndex(showNames: true).resolve(tag), .contact(name: "Mami", id: aliceId))
+        XCTAssertEqual(bob.notificationIndex(showNames: false).resolve(tag), .contact(name: nil, id: aliceId))
         // Ein Dritter kann den Anhänger nicht zuordnen.
         let eve = MessengerEngine(userId: "eveUid00000000000003", identity: .generate(), relay: MemoryRelay(), vault: MemoryVault())
         XCTAssertEqual(eve.notificationIndex(showNames: true).resolve(tag), .unknown)
@@ -116,6 +116,14 @@ final class TransparencyTests: TwoMessengers {
         // Blockiert: der Name fällt aus dem Index.
         bob.block(aliceId)
         XCTAssertEqual(bob.notificationIndex(showNames: true).resolve(tag), .unknown)
+    }
+
+    /// Ein Index aus der Version davor (ohne Kennung) bleibt lesbar.
+    func testIndexWithoutContactIdStillDecodes() throws {
+        let key = Data.random(count: 32)
+        let old = #"{"entries":[{"key":"\#(key.base64EncodedString())","name":"Mami"}],"showNames":true}"#
+        let index = try JSONDecoder().decode(NotificationIndex.self, from: Data(old.utf8))
+        XCTAssertEqual(index.resolve(NotificationTag.make(key: key)), .contact(name: "Mami", id: nil))
     }
 
     func testTagsAreUnlinkable() throws {

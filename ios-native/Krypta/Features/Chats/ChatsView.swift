@@ -103,6 +103,8 @@ struct ChatsView: View {
         .sheet(isPresented: $showSettings) {
             SettingsView()
         }
+        .onAppear(perform: openFromNotification)
+        .onChange(of: app.pendingOpen) { openFromNotification() }
         .confirmationDialog(
             "Chat löschen?", isPresented: Binding(get: { chatToDelete != nil }, set: { if !$0 { chatToDelete = nil } }),
             titleVisibility: .visible, presenting: chatToDelete
@@ -112,6 +114,25 @@ struct ChatsView: View {
             }
         } message: { chat in
             Text("Der Chat verschwindet von diesem iPhone. Bei \(chat.name) werden deine Nachrichten entfernt.")
+        }
+    }
+
+    /// Eine angetippte Mitteilung führt direkt in den Chat des Absenders.
+    private func openFromNotification() {
+        guard let target = app.pendingOpen else { return }
+        app.pendingOpen = nil
+        showNewChat = false
+        showSettings = false
+        switch target {
+        case .chat(let contactId):
+            guard let contact = engine.contact(contactId) else { return }
+            if contact.requestState == .incoming {
+                path = NavigationPath([Route.requests])
+            } else if let chat = engine.chat(forContact: contactId) {
+                path = NavigationPath([Route.chat(chat.id)])
+            }
+        case .requests:
+            path = NavigationPath([Route.requests])
         }
     }
 
@@ -174,7 +195,7 @@ private struct ChatRow: View {
         }
         .padding(.vertical, 4)
         .accessibilityElement(children: .combine)
-        .accessibilityHint(unread > 0 ? Text("\(unread) ungelesen") : Text(""))
+        .accessibilityHint(unread > 0 ? Text("\(unread) ungelesen") : Text(verbatim: ""))
     }
 
     private var preview: String {

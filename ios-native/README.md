@@ -48,8 +48,9 @@ Kontakten. Kein Firebase, kein Schlüsselbund.
 
 ## Mitteilungen
 
-Auf dem Sperrbildschirm steht, **von wem** eine Nachricht kommt („Neue
-Nachricht von Mami"), nie, was drinsteht.
+Auf dem Sperrbildschirm steht, **von wem** eine Nachricht kommt — wie in
+Nachrichten der Name als Titel, darunter „Neue Nachricht" —, nie, was
+drinsteht.
 
 1. Der Absender legt in die Nachricht (`p.nt`) einen Anhänger: acht
    Zufallsbytes plus HMAC mit einem Schlüssel, den nur die beiden kennen
@@ -60,7 +61,11 @@ Nachricht von Mami"), nie, was drinsteht.
    leerem Anhänger **keine** Mitteilung mehr und reicht sonst den Anhänger als
    `data.nt` mit `mutable-content` weiter.
 3. Die Extension prüft ihn gegen den Index im geteilten Schlüsselbund
-   (Schlüssel und Name je Kontakt, geschrieben von der App) und setzt den Text.
+   (Schlüssel, Name und Kennung je Kontakt, geschrieben von der App), setzt
+   den Text, stapelt je Absender und zählt die Zahl am App-Symbol hoch.
+4. Ein Tippen auf die Mitteilung öffnet nach Rechner, Face ID und Passwort
+   direkt den Chat. Ist die App offen, erscheint ein Banner nur für einen
+   anderen als den offenen Chat, nie über Rechner oder Sperre.
 
 Flutter-Absender setzen keinen Anhänger; ihre Nachrichten erscheinen wie
 bisher als „Du hast eine neue Nachricht erhalten". Für die Flutter-App ändert
@@ -68,8 +73,9 @@ sich nichts.
 
 **Deployen:** `firebase deploy --only functions:onNewMessage --project kryptaecc`
 
-In den Einstellungen: Mitteilungen an/aus, „Absender nennen" an/aus. Ist die
-App vorne, gibt es kein Banner (auch nicht über dem Rechner).
+In den Einstellungen: Mitteilungen an/aus, „Absender nennen" an/aus. Ohne
+Namen stapelt iOS auch nicht je Absender — sonst verriete die Zahl der Stapel,
+wie viele Leute geschrieben haben.
 
 ## Screenshot-Schutz
 
@@ -126,3 +132,19 @@ Info.plist). Umschalten über Einstellungen → Sprache (iOS-Einstellungen der A
 | `-KryptaOffline` | echte App gegen Server im Speicher, kein Firebase |
 | `-KryptaReset` | alles Native löschen, wie frisch installiert |
 | `-KryptaSeedFlutter <pfad>` | Flutter-Speicher aus `flutter_store.json` anlegen (Update-Test) |
+| `-shield.off YES` | Screenshot-Schutz für diesen Start aus (Bildschirmfotos in `ScreensUITests`) |
+
+## TestFlight
+
+```sh
+cd ios-native && xcodegen generate
+xcodebuild -project Krypta.xcodeproj -scheme Krypta -configuration Release \
+  -destination 'generic/platform=iOS' -archivePath build/Krypta.xcarchive \
+  -allowProvisioningUpdates archive
+xcodebuild -exportArchive -archivePath build/Krypta.xcarchive \
+  -exportPath build/ipa -exportOptionsPlist ExportOptions.plist -allowProvisioningUpdates
+```
+
+`ExportOptions.plist` lädt direkt hoch (`destination=upload`). Die Build-Nummer
+(`CURRENT_PROJECT_VERSION` in `project.yml`) muss über der letzten in App Store
+Connect liegen — auch über denen aus `ios-testflight.yml` (Flutter).

@@ -60,10 +60,14 @@ public struct NotificationIndex: Codable, Equatable, Sendable {
     public struct Entry: Codable, Equatable, Sendable {
         public var key: Data
         public var name: String?
+        /// Bleibt auf dem Gerät: damit stapelt iOS die Mitteilungen je
+        /// Absender, und ein Tippen öffnet den richtigen Chat.
+        public var contactId: String?
 
-        public init(key: Data, name: String?) {
+        public init(key: Data, name: String?, contactId: String? = nil) {
             self.key = key
             self.name = name
+            self.contactId = contactId
         }
     }
 
@@ -79,7 +83,7 @@ public struct NotificationIndex: Codable, Equatable, Sendable {
     }
 
     public enum Match: Equatable, Sendable {
-        case contact(name: String?)
+        case contact(name: String?, id: String?)
         case request
         case unknown
     }
@@ -87,7 +91,7 @@ public struct NotificationIndex: Codable, Equatable, Sendable {
     public func resolve(_ tag: String?) -> Match {
         guard let tag, !tag.isEmpty else { return .unknown }
         if let hit = entries.first(where: { NotificationTag.matches(tag, key: $0.key) }) {
-            return .contact(name: showNames ? hit.name : nil)
+            return .contact(name: showNames ? hit.name : nil, id: hit.contactId)
         }
         if let requestKey, NotificationTag.matches(tag, key: requestKey) { return .request }
         return .unknown

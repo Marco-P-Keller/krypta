@@ -16,6 +16,7 @@ struct ConversationView: View {
     @State private var unlockInput = ""
     @State private var unlockError: String?
     @State private var oneTimeText: String?
+    @State private var oneTimeTarget: Message?
     @State private var resendTarget: Message?
     @FocusState private var composerFocused: Bool
 
@@ -27,7 +28,10 @@ struct ConversationView: View {
                 ContentUnavailableView("Chat gelöscht", systemImage: "bubble.left.and.exclamationmark.bubble.right")
             }
         }
-        .onAppear { engine.openChat(chatId) }
+        .onAppear {
+            engine.openChat(chatId)
+            if let contactId = engine.chat(chatId)?.recipientId { PushService.shared.clearDelivered(contactId: contactId) }
+        }
         .onDisappear { Task { await engine.closeChat(chatId) } }
         .onReceive(NotificationCenter.default.publisher(for: UIApplication.userDidTakeScreenshotNotification)) { _ in
             Task { await engine.reportSystemEvent(chatId: chatId, kind: .screenshot) }
@@ -94,6 +98,12 @@ struct ConversationView: View {
         .confirmationDialog("Nachricht wurde nicht zugestellt", isPresented: Binding(get: { resendTarget != nil }, set: { if !$0 { resendTarget = nil } }), titleVisibility: .visible, presenting: resendTarget) { m in
             Button("Erneut senden") { Task { await engine.resend(chatId: chatId, messageId: m.id) } }
             Button("Löschen", role: .destructive) { engine.deleteForMe(chatId: chatId, messageId: m.id) }
+        }
+        .alert("Einmalige Nachricht öffnen?", isPresented: Binding(get: { oneTimeTarget != nil }, set: { if !$0 { oneTimeTarget = nil } }), presenting: oneTimeTarget) { m in
+            Button("Abbrechen", role: .cancel) {}
+            Button("Öffnen") { oneTimeText = engine.consumeOneTime(chatId: chatId, messageId: m.id) }
+        } message: { _ in
+            Text("Du kannst sie nur einmal ansehen. Sobald du sie schließt, ist sie für immer weg.")
         }
         .fullScreenCover(isPresented: Binding(get: { oneTimeText != nil }, set: { if !$0 { oneTimeText = nil } })) {
             ScreenshotShield(isEnabled: app.screenshotShield) {
@@ -177,7 +187,7 @@ struct ConversationView: View {
             unlockError = nil
             unlockTarget = m
         } else if m.oneTime && !mine {
-            oneTimeText = engine.consumeOneTime(chatId: chatId, messageId: m.id)
+            oneTimeTarget = m
         }
     }
 

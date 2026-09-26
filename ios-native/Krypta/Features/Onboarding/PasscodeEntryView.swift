@@ -58,7 +58,7 @@ struct PasscodeEntryView: View {
             }
 
             // Unsichtbares Feld für die Zifferntastatur des Systems.
-            TextField("", text: $input)
+            TextField(String(), text: $input)
                 .keyboardType(.numberPad)
                 .textContentType(.oneTimeCode)
                 .focused($focused)

@@ -1108,43 +1108,43 @@
         }
       }
     },
-    "Auf dem Sperrbildschirm steht „Neue Nachricht von …“ mit dem Namen, den du dem Kontakt gegeben hast. Was in der Nachricht steht, erfahren weder die Mitteilung noch Apple oder Google.": {
+    "Auf dem Sperrbildschirm steht nur, wer dir geschrieben hat — mit dem Namen, den du dem Kontakt gegeben hast. Was in der Nachricht steht, erfahren weder die Mitteilung noch Apple oder Google.": {
       "extractionState": "extracted_with_value",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "The Lock Screen shows “New message from …” with the name you gave the contact. What the message says is never revealed — not in the notification, not to Apple or Google."
+            "value": "The Lock Screen only shows who wrote to you — with the name you gave the contact. Neither the notification nor Apple or Google learn what the message says."
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "La pantalla bloqueada muestra «Nuevo mensaje de …» con el nombre que diste al contacto. Lo que dice el mensaje no lo sabrán ni la notificación, ni Apple, ni Google."
+            "value": "La pantalla bloqueada solo muestra quién te ha escrito, con el nombre que le diste al contacto. Ni la notificación ni Apple ni Google saben lo que dice el mensaje."
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "L’écran verrouillé affiche « Nouveau message de … » avec le nom que tu as donné au contact. Le contenu du message n’apparaît jamais, ni dans la notification, ni chez Apple ou Google."
+            "value": "L’écran verrouillé indique seulement qui t’a écrit, avec le nom que tu as donné au contact. Ni la notification, ni Apple, ni Google ne savent ce que dit le message."
           }
         },
         "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "La schermata di blocco mostra «Nuovo messaggio da …» con il nome che hai dato al contatto. Il contenuto del messaggio non compare mai: né nella notifica, né ad Apple o Google."
+            "value": "La schermata di blocco mostra solo chi ti ha scritto, con il nome che hai dato al contatto. Né la notifica né Apple o Google sanno cosa dice il messaggio."
           }
         },
         "nl": {
           "stringUnit": {
             "state": "translated",
-            "value": "Op het toegangsscherm staat ‘Nieuw bericht van …’ met de naam die je het contact hebt gegeven. Wat er in het bericht staat, weten de melding, Apple en Google niet."
+            "value": "Het toegangsscherm toont alleen wie je heeft geschreven — met de naam die je het contact hebt gegeven. Wat er in het bericht staat, weten noch de melding noch Apple of Google."
           }
         },
         "pt": {
           "stringUnit": {
             "state": "translated",
-            "value": "A tela bloqueada mostra “Nova mensagem de …” com o nome que você deu ao contato. O conteúdo da mensagem nunca aparece — nem na notificação, nem para a Apple ou o Google."
+            "value": "A tela bloqueada mostra só quem te escreveu, com o nome que você deu ao contato. Nem a notificação nem a Apple ou o Google sabem o que a mensagem diz."
           }
         }
       }
@@ -2379,6 +2379,47 @@
         }
       }
     },
+    "Datenschutzerklärung": {
+      "extractionState": "extracted_with_value",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Privacy Policy"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Política de privacidad"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Politique de confidentialité"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Informativa sulla privacy"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Privacybeleid"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Política de Privacidade"
+          }
+        }
+      }
+    },
     "Dein Kontakt": {
       "extractionState": "extracted_with_value",
       "localizations": {
@@ -2703,6 +2744,47 @@
           "stringUnit": {
             "state": "translated",
             "value": "A conversa vai sumir deste iPhone. Suas mensagens serão removidas para %@."
+          }
+        }
+      }
+    },
+    "Der Code konnte nicht gespeichert werden.": {
+      "extractionState": "extracted_with_value",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The code couldn’t be saved."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No se pudo guardar el código."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Le code n’a pas pu être enregistré."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Impossibile salvare il codice."
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "De code kon niet worden bewaard."
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Não foi possível salvar o código."
           }
         }
       }
@@ -3650,6 +3732,47 @@
         }
       }
     },
+    "Du kannst sie nur einmal ansehen. Sobald du sie schließt, ist sie für immer weg.": {
+      "extractionState": "extracted_with_value",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "You can view it only once. As soon as you close it, it’s gone for good."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Solo puedes verlo una vez. En cuanto lo cierres, desaparecerá para siempre."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tu ne peux le voir qu’une seule fois. Dès que tu le fermes, il disparaît pour toujours."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Puoi vederlo una sola volta. Appena lo chiudi, sparisce per sempre."
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Je kunt het maar één keer bekijken. Zodra je het sluit, is het voorgoed weg."
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Você só pode vê-la uma vez. Assim que a fechar, ela some para sempre."
+          }
+        }
+      }
+    },
     "Einmal ansehen": {
       "extractionState": "extracted_with_value",
       "localizations": {
@@ -3728,6 +3851,47 @@
           "stringUnit": {
             "state": "translated",
             "value": "Mensagem única"
+          }
+        }
+      }
+    },
+    "Einmalige Nachricht öffnen?": {
+      "extractionState": "extracted_with_value",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open One-Time Message?"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "¿Abrir mensaje de una sola vez?"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ouvrir le message unique ?"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aprire il messaggio unico?"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Eenmalig bericht openen?"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Abrir mensagem única?"
           }
         }
       }
@@ -4671,6 +4835,47 @@
           "stringUnit": {
             "state": "translated",
             "value": "Definir código secreto"
+          }
+        }
+      }
+    },
+    "Geheimcode ändern": {
+      "extractionState": "extracted_with_value",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Change Secret Code"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cambiar código secreto"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Modifier le code secret"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cambia codice segreto"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Geheime code wijzigen"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Alterar código secreto"
           }
         }
       }
@@ -6192,43 +6397,43 @@
         }
       }
     },
-    "Krypta %@": {
+    "Krypta Chat %@ (%@)": {
       "extractionState": "extracted_with_value",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Krypta %@"
+            "value": "Krypta Chat %1$@ (%2$@)"
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Krypta %@"
+            "value": "Krypta Chat %1$@ (%2$@)"
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Krypta %@"
+            "value": "Krypta Chat %1$@ (%2$@)"
           }
         },
         "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Krypta %@"
+            "value": "Krypta Chat %1$@ (%2$@)"
           }
         },
         "nl": {
           "stringUnit": {
             "state": "translated",
-            "value": "Krypta %@"
+            "value": "Krypta Chat %1$@ (%2$@)"
           }
         },
         "pt": {
           "stringUnit": {
             "state": "translated",
-            "value": "Krypta %@"
+            "value": "Krypta Chat %1$@ (%2$@)"
           }
         }
       }
@@ -6311,6 +6516,47 @@
           "stringUnit": {
             "state": "translated",
             "value": "O Krypta está bloqueado"
+          }
+        }
+      }
+    },
+    "Krypta verwendet diese Bibliotheken. Ihre Lizenztexte stehen in den verlinkten Quellen.": {
+      "extractionState": "extracted_with_value",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Krypta uses these libraries. Their license texts are in the linked sources."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Krypta usa estas bibliotecas. Sus textos de licencia están en las fuentes enlazadas."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Krypta utilise ces bibliothèques. Leurs textes de licence se trouvent dans les sources liées."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Krypta usa queste librerie. I testi delle licenze si trovano nelle fonti collegate."
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Krypta gebruikt deze bibliotheken. De licentieteksten staan in de gelinkte bronnen."
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "O Krypta usa estas bibliotecas. Os textos das licenças estão nas fontes indicadas."
           }
         }
       }
@@ -6516,6 +6762,47 @@
           "stringUnit": {
             "state": "translated",
             "value": "Definir código de apagamento"
+          }
+        }
+      }
+    },
+    "Löschcode ändern": {
+      "extractionState": "extracted_with_value",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Change Erase Code"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cambiar código de borrado"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Modifier le code d’effacement"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cambia codice di cancellazione"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wiscode wijzigen"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Alterar código de apagamento"
           }
         }
       }
@@ -7832,6 +8119,88 @@
         }
       }
     },
+    "Neuer Geheimcode": {
+      "extractionState": "extracted_with_value",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "New Secret Code"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nuevo código secreto"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nouveau code secret"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nuovo codice segreto"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nieuwe geheime code"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Novo código secreto"
+          }
+        }
+      }
+    },
+    "Neuer Löschcode": {
+      "extractionState": "extracted_with_value",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "New Erase Code"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nuevo código de borrado"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nouveau code d’effacement"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nuovo codice di cancellazione"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nieuwe wiscode"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Novo código de apagamento"
+          }
+        }
+      }
+    },
     "Neues Passwort": {
       "extractionState": "extracted_with_value",
       "localizations": {
@@ -8488,6 +8857,47 @@
         }
       }
     },
+    "Open-Source-Lizenzen": {
+      "extractionState": "extracted_with_value",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open Source Licenses"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Licencias de código abierto"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Licences open source"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Licenze open source"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Opensourcelicenties"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Licenças de código aberto"
+          }
+        }
+      }
+    },
     "Option entfernen": {
       "extractionState": "extracted_with_value",
       "localizations": {
@@ -8935,6 +9345,47 @@
           "stringUnit": {
             "state": "translated",
             "value": "Escanear código QR"
+          }
+        }
+      }
+    },
+    "QR-Code zeigen und teilen": {
+      "extractionState": "extracted_with_value",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Show and share QR code"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mostrar y compartir código QR"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Afficher et partager le code QR"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mostra e condividi il codice QR"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "QR-code tonen en delen"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mostrar e compartilhar código QR"
           }
         }
       }
@@ -10575,6 +11026,94 @@
           "stringUnit": {
             "state": "translated",
             "value": "Além do código, o Krypta pede o %@ antes de abrir suas conversas."
+          }
+        }
+      }
+    },
+    "privacy.policy.body": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Krypta Chat — Datenschutzerklärung\n\nStand: April 2026\n\n1. Verantwortlicher\nConnexa GmbH\nKontakt: https://connexa-gmbh.ch\n\n2. Welche Daten werden erhoben?\nKrypta erhebt so wenig Daten wie technisch möglich:\n• Anonyme Firebase-ID (keine E-Mail, kein Name, keine Telefonnummer)\n• Öffentlicher Verschlüsselungsschlüssel (X25519)\n• FCM-Push-Token (für Benachrichtigungen)\n\n3. Verschlüsselung\nAlle Nachrichten sind Ende-zu-Ende-verschlüsselt (Signal-Protokoll: X3DH + Double Ratchet). Der Server hat zu keinem Zeitpunkt Zugriff auf den Klartext Ihrer Nachrichten. Verschlüsselung: XChaCha20-Poly1305. Passwort-Hashing: Argon2id.\n\n4. Datenspeicherung\n• Nachrichten werden nur auf Ihrem Gerät gespeichert (verschlüsselt)\n• Der Server fungiert nur als temporärer Relay — Nachrichten werden nach Zustellung gelöscht\n• Schlüssel werden im iOS Keychain / Android Keystore gespeichert\n\n5. Keine Tracker\nKrypta enthält keine Analyse-Tools, keine Werbung und keine Tracker (0 von 432 bekannten Trackern).\n\n6. Datenweitergabe\nEs werden keine personenbezogenen Daten an Dritte weitergegeben. Google Firebase wird als Infrastruktur-Anbieter verwendet (anonyme Authentifizierung und Push-Benachrichtigungen).\n\n7. Datenlöschung\nSie können jederzeit alle Ihre Daten unwiderruflich löschen:\n• In den Einstellungen über \"Alles löschen\"\n• Durch Eingabe des Lösch-Codes im Taschenrechner\nDabei werden alle lokalen Daten, Schlüssel und Server-Daten vernichtet.\n\n8. Ihre Rechte (DSGVO)\nSie haben das Recht auf Auskunft, Berichtigung, Löschung und Datenübertragbarkeit. Kontaktieren Sie uns unter: https://connexa-gmbh.ch\n\n9. Änderungen\nDiese Datenschutzerklärung kann aktualisiert werden. Die aktuelle Version ist immer in der App einsehbar."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Krypta Chat — Privacy Policy\n\nLast updated: April 2026\n\n1. Controller\nConnexa GmbH\nContact: https://connexa-gmbh.ch\n\n2. What data is collected?\nKrypta collects as little data as is technically possible:\n• Anonymous Firebase ID (no email, no name, no phone number)\n• Public encryption key (X25519)\n• FCM push token (for notifications)\n\n3. Encryption\nAll messages are end-to-end encrypted (Signal protocol: X3DH + Double Ratchet). At no point does the server have access to the plaintext of your messages. Encryption: XChaCha20-Poly1305. Password hashing: Argon2id.\n\n4. Data storage\n• Messages are stored only on your device (encrypted)\n• The server acts solely as a temporary relay — messages are deleted after delivery\n• Keys are stored in the iOS Keychain / Android Keystore\n\n5. No trackers\nKrypta contains no analytics tools, no advertising and no trackers (0 of 432 known trackers).\n\n6. Data sharing\nNo personal data is passed on to third parties. Google Firebase is used as the infrastructure provider (anonymous authentication and push notifications).\n\n7. Data deletion\nYou can irreversibly delete all of your data at any time:\n• In the settings via \"Delete everything\"\n• By entering the delete code in the calculator\nThis destroys all local data, keys and server-side data.\n\n8. Your rights (GDPR)\nYou have the right to access, rectification, erasure and data portability. Contact us at: https://connexa-gmbh.ch\n\n9. Changes\nThis privacy policy may be updated. The current version is always available in the app."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Krypta Chat — Política de privacidad\n\nÚltima actualización: abril de 2026\n\n1. Responsable\nConnexa GmbH\nContacto: https://connexa-gmbh.ch\n\n2. ¿Qué datos se recogen?\nKrypta recoge tan pocos datos como es técnicamente posible:\n• ID anónimo de Firebase (sin correo, sin nombre, sin número de teléfono)\n• Clave pública de cifrado (X25519)\n• Token push de FCM (para las notificaciones)\n\n3. Cifrado\nTodos los mensajes están cifrados de extremo a extremo (protocolo Signal: X3DH + Double Ratchet). En ningún momento tiene el servidor acceso al texto en claro de tus mensajes. Cifrado: XChaCha20-Poly1305. Hash de contraseñas: Argon2id.\n\n4. Almacenamiento de datos\n• Los mensajes se guardan únicamente en tu dispositivo (cifrados)\n• El servidor actúa solo como relé temporal: los mensajes se borran tras la entrega\n• Las claves se guardan en el Llavero de iOS / Android Keystore\n\n5. Sin rastreadores\nKrypta no contiene herramientas de análisis, ni publicidad, ni rastreadores (0 de 432 rastreadores conocidos).\n\n6. Cesión de datos\nNo se ceden datos personales a terceros. Se utiliza Google Firebase como proveedor de infraestructura (autenticación anónima y notificaciones push).\n\n7. Borrado de datos\nPuedes borrar de forma irreversible todos tus datos en cualquier momento:\n• En los ajustes, mediante «Borrar todo»\n• Introduciendo el código de borrado en la calculadora\nEsto destruye todos los datos locales, las claves y los datos del servidor.\n\n8. Tus derechos (RGPD)\nTienes derecho de acceso, rectificación, supresión y portabilidad de los datos. Contáctanos en: https://connexa-gmbh.ch\n\n9. Cambios\nEsta política de privacidad puede actualizarse. La versión vigente siempre está disponible en la aplicación."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Krypta Chat — Politique de confidentialité\n\nDernière mise à jour : avril 2026\n\n1. Responsable du traitement\nConnexa GmbH\nContact : https://connexa-gmbh.ch\n\n2. Quelles données sont collectées ?\nKrypta collecte aussi peu de données que techniquement possible :\n• Identifiant Firebase anonyme (pas d’e-mail, pas de nom, pas de numéro de téléphone)\n• Clé publique de chiffrement (X25519)\n• Jeton push FCM (pour les notifications)\n\n3. Chiffrement\nTous les messages sont chiffrés de bout en bout (protocole Signal : X3DH + Double Ratchet). À aucun moment le serveur n’a accès au texte en clair de vos messages. Chiffrement : XChaCha20-Poly1305. Hachage des mots de passe : Argon2id.\n\n4. Conservation des données\n• Les messages sont conservés uniquement sur votre appareil (chiffrés)\n• Le serveur ne sert que de relais temporaire — les messages sont supprimés après remise\n• Les clés sont conservées dans le trousseau iOS / Android Keystore\n\n5. Aucun traceur\nKrypta ne contient aucun outil d’analyse, aucune publicité et aucun traceur (0 sur 432 traceurs connus).\n\n6. Transmission des données\nAucune donnée personnelle n’est transmise à des tiers. Google Firebase est utilisé comme fournisseur d’infrastructure (authentification anonyme et notifications push).\n\n7. Suppression des données\nVous pouvez supprimer irréversiblement toutes vos données à tout moment :\n• Dans les réglages, via « Tout supprimer »\n• En saisissant le code d’effacement dans la calculatrice\nCela détruit toutes les données locales, les clés et les données côté serveur.\n\n8. Vos droits (RGPD)\nVous disposez d’un droit d’accès, de rectification, d’effacement et de portabilité des données. Contactez-nous à : https://connexa-gmbh.ch\n\n9. Modifications\nCette politique de confidentialité peut être mise à jour. La version en vigueur est toujours consultable dans l’application."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Krypta Chat — Informativa sulla privacy\n\nUltimo aggiornamento: aprile 2026\n\n1. Titolare del trattamento\nConnexa GmbH\nContatto: https://connexa-gmbh.ch\n\n2. Quali dati vengono raccolti?\nKrypta raccoglie il minor numero di dati tecnicamente possibile:\n• ID Firebase anonimo (nessuna e-mail, nessun nome, nessun numero di telefono)\n• Chiave pubblica di cifratura (X25519)\n• Token push FCM (per le notifiche)\n\n3. Cifratura\nTutti i messaggi sono cifrati end-to-end (protocollo Signal: X3DH + Double Ratchet). In nessun momento il server ha accesso al testo in chiaro dei tuoi messaggi. Cifratura: XChaCha20-Poly1305. Hashing delle password: Argon2id.\n\n4. Conservazione dei dati\n• I messaggi sono conservati solo sul tuo dispositivo (cifrati)\n• Il server funge solo da relè temporaneo: i messaggi vengono eliminati dopo la consegna\n• Le chiavi sono conservate nel Portachiavi iOS / Android Keystore\n\n5. Nessun tracciatore\nKrypta non contiene strumenti di analisi, pubblicità o tracciatori (0 su 432 tracciatori noti).\n\n6. Comunicazione dei dati\nNessun dato personale viene comunicato a terzi. Google Firebase è utilizzato come fornitore di infrastruttura (autenticazione anonima e notifiche push).\n\n7. Cancellazione dei dati\nPuoi cancellare in modo irreversibile tutti i tuoi dati in qualsiasi momento:\n• Nelle impostazioni, tramite «Cancella tutto»\n• Inserendo il codice di cancellazione nella calcolatrice\nQuesto distrugge tutti i dati locali, le chiavi e i dati sul server.\n\n8. I tuoi diritti (GDPR)\nHai diritto di accesso, rettifica, cancellazione e portabilità dei dati. Contattaci all’indirizzo: https://connexa-gmbh.ch\n\n9. Modifiche\nLa presente informativa può essere aggiornata. La versione in vigore è sempre consultabile nell’app."
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Krypta Chat — Privacyverklaring\n\nLaatst bijgewerkt: april 2026\n\n1. Verwerkingsverantwoordelijke\nConnexa GmbH\nContact: https://connexa-gmbh.ch\n\n2. Welke gegevens worden verzameld?\nKrypta verzamelt zo weinig gegevens als technisch mogelijk is:\n• Anoniem Firebase-ID (geen e-mailadres, geen naam, geen telefoonnummer)\n• Openbare versleutelingssleutel (X25519)\n• FCM-pushtoken (voor meldingen)\n\n3. Versleuteling\nAlle berichten zijn end-to-end versleuteld (Signal-protocol: X3DH + Double Ratchet). De server heeft op geen enkel moment toegang tot de leesbare tekst van je berichten. Versleuteling: XChaCha20-Poly1305. Wachtwoord-hashing: Argon2id.\n\n4. Gegevensopslag\n• Berichten worden alleen op je eigen apparaat bewaard (versleuteld)\n• De server dient uitsluitend als tijdelijke doorgeefluik — berichten worden na bezorging verwijderd\n• Sleutels worden bewaard in de iOS-sleutelhanger / Android Keystore\n\n5. Geen trackers\nKrypta bevat geen analysetools, geen advertenties en geen trackers (0 van 432 bekende trackers).\n\n6. Doorgifte van gegevens\nEr worden geen persoonsgegevens aan derden doorgegeven. Google Firebase wordt gebruikt als infrastructuuraanbieder (anonieme authenticatie en pushmeldingen).\n\n7. Gegevens wissen\nJe kunt al je gegevens op elk moment onherroepelijk wissen:\n• In de instellingen via «Alles wissen»\n• Door de wiscode in de rekenmachine in te voeren\nDaarmee worden alle lokale gegevens, sleutels en servergegevens vernietigd.\n\n8. Jouw rechten (AVG)\nJe hebt recht op inzage, rectificatie, wissing en overdraagbaarheid van gegevens. Neem contact met ons op via: https://connexa-gmbh.ch\n\n9. Wijzigingen\nDeze privacyverklaring kan worden bijgewerkt. De geldende versie is altijd in de app te raadplegen."
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Krypta Chat — Política de privacidade\n\nÚltima atualização: abril de 2026\n\n1. Responsável pelo tratamento\nConnexa GmbH\nContacto: https://connexa-gmbh.ch\n\n2. Que dados são recolhidos?\nO Krypta recolhe tão poucos dados quanto é tecnicamente possível:\n• ID anónimo do Firebase (sem e-mail, sem nome, sem número de telefone)\n• Chave pública de cifra (X25519)\n• Token push do FCM (para as notificações)\n\n3. Cifra\nTodas as mensagens são cifradas de ponta a ponta (protocolo Signal: X3DH + Double Ratchet). Em momento algum o servidor tem acesso ao texto simples das suas mensagens. Cifra: XChaCha20-Poly1305. Hashing de palavras-passe: Argon2id.\n\n4. Armazenamento de dados\n• As mensagens são guardadas apenas no seu dispositivo (cifradas)\n• O servidor funciona apenas como retransmissor temporário — as mensagens são eliminadas após a entrega\n• As chaves são guardadas no Porta-chaves do iOS / Android Keystore\n\n5. Sem rastreadores\nO Krypta não contém ferramentas de análise, publicidade nem rastreadores (0 de 432 rastreadores conhecidos).\n\n6. Transmissão de dados\nNão são transmitidos dados pessoais a terceiros. É utilizado o Google Firebase como fornecedor de infraestrutura (autenticação anónima e notificações push).\n\n7. Eliminação de dados\nPode eliminar de forma irreversível todos os seus dados a qualquer momento:\n• Nas definições, através de «Eliminar tudo»\n• Introduzindo o código de eliminação na calculadora\nIsto destrói todos os dados locais, as chaves e os dados no servidor.\n\n8. Os seus direitos (RGPD)\nTem direito de acesso, retificação, apagamento e portabilidade dos dados. Contacte-nos através de: https://connexa-gmbh.ch\n\n9. Alterações\nEsta política de privacidade pode ser atualizada. A versão em vigor está sempre disponível na aplicação."
+          }
+        }
+      }
+    },
+    "Öffnen": {
+      "extractionState": "extracted_with_value",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Abrir"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ouvrir"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Apri"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Openen"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Abrir"
           }
         }
       }

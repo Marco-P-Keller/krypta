@@ -118,7 +118,7 @@ struct MessageRow: View {
         .accessibilityElement(children: .combine)
         .accessibilityLabel(accessibility)
         .accessibilityAddTraits(tapHint == nil ? [] : .isButton)
-        .accessibilityHint(tapHint.map { Text($0) } ?? Text(""))
+        .accessibilityHint(tapHint.map { Text($0) } ?? Text(verbatim: ""))
     }
 
     /// Was ein Tippen auf die Blase tut — `nil`, wenn nichts.

@@ -36,6 +36,29 @@ final class AppModel {
         didSet { UserDefaults.standard.set(!screenshotShield, forKey: "shield.off") }
     }
 
+    /// Aus einer angetippten Mitteilung: dieses Ziel öffnen, sobald die
+    /// Chats zu sehen sind (also erst nach Rechner, Face ID und Passwort).
+    var pendingOpen: PushService.Target?
+
+    init() {
+        PushService.shared.open = { [weak self] target in self?.pendingOpen = target }
+        PushService.shared.shouldPresent = { [weak self] target in self?.shouldPresentBanner(for: target) ?? false }
+        PushService.shared.deliverPendingTarget()
+    }
+
+    /// Banner in der App nur bei offenen Chats, und nicht für den Chat,
+    /// der gerade vorne ist.
+    private func shouldPresentBanner(for target: PushService.Target?) -> Bool {
+        guard phase == .unlocked, !privacyCover, let target, let engine else { return false }
+        switch target {
+        case .chat(let contactId):
+            guard let active = engine.activeChatId else { return true }
+            return engine.chat(active)?.recipientId != contactId
+        case .requests:
+            return true
+        }
+    }
+
     var calculatorLock: Bool { Keychain.bool(.calculatorLock) }
     var biometricLock: Bool { Keychain.bool(.biometricLock) }
 

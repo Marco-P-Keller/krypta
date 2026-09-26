@@ -104,7 +104,7 @@ extension MessengerEngine {
             if !asRequest, let kt = gossip(for: contact.id) { inner["_kt"] = .object(kt) }
 
             var payload = try encrypt(chatId: chatId, content: try inner.jsonString())
-            payload["nt"] = .string(notificationTag(for: contact, request: asRequest))
+            if let tag = notificationTag(for: contact, request: asRequest) { payload["nt"] = .string(tag) }
             ratchets[chatId]?.globalSendSeqNo += 1
             saveRatchet(chatId)
 

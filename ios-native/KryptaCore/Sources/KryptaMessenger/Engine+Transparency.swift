@@ -143,10 +143,13 @@ extension MessengerEngine {
     // MARK: - Mitteilungen
 
     /// Anhänger für eine Nachricht an `contact` — siehe NotificationTag.
-    func notificationTag(for contact: Contact, request: Bool) -> String {
+    /// `nil`, wenn sich kein Schlüssel ableiten lässt: dann ohne Anhänger
+    /// senden, und die Empfängerin bekommt wenigstens „Neue Nachricht".
+    /// Ein leerer Anhänger hieße „keine Mitteilung".
+    func notificationTag(for contact: Contact, request: Bool) -> String? {
         if request { return NotificationTag.make(key: NotificationTag.requestKey(recipientIdentityPublicKey: contact.publicKey)) }
         guard let key = try? NotificationTag.pairKey(identity: identity, peerIdentityPublicKey: contact.publicKey, ownId: userId, peerId: contact.id) else {
-            return NotificationTag.quiet
+            return nil
         }
         return NotificationTag.make(key: key)
     }
@@ -159,7 +162,7 @@ extension MessengerEngine {
             guard !c.isBlocked, !c.isGone, c.requestState == .established || c.requestState == .outgoing,
                   let key = try? NotificationTag.pairKey(identity: identity, peerIdentityPublicKey: c.publicKey, ownId: userId, peerId: c.id)
             else { return nil }
-            return .init(key: key, name: chat(forContact: c.id)?.name ?? c.displayName)
+            return .init(key: key, name: chat(forContact: c.id)?.name ?? c.displayName, contactId: c.id)
         }
         return NotificationIndex(entries: entries, requestKey: NotificationTag.requestKey(recipientIdentityPublicKey: identity.publicKey), showNames: showNames)
     }

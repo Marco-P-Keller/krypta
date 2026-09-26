@@ -27,20 +27,52 @@ enum NotificationIndexStore {
 
     static func save(_ index: NotificationIndex) {
         guard let data = try? JSONEncoder().encode(index) else { return }
-        let update = [kSecValueData as String: data]
-        if SecItemUpdate(base as CFDictionary, update as CFDictionary) == errSecItemNotFound {
-            var add = base
+        write(data, account: account)
+    }
+
+    static func delete() {
+        SecItemDelete(base as CFDictionary)
+        resetBadge()
+    }
+
+    // MARK: - Zahl am App-Symbol
+
+    /// Die Extension zählt mit, die App setzt beim Öffnen auf null.
+    /// Nur eine Zahl — kein Absender, kein Inhalt.
+    static func nextBadge() -> Int {
+        let next = badge + 1
+        write(Data(String(next).utf8), account: badgeAccount)
+        return next
+    }
+
+    static func resetBadge() {
+        SecItemDelete(query(account: badgeAccount) as CFDictionary)
+    }
+
+    private static let badgeAccount = "notify.badge"
+
+    private static var badge: Int {
+        var q = query(account: badgeAccount)
+        q[kSecReturnData as String] = true
+        q[kSecMatchLimit as String] = kSecMatchLimitOne
+        var result: AnyObject?
+        guard SecItemCopyMatching(q as CFDictionary, &result) == errSecSuccess, let data = result as? Data else { return 0 }
+        return Int(String(decoding: data, as: UTF8.self)) ?? 0
+    }
+
+    private static func write(_ data: Data, account: String) {
+        let q = query(account: account)
+        if SecItemUpdate(q as CFDictionary, [kSecValueData as String: data] as CFDictionary) == errSecItemNotFound {
+            var add = q
             add[kSecValueData as String] = data
             add[kSecAttrAccessible as String] = kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly
             SecItemAdd(add as CFDictionary, nil)
         }
     }
 
-    static func delete() {
-        SecItemDelete(base as CFDictionary)
-    }
+    private static var base: [String: Any] { query(account: account) }
 
-    private static var base: [String: Any] {
+    private static func query(account: String) -> [String: Any] {
         [
             kSecClass as String: kSecClassGenericPassword,
             kSecAttrService as String: service,
