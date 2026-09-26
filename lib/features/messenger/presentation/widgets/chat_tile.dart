@@ -8,15 +8,6 @@ import '../../data/models/contact_model.dart';
 import '../../data/models/message_model.dart';
 import '../../logic/chatliste_policy.dart';
 
-const _avatarGradients = [
-  [Color(0xFF0A84FF), Color(0xFF5856D6)],
-  [Color(0xFF30D158), Color(0xFF34C759)],
-  [Color(0xFFFF453A), Color(0xFFFF6B6B)],
-  [Color(0xFFFFD60A), Color(0xFFFF9F0A)],
-  [Color(0xFFBF5AF2), Color(0xFF5856D6)],
-  [Color(0xFF32ADE6), Color(0xFF007AFF)],
-];
-
 class ChatTile extends StatelessWidget {
   final Chat chat;
   final VoidCallback onTap;
@@ -72,11 +63,6 @@ class ChatTile extends StatelessWidget {
     this.jetzt,
   });
 
-  List<Color> _gradientFor(String name) {
-    final idx = name.isEmpty ? 0 : name.codeUnitAt(0) % _avatarGradients.length;
-    return _avatarGradients[idx];
-  }
-
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -84,7 +70,7 @@ class ChatTile extends StatelessWidget {
     // auch fuer einen blossen Screenshot-Hinweis ohne Nachricht.
     final hasUnread = chat.hatNeues;
     final hatHinweis = chat.hinweisCount > 0;
-    final colors = _gradientFor(chat.recipientName);
+    final colors = AppColors.avatarGradientFor(chat.recipientName);
     final offeneAnfrage =
         requestState != null && requestState != ContactRequestState.established;
 
