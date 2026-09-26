@@ -1,5 +1,6 @@
 import Foundation
 import KryptaCore
+import KryptaWallet
 
 extension MessengerEngine {
     /// Eine Nachricht aus dem Posteingang verarbeiten — _handleInbox.
@@ -63,6 +64,7 @@ extension MessengerEngine {
             if await processControl(chatId: chat.id, contact: contact, inner: inner) {
                 _ = finalizeAccepted(chatId: chat.id, messageId: env.messageId, payload: env.payload)
                 learnSealedKey(from: contact.id, inner: inner)
+                learnBitcoin(from: contact.id, inner: inner)
             } else {
                 discardPendingHeal(chatId: chat.id, messageId: env.messageId)
             }
@@ -92,6 +94,7 @@ extension MessengerEngine {
         guard finalizeAccepted(chatId: chat.id, messageId: env.messageId, payload: env.payload) else { return }
         processGossip(from: env.senderId, inner: inner)
         learnSealedKey(from: env.senderId, inner: inner)
+        learnBitcoin(from: env.senderId, inner: inner)
 
         let now = Date()
         let isRead = activeChatId == chat.id && isForeground
@@ -108,8 +111,12 @@ extension MessengerEngine {
         m.oneTime = Self.flag(inner, "_once")
         m.isPasswordProtected = Self.flag(inner, "_pw") || Self.flag(inner, "pw")
         m.passwordUnlocked = !m.isPasswordProtected
+        // Eine Zahlung ist nie verschlüsselt oder einmalig; so etwas ist keine.
+        m.payment = m.isPasswordProtected || m.oneTime ? nil : Self.payment(in: inner)
         append(m, to: chat.id)
         markProcessed(env.messageId)
+        // Eine angekündigte Zahlung: die Wallet prüft sie an der Blockchain.
+        if let payment = m.payment { wallet?.registerClaim(payment, from: env.senderId, messageId: env.messageId, note: content) }
 
         // Zustellung wird immer gemeldet: an ihr hängt der Start jeder Frist.
         sendControlLater(chatId: chat.id, contact: contact, type: "delivered", messageId: env.messageId)

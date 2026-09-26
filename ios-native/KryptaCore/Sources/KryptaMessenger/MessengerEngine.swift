@@ -1,6 +1,7 @@
 import Foundation
 import Observation
 import KryptaCore
+import KryptaWallet
 
 /// Stellschrauben, die Tests anders brauchen als die App.
 public struct EngineConfig: Sendable {
@@ -134,6 +135,9 @@ public final class MessengerEngine {
     @ObservationIgnored var transparency: [String: TransparencyChain] = [:]
     /// Wann der Server versiegeltes Senden an einen Kontakt zuletzt abgelehnt hat.
     @ObservationIgnored var sealedDeniedAt: [String: Date] = [:]
+
+    /// Die Bitcoin-Wallet dieses Kontos (Engine+Payments). Hängt die App an.
+    @ObservationIgnored public internal(set) weak var wallet: WalletEngine?
 
     /// Meldet jede gespeicherte Änderung an den Kontakten — die App hält
     /// damit den Index für die Mitteilungen aktuell.

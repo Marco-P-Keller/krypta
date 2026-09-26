@@ -1,5 +1,6 @@
 import Foundation
 import KryptaCore
+import KryptaWallet
 
 extension MessengerEngine {
     /// Eine Textnachricht senden.
@@ -20,7 +21,7 @@ extension MessengerEngine {
         }
     }
 
-    func sendLocked(chatId: String, text: String, options: SendOptions, asRequest: Bool, qrToken: String?, preverifiedKey: String?) async {
+    func sendLocked(chatId: String, text: String, options: SendOptions, asRequest: Bool, qrToken: String?, preverifiedKey: String?, payment: ChatPayment? = nil) async {
         guard !deletingChats.contains(chatId), let chat = chat(chatId), let contact = contact(chat.recipientId) else { return }
 
         // Vertrauensprüfung — fail-closed. Eine Anfrage darf an einer
@@ -48,6 +49,7 @@ extension MessengerEngine {
             m.oneTime = oneTime
             m.isPasswordProtected = password != nil
             m.passwordUnlocked = password == nil
+            m.payment = payment
             append(m, to: chatId)
         }
 
@@ -103,6 +105,9 @@ extension MessengerEngine {
             if password != nil { inner["_pw"] = true }
             if !asRequest, let kt = gossip(for: contact.id) { inner["_kt"] = .object(kt) }
             inner["_dk"] = .string(sealedAccessKey.base64)
+            // Bitcoin: eigene Adresse für diesen Kontakt, und die Zahlung selbst.
+            if !asRequest, let btc = bitcoinField(for: contact) { inner["_btc"] = btc }
+            if let payment { inner["_pay"] = payment.json }
 
             var payload = try encrypt(chatId: chatId, content: try inner.jsonString())
             if let tag = notificationTag(for: contact, request: asRequest) { payload["nt"] = .string(tag) }
@@ -137,6 +142,12 @@ extension MessengerEngine {
               m.status == .failed, m.senderId == userId, let text = m.text, !m.isPasswordProtected else { return }
         messages[chatId]?.removeAll { $0.id == messageId }
         saveMessages(chatId)
+        // Eine Zahlung ist längst auf der Blockchain: erneut geht nur die
+        // Nachricht darüber, nie eine zweite Transaktion.
+        if let payment = m.payment {
+            await sendPaymentMessage(chatId: chatId, payment: payment, note: text)
+            return
+        }
         await send(chatId: chatId, text: text, options: SendOptions(selfDestruct: m.selfDestruct, fromChatRule: m.selfDestructFromChat, burnAfterRead: m.burnAfterRead))
     }
 
@@ -160,7 +171,8 @@ extension MessengerEngine {
         let counter = counters.next(for: chatId)
         saveCounters()
         let ctrl = ControlMessage.create(type: type, chatId: chatId, messageId: messageId, senderId: userId, counter: counter, key: key)
-        let inner: JSONObject = ["_ctrl": .object(ctrl.json), "_sid": .string(userId), "_dk": .string(sealedAccessKey.base64)]
+        var inner: JSONObject = ["_ctrl": .object(ctrl.json), "_sid": .string(userId), "_dk": .string(sealedAccessKey.base64)]
+        if let btc = bitcoinField(for: current) { inner["_btc"] = btc }
         do {
             var payload = try encrypt(chatId: chatId, content: try inner.jsonString())
             // Steuernachrichten lösen keine Mitteilung aus.

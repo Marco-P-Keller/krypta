@@ -1,5 +1,6 @@
 import Foundation
 import KryptaCore
+import KryptaWallet
 
 /// Eine Nachricht im Posteingang auf dem Server.
 ///
@@ -101,7 +102,7 @@ extension JSONDecoder {
 
 // MARK: - In-Memory-Fassungen (Tests, Vorschauen)
 
-public final class MemoryVault: Vault, @unchecked Sendable {
+public final class MemoryVault: Vault, WalletStore, @unchecked Sendable {
     private var slots: [String: Data] = [:]
     private let lock = NSLock()
 
