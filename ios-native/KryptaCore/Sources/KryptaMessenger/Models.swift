@@ -286,7 +286,7 @@ public enum ContactRequestPolicy {
 /// Der Inhalt eines Krypta-QR-Codes: {v, uid, ik, fp[, rt][, dk]}.
 ///
 /// `dk` ist der Zustellschlüssel: Wer den Code scannt, kann schon die Anfrage
-/// versiegelt schicken, und Firebase sieht nicht, wer sich mit wem verbindet.
+/// versiegelt schicken — Absender und Kennung stehen dann nur im Umschlag.
 /// Die Flutter-Fassung liest das Feld nicht.
 public struct QRPayload: Equatable, Sendable {
     public let userId: String
@@ -342,7 +342,8 @@ public struct QRPayload: Equatable, Sendable {
         return QRPayload(userId: uid, publicKey: key, requestToken: rt, accessKey: dk)
     }
 
-    /// Kennung im Format von Firebase Auth.
+    /// Kennung im Format von Firebase Auth — so vergibt sie auch die native
+    /// App (CloudAccount.newUserId), und übernommene Kennungen passen weiter.
     public static func isValidUserId(_ id: String) -> Bool {
         (10...128).contains(id.count) && id.allSatisfy { $0.isASCII && ($0.isLetter || $0.isNumber) }
     }

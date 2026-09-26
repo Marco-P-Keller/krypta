@@ -6,7 +6,7 @@ import KryptaMessenger
 /// Nur in Debug-Builds: die App gegen einen Server im Speicher, mit einem
 /// zweiten, echten Messenger im selben Prozess als Gesprächspartnerin.
 ///
-/// Start mit dem Argument `-KryptaDemo`. Nichts davon berührt Firebase,
+/// Start mit dem Argument `-KryptaDemo`. Nichts davon berührt iCloud,
 /// den Schlüsselbund oder die Platte.
 @MainActor
 enum DemoMode {

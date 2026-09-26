@@ -25,9 +25,6 @@ settings:
 packages:
   KryptaCore:
     path: KryptaCore
-  Firebase:
-    url: https://github.com/firebase/firebase-ios-sdk
-    from: "11.0.0"
 targets:
   Krypta:
     type: application
@@ -40,12 +37,6 @@ targets:
         product: KryptaCore
       - package: KryptaCore
         product: KryptaMessenger
-      - package: Firebase
-        product: FirebaseAuth
-      - package: Firebase
-        product: FirebaseFirestore
-      - package: Firebase
-        product: FirebaseMessaging
       - target: KryptaNotifications
     # Nur, was sich nicht über INFOPLIST_KEY_* setzen lässt; der Rest wird
     # erzeugt (GENERATE_INFOPLIST_FILE) und zusammengeführt.
@@ -54,25 +45,21 @@ targets:
       properties:
         CFBundleShortVersionString: $(MARKETING_VERSION)
         CFBundleVersion: $(CURRENT_PROJECT_VERSION)
-        # Wie ios/Runner/Info.plist: nur HTTPS, und Firebase/Google nur mit
-        # den Google-Wurzeln GTS Root R1 und R4.
+        # Nur HTTPS. Mit CloudKit spricht das System (cloudd) mit Apples
+        # Servern; Firebase und Google sind aus der App verschwunden.
         NSAppTransportSecurity:
           NSAllowsArbitraryLoads: false
-          NSPinnedDomains:
-            firebaseio.com:
-              NSIncludesSubdomains: true
-              NSPinnedCAIdentities:
-                - SPKI-SHA256-BASE64: hxqRlPTu1bMS/0DITB1SSu0vd4u/8l8TjPgfaAp63Gc=
-                - SPKI-SHA256-BASE64: mEflZT5enoR1FuXLgYYGqnVEoZvmf9c2bVBpiOjYQ0c=
-            googleapis.com:
-              NSIncludesSubdomains: true
-              NSPinnedCAIdentities:
-                - SPKI-SHA256-BASE64: hxqRlPTu1bMS/0DITB1SSu0vd4u/8l8TjPgfaAp63Gc=
-                - SPKI-SHA256-BASE64: mEflZT5enoR1FuXLgYYGqnVEoZvmf9c2bVBpiOjYQ0c=
     entitlements:
       path: Krypta/Krypta.entitlements
       properties:
         aps-environment: development
+        # CloudKit statt Firebase: die öffentliche Datenbank dieses Containers
+        # ist der Server (Krypta/Services/CloudKitRelay.swift). Anlegen und
+        # Schema einspielen: CloudKit/README.md.
+        com.apple.developer.icloud-container-identifiers:
+          - iCloud.com.calcchat.ww
+        com.apple.developer.icloud-services:
+          - CloudKit
         # Erster Eintrag: wie in der Flutter-App (ios/Runner), damit deren
         # Schlüsselbund lesbar bleibt. Zweiter: geteilt mit der Extension.
         keychain-access-groups:

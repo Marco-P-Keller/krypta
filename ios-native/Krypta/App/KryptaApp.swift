@@ -1,5 +1,3 @@
-import FirebaseCore
-import FirebaseFirestore
 import SwiftUI
 
 @main
@@ -9,24 +7,19 @@ struct KryptaApp: App {
     @Environment(\.scenePhase) private var scenePhase
 
     init() {
-        FirebaseApp.configure()
-        Self.keepFirestoreInMemory()
-        FirebaseRelay.configureSealedApp()
+        Self.removeFirebaseLeftovers()
         PushService.shared.configure()
         _model = State(initialValue: AppModel())
     }
 
-    /// Firestore legt sonst jede empfangene Nachricht (verschlüsselt) in
-    /// einen Zwischenspeicher auf dem Gerät. Den braucht Krypta nicht — die
-    /// Chats liegen im eigenen Tresor —, also nur im Arbeitsspeicher, und
-    /// was ältere Fassungen dort hinterlassen haben, kommt weg.
-    private static func keepFirestoreInMemory() {
-        if let support = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first {
-            try? FileManager.default.removeItem(at: support.appendingPathComponent("firestore", isDirectory: true))
+    /// Fassungen mit Firebase hinterließen einen Zwischenspeicher von
+    /// Firestore (verschlüsselte Nachrichten) und Daten des SDK. Beides
+    /// braucht niemand mehr.
+    private static func removeFirebaseLeftovers() {
+        guard let support = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first else { return }
+        for leftover in ["firestore", "Google"] {
+            try? FileManager.default.removeItem(at: support.appendingPathComponent(leftover, isDirectory: true))
         }
-        let settings = Firestore.firestore().settings
-        settings.cacheSettings = MemoryCacheSettings()
-        Firestore.firestore().settings = settings
     }
 
     var body: some Scene {

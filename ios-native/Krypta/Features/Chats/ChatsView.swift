@@ -82,7 +82,9 @@ struct ChatsView: View {
                 }
             }
             .safeAreaInset(edge: .top, spacing: 0) {
-                if engine.keysPublished == false {
+                if app.iCloudMissing {
+                    Banner(symbol: "icloud.slash", text: "Nicht bei iCloud angemeldet. Andere erreichen dich erst, wenn du dich in den Einstellungen anmeldest.", tint: .orange)
+                } else if engine.keysPublished == false {
                     Banner(symbol: "icloud.slash", text: "Deine Schlüssel konnten nicht veröffentlicht werden. Andere können dich gerade nicht erreichen.", tint: .orange)
                 }
             }

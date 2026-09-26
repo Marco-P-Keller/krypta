@@ -4,8 +4,8 @@ import XCTest
 /// geschrieben, test/interop/flutter_store_fixture_test.dart) liegt im
 /// Container und im Schlüsselbund; die native App übernimmt ihn beim Start.
 ///
-/// Läuft gegen einen Server im Speicher (`-KryptaOffline`), damit kein
-/// Testkonto in Firebase entsteht.
+/// Läuft gegen einen Server im Speicher (`-KryptaOffline`), damit keine
+/// Testkennung in CloudKit entsteht.
 final class MigrationUITests: XCTestCase {
     private var fixture: String {
         ProcessInfo.processInfo.environment["KRYPTA_FLUTTER_FIXTURE"]

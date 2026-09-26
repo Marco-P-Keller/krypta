@@ -1,0 +1,59 @@
+name: iOS nativ
+
+# Baut die native App (ios-native/) und lässt die Tests von KryptaCore
+# laufen — ohne Signatur und ohne Geheimnisse. Die App wird nur für den
+# Simulator gebaut; CloudKit braucht dafür weder Konto noch Container.
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - "ios-native/**"
+      - ".github/workflows/ios-native.yml"
+  pull_request:
+    paths:
+      - "ios-native/**"
+      - ".github/workflows/ios-native.yml"
+
+concurrency:
+  group: ios-native-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: KryptaCore-Tests und App-Build
+    runs-on: macos-latest
+    timeout-minutes: 45
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # Das neueste Xcode auf dem Runner: der Post-Quanten-Handschlag
+      # braucht das SDK von iOS 26.
+      - name: Xcode wählen
+        run: |
+          XCODE="$(ls -d /Applications/Xcode_*.app 2>/dev/null | sort -V | tail -1)"
+          sudo xcode-select -s "${XCODE:-/Applications/Xcode.app}"
+          xcodebuild -version
+
+      - name: KryptaCore – swift test
+        working-directory: ios-native/KryptaCore
+        run: swift test
+
+      - name: Projekt erzeugen (XcodeGen)
+        working-directory: ios-native
+        run: |
+          brew install xcodegen
+          xcodegen generate
+
+      - name: App bauen (Simulator, ohne Signatur)
+        working-directory: ios-native
+        run: |
+          xcodebuild -project Krypta.xcodeproj -scheme Krypta \
+            -configuration Debug \
+            -destination 'generic/platform=iOS Simulator' \
+            CODE_SIGNING_ALLOWED=NO \
+            build

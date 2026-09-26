@@ -1,0 +1,69 @@
+DEFINE SCHEMA
+
+    RECORD TYPE Users (
+        "___createTime" TIMESTAMP,
+        "___createdBy"  REFERENCE,
+        "___etag"       STRING,
+        "___modTime"    TIMESTAMP,
+        "___modifiedBy" REFERENCE,
+        "___recordID"   REFERENCE,
+        "roles"         LIST<INT64>,
+        GRANT WRITE TO "_creator",
+        GRANT READ TO "_world"
+    );
+
+    RECORD TYPE PublicKey (
+        "___createTime" TIMESTAMP,
+        "___createdBy"  REFERENCE,
+        "___etag"       STRING,
+        "___modTime"    TIMESTAMP,
+        "___modifiedBy" REFERENCE,
+        "___recordID"   REFERENCE,
+        "publicKey"     STRING,
+        GRANT WRITE TO "_creator",
+        GRANT READ, CREATE TO "_icloud"
+    );
+
+    RECORD TYPE PreKeyBundle (
+        "___createTime" TIMESTAMP,
+        "___createdBy"  REFERENCE,
+        "___etag"       STRING,
+        "___modTime"    TIMESTAMP,
+        "___modifiedBy" REFERENCE,
+        "___recordID"   REFERENCE,
+        "bundle"        BYTES,
+        GRANT WRITE TO "_creator",
+        GRANT READ, CREATE TO "_icloud"
+    );
+
+    RECORD TYPE KeyCommitment (
+        "___createTime" TIMESTAMP,
+        "___createdBy"  REFERENCE,
+        "___etag"       STRING,
+        "___modTime"    TIMESTAMP,
+        "___modifiedBy" REFERENCE,
+        "___recordID"   REFERENCE,
+        "uid"           STRING QUERYABLE,
+        "epoch"         INT64 QUERYABLE SORTABLE,
+        "commitment"    BYTES,
+        GRANT WRITE TO "_creator",
+        GRANT READ, CREATE TO "_icloud"
+    );
+
+    RECORD TYPE InboxMessage (
+        "___createTime" TIMESTAMP QUERYABLE SORTABLE,
+        "___createdBy"  REFERENCE,
+        "___etag"       STRING,
+        "___modTime"    TIMESTAMP,
+        "___modifiedBy" REFERENCE,
+        "___recordID"   REFERENCE,
+        "recipient"     STRING QUERYABLE,
+        "alert"         INT64 QUERYABLE,
+        "tag"           STRING,
+        "sender"        STRING,
+        "messageId"     STRING,
+        "payload"       BYTES,
+        "sealed"        BYTES,
+        GRANT WRITE TO "_creator",
+        GRANT READ, CREATE, WRITE TO "_icloud"
+    );

@@ -5,7 +5,7 @@ import XCTest
 ///
 /// Legt an jeder Station ein Bildschirmfoto ab, wenn KRYPTA_SHOTS gesetzt
 /// ist (Verzeichnis auf dem Mac). Läuft gegen einen Server im Speicher
-/// (`-KryptaOffline`) — es entsteht kein Konto in Firebase.
+/// (`-KryptaOffline`) — es entsteht keine Kennung in CloudKit.
 final class TourUITests: XCTestCase {
     private var app: XCUIApplication!
     private let code = "246810"

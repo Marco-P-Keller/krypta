@@ -1,15 +1,14 @@
-import FirebaseMessaging
 import KryptaMessenger
 import UIKit
 import UserNotifications
 
 /// Mitteilungen: „Neue Nachricht von Mami", nie der Inhalt.
 ///
-/// Der Weg: der Absender legt einen Anhänger in die Nachricht, die Cloud
-/// Function (firebase/functions/index.js) reicht ihn per FCM an das iPhone,
-/// und die Notification Service Extension setzt den Namen ein. Die App
-/// sorgt hier nur für drei Dinge: das FCM-Token beim Server, den Index im
-/// geteilten Schlüsselbund und keine Banner, solange sie selbst vorne ist.
+/// Der Weg: der Absender legt einen Anhänger in die Nachricht, das Abo in
+/// CloudKit (`CloudKitRelay.subscribeToInbox`) schickt ihn per APNs an das
+/// iPhone, und die Notification Service Extension setzt den Namen ein. Die
+/// App sorgt hier nur für drei Dinge: das Abo, den Index im geteilten
+/// Schlüsselbund und keine Banner, solange sie selbst vorne ist.
 @MainActor
 final class PushService: NSObject {
     static let shared = PushService()
@@ -27,7 +26,16 @@ final class PushService: NSObject {
     }
 
     private var userId: String?
-    private let relay = FirebaseRelay()
+    private let relay = CloudKitRelay()
+
+    /// Demo-Modus und UI-Tests laufen ohne iCloud.
+    private var usesCloud: Bool {
+        #if DEBUG
+        return !(DemoMode.isActive || DemoMode.isOffline)
+        #else
+        return true
+        #endif
+    }
 
     /// Wohin ein Tippen auf die Mitteilung führt.
     enum Target: Equatable {
@@ -43,10 +51,9 @@ final class PushService: NSObject {
 
     func configure() {
         UNUserNotificationCenter.current().delegate = self
-        Messaging.messaging().delegate = self
     }
 
-    /// Nach dem Entsperren: Erlaubnis (einmalig), Token, Index.
+    /// Nach dem Entsperren: Erlaubnis (einmalig), Abo, Index.
     func start(userId: String, engine: MessengerEngine) async {
         self.userId = userId
         attach(engine)
@@ -55,8 +62,10 @@ final class PushService: NSObject {
             (try? await UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .badge])) ?? false
         }
         guard granted else { return }
+        // CloudKit stellt seine Mitteilungen über die Registrierung der App zu;
+        // das Token selbst braucht Krypta nicht.
         UIApplication.shared.registerForRemoteNotifications()
-        await uploadToken()
+        await subscribe()
     }
 
     /// Den Index aktuell halten — braucht weder Netz noch Erlaubnis.
@@ -75,8 +84,7 @@ final class PushService: NSObject {
         if on {
             await start(userId: engine.userId, engine: engine)
         } else {
-            try? await relay.deletePushToken(uid: engine.userId)
-            try? await Messaging.messaging().deleteToken()
+            if usesCloud { try? await relay.unsubscribeFromInbox() }
             UIApplication.shared.unregisterForRemoteNotifications()
         }
     }
@@ -89,7 +97,7 @@ final class PushService: NSObject {
     func wipe() async {
         NotificationIndexStore.delete()
         clearDelivered()
-        try? await Messaging.messaging().deleteToken()
+        if usesCloud { try? await relay.unsubscribeFromInbox() }
         userId = nil
     }
 
@@ -124,14 +132,9 @@ final class PushService: NSObject {
         return nil
     }
 
-    private func uploadToken() async {
-        guard let userId, Self.isEnabled, let token = try? await Messaging.messaging().token() else { return }
-        try? await relay.registerPushToken(uid: userId, token: token)
-    }
-
-    func didRegister(deviceToken: Data) {
-        Messaging.messaging().apnsToken = deviceToken
-        Task { await uploadToken() }
+    private func subscribe() async {
+        guard let userId, Self.isEnabled, usesCloud else { return }
+        try? await relay.subscribeToInbox(uid: userId)
     }
 }
 
@@ -141,6 +144,8 @@ extension PushService: @preconcurrency UNUserNotificationCenterDelegate {
     /// Über dem Rechner oder der Sperre hat ein Banner nichts zu suchen.
     func userNotificationCenter(_ center: UNUserNotificationCenter, willPresent notification: UNNotification) async -> UNNotificationPresentationOptions {
         let target = Self.target(of: notification.request.content.userInfo)
+        // Etwas ist angekommen: gleich abholen, nicht erst beim nächsten Takt.
+        InboxWake.shared.poke()
         // Die Extension hat schon mitgezählt; wer in der App ist, sieht es.
         NotificationIndexStore.resetBadge()
         guard shouldPresent?(target) == true else { return [] }
@@ -159,18 +164,8 @@ extension PushService: @preconcurrency UNUserNotificationCenterDelegate {
     }
 }
 
-extension PushService: @preconcurrency MessagingDelegate {
-    func messaging(_ messaging: Messaging, didReceiveRegistrationToken fcmToken: String?) {
-        Task { await uploadToken() }
-    }
-}
-
-/// Nur für das APNs-Token; alles andere läuft über SwiftUI.
+/// Nur für das, was SwiftUI nicht selbst kann.
 final class AppDelegate: NSObject, UIApplicationDelegate {
-    func application(_ application: UIApplication, didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data) {
-        MainActor.assumeIsolated { PushService.shared.didRegister(deviceToken: deviceToken) }
-    }
-
     /// Keine Tastaturen von Drittanbietern: sie sähen jeden getippten
     /// Buchstaben, und manche schicken ihn in die Cloud. In Krypta tippt
     /// man immer mit der Tastatur von Apple.

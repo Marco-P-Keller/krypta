@@ -1,8 +1,10 @@
 # Krypta — native iOS-App
 
 Der Neubau von Krypta in Swift und SwiftUI. Er spricht dasselbe Protokoll
-wie die Flutter-App: Swift- und Flutter-Geräte chatten miteinander über
-dasselbe Firebase-Projekt.
+wie die Flutter-App, läuft aber über **iCloud (CloudKit)** statt Firebase:
+native Geräte chatten untereinander, Geräte mit der Flutter-App (Firebase)
+erreichen sie nicht mehr. Einrichtung, Datenmodell und was sich an der
+Sicherheit ändert: [`CloudKit/README.md`](CloudKit/README.md).
 
 ## Aufbau
 
@@ -10,7 +12,8 @@ dasselbe Firebase-Projekt.
 |---|---|
 | `KryptaCore/Sources/KryptaCore` | Protokoll: X3DH, Double Ratchet, Replay-Schutz, Steuernachrichten, Passwort-Nachrichten, Sicherheitsnummern. CryptoKit plus libsodium (XChaCha20-Poly1305, Argon2id). |
 | `KryptaCore/Sources/KryptaMessenger` | Messenger-Logik ohne Oberfläche: Kontakte, Anfragen, Senden, Empfangen, Löschfristen. Server hinter `Relay`, Speicher hinter `Vault`. |
-| `Krypta/` | Die App: SwiftUI, Firestore-Relay, Schlüsselbund, verschlüsselter Dateitresor, Rechner-Tarnung, Tresor-Passwort, Screenshot-Schutz, Push, Übernahme der Flutter-Daten. |
+| `Krypta/` | Die App: SwiftUI, CloudKit-Relay, Schlüsselbund, verschlüsselter Dateitresor, Rechner-Tarnung, Tresor-Passwort, Screenshot-Schutz, Push, Übernahme der Flutter-Daten. |
+| `CloudKit/` | Schema der öffentlichen Datenbank (`schema.ckdb`) und wie man es einspielt. |
 | `KryptaNotifications/` | Notification Service Extension: „Neue Nachricht von Mami" statt „Neue Nachricht", ohne Inhalt. |
 | `Shared/` | Was App und Extension teilen (Index der Mitteilungen im Schlüsselbund). |
 | `KryptaUITests/` | Rundgang, Chat im Demo-Modus, Übernahme aus Flutter, Tresor-Passwort, Mitteilungen. |
@@ -23,6 +26,10 @@ cd ios-native
 xcodegen generate          # erzeugt Krypta.xcodeproj aus project.yml
 open Krypta.xcodeproj
 ```
+
+Vor dem ersten Start auf einem Gerät: iCloud-Container anlegen und Schema
+einspielen, siehe [`CloudKit/README.md`](CloudKit/README.md). Im Simulator
+mit einem Apple-Account anmelden, sonst lässt sich Krypta nicht einrichten.
 
 ## Tests
 
@@ -44,7 +51,7 @@ xcodebuild -project Krypta.xcodeproj -scheme Krypta \
 
 In Debug-Builds startet `-KryptaDemo` (Scheme → Arguments) die App gegen
 einen Server im Speicher, mit zwei echten Messengern im selben Prozess als
-Kontakten. Kein Firebase, kein Schlüsselbund.
+Kontakten. Kein iCloud, kein Schlüsselbund.
 
 ## Mitteilungen
 
@@ -57,9 +64,11 @@ drinsteht.
    (Diffie-Hellman der Identitäten). Er ändert sich mit jeder Nachricht und
    nennt niemanden. Kontaktanfragen tragen einen Anhänger aus dem Schlüssel
    der Empfängerin, Steuernachrichten (zugestellt, gelesen …) einen leeren.
-2. Die Cloud Function (`firebase/functions/index.js`, `pushPlan`) schickt bei
-   leerem Anhänger **keine** Mitteilung mehr und reicht sonst den Anhänger als
-   `data.nt` mit `mutable-content` weiter.
+2. Das Relay legt den Anhänger als Feld `tag` in den CloudKit-Eintrag, bei
+   leerem Anhänger mit `alert = 0`. Das Abo der Empfängerin
+   (`CloudKitRelay.subscribeToInbox`) meldet nur Einträge mit `alert = 1` und
+   reicht `tag` mit `mutable-content` weiter — früher erledigte das die Cloud
+   Function (`pushPlan`).
 3. Die Extension prüft ihn gegen den Index im geteilten Schlüsselbund
    (Schlüssel, Name und Kennung je Kontakt, geschrieben von der App), setzt
    den Text, stapelt je Absender und zählt die Zahl am App-Symbol hoch.
@@ -67,11 +76,9 @@ drinsteht.
    direkt den Chat. Ist die App offen, erscheint ein Banner nur für einen
    anderen als den offenen Chat, nie über Rechner oder Sperre.
 
-Flutter-Absender setzen keinen Anhänger; ihre Nachrichten erscheinen wie
-bisher als „Du hast eine neue Nachricht erhalten". Für die Flutter-App ändert
-sich nichts.
-
-**Deployen:** `firebase deploy --only functions:onNewMessage --project kryptaecc`
+Ohne Anhänger (oder wenn die Extension nicht rechtzeitig fertig wird) steht
+dort „Du hast eine neue Nachricht erhalten". Zu deployen gibt es nichts: das
+Abo legt die App beim Entsperren selbst an.
 
 In den Einstellungen: Mitteilungen an/aus, „Absender nennen" an/aus. Ohne
 Namen stapelt iOS auch nicht je Absender — sonst verriete die Zahl der Stapel,
@@ -79,35 +86,24 @@ wie viele Leute geschrieben haben.
 
 ## Sealed Sender
 
-Firebase erfährt nicht mehr, **wer** wem schreibt — nur noch, wer etwas
-bekommt, wann und wie viel.
+Im Eintrag auf dem Server steht nicht, **wer** schreibt — nur, an wen, wann
+und wie viel.
 
-1. Jede Seite hat einen Zustellschlüssel (32 Zufallsbytes). Auf dem Server
-   liegt nur sein SHA-256 (`sealedAccess/{uid}`, für niemanden lesbar).
-2. Jede Nachricht trägt den eigenen Schlüssel verschlüsselt mit (`_dk`), der
-   QR-Code auch (`dk`). Flutter ignoriert beides — so erkennt ein natives
-   Gerät, dass die Gegenseite versiegelt empfangen kann.
-3. Kennt der Absender den Schlüssel der Empfängerin, schreibt er über eine
-   zweite Firebase-App **ohne Anmeldung**: `{p: {s: Umschlag, nt}, ts, ak}`.
-   Absender, Nachrichtenkennung und Ratchet-Nachricht stecken im Umschlag
-   (`SealedSender`, X25519 + XChaCha20-Poly1305 an die Identität der
-   Empfängerin). Die Regel prüft `sha256(ak)` gegen den Eintrag.
-4. Lehnt der Server ab (Schlüssel veraltet, Regeln noch nicht ausgerollt),
-   geht die Nachricht wie bisher mit Absender hinaus. Netzfehler fallen
-   **nicht** zurück, sonst ließe sich der Absender durch Stören erzwingen.
-5. Wer blockiert wird, verliert den Zugang: Blockieren erzeugt einen neuen
-   Schlüssel, die übrigen Kontakte bekommen ihn mit der nächsten Nachricht.
+1. Jede Nachricht trägt den eigenen Zustellschlüssel verschlüsselt mit
+   (`_dk`), der QR-Code auch (`dk`). Flutter ignoriert beides.
+2. Kennt der Absender den Schlüssel der Empfängerin, legt er nur den Umschlag
+   ab (`sealed`): Absender, Nachrichtenkennung und Ratchet-Nachricht stecken
+   darin (`SealedSender`, X25519 + XChaCha20-Poly1305 an die Identität der
+   Empfängerin).
+3. Mit Absender laufen nur noch Anfragen über die Kennung (per QR-Code ist
+   schon die Anfrage versiegelt).
 
-Mit Absender laufen weiterhin: alles mit Flutter-Geräten und Anfragen über die
-Kennung (per QR-Code ist schon die Anfrage versiegelt). Was bleibt: Firebase
-sieht die IP-Adresse beider Verbindungen und kann über Zeitpunkte raten.
-
-**Regeln deployen** (sonst bleibt alles beim alten Weg):
-
-```sh
-cd firebase/rules-tests && npm install && npm test   # Emulator, braucht Java
-firebase deploy --only firestore:rules --project kryptaecc
-```
+Mit Firebase schrieb der versiegelte Weg ohne Anmeldung, und eine Regel
+prüfte den Zustellschlüssel. In CloudKit gehört jeder Eintrag einem
+iCloud-Konto: Apple sieht also, welcher Apple-Account schreibt, auch wenn der
+Eintrag es nicht sagt. Den Schlüssel prüft niemand mehr; der Rückfallweg der
+Engine (Server lehnt ab → mit Absender) tritt nicht mehr ein. Siehe
+[`CloudKit/README.md`](CloudKit/README.md#sicherheit-was-sich-gegenüber-firebase-ändert).
 
 ## Post-Quanten-Handschlag
 
@@ -172,7 +168,7 @@ wird alles gelöscht. Festlegen, ändern, entfernen in den Einstellungen.
 ## Key Transparency
 
 Wie `lib/security/transparency/`: jede Identität veröffentlicht eine signierte,
-verkettete Liste (`keyCommitments/{uid}/log`), die Engine prüft die Kette jedes
+verkettete Liste (`KeyCommitment`-Einträge `kt-{uid}-{epoch}`), die Engine prüft die Kette jedes
 Kontakts und tauscht in jeder Nachricht die Köpfe aus (`_kt`). Ein Widerspruch
 erscheint im Chat und auf der Kontaktseite („Schlüsselprotokoll"). Swift prüft
 Dart-Ketten und umgekehrt (Interop-Vektoren).
@@ -184,7 +180,9 @@ flutter_secure_storage, den Datenbankschlüssel (auch den in der Secure Enclave
 verpackten) und `Documents/krypta_store/*.enc` und übernimmt Identität,
 Kennung, Codes, Tresor-Passwort samt Fehlversuchen, Einstellungen, Sprache,
 Kontakte, Chats, Nachrichten, Sitzungen, Vorabschlüssel und Schlüsselprotokoll.
-Die Tür bleibt dieselbe (gleicher Geheim- und Löschcode). Danach werden die
+Die Tür bleibt dieselbe (gleicher Geheim- und Löschcode), die Kennung auch —
+sie wird beim ersten Entsperren in CloudKit veröffentlicht. Kontakte, die noch
+die Flutter-App benutzen, erreichen sie dort nicht. Danach werden die
 alten Daten gelöscht. Nur Schlüsselbund ohne Datenordner heißt „App war
 gelöscht" — dann wird wie in Flutter nur aufgeräumt.
 
@@ -203,7 +201,7 @@ Info.plist). Umschalten über Einstellungen → Sprache (iOS-Einstellungen der A
 | Argument | Wirkung |
 |---|---|
 | `-KryptaDemo` | Chat mit Beispielkontakten, Server im Speicher |
-| `-KryptaOffline` | echte App gegen Server im Speicher, kein Firebase |
+| `-KryptaOffline` | echte App gegen Server im Speicher, kein iCloud |
 | `-KryptaReset` | alles Native löschen, wie frisch installiert |
 | `-KryptaSeedFlutter <pfad>` | Flutter-Speicher aus `flutter_store.json` anlegen (Update-Test) |
 | `-shield.off YES` | Screenshot-Schutz für diesen Start aus (Bildschirmfotos in `ScreensUITests`) |
@@ -218,6 +216,10 @@ xcodebuild -project Krypta.xcodeproj -scheme Krypta -configuration Release \
 xcodebuild -exportArchive -archivePath build/Krypta.xcarchive \
   -exportPath build/ipa -exportOptionsPlist ExportOptions.plist -allowProvisioningUpdates
 ```
+
+Vorher das CloudKit-Schema in **Production** ausrollen (CloudKit Console →
+*Deploy Schema Changes…*): TestFlight- und App-Store-Builds sprechen mit
+Production, nicht mit Development.
 
 `ExportOptions.plist` lädt direkt hoch (`destination=upload`). Die Build-Nummer
 (`CURRENT_PROJECT_VERSION` in `project.yml`) muss über der letzten in App Store

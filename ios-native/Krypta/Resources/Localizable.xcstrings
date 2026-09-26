@@ -3811,6 +3811,47 @@
         }
       }
     },
+    "Du hast eine neue Nachricht erhalten": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "You received a new message"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Has recibido un mensaje nuevo"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tu as reçu un nouveau message"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hai ricevuto un nuovo messaggio"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Je hebt een nieuw bericht ontvangen"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Você recebeu uma nova mensagem"
+          }
+        }
+      }
+    },
     "Du hast festgelegt, dass Nachrichten nach dem Lesen gelöscht werden.": {
       "extractionState": "extracted_with_value",
       "localizations": {
@@ -6800,6 +6841,47 @@
         }
       }
     },
+    "Krypta stellt Nachrichten über iCloud zu. Melde dich in den Einstellungen mit deinem Apple-Account an, schalte iCloud für Krypta ein und versuche es noch einmal.": {
+      "extractionState": "extracted_with_value",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Krypta delivers messages through iCloud. Sign in with your Apple Account in Settings, turn on iCloud for Krypta and try again."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Krypta entrega los mensajes a través de iCloud. Inicia sesión con tu cuenta de Apple en Ajustes, activa iCloud para Krypta e inténtalo de nuevo."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Krypta distribue les messages via iCloud. Connecte-toi avec ton compte Apple dans Réglages, active iCloud pour Krypta et réessaie."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Krypta consegna i messaggi tramite iCloud. Accedi con il tuo Account Apple in Impostazioni, attiva iCloud per Krypta e riprova."
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Krypta bezorgt berichten via iCloud. Log in Instellingen in met je Apple-account, zet iCloud aan voor Krypta en probeer het opnieuw."
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "O Krypta entrega as mensagens pelo iCloud. Inicie sessão com sua Conta Apple nos Ajustes, ative o iCloud para o Krypta e tente novamente."
+          }
+        }
+      }
+    },
     "Krypta verwendet diese Bibliotheken. Ihre Lizenztexte stehen in den verlinkten Quellen.": {
       "extractionState": "extracted_with_value",
       "localizations": {
@@ -8558,6 +8640,47 @@
           "stringUnit": {
             "state": "translated",
             "value": "Nova senha"
+          }
+        }
+      }
+    },
+    "Nicht bei iCloud angemeldet. Andere erreichen dich erst, wenn du dich in den Einstellungen anmeldest.": {
+      "extractionState": "extracted_with_value",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Not signed in to iCloud. Others can’t reach you until you sign in in Settings."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No has iniciado sesión en iCloud. Nadie podrá contactarte hasta que inicies sesión en Ajustes."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tu n’es pas connecté à iCloud. Personne ne peut te joindre tant que tu ne te connectes pas dans Réglages."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Non hai eseguito l’accesso a iCloud. Nessuno può raggiungerti finché non accedi in Impostazioni."
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Niet ingelogd bij iCloud. Anderen kunnen je pas bereiken als je inlogt in Instellingen."
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sessão do iCloud não iniciada. Ninguém consegue falar com você até você iniciar a sessão nos Ajustes."
           }
         }
       }
@@ -10812,6 +10935,47 @@
         }
       }
     },
+    "Verschlüsselter Absender": {
+      "extractionState": "extracted_with_value",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Encrypted Sender"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Remitente cifrado"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Expéditeur chiffré"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mittente cifrato"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Versleutelde afzender"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Remetente criptografado"
+          }
+        }
+      }
+    },
     "Verschwindet bald": {
       "extractionState": "extracted_with_value",
       "localizations": {
@@ -10849,47 +11013,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Desaparece em breve"
-          }
-        }
-      }
-    },
-    "Versteckter Absender": {
-      "extractionState": "extracted_with_value",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Hidden Sender"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Remitente oculto"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Expéditeur masqué"
-          }
-        },
-        "it": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Mittente nascosto"
-          }
-        },
-        "nl": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Verborgen afzender"
-          }
-        },
-        "pt": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Remetente oculto"
           }
         }
       }
@@ -11098,43 +11221,43 @@
         }
       }
     },
-    "Wer dir schreibt, steht verschlüsselt in der Nachricht. Der Server sieht nur, dass etwas für dich ankommt.": {
+    "Wer dir schreibt, steht verschlüsselt in der Nachricht, nicht daneben. Apple sieht als Betreiber von iCloud trotzdem, welcher Apple-Account etwas für dich ablegt, aber nie, was drinsteht.": {
       "extractionState": "extracted_with_value",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Who is writing to you is stored encrypted inside the message. The server only sees that something is arriving for you."
+            "value": "Who is writing to you is encrypted inside the message, not next to it. As the operator of iCloud, Apple still sees which Apple Account leaves something for you, but never what it says."
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Quién te escribe va cifrado dentro del mensaje. El servidor solo ve que llega algo para ti."
+            "value": "Quién te escribe va cifrado dentro del mensaje, no al lado. Como operador de iCloud, Apple ve igualmente qué cuenta de Apple deja algo para ti, pero nunca lo que dice."
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "L’identité de qui t’écrit est chiffrée dans le message. Le serveur voit seulement que quelque chose arrive pour toi."
+            "value": "L’identité de qui t’écrit est chiffrée dans le message, pas à côté. En tant qu’opérateur d’iCloud, Apple voit tout de même quel compte Apple dépose quelque chose pour toi, mais jamais ce qu’il contient."
           }
         },
         "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Chi ti scrive è cifrato nel messaggio. Il server vede solo che arriva qualcosa per te."
+            "value": "Chi ti scrive è cifrato nel messaggio, non accanto. Come gestore di iCloud, Apple vede comunque quale Account Apple lascia qualcosa per te, ma mai cosa c’è scritto."
           }
         },
         "nl": {
           "stringUnit": {
             "state": "translated",
-            "value": "Wie je schrijft, staat versleuteld in het bericht. De server ziet alleen dat er iets voor je binnenkomt."
+            "value": "Wie je schrijft, staat versleuteld in het bericht, niet ernaast. Als beheerder van iCloud ziet Apple wel welk Apple-account iets voor je achterlaat, maar nooit wat erin staat."
           }
         },
         "pt": {
           "stringUnit": {
             "state": "translated",
-            "value": "Quem escreve para você vai criptografado dentro da mensagem. O servidor só vê que algo está chegando para você."
+            "value": "Quem escreve para você vai criptografado dentro da mensagem, não ao lado. Como operadora do iCloud, a Apple ainda vê qual Conta Apple deixa algo para você, mas nunca o que está escrito."
           }
         }
       }
@@ -11590,49 +11713,90 @@
         }
       }
     },
+    "iCloud ist nicht eingerichtet": {
+      "extractionState": "extracted_with_value",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "iCloud Isn’t Set Up"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "iCloud no está configurado"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "iCloud n’est pas configuré"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "iCloud non è configurato"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "iCloud is niet ingesteld"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "O iCloud não está configurado"
+          }
+        }
+      }
+    },
     "privacy.policy.body": {
       "extractionState": "manual",
       "localizations": {
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Krypta Chat: Datenschutzerklärung\n\nStand: April 2026\n\n1. Verantwortlicher\nConnexa GmbH\nKontakt: https://connexa-gmbh.ch\n\n2. Welche Daten werden erhoben?\nKrypta erhebt so wenig Daten wie technisch möglich:\n• Anonyme Firebase-ID (keine E-Mail, kein Name, keine Telefonnummer)\n• Öffentlicher Verschlüsselungsschlüssel (X25519)\n• FCM-Push-Token (für Benachrichtigungen)\n\n3. Verschlüsselung\nAlle Nachrichten sind Ende-zu-Ende-verschlüsselt (Signal-Protokoll: X3DH + Double Ratchet). Der Server hat zu keinem Zeitpunkt Zugriff auf den Klartext Ihrer Nachrichten. Verschlüsselung: XChaCha20-Poly1305. Passwort-Hashing: Argon2id.\n\n4. Datenspeicherung\n• Nachrichten werden nur auf Ihrem Gerät gespeichert (verschlüsselt)\n• Der Server fungiert nur als temporärer Relay: Nachrichten werden nach Zustellung gelöscht\n• Schlüssel werden im iOS Keychain / Android Keystore gespeichert\n\n5. Keine Tracker\nKrypta enthält keine Analyse-Tools, keine Werbung und keine Tracker (0 von 432 bekannten Trackern).\n\n6. Datenweitergabe\nEs werden keine personenbezogenen Daten an Dritte weitergegeben. Google Firebase wird als Infrastruktur-Anbieter verwendet (anonyme Authentifizierung und Push-Benachrichtigungen).\n\n7. Datenlöschung\nSie können jederzeit alle Ihre Daten unwiderruflich löschen:\n• In den Einstellungen über \"Alles löschen\"\n• Durch Eingabe des Lösch-Codes im Taschenrechner\nDabei werden alle lokalen Daten, Schlüssel und Server-Daten vernichtet.\n\n8. Ihre Rechte (DSGVO)\nSie haben das Recht auf Auskunft, Berichtigung, Löschung und Datenübertragbarkeit. Kontaktieren Sie uns unter: https://connexa-gmbh.ch\n\n9. Änderungen\nDiese Datenschutzerklärung kann aktualisiert werden. Die aktuelle Version ist immer in der App einsehbar."
+            "value": "Krypta Chat: Datenschutzerklärung\n\nStand: September 2026\n\n1. Verantwortlicher\nConnexa GmbH\nKontakt: https://connexa-gmbh.ch\n\n2. Welche Daten werden erhoben?\nKrypta erhebt so wenig Daten wie technisch möglich:\n• Zufällige Krypta-Kennung (keine E-Mail, kein Name, keine Telefonnummer)\n• Öffentlicher Verschlüsselungsschlüssel (X25519)\n• Ein Benachrichtigungs-Abo in iCloud (für Benachrichtigungen)\n\n3. Verschlüsselung\nAlle Nachrichten sind Ende-zu-Ende-verschlüsselt (Signal-Protokoll: X3DH + Double Ratchet). Der Server hat zu keinem Zeitpunkt Zugriff auf den Klartext Ihrer Nachrichten. Verschlüsselung: XChaCha20-Poly1305. Passwort-Hashing: Argon2id.\n\n4. Datenspeicherung\n• Nachrichten werden nur auf Ihrem Gerät gespeichert (verschlüsselt)\n• Der Server fungiert nur als temporärer Relay: Nachrichten werden nach Zustellung gelöscht\n• Schlüssel werden im iOS Keychain / Android Keystore gespeichert\n\n5. Keine Tracker\nKrypta enthält keine Analyse-Tools, keine Werbung und keine Tracker (0 von 432 bekannten Trackern).\n\n6. Datenweitergabe\nEs werden keine personenbezogenen Daten an Dritte weitergegeben. Als Infrastruktur dient Apple iCloud (CloudKit): Darüber werden verschlüsselte Nachrichten und Benachrichtigungen zugestellt. Dafür ist ein Apple-Account nötig; Apple erkennt so, welcher Apple-Account Krypta verwendet, kann aber keine Nachrichten lesen.\n\n7. Datenlöschung\nSie können jederzeit alle Ihre Daten unwiderruflich löschen:\n• In den Einstellungen über \"Alles löschen\"\n• Durch Eingabe des Lösch-Codes im Taschenrechner\nDabei werden alle lokalen Daten, Schlüssel und Server-Daten vernichtet.\n\n8. Ihre Rechte (DSGVO)\nSie haben das Recht auf Auskunft, Berichtigung, Löschung und Datenübertragbarkeit. Kontaktieren Sie uns unter: https://connexa-gmbh.ch\n\n9. Änderungen\nDiese Datenschutzerklärung kann aktualisiert werden. Die aktuelle Version ist immer in der App einsehbar."
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Krypta Chat: Privacy Policy\n\nLast updated: April 2026\n\n1. Controller\nConnexa GmbH\nContact: https://connexa-gmbh.ch\n\n2. What data is collected?\nKrypta collects as little data as is technically possible:\n• Anonymous Firebase ID (no email, no name, no phone number)\n• Public encryption key (X25519)\n• FCM push token (for notifications)\n\n3. Encryption\nAll messages are end-to-end encrypted (Signal protocol: X3DH + Double Ratchet). At no point does the server have access to the plaintext of your messages. Encryption: XChaCha20-Poly1305. Password hashing: Argon2id.\n\n4. Data storage\n• Messages are stored only on your device (encrypted)\n• The server acts solely as a temporary relay: messages are deleted after delivery\n• Keys are stored in the iOS Keychain / Android Keystore\n\n5. No trackers\nKrypta contains no analytics tools, no advertising and no trackers (0 of 432 known trackers).\n\n6. Data sharing\nNo personal data is passed on to third parties. Google Firebase is used as the infrastructure provider (anonymous authentication and push notifications).\n\n7. Data deletion\nYou can irreversibly delete all of your data at any time:\n• In the settings via \"Delete everything\"\n• By entering the delete code in the calculator\nThis destroys all local data, keys and server-side data.\n\n8. Your rights (GDPR)\nYou have the right to access, rectification, erasure and data portability. Contact us at: https://connexa-gmbh.ch\n\n9. Changes\nThis privacy policy may be updated. The current version is always available in the app."
+            "value": "Krypta Chat: Privacy Policy\n\nLast updated: September 2026\n\n1. Controller\nConnexa GmbH\nContact: https://connexa-gmbh.ch\n\n2. What data is collected?\nKrypta collects as little data as is technically possible:\n• Random Krypta ID (no email, no name, no phone number)\n• Public encryption key (X25519)\n• A notification subscription in iCloud (for notifications)\n\n3. Encryption\nAll messages are end-to-end encrypted (Signal protocol: X3DH + Double Ratchet). At no point does the server have access to the plaintext of your messages. Encryption: XChaCha20-Poly1305. Password hashing: Argon2id.\n\n4. Data storage\n• Messages are stored only on your device (encrypted)\n• The server acts solely as a temporary relay: messages are deleted after delivery\n• Keys are stored in the iOS Keychain / Android Keystore\n\n5. No trackers\nKrypta contains no analytics tools, no advertising and no trackers (0 of 432 known trackers).\n\n6. Data sharing\nNo personal data is passed on to third parties. Apple iCloud (CloudKit) is used as infrastructure: it delivers encrypted messages and notifications. This requires an Apple Account; Apple can therefore tell which Apple Account uses Krypta, but cannot read any messages.\n\n7. Data deletion\nYou can irreversibly delete all of your data at any time:\n• In the settings via \"Delete everything\"\n• By entering the delete code in the calculator\nThis destroys all local data, keys and server-side data.\n\n8. Your rights (GDPR)\nYou have the right to access, rectification, erasure and data portability. Contact us at: https://connexa-gmbh.ch\n\n9. Changes\nThis privacy policy may be updated. The current version is always available in the app."
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Krypta Chat: Política de privacidad\n\nÚltima actualización: abril de 2026\n\n1. Responsable\nConnexa GmbH\nContacto: https://connexa-gmbh.ch\n\n2. ¿Qué datos se recogen?\nKrypta recoge tan pocos datos como es técnicamente posible:\n• ID anónimo de Firebase (sin correo, sin nombre, sin número de teléfono)\n• Clave pública de cifrado (X25519)\n• Token push de FCM (para las notificaciones)\n\n3. Cifrado\nTodos los mensajes están cifrados de extremo a extremo (protocolo Signal: X3DH + Double Ratchet). En ningún momento tiene el servidor acceso al texto en claro de tus mensajes. Cifrado: XChaCha20-Poly1305. Hash de contraseñas: Argon2id.\n\n4. Almacenamiento de datos\n• Los mensajes se guardan únicamente en tu dispositivo (cifrados)\n• El servidor actúa solo como relé temporal: los mensajes se borran tras la entrega\n• Las claves se guardan en el Llavero de iOS / Android Keystore\n\n5. Sin rastreadores\nKrypta no contiene herramientas de análisis, ni publicidad, ni rastreadores (0 de 432 rastreadores conocidos).\n\n6. Cesión de datos\nNo se ceden datos personales a terceros. Se utiliza Google Firebase como proveedor de infraestructura (autenticación anónima y notificaciones push).\n\n7. Borrado de datos\nPuedes borrar de forma irreversible todos tus datos en cualquier momento:\n• En los ajustes, mediante «Borrar todo»\n• Introduciendo el código de borrado en la calculadora\nEsto destruye todos los datos locales, las claves y los datos del servidor.\n\n8. Tus derechos (RGPD)\nTienes derecho de acceso, rectificación, supresión y portabilidad de los datos. Contáctanos en: https://connexa-gmbh.ch\n\n9. Cambios\nEsta política de privacidad puede actualizarse. La versión vigente siempre está disponible en la aplicación."
+            "value": "Krypta Chat: Política de privacidad\n\nÚltima actualización: septiembre de 2026\n\n1. Responsable\nConnexa GmbH\nContacto: https://connexa-gmbh.ch\n\n2. ¿Qué datos se recogen?\nKrypta recoge tan pocos datos como es técnicamente posible:\n• ID aleatorio de Krypta (sin correo, sin nombre, sin número de teléfono)\n• Clave pública de cifrado (X25519)\n• Una suscripción de notificaciones en iCloud (para las notificaciones)\n\n3. Cifrado\nTodos los mensajes están cifrados de extremo a extremo (protocolo Signal: X3DH + Double Ratchet). En ningún momento tiene el servidor acceso al texto en claro de tus mensajes. Cifrado: XChaCha20-Poly1305. Hash de contraseñas: Argon2id.\n\n4. Almacenamiento de datos\n• Los mensajes se guardan únicamente en tu dispositivo (cifrados)\n• El servidor actúa solo como relé temporal: los mensajes se borran tras la entrega\n• Las claves se guardan en el Llavero de iOS / Android Keystore\n\n5. Sin rastreadores\nKrypta no contiene herramientas de análisis, ni publicidad, ni rastreadores (0 de 432 rastreadores conocidos).\n\n6. Cesión de datos\nNo se ceden datos personales a terceros. Se utiliza Apple iCloud (CloudKit) como infraestructura: entrega los mensajes cifrados y las notificaciones. Para ello se necesita una cuenta de Apple; Apple puede saber así qué cuenta de Apple usa Krypta, pero no puede leer ningún mensaje.\n\n7. Borrado de datos\nPuedes borrar de forma irreversible todos tus datos en cualquier momento:\n• En los ajustes, mediante «Borrar todo»\n• Introduciendo el código de borrado en la calculadora\nEsto destruye todos los datos locales, las claves y los datos del servidor.\n\n8. Tus derechos (RGPD)\nTienes derecho de acceso, rectificación, supresión y portabilidad de los datos. Contáctanos en: https://connexa-gmbh.ch\n\n9. Cambios\nEsta política de privacidad puede actualizarse. La versión vigente siempre está disponible en la aplicación."
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Krypta Chat : Politique de confidentialité\n\nDernière mise à jour : avril 2026\n\n1. Responsable du traitement\nConnexa GmbH\nContact : https://connexa-gmbh.ch\n\n2. Quelles données sont collectées ?\nKrypta collecte aussi peu de données que techniquement possible :\n• Identifiant Firebase anonyme (pas d’e-mail, pas de nom, pas de numéro de téléphone)\n• Clé publique de chiffrement (X25519)\n• Jeton push FCM (pour les notifications)\n\n3. Chiffrement\nTous les messages sont chiffrés de bout en bout (protocole Signal : X3DH + Double Ratchet). À aucun moment le serveur n’a accès au texte en clair de vos messages. Chiffrement : XChaCha20-Poly1305. Hachage des mots de passe : Argon2id.\n\n4. Conservation des données\n• Les messages sont conservés uniquement sur votre appareil (chiffrés)\n• Le serveur ne sert que de relais temporaire : les messages sont supprimés après remise\n• Les clés sont conservées dans le trousseau iOS / Android Keystore\n\n5. Aucun traceur\nKrypta ne contient aucun outil d’analyse, aucune publicité et aucun traceur (0 sur 432 traceurs connus).\n\n6. Transmission des données\nAucune donnée personnelle n’est transmise à des tiers. Google Firebase est utilisé comme fournisseur d’infrastructure (authentification anonyme et notifications push).\n\n7. Suppression des données\nVous pouvez supprimer irréversiblement toutes vos données à tout moment :\n• Dans les réglages, via « Tout supprimer »\n• En saisissant le code d’effacement dans la calculatrice\nCela détruit toutes les données locales, les clés et les données côté serveur.\n\n8. Vos droits (RGPD)\nVous disposez d’un droit d’accès, de rectification, d’effacement et de portabilité des données. Contactez-nous à : https://connexa-gmbh.ch\n\n9. Modifications\nCette politique de confidentialité peut être mise à jour. La version en vigueur est toujours consultable dans l’application."
+            "value": "Krypta Chat : Politique de confidentialité\n\nDernière mise à jour : septembre 2026\n\n1. Responsable du traitement\nConnexa GmbH\nContact : https://connexa-gmbh.ch\n\n2. Quelles données sont collectées ?\nKrypta collecte aussi peu de données que techniquement possible :\n• Identifiant Krypta aléatoire (pas d’e-mail, pas de nom, pas de numéro de téléphone)\n• Clé publique de chiffrement (X25519)\n• Un abonnement aux notifications dans iCloud (pour les notifications)\n\n3. Chiffrement\nTous les messages sont chiffrés de bout en bout (protocole Signal : X3DH + Double Ratchet). À aucun moment le serveur n’a accès au texte en clair de vos messages. Chiffrement : XChaCha20-Poly1305. Hachage des mots de passe : Argon2id.\n\n4. Conservation des données\n• Les messages sont conservés uniquement sur votre appareil (chiffrés)\n• Le serveur ne sert que de relais temporaire : les messages sont supprimés après remise\n• Les clés sont conservées dans le trousseau iOS / Android Keystore\n\n5. Aucun traceur\nKrypta ne contient aucun outil d’analyse, aucune publicité et aucun traceur (0 sur 432 traceurs connus).\n\n6. Transmission des données\nAucune donnée personnelle n’est transmise à des tiers. Apple iCloud (CloudKit) sert d’infrastructure : il achemine les messages chiffrés et les notifications. Un compte Apple est donc nécessaire ; Apple peut ainsi savoir quel compte Apple utilise Krypta, mais ne peut lire aucun message.\n\n7. Suppression des données\nVous pouvez supprimer irréversiblement toutes vos données à tout moment :\n• Dans les réglages, via « Tout supprimer »\n• En saisissant le code d’effacement dans la calculatrice\nCela détruit toutes les données locales, les clés et les données côté serveur.\n\n8. Vos droits (RGPD)\nVous disposez d’un droit d’accès, de rectification, d’effacement et de portabilité des données. Contactez-nous à : https://connexa-gmbh.ch\n\n9. Modifications\nCette politique de confidentialité peut être mise à jour. La version en vigueur est toujours consultable dans l’application."
           }
         },
         "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Krypta Chat: Informativa sulla privacy\n\nUltimo aggiornamento: aprile 2026\n\n1. Titolare del trattamento\nConnexa GmbH\nContatto: https://connexa-gmbh.ch\n\n2. Quali dati vengono raccolti?\nKrypta raccoglie il minor numero di dati tecnicamente possibile:\n• ID Firebase anonimo (nessuna e-mail, nessun nome, nessun numero di telefono)\n• Chiave pubblica di cifratura (X25519)\n• Token push FCM (per le notifiche)\n\n3. Cifratura\nTutti i messaggi sono cifrati end-to-end (protocollo Signal: X3DH + Double Ratchet). In nessun momento il server ha accesso al testo in chiaro dei tuoi messaggi. Cifratura: XChaCha20-Poly1305. Hashing delle password: Argon2id.\n\n4. Conservazione dei dati\n• I messaggi sono conservati solo sul tuo dispositivo (cifrati)\n• Il server funge solo da relè temporaneo: i messaggi vengono eliminati dopo la consegna\n• Le chiavi sono conservate nel Portachiavi iOS / Android Keystore\n\n5. Nessun tracciatore\nKrypta non contiene strumenti di analisi, pubblicità o tracciatori (0 su 432 tracciatori noti).\n\n6. Comunicazione dei dati\nNessun dato personale viene comunicato a terzi. Google Firebase è utilizzato come fornitore di infrastruttura (autenticazione anonima e notifiche push).\n\n7. Cancellazione dei dati\nPuoi cancellare in modo irreversibile tutti i tuoi dati in qualsiasi momento:\n• Nelle impostazioni, tramite «Cancella tutto»\n• Inserendo il codice di cancellazione nella calcolatrice\nQuesto distrugge tutti i dati locali, le chiavi e i dati sul server.\n\n8. I tuoi diritti (GDPR)\nHai diritto di accesso, rettifica, cancellazione e portabilità dei dati. Contattaci all’indirizzo: https://connexa-gmbh.ch\n\n9. Modifiche\nLa presente informativa può essere aggiornata. La versione in vigore è sempre consultabile nell’app."
+            "value": "Krypta Chat: Informativa sulla privacy\n\nUltimo aggiornamento: settembre 2026\n\n1. Titolare del trattamento\nConnexa GmbH\nContatto: https://connexa-gmbh.ch\n\n2. Quali dati vengono raccolti?\nKrypta raccoglie il minor numero di dati tecnicamente possibile:\n• ID Krypta casuale (nessuna e-mail, nessun nome, nessun numero di telefono)\n• Chiave pubblica di cifratura (X25519)\n• Un abbonamento alle notifiche in iCloud (per le notifiche)\n\n3. Cifratura\nTutti i messaggi sono cifrati end-to-end (protocollo Signal: X3DH + Double Ratchet). In nessun momento il server ha accesso al testo in chiaro dei tuoi messaggi. Cifratura: XChaCha20-Poly1305. Hashing delle password: Argon2id.\n\n4. Conservazione dei dati\n• I messaggi sono conservati solo sul tuo dispositivo (cifrati)\n• Il server funge solo da relè temporaneo: i messaggi vengono eliminati dopo la consegna\n• Le chiavi sono conservate nel Portachiavi iOS / Android Keystore\n\n5. Nessun tracciatore\nKrypta non contiene strumenti di analisi, pubblicità o tracciatori (0 su 432 tracciatori noti).\n\n6. Comunicazione dei dati\nNessun dato personale viene comunicato a terzi. Come infrastruttura viene utilizzato Apple iCloud (CloudKit), che recapita i messaggi cifrati e le notifiche. Per questo serve un Account Apple; Apple può quindi sapere quale Account Apple usa Krypta, ma non può leggere alcun messaggio.\n\n7. Cancellazione dei dati\nPuoi cancellare in modo irreversibile tutti i tuoi dati in qualsiasi momento:\n• Nelle impostazioni, tramite «Cancella tutto»\n• Inserendo il codice di cancellazione nella calcolatrice\nQuesto distrugge tutti i dati locali, le chiavi e i dati sul server.\n\n8. I tuoi diritti (GDPR)\nHai diritto di accesso, rettifica, cancellazione e portabilità dei dati. Contattaci all’indirizzo: https://connexa-gmbh.ch\n\n9. Modifiche\nLa presente informativa può essere aggiornata. La versione in vigore è sempre consultabile nell’app."
           }
         },
         "nl": {
           "stringUnit": {
             "state": "translated",
-            "value": "Krypta Chat: Privacyverklaring\n\nLaatst bijgewerkt: april 2026\n\n1. Verwerkingsverantwoordelijke\nConnexa GmbH\nContact: https://connexa-gmbh.ch\n\n2. Welke gegevens worden verzameld?\nKrypta verzamelt zo weinig gegevens als technisch mogelijk is:\n• Anoniem Firebase-ID (geen e-mailadres, geen naam, geen telefoonnummer)\n• Openbare versleutelingssleutel (X25519)\n• FCM-pushtoken (voor meldingen)\n\n3. Versleuteling\nAlle berichten zijn end-to-end versleuteld (Signal-protocol: X3DH + Double Ratchet). De server heeft op geen enkel moment toegang tot de leesbare tekst van je berichten. Versleuteling: XChaCha20-Poly1305. Wachtwoord-hashing: Argon2id.\n\n4. Gegevensopslag\n• Berichten worden alleen op je eigen apparaat bewaard (versleuteld)\n• De server dient uitsluitend als tijdelijke doorgeefluik: berichten worden na bezorging verwijderd\n• Sleutels worden bewaard in de iOS-sleutelhanger / Android Keystore\n\n5. Geen trackers\nKrypta bevat geen analysetools, geen advertenties en geen trackers (0 van 432 bekende trackers).\n\n6. Doorgifte van gegevens\nEr worden geen persoonsgegevens aan derden doorgegeven. Google Firebase wordt gebruikt als infrastructuuraanbieder (anonieme authenticatie en pushmeldingen).\n\n7. Gegevens wissen\nJe kunt al je gegevens op elk moment onherroepelijk wissen:\n• In de instellingen via «Alles wissen»\n• Door de wiscode in de rekenmachine in te voeren\nDaarmee worden alle lokale gegevens, sleutels en servergegevens vernietigd.\n\n8. Jouw rechten (AVG)\nJe hebt recht op inzage, rectificatie, wissing en overdraagbaarheid van gegevens. Neem contact met ons op via: https://connexa-gmbh.ch\n\n9. Wijzigingen\nDeze privacyverklaring kan worden bijgewerkt. De geldende versie is altijd in de app te raadplegen."
+            "value": "Krypta Chat: Privacyverklaring\n\nLaatst bijgewerkt: september 2026\n\n1. Verwerkingsverantwoordelijke\nConnexa GmbH\nContact: https://connexa-gmbh.ch\n\n2. Welke gegevens worden verzameld?\nKrypta verzamelt zo weinig gegevens als technisch mogelijk is:\n• Willekeurig Krypta-ID (geen e-mailadres, geen naam, geen telefoonnummer)\n• Openbare versleutelingssleutel (X25519)\n• Een meldingsabonnement in iCloud (voor meldingen)\n\n3. Versleuteling\nAlle berichten zijn end-to-end versleuteld (Signal-protocol: X3DH + Double Ratchet). De server heeft op geen enkel moment toegang tot de leesbare tekst van je berichten. Versleuteling: XChaCha20-Poly1305. Wachtwoord-hashing: Argon2id.\n\n4. Gegevensopslag\n• Berichten worden alleen op je eigen apparaat bewaard (versleuteld)\n• De server dient uitsluitend als tijdelijke doorgeefluik: berichten worden na bezorging verwijderd\n• Sleutels worden bewaard in de iOS-sleutelhanger / Android Keystore\n\n5. Geen trackers\nKrypta bevat geen analysetools, geen advertenties en geen trackers (0 van 432 bekende trackers).\n\n6. Doorgifte van gegevens\nEr worden geen persoonsgegevens aan derden doorgegeven. Als infrastructuur wordt Apple iCloud (CloudKit) gebruikt: dat bezorgt versleutelde berichten en meldingen. Daarvoor is een Apple-account nodig; Apple kan zo zien welk Apple-account Krypta gebruikt, maar kan geen berichten lezen.\n\n7. Gegevens wissen\nJe kunt al je gegevens op elk moment onherroepelijk wissen:\n• In de instellingen via «Alles wissen»\n• Door de wiscode in de rekenmachine in te voeren\nDaarmee worden alle lokale gegevens, sleutels en servergegevens vernietigd.\n\n8. Jouw rechten (AVG)\nJe hebt recht op inzage, rectificatie, wissing en overdraagbaarheid van gegevens. Neem contact met ons op via: https://connexa-gmbh.ch\n\n9. Wijzigingen\nDeze privacyverklaring kan worden bijgewerkt. De geldende versie is altijd in de app te raadplegen."
           }
         },
         "pt": {
           "stringUnit": {
             "state": "translated",
-            "value": "Krypta Chat: Política de privacidade\n\nÚltima atualização: abril de 2026\n\n1. Responsável pelo tratamento\nConnexa GmbH\nContacto: https://connexa-gmbh.ch\n\n2. Que dados são recolhidos?\nO Krypta recolhe tão poucos dados quanto é tecnicamente possível:\n• ID anónimo do Firebase (sem e-mail, sem nome, sem número de telefone)\n• Chave pública de cifra (X25519)\n• Token push do FCM (para as notificações)\n\n3. Cifra\nTodas as mensagens são cifradas de ponta a ponta (protocolo Signal: X3DH + Double Ratchet). Em momento algum o servidor tem acesso ao texto simples das suas mensagens. Cifra: XChaCha20-Poly1305. Hashing de palavras-passe: Argon2id.\n\n4. Armazenamento de dados\n• As mensagens são guardadas apenas no seu dispositivo (cifradas)\n• O servidor funciona apenas como retransmissor temporário: as mensagens são eliminadas após a entrega\n• As chaves são guardadas no Porta-chaves do iOS / Android Keystore\n\n5. Sem rastreadores\nO Krypta não contém ferramentas de análise, publicidade nem rastreadores (0 de 432 rastreadores conhecidos).\n\n6. Transmissão de dados\nNão são transmitidos dados pessoais a terceiros. É utilizado o Google Firebase como fornecedor de infraestrutura (autenticação anónima e notificações push).\n\n7. Eliminação de dados\nPode eliminar de forma irreversível todos os seus dados a qualquer momento:\n• Nas definições, através de «Eliminar tudo»\n• Introduzindo o código de eliminação na calculadora\nIsto destrói todos os dados locais, as chaves e os dados no servidor.\n\n8. Os seus direitos (RGPD)\nTem direito de acesso, retificação, apagamento e portabilidade dos dados. Contacte-nos através de: https://connexa-gmbh.ch\n\n9. Alterações\nEsta política de privacidade pode ser atualizada. A versão em vigor está sempre disponível na aplicação."
+            "value": "Krypta Chat: Política de privacidade\n\nÚltima atualização: setembro de 2026\n\n1. Responsável pelo tratamento\nConnexa GmbH\nContacto: https://connexa-gmbh.ch\n\n2. Que dados são recolhidos?\nO Krypta recolhe tão poucos dados quanto é tecnicamente possível:\n• ID aleatório do Krypta (sem e-mail, sem nome, sem número de telefone)\n• Chave pública de cifra (X25519)\n• Uma subscrição de notificações no iCloud (para as notificações)\n\n3. Cifra\nTodas as mensagens são cifradas de ponta a ponta (protocolo Signal: X3DH + Double Ratchet). Em momento algum o servidor tem acesso ao texto simples das suas mensagens. Cifra: XChaCha20-Poly1305. Hashing de palavras-passe: Argon2id.\n\n4. Armazenamento de dados\n• As mensagens são guardadas apenas no seu dispositivo (cifradas)\n• O servidor funciona apenas como retransmissor temporário: as mensagens são eliminadas após a entrega\n• As chaves são guardadas no Porta-chaves do iOS / Android Keystore\n\n5. Sem rastreadores\nO Krypta não contém ferramentas de análise, publicidade nem rastreadores (0 de 432 rastreadores conhecidos).\n\n6. Transmissão de dados\nNão são transmitidos dados pessoais a terceiros. É utilizado o Apple iCloud (CloudKit) como infraestrutura: entrega as mensagens cifradas e as notificações. Para isso é necessária uma Conta Apple; a Apple pode assim saber que Conta Apple utiliza o Krypta, mas não consegue ler nenhuma mensagem.\n\n7. Eliminação de dados\nPode eliminar de forma irreversível todos os seus dados a qualquer momento:\n• Nas definições, através de «Eliminar tudo»\n• Introduzindo o código de eliminação na calculadora\nIsto destrói todos os dados locais, as chaves e os dados no servidor.\n\n8. Os seus direitos (RGPD)\nTem direito de acesso, retificação, apagamento e portabilidade dos dados. Contacte-nos através de: https://connexa-gmbh.ch\n\n9. Alterações\nEsta política de privacidade pode ser atualizada. A versão em vigor está sempre disponível na aplicação."
           }
         }
       }

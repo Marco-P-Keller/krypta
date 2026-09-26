@@ -27,10 +27,12 @@ public enum RelayError: Error, Equatable {
     case accessDenied
 }
 
-/// Der Server — in der App Firestore, in Tests ein Wörterbuch.
+/// Der Server — in der App die öffentliche CloudKit-Datenbank
+/// (Krypta/Services/CloudKitRelay.swift), in Tests ein Wörterbuch.
 ///
-/// Dieselben Sammlungen wie die Flutter-Fassung: `publicKeys`, `prekeys`,
-/// `deliveryTokens`, `messages/{uid}/inbox`.
+/// Die Methoden folgen noch den Firestore-Sammlungen der Flutter-Fassung
+/// (`publicKeys`, `prekeys`, `deliveryTokens`, `messages/{uid}/inbox`);
+/// CloudKitRelay bildet sie auf Datensatztypen ab.
 public protocol Relay: AnyObject, Sendable {
     func publishPublicKey(uid: String, publicKey: String) async throws
     func publicKey(uid: String) async throws -> String?
@@ -45,14 +47,15 @@ public protocol Relay: AnyObject, Sendable {
     func deleteFromInbox(uid: String, docId: String) async throws
     /// Der Absender löscht seine eigene Nachricht aus dem Posteingang von `to`.
     func retract(to: String, docId: String) async throws
-    /// Sealed Sender: nur der SHA-256 des eigenen Zustellschlüssels liegt auf dem Server.
+    /// Sealed Sender: nur der SHA-256 des eigenen Zustellschlüssels liegt auf
+    /// dem Server — sofern der Server ihn prüft (CloudKit tut es nicht).
     func publishSealedAccess(uid: String, keyHash: Data) async throws
-    /// Versiegelt und ohne Anmeldung in den Posteingang von `to`. Der Server
-    /// sieht nur Empfängerin, Zeit, Größe und den Anhänger für die Mitteilung.
-    /// Wirft `RelayError.accessDenied`, wenn der Schlüssel nicht passt.
+    /// Versiegelt in den Posteingang von `to`: im Eintrag stehen nur
+    /// Empfängerin, Zeit, Größe und der Anhänger für die Mitteilung. Wirft
+    /// `RelayError.accessDenied`, wenn der Server den Schlüssel ablehnt.
     @discardableResult
     func sendSealed(to: String, accessKey: Data, envelope: Data, tag: String?) async throws -> String
-    /// Die eigene versiegelte Nachricht wieder löschen, ebenfalls ohne Anmeldung.
+    /// Die eigene versiegelte Nachricht wieder löschen.
     func retractSealed(to: String, docId: String) async throws
     func deleteAllUserData(uid: String) async throws
     /// Key Transparency: `keyCommitments/{uid}/log/{epoch}`.
@@ -165,7 +168,8 @@ public final class MemoryRelay: Relay, @unchecked Sendable {
         lock.withLock { sealedAccess[uid] = keyHash }
     }
 
-    /// Wie die Regel in Firestore: SHA-256(Schlüssel) muss zum Eintrag passen.
+    /// Wie früher die Regel in Firestore: SHA-256(Schlüssel) muss zum Eintrag
+    /// passen. So lässt sich der Rückfallweg der Engine testen.
     @discardableResult
     public func sendSealed(to: String, accessKey: Data, envelope: Data, tag: String?) async throws -> String {
         let (env, listener): (InboxEnvelope, AsyncThrowingStream<[InboxEnvelope], Error>.Continuation?) = try lock.withLock {
@@ -227,7 +231,7 @@ public final class MemoryRelay: Relay, @unchecked Sendable {
 
     public func publishKeyCommitment(uid: String, commitment: JSONObject, epoch: Int) async throws {
         try lock.withLock {
-            // Wie die Regel in Firestore: nur anlegen, nie überschreiben.
+            // Wie CloudKitRelay: nur anlegen, nie überschreiben.
             if commitments[uid]?[epoch] != nil { throw Offline() }
             commitments[uid, default: [:]][epoch] = commitment
         }

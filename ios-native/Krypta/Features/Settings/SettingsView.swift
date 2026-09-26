@@ -487,8 +487,8 @@ private struct SecurityInfoView: View {
         List {
             item("lock.fill", "Ende-zu-Ende-Verschlüsselung",
                  "Jede Nachricht hat ihren eigenen Schlüssel (Signal-Protokoll: X3DH und Double Ratchet). Wer einen davon erbeutet, liest damit nur diese eine Nachricht. Frühere bleiben geschützt.")
-            item("person.fill.questionmark", "Versteckter Absender",
-                 "Wer dir schreibt, steht verschlüsselt in der Nachricht. Der Server sieht nur, dass etwas für dich ankommt.")
+            item("person.fill.questionmark", "Verschlüsselter Absender",
+                 "Wer dir schreibt, steht verschlüsselt in der Nachricht, nicht daneben. Apple sieht als Betreiber von iCloud trotzdem, welcher Apple-Account etwas für dich ablegt, aber nie, was drinsteht.")
             item("text.alignleft", "Gleich lange Nachrichten",
                  "Nachrichten werden auf feste Größen aufgefüllt, damit man an der Länge nichts ablesen kann.")
             item("checkmark.seal", "Sicherheitsnummer",
@@ -542,18 +542,6 @@ struct LicensesView: View {
     private let libraries: [Library] = [
         .init(name: "libsodium", license: "ISC", url: "https://github.com/jedisct1/libsodium"),
         .init(name: "swift-sodium", license: "ISC", url: "https://github.com/jedisct1/swift-sodium"),
-        .init(name: "Firebase iOS SDK", license: "Apache 2.0", url: "https://github.com/firebase/firebase-ios-sdk"),
-        .init(name: "gRPC", license: "Apache 2.0", url: "https://github.com/grpc/grpc"),
-        .init(name: "Abseil", license: "Apache 2.0", url: "https://github.com/abseil/abseil-cpp"),
-        .init(name: "BoringSSL", license: "OpenSSL / ISC", url: "https://boringssl.googlesource.com/boringssl"),
-        .init(name: "LevelDB", license: "BSD-3-Clause", url: "https://github.com/google/leveldb"),
-        .init(name: "nanopb", license: "zlib", url: "https://github.com/nanopb/nanopb"),
-        .init(name: "GoogleUtilities", license: "Apache 2.0", url: "https://github.com/google/GoogleUtilities"),
-        .init(name: "GoogleDataTransport", license: "Apache 2.0", url: "https://github.com/google/GoogleDataTransport"),
-        .init(name: "GTMSessionFetcher", license: "Apache 2.0", url: "https://github.com/google/gtm-session-fetcher"),
-        .init(name: "Promises", license: "Apache 2.0", url: "https://github.com/google/promises"),
-        .init(name: "App Check Core", license: "Apache 2.0", url: "https://github.com/google/app-check"),
-        .init(name: "SwiftProtobuf", license: "Apache 2.0", url: "https://github.com/apple/swift-protobuf"),
     ]
 
     var body: some View {

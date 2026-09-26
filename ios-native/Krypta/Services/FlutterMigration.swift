@@ -8,8 +8,10 @@ import Security
 /// Dieselbe Bundle-ID heißt: derselbe Container, derselbe Schlüsselbund,
 /// dieselbe Secure Enclave. Übernommen werden Identität, Kennung, Codes,
 /// Tresor-Passwort samt Fehlversuchen, Einstellungen, Kontakte, Chats,
-/// Nachrichten, Sitzungen und das Schlüsselprotokoll. Die Anmeldung bei
-/// Firebase liegt im Schlüsselbund des Firebase-SDK und gilt ohnehin weiter.
+/// Nachrichten, Sitzungen und das Schlüsselprotokoll. Die Kennung bleibt
+/// dieselbe; in CloudKit gehört sie dem iCloud-Konto, das sie als erstes
+/// veröffentlicht (CloudKitRelay). Kontakte, die noch die Flutter-App mit
+/// Firebase benutzen, erreicht sie dort nicht mehr.
 ///
 /// Danach ist die Tür dieselbe wie vorher: gleicher Geheimcode, gleicher
 /// Löschcode, gleiches Tresor-Passwort. Erst wenn alles in der neuen Form

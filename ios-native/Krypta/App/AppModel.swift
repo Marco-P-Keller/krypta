@@ -1,4 +1,3 @@
-import FirebaseAuth
 import Foundation
 import KryptaCore
 import KryptaMessenger
@@ -32,6 +31,8 @@ final class AppModel {
     var privacyCover = false
     /// Der Bildschirm wird aufgezeichnet oder gespiegelt.
     var isCaptured = UIScreen.main.isCaptured
+    /// Kein iCloud auf dem iPhone: dann erreicht Krypta niemanden.
+    private(set) var iCloudMissing = false
 
     /// Chats aus Bildschirmfotos und Aufnahmen heraushalten. Vorgabe: an.
     var screenshotShield: Bool = !UserDefaults.standard.bool(forKey: "shield.off") {
@@ -131,17 +132,20 @@ final class AppModel {
         var biometric: Bool
     }
 
-    /// Anonym anmelden, Identität erzeugen, Zugang festlegen.
+    /// Kennung und Identität erzeugen, Zugang festlegen. Ohne iCloud geht es
+    /// nicht: darüber laufen alle Nachrichten (`CloudAccount.Failure`).
     func completeOnboarding(_ choice: SetupChoice) async throws {
         let uid: String
         #if DEBUG
         if DemoMode.isOffline {
             uid = "offline" + UUID().uuidString.replacingOccurrences(of: "-", with: "").prefix(21)
         } else {
-            uid = try await Auth.auth().signInAnonymously().user.uid
+            try await CloudAccount.requireAvailable()
+            uid = CloudAccount.newUserId()
         }
         #else
-        uid = try await Auth.auth().signInAnonymously().user.uid
+        try await CloudAccount.requireAvailable()
+        uid = CloudAccount.newUserId()
         #endif
         let pair = KeyPair.generate()
         Keychain.set(pair.privateKey, for: .identityPrivate)
@@ -162,7 +166,7 @@ final class AppModel {
 
     func unlock() async {
         phase = .unlocking
-        guard let uid = await currentUserId(), let identity = identity() else {
+        guard let uid = Keychain.string(.userId), let identity = identity() else {
             phase = .onboarding
             return
         }
@@ -170,7 +174,7 @@ final class AppModel {
         Keychain.tightenProtection()
         if engine == nil || engine?.userId != uid {
             guard let vault = try? FileVault() else { return }
-            var relay: Relay = FirebaseRelay()
+            var relay: Relay = CloudKitRelay()
             #if DEBUG
             if DemoMode.isOffline { relay = MemoryRelay() }
             #endif
@@ -184,19 +188,22 @@ final class AppModel {
         if DemoMode.isOffline, let engine { PushService.shared.attach(engine) }
         if DemoMode.isActive || DemoMode.isOffline { return }
         #endif
+        await checkCloudAccount()
         if let engine { await PushService.shared.start(userId: uid, engine: engine) }
     }
 
-    /// Firebase merkt sich die anonyme Anmeldung selbst. Ist sie weg (neu
-    /// installiert, Schlüsselbund aber erhalten), gibt es eine neue Kennung.
-    private func currentUserId() async -> String? {
-        #if DEBUG
-        if DemoMode.isOffline { return Keychain.string(.userId) }
-        #endif
-        if let user = Auth.auth().currentUser { return user.uid }
-        guard let user = try? await Auth.auth().signInAnonymously().user else { return Keychain.string(.userId) }
-        Keychain.set(user.uid, for: .userId)
-        return user.uid
+    /// Die Kennung gehört dem Gerät, nicht dem iCloud-Konto; ohne iCloud
+    /// startet die App trotzdem, zeigt aber, warum niemand durchkommt. Wer
+    /// sich anmeldet, verlässt dafür die App und kommt über `unlock()` zurück.
+    private func checkCloudAccount() async {
+        do {
+            try await CloudAccount.requireAvailable()
+            iCloudMissing = false
+        } catch CloudAccount.Failure.unavailable {
+            // Nur kurz nicht feststellbar: nicht gleich warnen.
+        } catch {
+            iCloudMissing = true
+        }
     }
 
     /// Mit Face ID vom Sperrbildschirm.
@@ -259,6 +266,7 @@ final class AppModel {
             lock()
         case .active:
             Task { await engine?.setForeground(true) }
+            InboxWake.shared.poke()
             if phase == .unlocked { PushService.shared.clearDelivered() }
         default:
             break
@@ -305,23 +313,22 @@ final class AppModel {
     }
 
     private func finishWipe(engine: MessengerEngine?, uid: String?) async {
-        // Ohne Netz wartet Firestore endlos; länger als das hält niemand den
-        // leeren Bildschirm aus. Was offen bleibt, räumt der Server: nicht
-        // abgeholte Nachrichten nach 24 Stunden.
+        // Ohne Netz kann CloudKit lange warten; länger als das hält niemand
+        // den leeren Bildschirm aus. Was offen bleibt, verschwindet trotzdem:
+        // nicht abgeholte Nachrichten nach 24 Stunden (CloudKitRelay).
         await EmergencyWipe.withDeadline(seconds: 15) {
             if let engine {
                 await engine.wipeEverything()
             } else if let uid {
                 #if DEBUG
-                if !DemoMode.isOffline { try? await FirebaseRelay().deleteAllUserData(uid: uid) }
+                if !DemoMode.isOffline { try? await CloudKitRelay().deleteAllUserData(uid: uid) }
                 #else
-                try? await FirebaseRelay().deleteAllUserData(uid: uid)
+                try? await CloudKitRelay().deleteAllUserData(uid: uid)
                 #endif
             }
         }
-        // Auch wenn der Server nicht erreichbar war: das alte Konto ist auf
-        // diesem Gerät vergessen, die nächste Einrichtung bekommt ein neues.
-        try? Auth.auth().signOut()
+        // Auch wenn der Server nicht erreichbar war: die alte Kennung ist auf
+        // diesem Gerät vergessen, die nächste Einrichtung bekommt eine neue.
         Keychain.wipe()
         FileVault.destroy()
         await PushService.shared.wipe()

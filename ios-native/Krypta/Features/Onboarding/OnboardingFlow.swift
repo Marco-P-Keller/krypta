@@ -14,6 +14,8 @@ struct OnboardingFlow: View {
     @State private var useBiometrics = false
     @State private var isWorking = false
     @State private var failed = false
+    /// Gescheitert, weil kein iCloud da ist — dann hilft kein Neuversuch.
+    @State private var needsICloud = false
 
     var body: some View {
         NavigationStack(path: $path) {
@@ -66,10 +68,14 @@ struct OnboardingFlow: View {
                     }
                 }
         }
-        .alert("Einrichtung fehlgeschlagen", isPresented: $failed) {
+        .alert(needsICloud ? Text("iCloud ist nicht eingerichtet") : Text("Einrichtung fehlgeschlagen"), isPresented: $failed) {
             Button("OK", role: .cancel) {}
         } message: {
-            Text("Prüfe die Internetverbindung und versuche es noch einmal.")
+            if needsICloud {
+                Text("Krypta stellt Nachrichten über iCloud zu. Melde dich in den Einstellungen mit deinem Apple-Account an, schalte iCloud für Krypta ein und versuche es noch einmal.")
+            } else {
+                Text("Prüfe die Internetverbindung und versuche es noch einmal.")
+            }
         }
     }
 
@@ -79,7 +85,11 @@ struct OnboardingFlow: View {
             do {
                 let codes = useCalculator ? (secret: secret, delete: deleteCode) : nil
                 try await app.completeOnboarding(.init(codes: codes, biometric: biometric))
+            } catch CloudAccount.Failure.noAccount, CloudAccount.Failure.restricted {
+                needsICloud = true
+                failed = true
             } catch {
+                needsICloud = false
                 failed = true
             }
             isWorking = false

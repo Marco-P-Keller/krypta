@@ -3,10 +3,11 @@ import UserNotifications
 
 /// Macht aus der Mitteilung des Servers eine mit Absender — ohne Inhalt.
 ///
-/// Der Server schickt immer denselben Text und in `nt` den Anhänger aus der
-/// Nachricht (siehe NotificationTag). Hier wird er gegen die Schlüssel der
-/// Kontakte geprüft. Passt einer, steht dort wie in Nachrichten der Name als
-/// Titel und darunter „Neue Nachricht"; sonst bleibt es bei „Neue Nachricht".
+/// CloudKit schickt immer denselben Text und im Feld `tag` den Anhänger aus
+/// der Nachricht (siehe NotificationTag und PushPayload). Hier wird er gegen
+/// die Schlüssel der Kontakte geprüft. Passt einer, steht dort wie in
+/// Nachrichten der Name als Titel und darunter „Neue Nachricht"; sonst bleibt
+/// es bei „Neue Nachricht".
 /// Entschlüsselt wird nichts, und der Ratchet-Zustand der App wird nicht
 /// angefasst.
 final class NotificationService: UNNotificationServiceExtension {
@@ -20,7 +21,7 @@ final class NotificationService: UNNotificationServiceExtension {
             contentHandler(request.content)
             return
         }
-        let tag = request.content.userInfo["nt"] as? String
+        let tag = PushPayload.tag(from: request.content.userInfo)
         content.title = ""
         content.subtitle = ""
         switch NotificationIndexStore.load()?.resolve(tag) ?? .unknown {

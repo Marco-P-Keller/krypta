@@ -19,6 +19,11 @@ import KryptaCore
 /// Wer gesperrt wird, soll nicht weiter unangemeldet schreiben können: Beim
 /// Sperren gibt es einen neuen Schlüssel, und die übrigen Kontakte bekommen
 /// ihn mit der nächsten Nachricht.
+///
+/// Mit CloudKit (CloudKitRelay) gilt davon nur noch der Umschlag: jeder
+/// Eintrag gehört einem iCloud-Konto, eine Anmeldung gibt es also immer, und
+/// den Schlüssel prüft niemand. Punkt 4 tritt dort nie ein; Absender und
+/// Kennung stehen trotzdem nur im Umschlag, nicht im Eintrag.
 extension MessengerEngine {
     /// Nach einer Ablehnung eine Weile nicht erneut versuchen.
     static let sealedRetryAfter: TimeInterval = 10 * 60

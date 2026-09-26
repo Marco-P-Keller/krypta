@@ -22,41 +22,6 @@
 	<dict>
 		<key>NSAllowsArbitraryLoads</key>
 		<false/>
-		<key>NSPinnedDomains</key>
-		<dict>
-			<key>firebaseio.com</key>
-			<dict>
-				<key>NSIncludesSubdomains</key>
-				<true/>
-				<key>NSPinnedCAIdentities</key>
-				<array>
-					<dict>
-						<key>SPKI-SHA256-BASE64</key>
-						<string>hxqRlPTu1bMS/0DITB1SSu0vd4u/8l8TjPgfaAp63Gc=</string>
-					</dict>
-					<dict>
-						<key>SPKI-SHA256-BASE64</key>
-						<string>mEflZT5enoR1FuXLgYYGqnVEoZvmf9c2bVBpiOjYQ0c=</string>
-					</dict>
-				</array>
-			</dict>
-			<key>googleapis.com</key>
-			<dict>
-				<key>NSIncludesSubdomains</key>
-				<true/>
-				<key>NSPinnedCAIdentities</key>
-				<array>
-					<dict>
-						<key>SPKI-SHA256-BASE64</key>
-						<string>hxqRlPTu1bMS/0DITB1SSu0vd4u/8l8TjPgfaAp63Gc=</string>
-					</dict>
-					<dict>
-						<key>SPKI-SHA256-BASE64</key>
-						<string>mEflZT5enoR1FuXLgYYGqnVEoZvmf9c2bVBpiOjYQ0c=</string>
-					</dict>
-				</array>
-			</dict>
-		</dict>
 	</dict>
 </dict>
 </plist>

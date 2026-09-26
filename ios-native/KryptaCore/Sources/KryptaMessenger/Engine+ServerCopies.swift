@@ -9,8 +9,9 @@ import Foundation
 ///    nächsten Start noch einmal; sie wird als Duplikat erkannt und gelöscht.
 /// 2. Der Absender merkt sich, wo seine Nachricht liegt, und löscht sie
 ///    selbst, sobald die Zustellung gemeldet ist.
-/// 3. Was nie abgeholt wird, räumt der Server nach 24 Stunden weg
-///    (`cleanupExpiredMessages` in firebase/functions/index.js).
+/// 3. Was nie abgeholt wird, verschwindet nach 24 Stunden. Einen Server, der
+///    aufräumt, gibt es mit CloudKit nicht mehr; das erledigen die Geräte
+///    (`CloudKitRelay.collectExpired`).
 struct ServerCopy: Codable, Equatable {
     let to: String
     let docId: String
