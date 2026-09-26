@@ -5,3 +5,4 @@ DerivedData/
 *.xcworkspace/xcuserdata/
 Krypta.xcodeproj/
 /build/
+DerivedData-*/
