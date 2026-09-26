@@ -36,7 +36,7 @@ service cloud.firestore {
     }
 
     // ── Encrypted Message Relay ──────────────────────────────────────────────
-    // Sender creates (authenticated). Only recipient reads/deletes.
+    // Sender creates (authenticated). Only recipient reads; recipient or sender deletes.
     // Server timestamps enforced. Required fields validated.
     // Max payload size ~64 KiB to prevent abuse.
     match /messages/{recipientId}/inbox/{messageId} {
@@ -63,8 +63,14 @@ service cloud.firestore {
                     && (!('sd' in request.resource.data) || (request.resource.data.sd is int && request.resource.data.sd > 0 && request.resource.data.sd <= 604800000))
                     && (!('bar' in request.resource.data) || request.resource.data.bar is bool)
                     && (!('pw' in request.resource.data) || request.resource.data.pw is bool);
-      allow read, delete: if request.auth != null
-                          && request.auth.uid == recipientId;
+      allow read: if request.auth != null
+                  && request.auth.uid == recipientId;
+      // Der Empfänger löscht beim Abholen. Der Absender darf seine eigene
+      // Kopie löschen, sobald die Zustellung gemeldet ist — doppelte
+      // Sicherheit, dass nach dem Empfang nichts auf dem Server bleibt.
+      allow delete: if request.auth != null
+                    && (request.auth.uid == recipientId
+                        || (resource != null && resource.data.sid == request.auth.uid));
     }
 
     // ── Delivery / Read Acknowledgments ──────────────────────────────────────

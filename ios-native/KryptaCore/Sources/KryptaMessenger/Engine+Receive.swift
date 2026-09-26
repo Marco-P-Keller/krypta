@@ -7,7 +7,7 @@ extension MessengerEngine {
     /// Was nicht angenommen wird, wird trotzdem vom Server gelöscht: der
     /// Posteingang ist ein Durchgang, kein Archiv.
     func receive(_ env: InboxEnvelope) async {
-        defer { Task { [relay, userId] in try? await relay.deleteFromInbox(uid: userId, docId: env.docId) } }
+        defer { purgeFromInbox(env.docId) }
         guard isRunning else { return }
 
         // Übergroße Nutzlasten gar nicht erst entschlüsseln.
@@ -216,6 +216,7 @@ extension MessengerEngine {
     /// und nie verschoben, wenn er schon steht.
     func applyDelivered(_ messageId: String, reportedMs: Int) {
         guard let (chatId, i) = locate(messageId), messages[chatId]![i].senderId == userId else { return }
+        retractServerCopy(messageId: messageId)
         updateMessage(chatId, messageId) { m in
             if m.deliveredAt == nil {
                 m.deliveredAt = SelfDestructPolicy.deliveredAt(reported: Date(timeIntervalSince1970: Double(reportedMs) / 1000), sent: m.timestamp, now: Date())
@@ -225,6 +226,7 @@ extension MessengerEngine {
     }
 
     func applyRead(_ messageId: String) {
+        retractServerCopy(messageId: messageId)
         guard let (chatId, i) = locate(messageId), messages[chatId]![i].senderId == userId, messages[chatId]![i].status != .read else { return }
         updateMessage(chatId, messageId) {
             $0.status = .read

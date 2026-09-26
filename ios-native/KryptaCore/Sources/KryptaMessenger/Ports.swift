@@ -26,10 +26,14 @@ public protocol Relay: AnyObject, Sendable {
     func publishPreKeyBundle(uid: String, bundle: JSONObject) async throws
     func preKeyBundle(uid: String) async throws -> JSONObject?
     func publishDeliveryToken(uid: String, token: String) async throws
-    func send(from: String, to: String, messageId: String, payload: JSONObject) async throws
+    /// Legt die Nachricht in den Posteingang von `to`; gibt die Kennung des Dokuments zurück.
+    @discardableResult
+    func send(from: String, to: String, messageId: String, payload: JSONObject) async throws -> String
     /// Neu eingetroffene Nachrichten, in Serverreihenfolge.
     func inbox(uid: String) -> AsyncThrowingStream<[InboxEnvelope], Error>
     func deleteFromInbox(uid: String, docId: String) async throws
+    /// Der Absender löscht seine eigene Nachricht aus dem Posteingang von `to`.
+    func retract(to: String, docId: String) async throws
     func deleteAllUserData(uid: String) async throws
     /// Key Transparency: `keyCommitments/{uid}/log/{epoch}`.
     func publishKeyCommitment(uid: String, commitment: JSONObject, epoch: Int) async throws
@@ -104,6 +108,8 @@ public final class MemoryRelay: Relay, @unchecked Sendable {
     public private(set) var sentPayloads: [(to: String, payload: JSONObject)] = []
     /// Für Tests: schlägt jedes Senden fehl, solange `true`.
     public var failSends = false
+    /// Für Tests: bei diesen Empfängern schlägt das Löschen aus dem Posteingang fehl.
+    public var failInboxDeletes: Set<String> = []
 
     public init() {}
 
@@ -115,7 +121,8 @@ public final class MemoryRelay: Relay, @unchecked Sendable {
 
     struct Offline: Error {}
 
-    public func send(from: String, to: String, messageId: String, payload: JSONObject) async throws {
+    @discardableResult
+    public func send(from: String, to: String, messageId: String, payload: JSONObject) async throws -> String {
         let (envelope, listener): (InboxEnvelope, AsyncThrowingStream<[InboxEnvelope], Error>.Continuation?) = try lock.withLock {
             if failSends { throw Offline() }
             sentCount += 1
@@ -125,6 +132,7 @@ public final class MemoryRelay: Relay, @unchecked Sendable {
             return (env, listeners[to])
         }
         listener?.yield([envelope])
+        return envelope.docId
     }
 
     public func inbox(uid: String) -> AsyncThrowingStream<[InboxEnvelope], Error> {
@@ -141,7 +149,14 @@ public final class MemoryRelay: Relay, @unchecked Sendable {
     }
 
     public func deleteFromInbox(uid: String, docId: String) async throws {
-        lock.withLock { inboxes[uid]?.removeAll { $0.docId == docId } }
+        try lock.withLock {
+            if failInboxDeletes.contains(uid) { throw Offline() }
+            inboxes[uid]?.removeAll { $0.docId == docId }
+        }
+    }
+
+    public func retract(to: String, docId: String) async throws {
+        lock.withLock { inboxes[to]?.removeAll { $0.docId == docId } }
     }
 
     public func deleteAllUserData(uid: String) async throws {

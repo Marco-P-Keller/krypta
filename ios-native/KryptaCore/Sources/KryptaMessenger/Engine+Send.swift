@@ -108,9 +108,12 @@ extension MessengerEngine {
             ratchets[chatId]?.globalSendSeqNo += 1
             saveRatchet(chatId)
 
-            try await relay.send(from: userId, to: contact.id, messageId: messageId, payload: payload)
+            let docId = try await relay.send(from: userId, to: contact.id, messageId: messageId, payload: payload)
             handshakeDelivered(chatId: chatId)
-            if !asRequest { updateMessage(chatId, messageId) { if $0.status == .sending { $0.status = .sent } } }
+            if !asRequest {
+                rememberServerCopy(messageId: messageId, to: contact.id, docId: docId)
+                updateMessage(chatId, messageId) { if $0.status == .sending { $0.status = .sent } }
+            }
         } catch SessionFailure.identityMismatch {
             fail()
         } catch {

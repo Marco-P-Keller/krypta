@@ -92,7 +92,22 @@ struct QRScannerView: UIViewControllerRepresentable {
         override func viewDidLoad() {
             super.viewDidLoad()
             view.backgroundColor = .black
-            guard let device = AVCaptureDevice.default(for: .video),
+            // Die Frage nach der Kamera selbst stellen, damit sie nicht als
+            // Verlassen der App zählt (sonst sperrt Krypta mittendrin).
+            if AVCaptureDevice.authorizationStatus(for: .video) == .notDetermined {
+                Task {
+                    let granted = await SystemPrompt.during { await AVCaptureDevice.requestAccess(for: .video) }
+                    guard granted else { return }
+                    configure()
+                    startSession()
+                }
+            } else {
+                configure()
+            }
+        }
+
+        private func configure() {
+            guard preview == nil, let device = AVCaptureDevice.default(for: .video),
                   let input = try? AVCaptureDeviceInput(device: device),
                   session.canAddInput(input) else { return }
             session.addInput(input)
@@ -105,6 +120,7 @@ struct QRScannerView: UIViewControllerRepresentable {
             layer.videoGravity = .resizeAspectFill
             view.layer.addSublayer(layer)
             preview = layer
+            view.setNeedsLayout()
         }
 
         override func viewDidLayoutSubviews() {
@@ -114,6 +130,11 @@ struct QRScannerView: UIViewControllerRepresentable {
 
         override func viewWillAppear(_ animated: Bool) {
             super.viewWillAppear(animated)
+            startSession()
+        }
+
+        private func startSession() {
+            guard preview != nil else { return }
             let session = session
             DispatchQueue.global(qos: .userInitiated).async { session.startRunning() }
         }

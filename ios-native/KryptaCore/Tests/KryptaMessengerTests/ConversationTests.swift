@@ -75,6 +75,21 @@ final class ConversationTests: TwoMessengers {
         XCTAssertEqual(alice.messages(in: a).filter { $0.senderId == bobId }.compactMap(\.text), ["b0", "b1", "b2"])
     }
 
+    /// Nach dem Empfang bleibt nichts auf dem Server — auch wenn der
+    /// Empfänger seine Kopie nicht löschen kann, räumt der Absender auf.
+    func testServerCopyIsGoneAfterDelivery() async throws {
+        let (a, b) = try await connect()
+        await settle()
+        XCTAssertEqual(relay.pending(for: bobId), 0)
+
+        relay.failInboxDeletes = [bobId]
+        await alice.send(chatId: a, text: "Nur einmal")
+        await settle(self.alice.messages(in: a).first?.status == .delivered)
+        XCTAssertEqual(bob.messages(in: b).map(\.text), ["Nur einmal"])
+        XCTAssertEqual(relay.pending(for: bobId), 0, "Der Absender löscht seine Kopie, sobald die Zustellung gemeldet ist")
+        XCTAssertTrue(alice.serverCopies.isEmpty)
+    }
+
     func testMessagesWaitForUnacceptedRequest() async throws {
         _ = await alice.addContact(id: bobId)
         await settle(self.bob.incomingRequests.count == 1)

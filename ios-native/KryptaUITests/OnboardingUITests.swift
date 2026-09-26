@@ -10,6 +10,9 @@ final class OnboardingUITests: XCTestCase {
         let next = app.buttons["onboarding.continue"]
         XCTAssertTrue(next.waitForExistence(timeout: 10))
         next.tap()
+        let vanish = app.buttons["onboarding.vanish.continue"]
+        XCTAssertTrue(vanish.waitForExistence(timeout: 5))
+        vanish.tap()
         XCTAssertTrue(app.buttons["onboarding.disguise.yes"].waitForExistence(timeout: 5))
         XCTAssertTrue(app.buttons["onboarding.disguise.no"].exists)
     }

@@ -51,7 +51,9 @@ final class PushService: NSObject {
         self.userId = userId
         attach(engine)
         guard Self.isEnabled else { return }
-        let granted = (try? await UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .badge])) ?? false
+        let granted = await SystemPrompt.during {
+            (try? await UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .badge])) ?? false
+        }
         guard granted else { return }
         UIApplication.shared.registerForRemoteNotifications()
         await uploadToken()

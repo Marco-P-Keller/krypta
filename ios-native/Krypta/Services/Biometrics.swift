@@ -34,13 +34,12 @@ enum Biometrics {
     }
 
     /// `true` nur bei echtem Erfolg. Abbrechen ist kein Fehlversuch.
+    @MainActor
     static func authenticate(reason: String) async -> Bool {
         let context = LAContext()
         context.localizedFallbackTitle = ""
-        do {
-            return try await context.evaluatePolicy(.deviceOwnerAuthenticationWithBiometrics, localizedReason: reason)
-        } catch {
-            return false
+        return await SystemPrompt.during {
+            (try? await context.evaluatePolicy(.deviceOwnerAuthenticationWithBiometrics, localizedReason: reason)) ?? false
         }
     }
 }

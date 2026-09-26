@@ -54,6 +54,13 @@ final class FileVault: Vault, @unchecked Sendable {
         _ = lock.withLock { try? FileManager.default.removeItem(at: url(slot)) }
     }
 
+    /// Notfall: Schlüssel und Dateien weg, ohne den Tresor erst zu öffnen.
+    static func destroy() {
+        Keychain.delete(.vaultKey)
+        guard let base = try? FileManager.default.url(for: .applicationSupportDirectory, in: .userDomainMask, appropriateFor: nil, create: false) else { return }
+        try? FileManager.default.removeItem(at: base.appendingPathComponent("Vault", isDirectory: true))
+    }
+
     func wipe() throws {
         lock.withLock {
             try? FileManager.default.removeItem(at: directory)

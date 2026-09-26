@@ -44,13 +44,14 @@ final class FirebaseRelay: Relay, @unchecked Sendable {
     }
 
     /// Nur `sid`, `mid`, `p` und `ts` — alles Weitere steckt verschlüsselt in `p`.
-    func send(from: String, to: String, messageId: String, payload: JSONObject) async throws {
-        _ = try await db.collection("messages").document(to).collection("inbox").addDocument(data: [
+    @discardableResult
+    func send(from: String, to: String, messageId: String, payload: JSONObject) async throws -> String {
+        try await db.collection("messages").document(to).collection("inbox").addDocument(data: [
             "sid": from,
             "mid": messageId,
             "p": payload.anyDictionary,
             "ts": FieldValue.serverTimestamp(),
-        ])
+        ]).documentID
     }
 
     func inbox(uid: String) -> AsyncThrowingStream<[InboxEnvelope], Error> {
@@ -83,6 +84,12 @@ final class FirebaseRelay: Relay, @unchecked Sendable {
 
     func deleteFromInbox(uid: String, docId: String) async throws {
         try await db.collection("messages").document(uid).collection("inbox").document(docId).delete()
+    }
+
+    /// Erlaubt, solange `sid` der eigene ist (firestore.rules). Ist die
+    /// Nachricht schon weg, lehnt der Server ab — dann ist nichts zu tun.
+    func retract(to: String, docId: String) async throws {
+        try await db.collection("messages").document(to).collection("inbox").document(docId).delete()
     }
 
     // MARK: Key Transparency — nur anlegen, nie ändern (siehe firestore.rules)
@@ -141,8 +148,11 @@ final class FirebaseRelay: Relay, @unchecked Sendable {
             batch.deleteDocument(db.collection(collection).document(uid))
         }
         try await batch.commit()
-        try? await Auth.auth().currentUser?.delete()
-        try? Auth.auth().signOut()
+        // Nur das eigene Konto — falls inzwischen schon ein neues angemeldet ist.
+        if let user = Auth.auth().currentUser, user.uid == uid {
+            try? await user.delete()
+            try? Auth.auth().signOut()
+        }
     }
 }
 

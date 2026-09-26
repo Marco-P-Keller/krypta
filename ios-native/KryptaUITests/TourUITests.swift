@@ -40,6 +40,12 @@ final class TourUITests: XCTestCase {
         shot("01-welcome")
         next.tap()
 
+        let vanish = app.buttons["onboarding.vanish.continue"]
+        XCTAssertTrue(vanish.waitForExistence(timeout: 5))
+        sleep(3)
+        shot("01b-vanish")
+        vanish.tap()
+
         XCTAssertTrue(app.buttons["onboarding.disguise.yes"].waitForExistence(timeout: 5))
         shot("02-disguise")
         app.buttons["onboarding.disguise.yes"].tap()
@@ -104,6 +110,8 @@ final class TourUITests: XCTestCase {
         let newCode = "975310"
         app.buttons["Einstellungen"].tap()
         let change = app.buttons["Geheimcode ändern"]
+        XCTAssertTrue(app.navigationBars["Einstellungen"].waitForExistence(timeout: 5))
+        for _ in 0..<4 where !change.exists || !change.isHittable { app.swipeUp() }
         XCTAssertTrue(change.waitForExistence(timeout: 5))
         change.tap()
         typeCode(deleteCode)

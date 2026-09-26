@@ -1,11 +1,11 @@
 import SwiftUI
 import UserNotifications
 
-/// Einrichtung: Willkommen → Tarnung → Geheimcode → Löschcode → Face ID → Mitteilungen.
+/// Einrichtung: Willkommen → Spurlos → Tarnung → Geheimcode → Löschcode → Face ID → Mitteilungen.
 struct OnboardingFlow: View {
     @Environment(AppModel.self) private var app
 
-    enum Step: Hashable { case disguise, secretCode, deleteCode, biometrics, notifications }
+    enum Step: Hashable { case vanish, disguise, secretCode, deleteCode, biometrics, notifications }
 
     @State private var path: [Step] = []
     @State private var secret = ""
@@ -17,9 +17,11 @@ struct OnboardingFlow: View {
 
     var body: some View {
         NavigationStack(path: $path) {
-            WelcomeView { path.append(.disguise) }
+            WelcomeView { path.append(.vanish) }
                 .navigationDestination(for: Step.self) { step in
                     switch step {
+                    case .vanish:
+                        VanishView { path.append(.disguise) }
                     case .disguise:
                         DisguiseView { use in
                             useCalculator = use
@@ -55,7 +57,9 @@ struct OnboardingFlow: View {
                         NotificationsOfferView(isWorking: isWorking) { allow in
                             PushService.isEnabled = allow
                             if allow {
-                                _ = try? await UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .badge])
+                                _ = await SystemPrompt.during {
+                                    try? await UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .badge])
+                                }
                             }
                             finish(biometric: useBiometrics)
                         }
@@ -143,6 +147,53 @@ private struct Feature: View {
                 Text(text).font(.subheadline).foregroundStyle(.secondary)
             }
         }
+    }
+}
+
+// MARK: - Spurlos
+
+/// Nach dem Empfang wird jede Nachricht vom Server gelöscht.
+private struct VanishView: View {
+    let next: () -> Void
+    @State private var shown = false
+
+    var body: some View {
+        VStack(spacing: 0) {
+            ScrollView {
+                VStack(spacing: 24) {
+                    ServerVanishAnimation()
+                        .padding(.top, 24)
+                        .padding(.horizontal, 4)
+                    Text("Spurlos zugestellt")
+                        .font(.largeTitle.weight(.bold))
+                        .multilineTextAlignment(.center)
+                    Text("Sobald dein Kontakt eine Nachricht empfangen hat, wird sie vom Server gelöscht — automatisch, bei jeder Nachricht. Übrig bleibt sie nur auf euren beiden iPhones.")
+                        .foregroundStyle(.secondary)
+                        .multilineTextAlignment(.center)
+                    VStack(alignment: .leading, spacing: 18) {
+                        Feature(symbol: "trash.slash.fill", title: "Doppelt gelöscht",
+                                text: "Das Gerät deines Kontakts löscht sie beim Empfang, dein iPhone noch einmal, sobald die Zustellung bestätigt ist.")
+                        Feature(symbol: "clock.badge.xmark.fill", title: "Nichts bleibt liegen",
+                                text: "Was nie abgeholt wird, löscht der Server nach 24 Stunden von selbst.")
+                    }
+                    .padding(.horizontal, 8)
+                    .padding(.top, 4)
+                }
+                .padding(.horizontal, 28)
+                .opacity(shown ? 1 : 0)
+                .offset(y: shown ? 0 : 12)
+            }
+            Button(action: next) {
+                Text("Weiter").frame(maxWidth: .infinity)
+            }
+            .buttonStyle(.borderedProminent)
+            .controlSize(.large)
+            .padding(.horizontal, 24)
+            .padding(.bottom, 12)
+            .accessibilityIdentifier("onboarding.vanish.continue")
+        }
+        .navigationBarTitleDisplayMode(.inline)
+        .onAppear { withAnimation(.smooth(duration: 0.5)) { shown = true } }
     }
 }
 

@@ -8,6 +8,8 @@ struct CalculatorView: View {
     @Environment(AppModel.self) private var app
     @State private var calc = CalculatorModel()
     @State private var checking = false
+    /// Zählt Tastendrücke — jeder gibt genau ein leises Tippen.
+    @State private var presses = 0
 
     private let spacing: CGFloat = 14
 
@@ -39,6 +41,10 @@ struct CalculatorView: View {
             .padding(.bottom, spacing)
         }
         .background(.black)
+        // Einmal für den ganzen Rechner, weich und leise wie die Tastatur.
+        // (Früher hing es an jeder Taste mit der Anzeige als Auslöser:
+        // bei jeder Änderung tippten alle 19 zugleich.)
+        .sensoryFeedback(.impact(flexibility: .soft, intensity: 0.4), trigger: presses)
         .preferredColorScheme(.dark)
         .statusBarHidden(false)
     }
@@ -73,7 +79,6 @@ struct CalculatorView: View {
                 .foregroundStyle(foreground(for: key))
         }
         .buttonStyle(CalculatorKeyStyle())
-        .sensoryFeedback(.impact(weight: .light), trigger: calc.display)
         .accessibilityLabel(accessibility(for: key))
     }
 
@@ -134,6 +139,7 @@ struct CalculatorView: View {
     // MARK: Aktionen
 
     private func press(_ key: Key) {
+        presses &+= 1
         switch key {
         case .clear: calc.clear()
         case .sign: calc.toggleSign()

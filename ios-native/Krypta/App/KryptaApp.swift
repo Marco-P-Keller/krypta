@@ -1,4 +1,5 @@
 import FirebaseCore
+import FirebaseFirestore
 import SwiftUI
 
 @main
@@ -9,14 +10,29 @@ struct KryptaApp: App {
 
     init() {
         FirebaseApp.configure()
+        Self.keepFirestoreInMemory()
         PushService.shared.configure()
         _model = State(initialValue: AppModel())
+    }
+
+    /// Firestore legt sonst jede empfangene Nachricht (verschlüsselt) in
+    /// einen Zwischenspeicher auf dem Gerät. Den braucht Krypta nicht — die
+    /// Chats liegen im eigenen Tresor —, also nur im Arbeitsspeicher, und
+    /// was ältere Fassungen dort hinterlassen haben, kommt weg.
+    private static func keepFirestoreInMemory() {
+        if let support = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first {
+            try? FileManager.default.removeItem(at: support.appendingPathComponent("firestore", isDirectory: true))
+        }
+        let settings = Firestore.firestore().settings
+        settings.cacheSettings = MemoryCacheSettings()
+        Firestore.firestore().settings = settings
     }
 
     var body: some Scene {
         WindowGroup {
             RootView()
                 .environment(model)
+                .background { EmergencyOverlayInstaller(model: model) }
                 .onAppear { model.launch() }
                 .onChange(of: scenePhase) { _, phase in model.scenePhaseChanged(phase) }
                 .onReceive(NotificationCenter.default.publisher(for: UIScreen.capturedDidChangeNotification)) { _ in
@@ -33,7 +49,7 @@ struct RootView: View {
     var body: some View {
         ZStack {
             switch model.phase {
-            case .launching, .unlocking:
+            case .launching, .unlocking, .wiping:
                 Color(.systemBackground).ignoresSafeArea()
             case .onboarding:
                 OnboardingFlow()

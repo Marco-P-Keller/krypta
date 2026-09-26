@@ -112,6 +112,8 @@ public final class MessengerEngine {
     @ObservationIgnored let config: EngineConfig
 
     @ObservationIgnored var meta = EngineMeta()
+    /// Eigene Nachrichten, die noch auf dem Server liegen könnten (Kennung → Ort).
+    @ObservationIgnored var serverCopies: [String: ServerCopy] = [:]
     @ObservationIgnored var ratchets: [String: RatchetState] = [:]
     @ObservationIgnored var pendingHeaders: [String: JSONObject] = [:]
     @ObservationIgnored var pendingHeals: [String: RatchetState] = [:]
@@ -191,6 +193,7 @@ public final class MessengerEngine {
         preKeys = vault.loadValue(PreKeyStore.self, slot: "prekeys") ?? PreKeyStore()
         counters = vault.loadValue(ControlCounter.self, slot: "control") ?? ControlCounter()
         loadTransparency()
+        loadServerCopies()
         for chat in chats {
             messages[chat.id] = vault.loadValue([Message].self, slot: "messages.\(chat.id)") ?? []
             if let slot = vault.loadValue(RatchetSlot.self, slot: "ratchet.\(chat.id)"),

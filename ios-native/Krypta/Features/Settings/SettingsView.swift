@@ -91,10 +91,16 @@ struct SettingsView: View {
                         SettingsLabel("Bildschirmfotos verhindern", symbol: "eye.slash.fill", color: .indigo)
                     }
                     .accessibilityIdentifier("settings.shield")
+                    LabeledContent {
+                        Text("Immer")
+                    } label: {
+                        SettingsLabel("Nach Empfang vom Server löschen", symbol: "icloud.slash.fill", color: .teal)
+                    }
                 } header: {
                     Text("Datenschutz")
                 } footer: {
                     VStack(alignment: .leading, spacing: 8) {
+                        Text("Jede Nachricht wird vom Server gelöscht, sobald dein Kontakt sie empfangen hat — von seinem Gerät und, sobald die Zustellung bestätigt ist, noch einmal von deinem. Nie abgeholte Nachrichten löscht der Server nach 24 Stunden.")
                         Text("Zustellungen werden immer gemeldet, weil an ihnen der Start der Löschfristen hängt. Lesebestätigungen nur, wenn du sie einschaltest.")
                         if app.screenshotShield {
                             Text(ScreenshotProtection.isEffective

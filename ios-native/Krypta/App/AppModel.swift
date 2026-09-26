@@ -22,6 +22,8 @@ final class AppModel {
         case vaultPassword
         case unlocking
         case unlocked
+        /// Notfall-Löschung läuft: nichts mehr zu sehen.
+        case wiping
     }
 
     private(set) var phase: Phase = .launching
@@ -76,6 +78,12 @@ final class AppModel {
     // MARK: - Start
 
     func launch() {
+        // Eine Notfall-Löschung wurde unterbrochen (App beendet): zu Ende bringen.
+        if EmergencyWipe.isPending {
+            phase = .wiping
+            Task { await finishWipe(engine: nil, uid: EmergencyWipe.pendingUserId) }
+            return
+        }
         #if DEBUG
         if DemoMode.isActive {
             Task {
@@ -152,6 +160,7 @@ final class AppModel {
             phase = .onboarding
             return
         }
+        guard phase == .unlocking else { return }
         if engine == nil || engine?.userId != uid {
             guard let vault = try? FileVault() else { return }
             var relay: Relay = FirebaseRelay()
@@ -161,6 +170,8 @@ final class AppModel {
             engine = MessengerEngine(userId: uid, identity: identity, relay: relay, vault: vault)
         }
         await engine?.start()
+        // Während des Startens verlassen oder gelöscht: nicht doch noch öffnen.
+        guard phase == .unlocking else { return }
         withAnimation(.smooth) { phase = .unlocked }
         #if DEBUG
         if DemoMode.isOffline, let engine { PushService.shared.attach(engine) }
@@ -227,9 +238,15 @@ final class AppModel {
         phase = target
     }
 
+    /// Wer die App verlässt, landet beim Zurückkommen wieder vor der Tür —
+    /// egal wie kurz: App-Umschalter, Kontrollzentrum, Mitteilungszentrale,
+    /// Home. Schon `.inactive` sperrt; nur Fragen, die Krypta selbst stellt
+    /// (Face ID, Kamera, Mitteilungen), zählen nicht als Verlassen.
     func scenePhaseChanged(_ scene: ScenePhase) {
         privacyCover = scene != .active
         switch scene {
+        case .inactive:
+            if !SystemPrompt.isShowing { lock() }
         case .background:
             Task { await engine?.setForeground(false) }
             lock()
@@ -261,17 +278,48 @@ final class AppModel {
 
     // MARK: - Notfall
 
-    /// Alles weg: Server, Gerät, Schlüsselbund. Danach Neubeginn.
+    /// Alles weg: Gerät, Schlüsselbund, Server. Danach Neubeginn.
+    ///
+    /// Sofort: Der Bildschirm ist im selben Augenblick leer, und das Gerät
+    /// wird zuerst geräumt — ohne Tresorschlüssel sind die Dateien
+    /// Datenmüll, auch wenn die App gleich darauf beendet wird. Der Server
+    /// folgt; bricht das ab, macht der nächste Start weiter.
     func emergencyWipe() async {
-        if let engine {
-            await engine.wipeEverything()
-        } else if let uid = Keychain.string(.userId) {
-            try? await FirebaseRelay().deleteAllUserData(uid: uid)
-        }
-        try? FileVault().wipe()
-        await PushService.shared.wipe()
+        guard phase != .wiping else { return }
+        let engine = self.engine
+        let uid = engine?.userId ?? Keychain.string(.userId)
+        phase = .wiping
+        EmergencyWipe.markPending(userId: uid)
+        engine?.stop()
         Keychain.wipe()
-        engine = nil
+        FileVault.destroy()
+        PushService.shared.clearDelivered()
+        await finishWipe(engine: engine, uid: uid)
+    }
+
+    private func finishWipe(engine: MessengerEngine?, uid: String?) async {
+        // Ohne Netz wartet Firestore endlos; länger als das hält niemand den
+        // leeren Bildschirm aus. Was offen bleibt, räumt der Server: nicht
+        // abgeholte Nachrichten nach 24 Stunden.
+        await EmergencyWipe.withDeadline(seconds: 15) {
+            if let engine {
+                await engine.wipeEverything()
+            } else if let uid {
+                #if DEBUG
+                if !DemoMode.isOffline { try? await FirebaseRelay().deleteAllUserData(uid: uid) }
+                #else
+                try? await FirebaseRelay().deleteAllUserData(uid: uid)
+                #endif
+            }
+        }
+        // Auch wenn der Server nicht erreichbar war: das alte Konto ist auf
+        // diesem Gerät vergessen, die nächste Einrichtung bekommt ein neues.
+        try? Auth.auth().signOut()
+        Keychain.wipe()
+        FileVault.destroy()
+        await PushService.shared.wipe()
+        EmergencyWipe.clear()
+        self.engine = nil
         withAnimation(.smooth) { phase = .onboarding }
     }
 }

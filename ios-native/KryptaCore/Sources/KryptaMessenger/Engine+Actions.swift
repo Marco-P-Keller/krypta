@@ -461,6 +461,7 @@ extension MessengerEngine {
         messages.removeAll()
         transparency.removeAll()
         meta = EngineMeta()
+        serverCopies.removeAll()
         try? vault.wipe()
     }
 }

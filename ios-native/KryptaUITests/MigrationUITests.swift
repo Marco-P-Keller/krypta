@@ -76,7 +76,10 @@ final class VaultPasswordUITests: XCTestCase {
         XCTAssertTrue(app.staticTexts["Mami"].firstMatch.waitForExistence(timeout: 20))
 
         app.buttons["Einstellungen"].firstMatch.tap()
-        app.buttons["settings.vault"].firstMatch.tap()
+        let vault = app.buttons["settings.vault"].firstMatch
+        XCTAssertTrue(app.navigationBars["Einstellungen"].waitForExistence(timeout: 5))
+        for _ in 0..<4 where !vault.exists || !vault.isHittable { app.swipeUp() }
+        vault.tap()
         let new = app.secureTextFields["vault.new"]
         XCTAssertTrue(new.waitForExistence(timeout: 5))
         new.tap()
@@ -104,5 +107,33 @@ final class VaultPasswordUITests: XCTestCase {
         field.tap()
         field.typeText("geheim123\n")
         XCTAssertTrue(app.staticTexts["Mami"].firstMatch.waitForExistence(timeout: 15))
+    }
+}
+
+/// Notfallknopf: kurzes Tippen löscht nichts, Halten löscht sofort alles.
+final class EmergencyWipeUITests: XCTestCase {
+    func testHoldingEmergencyButtonWipesEverything() {
+        let fixture = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent()
+            .appendingPathComponent("KryptaCore/Tests/KryptaMessengerTests/Vectors/flutter_store.json").path
+        let app = XCUIApplication()
+        app.launchArguments = ["-AppleLanguages", "(de)", "-KryptaSeedFlutter", fixture, "-KryptaOffline"]
+        app.launch()
+        XCTAssertTrue(app.staticTexts["Mami"].firstMatch.waitForExistence(timeout: 20))
+
+        let button = app.descendants(matching: .any)["emergency.wipe"].firstMatch
+        XCTAssertTrue(button.waitForExistence(timeout: 5))
+        button.tap()
+        XCTAssertTrue(app.staticTexts["Gedrückt halten, um sofort alles zu löschen."].waitForExistence(timeout: 3))
+        XCTAssertTrue(app.staticTexts["Mami"].firstMatch.exists, "Tippen allein löscht nichts")
+
+        button.press(forDuration: 1.2)
+        XCTAssertTrue(app.buttons["onboarding.continue"].waitForExistence(timeout: 20))
+        XCTAssertFalse(app.descendants(matching: .any)["emergency.wipe"].exists, "Kein Knopf in der Einrichtung")
+
+        // Auch nach einem Neustart ist nichts mehr da.
+        app.terminate()
+        app.launchArguments = ["-AppleLanguages", "(de)", "-KryptaOffline"]
+        app.launch()
+        XCTAssertTrue(app.buttons["onboarding.continue"].waitForExistence(timeout: 20))
     }
 }
