@@ -208,6 +208,14 @@ Info.plist). Umschalten über Einstellungen → Sprache (iOS-Einstellungen der A
 
 ## TestFlight
 
+Ohne Mac: einen Tag `native-v<Version>-<Build>` pushen, z. B.
+`git tag native-v5.0.0-109 && git push origin native-v5.0.0-109`. Der
+Workflow `ios-native-testflight.yml` baut, signiert über den
+App-Store-Connect-Key und lädt hoch; die Build-Nummer nimmt er als nächste
+freie aus App Store Connect.
+
+Vom Mac aus:
+
 ```sh
 cd ios-native && xcodegen generate
 xcodebuild -project Krypta.xcodeproj -scheme Krypta -configuration Release \

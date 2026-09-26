@@ -7,6 +7,8 @@ name: iOS nativ
 on:
   workflow_dispatch:
   push:
+    # Nur Branches: Tags (native-v*) baut ios-native-testflight.yml.
+    branches: ["**"]
     paths:
       - "ios-native/**"
       - ".github/workflows/ios-native.yml"

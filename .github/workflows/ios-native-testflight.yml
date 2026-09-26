@@ -1,0 +1,235 @@
+name: iOS nativ TestFlight
+
+# Baut die native App (ios-native/) und lädt sie nach TestFlight hoch.
+# Signatur wie in ios-testflight.yml: automatisch über den
+# App-Store-Connect-API-Key (Secrets ASC_KEY_ID, ASC_ISSUER_ID, ASC_KEY_P8),
+# kein Mac nötig.
+#
+# Auslösen: einen Tag `native-v*` pushen (z. B. native-v5.0.0-109) oder,
+# sobald diese Datei auf main liegt, von Hand unter Actions.
+#
+# Damit der Build auch jemanden erreicht, muss CloudKit stehen
+# (ios-native/CloudKit/README.md): Container iCloud.com.calcchat.ww an der
+# App-ID und das Schema in Production. TestFlight spricht mit Production.
+
+run-name: >-
+  ${{ format('iOS nativ TestFlight — {0}', github.ref_name) }}
+
+on:
+  workflow_dispatch:
+    inputs:
+      build_number:
+        description: "Build-Nummer (leer = nächste freie laut App Store Connect)"
+        required: false
+        type: string
+      upload:
+        description: "IPA zu TestFlight hochladen (aus = nur bauen)"
+        required: false
+        default: true
+        type: boolean
+  push:
+    tags:
+      - "native-v*"
+
+concurrency:
+  group: ios-native-testflight
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  testflight:
+    name: Native App bauen und hochladen
+    runs-on: macos-latest
+    timeout-minutes: 90
+
+    env:
+      APPLE_TEAM_ID: ${{ vars.APPLE_TEAM_ID || 'B97SQSQBMR' }}
+      BUNDLE_ID: ${{ vars.IOS_BUNDLE_ID || 'com.calcchat.ww' }}
+      ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+      ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+      ASC_KEY_P8: ${{ secrets.ASC_KEY_P8 }}
+      # codesign verweigert Extended Attributes (siehe docs/IOS_ARCHIVE_CODESIGN.md)
+      COPYFILE_DISABLE: "1"
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # Das neueste Xcode: der Post-Quanten-Handschlag braucht das SDK von iOS 26.
+      - name: Xcode wählen
+        run: |
+          XCODE="$(ls -d /Applications/Xcode_*.app 2>/dev/null | sort -V | tail -1)"
+          sudo xcode-select -s "${XCODE:-/Applications/Xcode.app}"
+          sw_vers
+          xcodebuild -version
+
+      - name: App-Store-Connect-Key ablegen
+        id: key
+        run: |
+          set -euo pipefail
+          if [ -z "${ASC_KEY_ID}" ] || [ -z "${ASC_ISSUER_ID}" ] || [ -z "${ASC_KEY_P8}" ]; then
+            echo "::error::Secrets ASC_KEY_ID, ASC_ISSUER_ID und ASC_KEY_P8 fehlen — siehe docs/TESTFLIGHT_GITHUB_ACTIONS.md"
+            exit 1
+          fi
+          KEY_DIR="${HOME}/.appstoreconnect/private_keys"
+          mkdir -p "${KEY_DIR}"
+          KEY_PATH="${KEY_DIR}/AuthKey_${ASC_KEY_ID}.p8"
+          if [[ "${ASC_KEY_P8}" == *"BEGIN PRIVATE KEY"* ]]; then
+            printf '%s\n' "${ASC_KEY_P8}" > "${KEY_PATH}"
+          else
+            printf '%s' "${ASC_KEY_P8}" | tr -d '[:space:]' | openssl base64 -d -A -out "${KEY_PATH}"
+          fi
+          chmod 600 "${KEY_PATH}"
+          openssl pkey -in "${KEY_PATH}" -noout
+          echo "path=${KEY_PATH}" >> "$GITHUB_OUTPUT"
+
+      - name: App-Store-Connect-Werkzeuge einrichten
+        run: |
+          set -euo pipefail
+          python3 -m venv "${RUNNER_TEMP}/asc-venv"
+          "${RUNNER_TEMP}/asc-venv/bin/python" -m pip install --quiet \
+            --disable-pip-version-check 'pyjwt[crypto]>=2.8'
+
+      # TestFlight lehnt eine Build-Nummer ab, die es schon gibt — auch eine
+      # aus ios-testflight.yml (Flutter). Deshalb: höchste bekannte + 1,
+      # mindestens die aus project.yml.
+      - name: Version und Build-Nummer
+        id: version
+        env:
+          INPUT_BUILD_NUMBER: ${{ inputs.build_number }}
+        run: |
+          set -euo pipefail
+          VERSION=$(sed -n 's/^ *MARKETING_VERSION: *"\{0,1\}\([0-9.]*\)"\{0,1\} *$/\1/p' ios-native/project.yml | head -1)
+          PROJECT_BUILD=$(sed -n 's/^ *CURRENT_PROJECT_VERSION: *"\{0,1\}\([0-9]*\)"\{0,1\} *$/\1/p' ios-native/project.yml | head -1)
+          LATEST=$("${RUNNER_TEMP}/asc-venv/bin/python" - <<'PY'
+          import os, sys
+          sys.path.insert(0, "scripts")
+          import asc_certs, asc_app_state
+          class Args:
+              key_id = issuer_id = key_path = None
+          token = asc_certs._token_from_env(Args)
+          app_id, _ = asc_app_state.find_app_id(token, os.environ["BUNDLE_ID"])
+          numbers = asc_app_state._collect(
+              token, f"{asc_certs.API_ROOT}/builds?filter[app]={app_id}&fields[builds]=version&limit=200", "version")
+          print(max([int(n) for n in numbers if str(n).isdigit()] or [0]))
+          PY
+          )
+          if [ -n "${INPUT_BUILD_NUMBER}" ]; then
+            BUILD="${INPUT_BUILD_NUMBER}"
+          else
+            BUILD=$(( LATEST + 1 ))
+            if [ "${PROJECT_BUILD}" -gt "${BUILD}" ]; then BUILD="${PROJECT_BUILD}"; fi
+          fi
+          if [ -z "${VERSION}" ] || [ -z "${BUILD}" ]; then
+            echo "::error::Version oder Build-Nummer nicht lesbar (project.yml)"
+            exit 1
+          fi
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+          echo "build=${BUILD}" >> "$GITHUB_OUTPUT"
+          echo "Version ${VERSION} (${BUILD}); höchste in App Store Connect: ${LATEST}, project.yml: ${PROJECT_BUILD}"
+          {
+            echo "### iOS nativ TestFlight"
+            echo ""
+            echo "| | |"
+            echo "|---|---|"
+            echo "| Version | \`${VERSION}\` |"
+            echo "| Build | \`${BUILD}\` |"
+            echo "| Bundle ID | \`${BUNDLE_ID}\` |"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      # Wie in ios-testflight.yml: was den Upload sonst erst nach dem Build
+      # scheitern ließe, hier in Sekunden.
+      - name: Gegen App Store Connect prüfen
+        env:
+          ASC_KEY_PATH: ${{ steps.key.outputs.path }}
+          IOS_DEV_CERT_LIMIT: ${{ vars.IOS_DEV_CERT_LIMIT }}
+        run: |
+          set -euo pipefail
+          PY="${RUNNER_TEMP}/asc-venv/bin/python"
+          "${PY}" scripts/asc_app_state.py show
+          "${PY}" scripts/asc_app_state.py check --version "${{ steps.version.outputs.version }}"
+          "${PY}" scripts/asc_certs.py list
+          "${PY}" scripts/asc_certs.py check-capacity ${IOS_DEV_CERT_LIMIT:+--limit "${IOS_DEV_CERT_LIMIT}"}
+
+      - name: Projekt erzeugen (XcodeGen)
+        working-directory: ios-native
+        run: |
+          brew install xcodegen
+          xcodegen generate
+
+      - name: ExportOptions.plist erzeugen
+        id: export_options
+        run: |
+          set -euo pipefail
+          PLIST="${RUNNER_TEMP}/ExportOptions.plist"
+          cat > "${PLIST}" <<EOF
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+            <key>method</key><string>app-store-connect</string>
+            <key>teamID</key><string>${APPLE_TEAM_ID}</string>
+            <key>destination</key><string>export</string>
+            <key>signingStyle</key><string>automatic</string>
+            <key>uploadSymbols</key><true/>
+            <key>manageAppVersionAndBuildNumber</key><false/>
+          </dict>
+          </plist>
+          EOF
+          plutil -lint "${PLIST}"
+          echo "path=${PLIST}" >> "$GITHUB_OUTPUT"
+
+      - name: Archiv erstellen
+        working-directory: ios-native
+        env:
+          KEY_PATH: ${{ steps.key.outputs.path }}
+        run: |
+          set -euo pipefail
+          xcodebuild -project Krypta.xcodeproj -scheme Krypta \
+            -configuration Release \
+            -destination 'generic/platform=iOS' \
+            -archivePath "${RUNNER_TEMP}/Krypta.xcarchive" \
+            -allowProvisioningUpdates \
+            -authenticationKeyPath "${KEY_PATH}" \
+            -authenticationKeyID "${ASC_KEY_ID}" \
+            -authenticationKeyIssuerID "${ASC_ISSUER_ID}" \
+            DEVELOPMENT_TEAM="${APPLE_TEAM_ID}" \
+            MARKETING_VERSION="${{ steps.version.outputs.version }}" \
+            CURRENT_PROJECT_VERSION="${{ steps.version.outputs.build }}" \
+            archive
+
+      - name: IPA exportieren
+        env:
+          KEY_PATH: ${{ steps.key.outputs.path }}
+        run: |
+          set -euo pipefail
+          xcodebuild -exportArchive \
+            -archivePath "${RUNNER_TEMP}/Krypta.xcarchive" \
+            -exportOptionsPlist "${{ steps.export_options.outputs.path }}" \
+            -exportPath "${RUNNER_TEMP}/ipa" \
+            -allowProvisioningUpdates \
+            -authenticationKeyPath "${KEY_PATH}" \
+            -authenticationKeyID "${ASC_KEY_ID}" \
+            -authenticationKeyIssuerID "${ASC_ISSUER_ID}"
+          ls -lh "${RUNNER_TEMP}/ipa"
+
+      - name: Zu TestFlight hochladen
+        if: ${{ github.event_name != 'workflow_dispatch' || inputs.upload }}
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+          IPAS=("${RUNNER_TEMP}"/ipa/*.ipa)
+          if [ ${#IPAS[@]} -eq 0 ]; then
+            echo "::error::Keine .ipa gefunden"
+            exit 1
+          fi
+          IPA="${IPAS[0]}"
+          echo "Validiere ${IPA} ..."
+          xcrun altool --validate-app -f "${IPA}" -t ios \
+            --apiKey "${ASC_KEY_ID}" --apiIssuer "${ASC_ISSUER_ID}"
+          echo "Lade hoch ..."
+          xcrun altool --upload-app -f "${IPA}" -t ios \
+            --apiKey "${ASC_KEY_ID}" --apiIssuer "${ASC_ISSUER_ID}"
+          echo "Upload abgeschlossen. Die Verarbeitung in TestFlight dauert meist 5 bis 30 Minuten." \
+            >> "$GITHUB_STEP_SUMMARY"
