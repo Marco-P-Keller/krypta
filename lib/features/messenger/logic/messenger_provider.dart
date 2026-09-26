@@ -6,6 +6,7 @@ import 'package:cryptography/cryptography.dart';
 import 'package:flutter/foundation.dart';
 import 'package:uuid/uuid.dart';
 import '../../../security/encryption/encryption_service.dart';
+import '../../../security/encryption/key_pair_model.dart';
 import '../../../security/key_management/key_manager.dart';
 import '../../../security/memory/sensitive_buffer.dart';
 import '../../../security/messaging/control_message.dart';
@@ -23,6 +24,7 @@ import 'contact_request_policy.dart';
 import 'inbox_reconnect_backoff.dart';
 import 'self_destruct_policy.dart';
 import 'einmalig_policy.dart';
+import 'erneut_senden_policy.dart';
 import 'ausstehende_meldungen.dart';
 import 'unread_policy.dart';
 import 'chatliste_policy.dart';
@@ -476,21 +478,12 @@ class MessengerProvider extends ChangeNotifier {
     // Ensure key pair exists and is registered
     final keyPair = await _keyManager.getOrCreateIdentityKeyPair();
     if (userId != null) {
-      try {
-        await _firestore.registerPublicKey(
-          userId: userId!,
-          publicKeyBase64: keyPair.publicKeyBase64,
-        );
-        _keyPublish.recordIdentitySuccess();
-      } catch (e) {
-        // Nicht mehr stillschweigend verschlucken: ohne Identity-Key im
-        // Register findet einen niemand. `permission-denied` heißt dabei
-        // etwas ganz anderes als ein Netzwerkfehler — siehe KeyPublishStatus.
-        _keyPublish.recordIdentityFailure(e);
-        if (kDebugMode) debugPrint('Key registration failed');
-      }
-
-      // PreKey management: init, rotate if needed, replenish OTPs
+      // PreKey management: init, rotate if needed, replenish OTPs.
+      //
+      // Alles hier ist lokal und muss vor dem Empfang stehen: ein
+      // eingehender Handschlag braucht die privaten Haelften. Veroeffentlicht
+      // wird erst unten, in [_schluesselVeroeffentlichen].
+      Map<String, dynamic>? buendel;
       try {
         await _preKeyManager.init();
         if (_preKeyManager.needsRotation()) {
@@ -499,20 +492,14 @@ class MessengerProvider extends ChangeNotifier {
         if (_preKeyManager.needsReplenishment()) {
           await _preKeyManager.generateOneTimePreKeys(100);
         }
-        // Publish updated bundle
         if (_preKeyManager.currentSignedPreKey != null) {
           final (sig, signingPub) = await _preKeyManager.signPreKey(
             _preKeyManager.currentSignedPreKey!.publicKey,
             keyPair.privateKey,
           );
-          final bundle = _preKeyManager.buildBundle(
-            keyPair, sig, signingPublicKey: signingPub,
-          );
-          await _firestore.publishPreKeyBundle(
-            userId: userId!,
-            bundle: bundle.toMap(),
-          );
-          _keyPublish.recordPreKeySuccess();
+          buendel = _preKeyManager
+              .buildBundle(keyPair, sig, signingPublicKey: signingPub)
+              .toMap();
         }
       } catch (e) {
         // Ohne veröffentlichtes Bundle kommt kein X3DH-Handshake zustande.
@@ -520,9 +507,6 @@ class MessengerProvider extends ChangeNotifier {
         _keyPublish.recordPreKeyFailure(e);
         if (kDebugMode) debugPrint('PreKey management failed');
       }
-      // Der Zustand steuert ein Warnbanner in app.dart — die Oberfläche muss
-      // davon erfahren.
-      notifyListeners();
 
       // Check push privacy mode setting
       _pushBenachrichtigungen =
@@ -555,34 +539,13 @@ class MessengerProvider extends ChangeNotifier {
         }
       } catch (_) {}
 
-      if (_pushBenachrichtigungen) {
-        try {
-          await _notifications.initialize(userId!);
-        } catch (e) {
-          if (kDebugMode) debugPrint('Notification init failed: $e');
-        }
-      } else {
-        // Ohne Token erreicht uns keine Meldung. Der Empfang selbst haengt
-        // nicht daran — er laeuft ueber den Posteingangs-Listener weiter.
-        try {
-          await _firestore.deleteFcmToken(userId!);
-        } catch (_) {}
-      }
-
-      // Sealed sender: publish a delivery token for anonymous routing.
-      // Other users send to this token instead of our userId, so the
-      // server cannot link sender → recipient without reading the token.
-      // Authentication is provided by the E2E ratchet, not the token.
-      try {
-        final token = SealedSender.generateDeliveryToken();
-        await _firestore.publishDeliveryToken(
-          userId: userId!,
-          token: token.token,
-        );
-        _deliveryToken = token;
-      } catch (e) {
-        if (kDebugMode) debugPrint('Delivery token publish failed: $e');
-      }
+      // Alles, was ab hier noch fehlt, geht uebers Netz — und darauf wartet
+      // das Entsperren nicht mehr, siehe [_schluesselVeroeffentlichen].
+      unawaited(_schluesselVeroeffentlichen(
+        uid: userId!,
+        keyPair: keyPair,
+        buendel: buendel,
+      ));
     }
 
     _startSync();
@@ -591,6 +554,86 @@ class MessengerProvider extends ChangeNotifier {
     _cleanupExpiredMessages();
     _isInitialized = true;
     notifyListeners();
+  }
+
+  /// Die eigenen Schluessel, das Push-Token und das Zustell-Token auf den
+  /// Server bringen — im Hintergrund.
+  ///
+  /// Bis zum 25.09.2026 stand das mitten in [initialize] und wurde
+  /// abgewartet. Firestore meldet einen Schreibvorgang aber erst fertig, wenn
+  /// der Server ihn bestaetigt hat; ohne Netz also nie. Wer die App im
+  /// Flugmodus, im Keller oder im Ausland ohne Roaming entsperrte, blieb
+  /// deshalb auf dem Willkommensbildschirm stehen — obwohl jeder Chat, den
+  /// er lesen wollte, laengst auf dem Geraet lag.
+  ///
+  /// Die Schreibvorgaenge selbst sind unveraendert und bleiben in der
+  /// Warteschlange von Firestore, bis wieder Netz da ist. Das Warnbanner in
+  /// app.dart erfaehrt vom Ergebnis ueber [notifyListeners], sobald es eines
+  /// gibt.
+  ///
+  /// Wird waehrenddessen alles geloescht, bricht der Rest ab: ein Zustell-
+  /// oder Push-Token, das nach der Notfall-Loeschung noch auf den Server
+  /// geht, verriete, dass es das Konto eben noch gab.
+  Future<void> _schluesselVeroeffentlichen({
+    required String uid,
+    required KryptaKeyPair keyPair,
+    required Map<String, dynamic>? buendel,
+  }) async {
+    bool nochDasselbeKonto() => _isInitialized && userId == uid;
+
+    try {
+      await _firestore.registerPublicKey(
+        userId: uid,
+        publicKeyBase64: keyPair.publicKeyBase64,
+      );
+      _keyPublish.recordIdentitySuccess();
+    } catch (e) {
+      // Nicht mehr stillschweigend verschlucken: ohne Identity-Key im
+      // Register findet einen niemand. `permission-denied` heißt dabei
+      // etwas ganz anderes als ein Netzwerkfehler — siehe KeyPublishStatus.
+      _keyPublish.recordIdentityFailure(e);
+      if (kDebugMode) debugPrint('Key registration failed');
+    }
+    if (buendel != null) {
+      try {
+        await _firestore.publishPreKeyBundle(userId: uid, bundle: buendel);
+        _keyPublish.recordPreKeySuccess();
+      } catch (e) {
+        _keyPublish.recordPreKeyFailure(e);
+        if (kDebugMode) debugPrint('PreKey publish failed');
+      }
+    }
+    if (!nochDasselbeKonto()) return;
+    // Der Zustand steuert ein Warnbanner in app.dart — die Oberfläche muss
+    // davon erfahren.
+    notifyListeners();
+
+    if (_pushBenachrichtigungen) {
+      try {
+        await _notifications.initialize(uid);
+      } catch (e) {
+        if (kDebugMode) debugPrint('Notification init failed: $e');
+      }
+    } else {
+      // Ohne Token erreicht uns keine Meldung. Der Empfang selbst haengt
+      // nicht daran — er laeuft ueber den Posteingangs-Listener weiter.
+      try {
+        await _firestore.deleteFcmToken(uid);
+      } catch (_) {}
+    }
+    if (!nochDasselbeKonto()) return;
+
+    // Sealed sender: publish a delivery token for anonymous routing.
+    // Other users send to this token instead of our userId, so the
+    // server cannot link sender → recipient without reading the token.
+    // Authentication is provided by the E2E ratchet, not the token.
+    try {
+      final token = SealedSender.generateDeliveryToken();
+      await _firestore.publishDeliveryToken(userId: uid, token: token.token);
+      if (nochDasselbeKonto()) _deliveryToken = token;
+    } catch (e) {
+      if (kDebugMode) debugPrint('Delivery token publish failed: $e');
+    }
   }
 
   // --- Contact Management ---
@@ -2216,6 +2259,40 @@ class MessengerProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Eine gescheiterte Nachricht noch einmal schicken.
+  ///
+  /// Sie geht als **neue** Nachricht raus, mit neuer Kennung und denselben
+  /// Loeschregeln; die alte Blase verschwindet dafuer. Mit der alten Kennung
+  /// ginge es nicht: sie steht schon in der Replay-Liste, und die Gegenseite
+  /// wuerde sie verwerfen, falls ein Teil der ersten Sendung doch ankam.
+  ///
+  /// Die Pruefungen vor dem Entfernen sind dieselben, an denen [sendMessage]
+  /// stumm aussteigen wuerde. Stuenden sie nicht hier, waere die alte Blase
+  /// weg und keine neue da — der Text verloren, wie vor dieser Funktion.
+  Future<void> resendFailedMessage(String chatId, String messageId) async {
+    if (_deletingChats.contains(chatId)) return;
+    final messages = _messagesByChat[chatId];
+    if (messages == null) return;
+    final idx = messages.indexWhere((m) => m.id == messageId);
+    if (idx == -1) return;
+    final alt = messages[idx];
+    if (!ErneutSendenPolicy.moeglich(alt, userId)) return;
+    final chat = chatById(chatId);
+    final contact = chat == null ? null : contactForId(chat.recipientId);
+    if (contact == null || _validateSendPermission(contact) != null) return;
+
+    messages.removeAt(idx);
+    await _localStore.saveMessages(chatId, messages);
+    notifyListeners();
+    await sendMessage(
+      chatId: chatId,
+      text: alt.decryptedContent!,
+      selfDestruct: alt.selfDestructDuration,
+      selfDestructFromChat: alt.selfDestructFromChat,
+      burnAfterRead: alt.burnAfterRead,
+    );
+  }
+
   /// Delete a message for both users.
   /// Removes locally and sends a delete command to the recipient.
   Future<void> deleteMessageForEveryone(String chatId, String messageId) async {
@@ -2234,12 +2311,16 @@ class MessengerProvider extends ChangeNotifier {
       final contact = contactForId(chat.recipientId);
       if (contact != null) {
         try {
+          // Mit Frist: ohne Netz meldet Firestore den Schreibvorgang nie
+          // fertig, und die Nachricht stuende hier weiter, obwohl „fuer alle
+          // loeschen" gewaehlt war. Die Meldung selbst bleibt in der
+          // Warteschlange und geht mit dem naechsten Netz raus.
           await _sendControlMessage(
             chatId: chatId,
             contact: contact,
             type: 'delete',
             messageId: messageId,
-          );
+          ).timeout(_wipeAnnounceTimeout);
         } catch (_) {}
       }
     }
@@ -2580,12 +2661,15 @@ class MessengerProvider extends ChangeNotifier {
         (_messagesByChat[chatId] ?? const []).any((m) => m.senderId == userId);
     if (contact != null && hatEigene) {
       try {
+        // Die Frist macht wahr, was unten steht: ohne sie meldet Firestore
+        // den Schreibvorgang offline nie fertig, und der Chat wurde auch
+        // lokal nicht geleert.
         await _sendControlMessage(
           chatId: chatId,
           contact: contact,
           type: 'clearMine',
           messageId: _uuid.v4(),
-        );
+        ).timeout(_wipeAnnounceTimeout);
       } catch (e) {
         // Kein Netz, blockiert, keine Sitzung: lokal wird trotzdem geleert.
         // Der Nutzer hat es angewiesen, und ein halb geleerter Chat waere
@@ -3332,23 +3416,21 @@ class MessengerProvider extends ChangeNotifier {
     _pushBenachrichtigungen = enabled;
     await _secureStorage.setPushNotificationsEnabled(enabled);
 
-    if (userId == null) {
-      notifyListeners();
-      return;
-    }
-
-    if (enabled) {
-      try {
-        await _notifications.initialize(userId!);
-      } catch (e) {
-        if (kDebugMode) debugPrint('Push re-init failed: $e');
-      }
-    } else {
-      try {
-        await _firestore.deleteFcmToken(userId!);
-      } catch (_) {}
-    }
     notifyListeners();
+    final uid = userId;
+    if (uid == null) return;
+
+    // Nicht abgewartet: die Einstellung gilt ab jetzt, der Server erfaehrt
+    // es, sobald er erreichbar ist. Abgewartet blieb der Schalter ohne Netz
+    // stehen, als haette der Tipp nichts getan — Firestore meldet einen
+    // Schreibvorgang erst fertig, wenn der Server ihn bestaetigt hat.
+    if (enabled) {
+      unawaited(_notifications.initialize(uid).catchError((Object e) {
+        if (kDebugMode) debugPrint('Push re-init failed: $e');
+      }));
+    } else {
+      unawaited(_firestore.deleteFcmToken(uid).catchError((_) {}));
+    }
   }
 
   // --- Receipt Privacy Settings ---
@@ -4689,14 +4771,23 @@ class MessengerProvider extends ChangeNotifier {
     _activeChatId = null;
     _deliveryToken = null;
     _isInitialized = false;
-    // Delete delivery token from server on wipe
-    if (userId != null) {
-      try {
-        await _firestore.deleteDeliveryToken(userId!);
-      } catch (_) {}
-    }
+    // Erst die Platte, dann der Server — und auf den Server wird nicht
+    // gewartet. Bis zum 25.09.2026 stand das Loeschen des Zustell-Tokens
+    // hier **davor** und wurde abgewartet. Firestore meldet einen
+    // Schreibvorgang aber erst fertig, wenn der Server ihn bestaetigt hat;
+    // ohne Netz also nie. Im Flugmodus blieb die Notfall-Loeschung damit an
+    // dieser Zeile haengen, und auf dem Geraet wurde gar nichts geloescht —
+    // genau in der Lage, fuer die es sie gibt.
+    //
+    // Der Auftrag bleibt in der Warteschlange von Firestore und geht raus,
+    // sobald wieder Netz da ist. Doppelt haelt ohnehin: deleteAllUserData
+    // in EmergencyWipeService raeumt das Token ein zweites Mal ab.
+    final uid = userId;
     await _localStore.wipeAll();
     notifyListeners();
+    if (uid != null) {
+      unawaited(_firestore.deleteDeliveryToken(uid).catchError((_) {}));
+    }
   }
 
   /// Den Empfang abbauen, solange die App im Hintergrund liegt.

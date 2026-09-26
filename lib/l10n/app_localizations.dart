@@ -870,6 +870,18 @@ abstract class AppLocalizations {
   /// **'This message will be deleted for both you and the recipient.'**
   String get deleteForEveryoneConfirm;
 
+  /// Menu entry on a message that failed to send
+  ///
+  /// In en, this message translates to:
+  /// **'Send again'**
+  String get resendMessage;
+
+  /// Hint under a message that failed to send
+  ///
+  /// In en, this message translates to:
+  /// **'Not sent. Tap to try again.'**
+  String get messageNotSent;
+
   /// No description provided for @qrInvalidFormat.
   ///
   /// In en, this message translates to:

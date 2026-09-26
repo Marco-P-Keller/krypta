@@ -787,7 +787,10 @@ class _KryptaShellState extends State<KryptaShell> with WidgetsBindingObserver {
 
       case _AppScreen.chat:
         if (_selectedChat == null) {
-          _navigateTo(_AppScreen.messenger);
+          // Nicht mitten im Bauen umschalten: setState waehrend build wirft.
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted) _navigateTo(_AppScreen.messenger);
+          });
           return const SizedBox.shrink();
         }
         return ChatScreen(

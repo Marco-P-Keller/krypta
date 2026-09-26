@@ -9,6 +9,7 @@ import '../../../../theme/app_spacing.dart';
 import '../../data/models/message_model.dart';
 import '../../logic/messenger_provider.dart';
 import '../../logic/einmalig_policy.dart';
+import '../../logic/erneut_senden_policy.dart';
 import 'passwort_dialog.dart';
 
 class MessageBubble extends StatelessWidget {
@@ -60,6 +61,15 @@ class MessageBubble extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
+            if (_kannErneutSenden)
+              ListTile(
+                leading: const Icon(Icons.refresh_rounded),
+                title: Text(l10n.resendMessage),
+                onTap: () {
+                  Navigator.of(ctx).pop();
+                  messenger.resendFailedMessage(message.chatId, message.id);
+                },
+              ),
             // Kein Kopieren aus dem Chat. Die Zwischenablage ist systemweit
             // lesbar, und was dort landet, ist aus der App heraus nicht mehr
             // zu schützen — auch die 60-Sekunden-Löschung half nur gegen
@@ -89,6 +99,11 @@ class MessageBubble extends StatelessWidget {
       ),
     );
   }
+
+  /// Ob diese Blase eine gescheiterte eigene Nachricht ist, die sich noch
+  /// einmal schicken laesst, siehe ErneutSendenPolicy.
+  bool get _kannErneutSenden =>
+      isMine && ErneutSendenPolicy.moeglich(message, eigeneId);
 
   void _confirmDeleteForEveryone(BuildContext context, MessengerProvider messenger) {
     final l10n = AppLocalizations.of(context)!;
@@ -136,6 +151,16 @@ class MessageBubble extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             GestureDetector(
+          // Eine gescheiterte Nachricht geht mit einem Tipp noch einmal raus.
+          // Ohne diesen Weg blieb nur, sie neu zu tippen.
+          onTap: _kannErneutSenden
+              ? () {
+                  HapticFeedback.lightImpact();
+                  context
+                      .read<MessengerProvider>()
+                      .resendFailedMessage(message.chatId, message.id);
+                }
+              : null,
           onLongPress: () => _showMessageMenu(context, isDark),
           onDoubleTap: () => _showMessageMenu(context, isDark),
           child: message.isLocked
@@ -154,6 +179,17 @@ class MessageBubble extends StatelessWidget {
                   onOeffnen: onOeffnen,
                 ),
             ),
+            if (_kannErneutSenden)
+              Padding(
+                padding: const EdgeInsets.only(top: 3, right: 2),
+                child: Text(
+                  AppLocalizations.of(context)!.messageNotSent,
+                  style: const TextStyle(
+                    fontSize: 11,
+                    color: AppColors.error,
+                  ),
+                ),
+              ),
           ],
         ),
       ),

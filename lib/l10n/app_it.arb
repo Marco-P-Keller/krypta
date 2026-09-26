@@ -127,6 +127,8 @@
   "deleteForMe": "Elimina per me",
   "deleteForEveryone": "Elimina per tutti",
   "deleteForEveryoneConfirm": "Questo messaggio sarà eliminato sia per te sia per il destinatario.",
+  "resendMessage": "Invia di nuovo",
+  "messageNotSent": "Non inviato. Tocca per riprovare.",
   "qrInvalidFormat": "Formato del codice QR non valido. Sono accettati solo i codici QR di Krypta.",
   "qrUnsupportedVersion": "Versione del codice QR non supportata. Aggiorna l’app.",
   "qrFingerprintMismatch": "Avviso di sicurezza: l’impronta del codice QR è stata manomessa. Operazione annullata.",

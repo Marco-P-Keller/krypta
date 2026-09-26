@@ -417,6 +417,13 @@ class AppLocalizationsNl extends AppLocalizations {
       'Dit bericht wordt zowel bij jou als bij de ontvanger verwijderd.';
 
   @override
+  String get resendMessage => 'Opnieuw versturen';
+
+  @override
+  String get messageNotSent =>
+      'Niet verstuurd. Tik om het opnieuw te proberen.';
+
+  @override
   String get qrInvalidFormat =>
       'Ongeldig QR-codeformaat. Alleen QR-codes van Krypta worden geaccepteerd.';
 
