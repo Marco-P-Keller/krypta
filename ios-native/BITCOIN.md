@@ -155,11 +155,12 @@ cd ios-native/KryptaCore && swift test
   nur verschlüsselt (der Server sieht keine), Zahlung im Chat bis zur
   Bestätigung, „erneut senden" ohne zweite Transaktion, Kontakte ohne
   Wallet, gefälschte Zahlungsnachricht.
-- Gegen **Bitcoin Core 29.1** (Regtest, einmalig beim Bau): 22 mit
-  `KryptaBitcoin` signierte Transaktionen, an alle Adressarten, mit mehreren
-  Eingängen, unbestätigten Ketten, „alles senden", 1 bis 150 sat/vB. Alle
-  von `testmempoolaccept` angenommen und gemined, Gebühr auf den Satoshi
-  wie geplant, Größenschätzung nie zu klein.
+- Gegen **Bitcoin Core 29.1** (Regtest, [`Tools/BitcoinRegtest`](Tools/BitcoinRegtest/README.md),
+  `./run.sh`): über 20 mit `KryptaBitcoin` signierte Transaktionen, an alle
+  Adressarten, mit mehreren Eingängen, unbestätigten Ketten, „alles senden",
+  1 bis 150 sat/vB. Alle von `testmempoolaccept` angenommen und gemined,
+  Gebühr auf den Satoshi wie geplant, Größenschätzung nie zu klein. Dazu
+  zwei Wallets über Esplora-HTTP mit echten Merkle-Beweisen.
 
 ## Demo-Modus
 
