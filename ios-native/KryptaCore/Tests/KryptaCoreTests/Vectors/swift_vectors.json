@@ -1,0 +1,65 @@
+{
+  "bundle" : {
+    "ik" : "0uVXCkhMaFtoIUFnYcrivmm8nLacr3EMu1ONu9G0mU4=",
+    "sigPk" : "VQ7ZeV4sSU2Ge4Fb2td4e0fB4E/2G9cE6Gctnp3Nzrw=",
+    "spk" : "FHDCzO0oHpks00I4bhju4/DZJ75xq1w7d0zoxMGcGV0=",
+    "spkId" : 0,
+    "spks" : "sQiGUGBsbkM9QAzEyLQU+S0b+9CUGd7viiFoPUIDsDOJI7oWa6bSetq0xVD4ufMuEGFgGrjV21h6Why4H6OiAQ=="
+  },
+  "control" : {
+    "chatId" : "swift-chat",
+    "ctr" : 3,
+    "mid" : "msg-9",
+    "sid" : "aliceUid0000000000000001",
+    "sig" : "PzXQF8uYIYHcNtMztvtIuUNm5xbKoCrZ3zOioQq2r0A=",
+    "ts" : 1790419630646,
+    "type" : "read"
+  },
+  "outbound" : {
+    "payload" : {
+      "c" : "87XtgL5fEkwci6hRINGbSLyuEBri3jmtJnSWQWQaKxoe3doZGKPxHv1p2w2mY5w9t3yU6ZQEBMWHyHynINLlYIESsDkMK+/VvmYczg8NPSHxx8yZk48fDSQFGq/IY8sVJdGsmZpQLABWatOQ7ln08wGA4bu1S/QxsG13A5KF8vgE9LCYlhj9VQKL4ENLiYplyT+AifOmj3iKELSFQ3OCzNAACsatbgQbr1j2ygG4jjQp7wqHq+8BVNvHkZ11a+n5VvC0lHQTWUiQZQIiJTRDuE1ei9fXy0Q9WLLE4kKxPguArLX2N/6vCIFFpAIWQq7UHtbpEj6MsIDbn74jZpv0ng==",
+      "dh" : "pR2ncUOi/qoq8WZ0vmrGhcFjWvquhqiv1mpokCwuJGc=",
+      "ek" : "bCE9XbvA4SIszoU0v8K0/L4dh3mhU4WglbcBvl5kwQ8=",
+      "m" : "Byj34qAgi2kVqeSVA6wQng==",
+      "n" : 0,
+      "nc" : "CBK0nHFvCsHHwdoHt3bAkwoKwYWHC7x5",
+      "pn" : 0,
+      "spkId" : 11,
+      "v" : 3
+    },
+    "text" : "Sitzung aus Swift"
+  },
+  "password" : {
+    "aad" : "pwd-v1|bobUid00000000000000000002|aliceUid0000000000000001|msg-9",
+    "blob" : "eyJ2IjozLCJzIjoiL1hSS1RTZmZFcGczcm43QU9BTmNjZz09IiwibSI6IjgyZjFjZkdVcHA0b2dPMmYvQzdaZnc9PSIsImMiOiJUTmpoRElFT1Y3QncySjRsT0ZrcENybmkiLCJuIjoiN0sreWtuYXZlQkVVdnQ5Y0lMZG5ZVXhWQ3F5SWFRM0EifQ==",
+    "password" : "zweites pferd",
+    "plaintext" : "Passwort aus Swift"
+  },
+  "replies" : [
+    {
+      "payload" : {
+        "c" : "9hPrJkXujfAQdfnPOdLMa46BpeyaRjbvviCt1r32OMFT4w5Fz7lkdIznLYECD/zNq+SG3/r1sgnYg0XQGbeXGCrxc00bpJ7FEulluIucDB9flCFi0Vc/tEXTDxw6CNt8dEv/U47qIswj8BuLLdGXhDvqQ7AtAyjiqR9vHNxFjjSwLnGH3U13VdmqvxiLvxFHLj6NNH4aLxx+Sq95B/BxsaEF0S8fFyaCXVuzu31amaZGuhv0PlTNatsnUVaOzCa1VamjEYCx6UdrMVMX4wK9zSM2WeKaGO0zcPxNPatEoCMhLncIoYxx7RjJqDjTsPtbmBGxNFNBoyV5WeOY1VmLTg==",
+        "dh" : "m0OfXlPrfHjd19U8vvVJl5cCMv2uaSlDPqS1I70Ql3E=",
+        "m" : "Vh/wAtPwW7Xp/Hfxyiigbg==",
+        "n" : 0,
+        "nc" : "KcGLygYsk7Tu8d2okxKu9o2TAk2O68WT",
+        "pn" : 0,
+        "v" : 3
+      },
+      "text" : "Antwort aus Swift"
+    },
+    {
+      "payload" : {
+        "c" : "fnEGWVmS6IunnYq2lsTo5Yi8AcWymF6Sn/D3rs9bVNunpXsPg9pQVsdPs9hojMJx8lfpSRT9EZTHeqx601rLU+7NLr2EXI4wR9aWFnmICwa1/njyY+5XvJveL6KwoBV01L57XtWt3CjQmHzhfpO6vjleyZiOTv8YDsKqfLAhLSizRYeyht6wlkSRu/9CvNGFY2H5Jj3wMXpPHxyNZkr+FI5+djPSTqUs8zcKJ0fkfdPmcKnhHIr6KwJVvGe1bnQ2jUyj2thuXFxMpKcP/15V+3Kgk5EFXC8eeimIV41uN9I+Iy9xAYu+KgEAHzt9FPzGi4B9jcbdetBtGl/NCkXP8A==",
+        "dh" : "m0OfXlPrfHjd19U8vvVJl5cCMv2uaSlDPqS1I70Ql3E=",
+        "m" : "zO/ej6nni0E4yJCZ9MDBrA==",
+        "n" : 1,
+        "nc" : "m9qW69eGv8kb6PmZnEy72idiA+yk1T8d",
+        "pn" : 0,
+        "v" : 3
+      },
+      "text" : "Noch eine 🍏"
+    }
+  ],
+  "safetyNumber" : "492885801005647421580859427517649415992163946065032098809508"
+}
