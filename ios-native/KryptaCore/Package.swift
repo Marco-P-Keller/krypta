@@ -12,6 +12,7 @@ let package = Package(
     platforms: [.iOS(.v17), .macOS(.v14)],
     products: [
         .library(name: "KryptaCore", targets: ["KryptaCore"]),
+        .library(name: "KryptaMessenger", targets: ["KryptaMessenger"]),
     ],
     dependencies: [
         // libsodium: XChaCha20-Poly1305 und Argon2id. CryptoKit hat beides
@@ -22,6 +23,16 @@ let package = Package(
         .target(
             name: "KryptaCore",
             dependencies: [.product(name: "Clibsodium", package: "swift-sodium")]
+        ),
+        // Der Messenger ohne Oberfläche und ohne Firebase: Kontakte, Chats,
+        // Senden, Empfangen. Der Server steckt hinter dem Protokoll `Relay`.
+        .target(
+            name: "KryptaMessenger",
+            dependencies: ["KryptaCore"]
+        ),
+        .testTarget(
+            name: "KryptaMessengerTests",
+            dependencies: ["KryptaMessenger"]
         ),
         .testTarget(
             name: "KryptaCoreTests",
