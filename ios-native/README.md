@@ -11,6 +11,7 @@ Sicherheit ändert: [`CloudKit/README.md`](CloudKit/README.md).
 | Teil | Inhalt |
 |---|---|
 | `KryptaCore/Sources/KryptaCore` | Protokoll: X3DH, Double Ratchet, Replay-Schutz, Steuernachrichten, Passwort-Nachrichten, Sicherheitsnummern. CryptoKit plus libsodium (XChaCha20-Poly1305, Argon2id). |
+| `KryptaCore/Sources/KryptaBitcoin`, `KryptaWallet`, `Csecp256k1` | Bitcoin: Schlüssel (BIP39/32/84), Adressen, Transaktionen, Signieren mit libsecp256k1 aus Bitcoin Core, die Wallet. Siehe [`BITCOIN.md`](BITCOIN.md). |
 | `KryptaCore/Sources/KryptaMessenger` | Messenger-Logik ohne Oberfläche: Kontakte, Anfragen, Senden, Empfangen, Löschfristen. Server hinter `Relay`, Speicher hinter `Vault`. |
 | `Krypta/` | Die App: SwiftUI, CloudKit-Relay, Schlüsselbund, verschlüsselter Dateitresor, Rechner-Tarnung, Tresor-Passwort, Screenshot-Schutz, Push, Übernahme der Flutter-Daten. |
 | `CloudKit/` | Schema der öffentlichen Datenbank (`schema.ckdb`) und wie man es einspielt. |
@@ -164,6 +165,15 @@ Tricks ab iOS 26.6 Probleme.
 Nach Rechner-Code und Face ID die letzte Tür. Argon2id wie die Codes,
 Fehlversuche überstehen Neustarts, Pause 2 / 4 / 8 / 16 s, beim fünften Fehler
 wird alles gelöscht. Festlegen, ändern, entfernen in den Einstellungen.
+
+## Bitcoin
+
+Jedes Konto hat eine eigene, selbstverwahrte Bitcoin-Wallet (zwölf Wörter,
+BIP84). Der Schlüssel liegt nur auf dem Gerät, an Face ID oder den Code
+gebunden. Im Chat bekommt jeder Kontakt verschlüsselt eine eigene Adresse
+(`_btc`); bezahlt wird über die Blockchain, die Nachricht (`_pay`) sagt nur,
+dass und wohin, und der Empfänger prüft die Zahlung selbst an der
+Transaktion und am Merkle-Beweis. Alles Weitere: [`BITCOIN.md`](BITCOIN.md).
 
 ## Key Transparency
 

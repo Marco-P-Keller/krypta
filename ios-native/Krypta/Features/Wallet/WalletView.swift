@@ -8,6 +8,7 @@ struct WalletView: View {
     @Environment(WalletEngine.self) private var wallet: WalletEngine?
     @Environment(MessengerEngine.self) private var engine
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.closeSheet) private var closeSheet
 
     @State private var showReceive = false
     @State private var showSend = false
@@ -29,7 +30,7 @@ struct WalletView: View {
             .navigationTitle("Bitcoin")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .confirmationAction) { Button("Fertig") { dismiss() } }
+                ToolbarItem(placement: .confirmationAction) { Button("Fertig") { close() } }
                 if wallet != nil {
                     ToolbarItem(placement: .topBarLeading) {
                         NavigationLink {
@@ -42,6 +43,11 @@ struct WalletView: View {
                 }
             }
         }
+    }
+
+    /// Das Blatt schließen, auch aus dem Screenshot-Schutz heraus.
+    private func close() {
+        if let closeSheet { closeSheet() } else { dismiss() }
     }
 
     @ViewBuilder
@@ -132,9 +138,9 @@ struct WalletView: View {
         }
         .refreshable { await wallet.sync() }
         .task { await wallet.sync() }
-        .sheet(isPresented: $showReceive) { ReceiveView() }
-        .sheet(isPresented: $showSend) { SendBitcoinView(target: .address) }
-        .sheet(isPresented: $showBackup) { BackupView() }
+        .sheet(isPresented: $showReceive) { ShieldedSheet { ReceiveView() } }
+        .sheet(isPresented: $showSend) { ShieldedSheet { SendBitcoinView(target: .address) } }
+        .sheet(isPresented: $showBackup) { ShieldedSheet(always: true) { BackupView() } }
     }
 }
 
@@ -200,7 +206,7 @@ struct TransactionDetailView: View {
                         LabeledContent("Davon Gebühr") { Text(verbatim: BitcoinFormat.sats(fee)).monospacedDigit() }
                     }
                     if let id = tx.contactId, let chat = engine.chat(forContact: id) {
-                        LabeledContent(tx.isIncoming ? "Von" : "An") { Text(verbatim: chat.name) }
+                        LabeledContent(tx.isIncoming ? "Absender" : "Empfänger") { Text(verbatim: chat.name) }
                     }
                     if let note = tx.note, !note.isEmpty {
                         LabeledContent("Notiz") { Text(verbatim: note) }
@@ -240,6 +246,7 @@ struct TransactionDetailView: View {
 struct ReceiveView: View {
     @Environment(WalletEngine.self) private var wallet: WalletEngine?
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.closeSheet) private var closeSheet
     @State private var address: BitcoinAddress?
     @State private var copied = false
 
@@ -292,8 +299,13 @@ struct ReceiveView: View {
             .padding(.bottom, 12)
             .navigationTitle("Empfangen")
             .navigationBarTitleDisplayMode(.inline)
-            .toolbar { ToolbarItem(placement: .confirmationAction) { Button("Fertig") { dismiss() } } }
+            .toolbar { ToolbarItem(placement: .confirmationAction) { Button("Fertig") { close() } } }
             .onAppear { address = wallet?.receiveAddress() }
         }
+    }
+
+    /// Das Blatt schließen, auch aus dem Screenshot-Schutz heraus.
+    private func close() {
+        if let closeSheet { closeSheet() } else { dismiss() }
     }
 }

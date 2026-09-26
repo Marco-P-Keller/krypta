@@ -5,11 +5,12 @@ import SwiftUI
 /// Die zwölf Wörter aufschreiben und die Abschrift prüfen.
 ///
 /// Die Wörter erscheinen erst nach Face ID oder Code, stehen in der Fläche,
-/// die iOS aus Bildschirmfotos herausnimmt, und leben nur so lange im
-/// Speicher, wie dieses Blatt offen ist.
+/// die iOS aus Bildschirmfotos herausnimmt (immer in `ShieldedSheet(always:)`
+/// zeigen), und leben nur so lange im Speicher, wie dieses Blatt offen ist.
 struct BackupView: View {
     @Environment(WalletEngine.self) private var wallet: WalletEngine?
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.closeSheet) private var closeSheet
 
     enum Step { case intro, words, check, done }
 
@@ -75,11 +76,8 @@ struct BackupView: View {
 
     private var wordList: some View {
         VStack(spacing: 16) {
-            // Aus Bildschirmfotos und Aufnahmen heraus, unabhängig von der Einstellung.
-            ScreenshotShield(isEnabled: true) {
-                WordGrid(words: words)
-            }
-            .frame(height: CGFloat((words.count + 1) / 2) * 34 + 60)
+            // Das ganze Blatt liegt in der geschützten Fläche (ShieldedSheet, always).
+            WordGrid(words: words)
             Text("Schreib die Wörter in dieser Reihenfolge ab.")
                 .font(.footnote)
                 .foregroundStyle(.secondary)
@@ -167,7 +165,7 @@ struct BackupView: View {
 
     private func close() {
         forget()
-        dismiss()
+        if let closeSheet { closeSheet() } else { dismiss() }
     }
 
     private func forget() {

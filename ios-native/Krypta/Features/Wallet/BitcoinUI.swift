@@ -1,4 +1,5 @@
 import KryptaBitcoin
+import KryptaMessenger
 import KryptaWallet
 import SwiftUI
 
@@ -157,5 +158,52 @@ struct PaymentStatus: Equatable {
         n >= 6
             ? .init(text: String(localized: "Bestätigt"), symbol: "checkmark.seal.fill", isProblem: false, amount: amount)
             : .init(text: String(localized: "Bestätigt (\(n) von 6)"), symbol: "checkmark.seal", isProblem: false, amount: amount)
+    }
+}
+
+/// Ein Blatt der Wallet, aus Bildschirmfotos und Aufnahmen herausgehalten
+/// wie die Chats. Blätter liegen außerhalb der geschützten Fläche darunter,
+/// deshalb bekommt jedes seine eigene; die Umgebung reicht SwiftUI über die
+/// Grenze nicht weiter, sie wird hier ausdrücklich übergeben.
+///
+/// `always`: unabhängig von der Einstellung (die zwölf Wörter).
+struct ShieldedSheet<Content: View>: View {
+    @Environment(AppModel.self) private var app
+    @Environment(MessengerEngine.self) private var engine
+    @Environment(WalletEngine.self) private var wallet: WalletEngine?
+    @Environment(\.dismiss) private var dismiss
+    var always = false
+    @ViewBuilder var content: () -> Content
+
+    var body: some View {
+        ScreenshotShield(isEnabled: always || app.screenshotShield) {
+            content()
+                .environment(engine)
+                .environment(app)
+                .environment(wallet)
+                // `dismiss` gilt drinnen nicht für dieses Blatt; so schon.
+                .environment(\.closeSheet, CloseSheetAction { dismiss() })
+        }
+        .ignoresSafeArea()
+    }
+}
+
+/// Schließt das Blatt, in dem eine Ansicht liegt, auch durch den
+/// Screenshot-Schutz hindurch (siehe `ShieldedSheet`).
+struct CloseSheetAction {
+    let run: @MainActor () -> Void
+
+    @MainActor
+    func callAsFunction() { run() }
+}
+
+private struct CloseSheetKey: EnvironmentKey {
+    static var defaultValue: CloseSheetAction? { nil }
+}
+
+extension EnvironmentValues {
+    var closeSheet: CloseSheetAction? {
+        get { self[CloseSheetKey.self] }
+        set { self[CloseSheetKey.self] = newValue }
     }
 }

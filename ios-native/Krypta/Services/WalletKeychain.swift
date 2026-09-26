@@ -44,6 +44,8 @@ final class WalletKeychain: WalletSecrets, @unchecked Sendable {
         query[kSecUseAuthenticationContext as String] = context
         var result: AnyObject?
         let status = SecItemCopyMatching(query as CFDictionary, &result)
+        // Würde iOS schon für die Attribute fragen, ist der Eintrag gebunden.
+        if status == errSecInteractionNotAllowed { return true }
         guard status == errSecSuccess, let attributes = result as? [String: Any] else { return false }
         return attributes[kSecAttrAccessControl as String] != nil
     }

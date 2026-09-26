@@ -18,7 +18,7 @@ extension WalletEngine {
                 var index: UInt32 = 0
                 // Die Grenze wächst mit jeder benutzten Adresse, die gefunden wird.
                 while index < frontier(kind), index < 20_000 {
-                    let end = min(index + 8, frontier(kind))
+                    let end = min(index + 5, frontier(kind))
                     let batch = (index..<end).map { (address: address(kind, $0).string, path: AddressPath(chain: kind, index: $0)) }
                     let results = try await fetchStats(batch.map(\.address))
                     for (item, stats) in zip(batch, results) {

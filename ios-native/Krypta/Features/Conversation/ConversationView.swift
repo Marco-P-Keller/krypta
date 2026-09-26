@@ -123,10 +123,10 @@ struct ConversationView: View {
             Text("Du kannst sie nur einmal ansehen. Sobald du sie schließt, ist sie für immer weg.")
         }
         .sheet(isPresented: $paying) {
-            SendBitcoinView(target: .contact(chatId: chatId, contactId: contact.id))
+            ShieldedSheet { SendBitcoinView(target: .contact(chatId: chatId, contactId: contact.id)) }
         }
         .sheet(item: $paymentDetail) { m in
-            PaymentDetailView(message: m)
+            ShieldedSheet { PaymentDetailView(message: m) }
         }
         .alert("Bitcoin senden", isPresented: Binding(get: { payHint != nil }, set: { if !$0 { payHint = nil } })) {
             Button("OK", role: .cancel) {}

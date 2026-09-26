@@ -7,8 +7,9 @@ derselben Bibliothek, mit der Bitcoin Core signiert und prüft.
 - `include/` und `src/` sind **unverändert** kopiert, nur die Dateien, die
   für ECDSA ohne Zusatzmodule gebraucht werden (keine Schnorr-, MuSig- oder
   ECDH-Module). Lizenz: MIT, siehe `COPYING`.
-- Übersetzt wird über `build_*.c`: jede Hülle schaltet nur die Warnung für
-  ungenutzte statische Funktionen ab und bindet eine Datei aus `src/` ein.
+- Übersetzt wird über `build_*.c`: jede Hülle schaltet nur zwei Warnungen ab
+  (ungenutzte statische Funktionen, gewollte Ganzzahlkürzung) und bindet
+  eine Datei aus `src/` ein.
 - Einstellungen: die Vorgaben der Bibliothek (`ECMULT_WINDOW_SIZE` 15,
   `COMB_BLOCKS` 11, `COMB_TEETH` 6), passend zu den vorberechneten Tabellen.
 

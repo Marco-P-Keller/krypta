@@ -15,6 +15,7 @@ struct SendBitcoinView: View {
     @Environment(WalletEngine.self) private var wallet: WalletEngine?
     @Environment(MessengerEngine.self) private var engine
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.closeSheet) private var closeSheet
     let target: Target
     /// Nach dem Senden (schließt auch das Blatt darunter).
     var onSent: () -> Void = {}
@@ -78,7 +79,7 @@ struct SendBitcoinView: View {
                     }
                 }
             } header: {
-                Text("An")
+                Text("Empfänger")
             } footer: {
                 if case .contact = target {
                     Text("Die Adresse hat dein Kontakt verschlüsselt im Chat geschickt, nur für dich. Jede Zahlung geht an eine neue.")
@@ -164,7 +165,7 @@ struct SendBitcoinView: View {
         .navigationTitle("Bitcoin senden")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
-            ToolbarItem(placement: .cancellationAction) { Button("Abbrechen") { dismiss() } }
+            ToolbarItem(placement: .cancellationAction) { Button("Abbrechen") { close() } }
             if case .address = target {
                 ToolbarItem(placement: .topBarTrailing) {
                     // Ohne Rückfrage von iOS: der Knopf selbst ist die Erlaubnis.
@@ -177,7 +178,7 @@ struct SendBitcoinView: View {
         }
         .navigationDestination(item: $draft) { step in
             ConfirmPaymentView(draft: step.draft, target: target) {
-                dismiss()
+                close()
                 onSent()
             }
         }
@@ -194,6 +195,11 @@ struct SendBitcoinView: View {
             }
         }
         .onChange(of: feeLevel) { error = nil }
+    }
+
+    /// Das Blatt schließen, auch aus dem Screenshot-Schutz heraus.
+    private func close() {
+        if let closeSheet { closeSheet() } else { dismiss() }
     }
 
     private func feeRow(_ title: LocalizedStringKey, _ time: LocalizedStringKey, _ rate: Double) -> some View {

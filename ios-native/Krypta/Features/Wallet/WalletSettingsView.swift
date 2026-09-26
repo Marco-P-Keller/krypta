@@ -101,18 +101,22 @@ struct WalletSettingsView: View {
         .onAppear {
             if let wallet { server = WalletSettings.customServer(for: wallet.network) ?? "" }
         }
-        .sheet(isPresented: $showBackup) { BackupView() }
-        .sheet(isPresented: $showRestore) { RestoreWalletView() }
+        .sheet(isPresented: $showBackup) { ShieldedSheet(always: true) { BackupView() } }
+        .sheet(isPresented: $showRestore) { ShieldedSheet(always: true) { RestoreWalletView() } }
+    }
+
+    /// Im Demo liegt der Schlüssel im Speicher, nicht im Schlüsselbund.
+    private var isDemo: Bool {
+        #if DEBUG
+        return DemoMode.isActive || DemoMode.isOffline
+        #else
+        return false
+        #endif
     }
 
     @ViewBuilder
     private var protection: some View {
-        #if DEBUG
-        let demo = DemoMode.isActive || DemoMode.isOffline
-        #else
-        let demo = false
-        #endif
-        if !demo {
+        if !isDemo {
             Section {
                 if WalletKeychain.shared.isProtectedByDeviceAuth {
                     LabeledContent {
@@ -139,6 +143,7 @@ struct RestoreWalletView: View {
     @Environment(WalletEngine.self) private var wallet: WalletEngine?
     @Environment(AppModel.self) private var app
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.closeSheet) private var closeSheet
 
     @State private var text = ""
     @State private var confirmReplace = false
@@ -149,11 +154,8 @@ struct RestoreWalletView: View {
         NavigationStack {
             Form {
                 Section {
-                    // Kein Kopieren und Einsetzen aus anderen Apps nötig: Tastatur ohne Vorschläge.
-                    ScreenshotShield(isEnabled: true) {
-                        TextEditorBox(text: $text)
-                    }
-                    .frame(height: 150)
+                    TextEditorBox(text: $text)
+                        .frame(height: 150)
                     if let last = currentWord, !Mnemonic.isWord(last) {
                         let options = Mnemonic.suggestions(for: last)
                         if !options.isEmpty {
@@ -192,7 +194,7 @@ struct RestoreWalletView: View {
             }
             .navigationTitle("Wiederherstellen")
             .navigationBarTitleDisplayMode(.inline)
-            .toolbar { ToolbarItem(placement: .cancellationAction) { Button("Abbrechen") { text = ""; dismiss() } } }
+            .toolbar { ToolbarItem(placement: .cancellationAction) { Button("Abbrechen") { text = ""; close() } } }
             .confirmationDialog("Wallet ersetzen?", isPresented: $confirmReplace, titleVisibility: .visible) {
                 Button("Ersetzen", role: .destructive) { Task { await restore() } }
             } message: {
@@ -233,6 +235,11 @@ struct RestoreWalletView: View {
         return String(localized: "Die jetzige Wallet wird ersetzt. Ohne ihre eigenen Wörter ist ihr Guthaben danach verloren.")
     }
 
+    /// Das Blatt schließen, auch aus dem Screenshot-Schutz heraus.
+    private func close() {
+        if let closeSheet { closeSheet() } else { dismiss() }
+    }
+
     private func complete(_ word: String) {
         var list = words
         guard !list.isEmpty else { return }
@@ -248,7 +255,7 @@ struct RestoreWalletView: View {
             try await app.restoreWallet(words: list)
             text = ""
             Haptics.success()
-            dismiss()
+            close()
         } catch {
             Haptics.error()
             self.error = String(localized: "Die Wörter konnten nicht übernommen werden.")

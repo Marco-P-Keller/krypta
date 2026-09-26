@@ -111,7 +111,8 @@ extension MessengerEngine {
         m.oneTime = Self.flag(inner, "_once")
         m.isPasswordProtected = Self.flag(inner, "_pw") || Self.flag(inner, "pw")
         m.passwordUnlocked = !m.isPasswordProtected
-        m.payment = Self.payment(in: inner)
+        // Eine Zahlung ist nie verschlüsselt oder einmalig; so etwas ist keine.
+        m.payment = m.isPasswordProtected || m.oneTime ? nil : Self.payment(in: inner)
         append(m, to: chat.id)
         markProcessed(env.messageId)
         // Eine angekündigte Zahlung: die Wallet prüft sie an der Blockchain.

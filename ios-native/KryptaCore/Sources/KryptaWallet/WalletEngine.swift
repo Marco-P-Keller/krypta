@@ -325,7 +325,7 @@ public final class WalletEngine {
                 guard let self else { return }
                 await self.sync()
                 let busy = self.state.outgoing.values.contains { $0.state != .failed && self.state.history[$0.txid]?.isConfirmed != true }
-                    || self.state.claims.values.contains { if case .confirmed = $0.check { return false }; return true }
+                    || self.state.claims.values.contains(where: { self.isOpen($0.check) })
                     || self.balance.incoming > 0
                 try? await Task.sleep(for: .seconds(busy ? 30 : 300))
             }
@@ -335,6 +335,15 @@ public final class WalletEngine {
     public func stop() {
         loopTask?.cancel()
         loopTask = nil
+    }
+
+    /// Noch in Bewegung: nicht gefunden, unbestätigt oder weniger als sechs Bestätigungen.
+    func isOpen(_ check: PaymentCheck) -> Bool {
+        switch check {
+        case .checking, .unconfirmed: true
+        case .confirmed(_, let height, _): confirmations(height: height) < 6
+        case .mismatch, .notFound, .otherNetwork: false
+        }
     }
 
     /// Den Stand dieser Wallet löschen (nicht den Schlüssel).

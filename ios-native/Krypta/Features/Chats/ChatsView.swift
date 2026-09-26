@@ -124,7 +124,7 @@ struct ChatsView: View {
             SettingsView()
         }
         .sheet(isPresented: $showWallet) {
-            WalletView()
+            ShieldedSheet { WalletView() }
         }
         .onAppear(perform: openFromNotification)
         .onChange(of: app.pendingOpen) { openFromNotification() }

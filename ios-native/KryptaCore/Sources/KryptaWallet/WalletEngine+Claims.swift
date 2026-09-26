@@ -12,16 +12,19 @@ import KryptaBitcoin
 /// 3. „Bestätigt" nur mit Merkle-Beweis gegen einen Blockkopf, dessen Arbeit
 ///    stimmt (auf Bitcoin mindestens Schwierigkeit 50 T).
 extension WalletEngine {
-    /// Höchstens so viele offene Prüfungen; mehr Behauptungen (Spam) bleiben ungeprüft.
-    static let maxOpenClaims = 30
+    /// Höchstens so viele offene Prüfungen je Kontakt: wer mit erfundenen
+    /// Zahlungen flutet, blockiert nur seine eigenen, nie die der anderen.
+    static let maxOpenClaimsPerContact = 10
+    static let maxOpenClaims = 300
     /// Nach so vielen erfolglosen Versuchen gilt eine Zahlung als nicht gefunden.
     static let claimAttempts = 8
 
     /// Eine Zahlung aus dem Chat zur Prüfung vormerken.
     public func registerClaim(_ payment: ChatPayment, from contactId: String, messageId: String, note: String? = nil) {
         guard state.claims[messageId] == nil else { return }
-        let open = state.claims.values.filter { if case .checking = $0.check { return true }; return false }.count
-        guard open < Self.maxOpenClaims else { return }
+        let open = state.claims.values.filter { if case .checking = $0.check { return true }; return false }
+        guard open.count < Self.maxOpenClaims,
+              open.filter({ $0.contactId == contactId }).count < Self.maxOpenClaimsPerContact else { return }
         state.claims[messageId] = .init(payment: payment, contactId: contactId, received: Date(), attempts: 0,
                                         check: payment.network == network ? .checking : .otherNetwork)
         if payment.network == network, let note, !note.isEmpty {

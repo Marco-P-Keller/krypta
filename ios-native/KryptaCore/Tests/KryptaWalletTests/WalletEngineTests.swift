@@ -138,6 +138,22 @@ final class WalletEngineTests: XCTestCase {
         XCTAssertEqual(bob.claimStatus(messageId: "net"), .otherNetwork)
     }
 
+    /// Wer mit erfundenen Zahlungen flutet, blockiert nur seine eigenen.
+    func testClaimSpamOnlyBlocksTheSpammer() async throws {
+        await fundAlice(100_000)
+        for i in 0..<25 {
+            let fake = ChatPayment(txid: Hashes.sha256(Array("fake\(i)".utf8)).hex, vout: 0, sats: 1000,
+                                   address: try XCTUnwrap(bob.chatAddress(for: "mallory")), network: .regtest)
+            bob.registerClaim(fake, from: "mallory", messageId: "spam\(i)")
+        }
+        XCTAssertNil(bob.claimStatus(messageId: "spam20"), "mehr als zehn offene je Kontakt werden nicht geprüft")
+        let draft = try alice.prepare(to: XCTUnwrap(alice.parseAddress(XCTUnwrap(bob.chatAddress(for: "alice")))), amount: .exact(5_000), feeRate: 2)
+        let sent = try await alice.send(draft, reason: "test")
+        bob.registerClaim(sent.payment, from: "alice", messageId: "real")
+        await waitFor { self.bob.claimStatus(messageId: "real") != .checking }
+        XCTAssertEqual(bob.claimStatus(messageId: "real"), .unconfirmed(received: 5_000))
+    }
+
     /// Netzfehler beim Senden: die Münzen bleiben gesperrt, es entsteht keine
     /// zweite Zahlung, und der Abgleich findet die erste.
     func testUncertainBroadcastNeverPaysTwice() async throws {

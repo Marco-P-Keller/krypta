@@ -165,6 +165,46 @@
         }
       }
     },
+    "%@ hat dir noch keine Bitcoin-Adresse geschickt. Sie kommt verschlüsselt mit der nächsten Nachricht von %@.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ hasn't sent you a bitcoin address yet. It arrives encrypted with the next message from %2$@."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ aún no te ha enviado una dirección de bitcoin. Llegará cifrada con el próximo mensaje de %2$@."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ ne t'a pas encore envoyé d'adresse bitcoin. Elle arrivera chiffrée avec le prochain message de %2$@."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ non ti ha ancora inviato un indirizzo bitcoin. Arriverà cifrato con il prossimo messaggio di %2$@."
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ heeft je nog geen bitcoinadres gestuurd. Het komt versleuteld mee met het volgende bericht van %2$@."
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ ainda não enviou um endereço de bitcoin. Ele chega criptografado com a próxima mensagem de %2$@."
+          }
+        }
+      }
+    },
     "%@ hat ein Bildschirmfoto gemacht.": {
       "extractionState": "extracted_with_value",
       "localizations": {
@@ -288,6 +328,46 @@
         }
       }
     },
+    "%@ kann im Chat keine Bitcoin empfangen (ältere Krypta-Version oder Zahlungen im Chat ausgeschaltet).": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ can't receive bitcoin in chat (older Krypta version or chat payments turned off)."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ no puede recibir bitcoin en el chat (versión antigua de Krypta o pagos en el chat desactivados)."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ ne peut pas recevoir de bitcoins dans le chat (ancienne version de Krypta ou paiements dans le chat désactivés)."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ non può ricevere bitcoin in chat (versione di Krypta meno recente o pagamenti in chat disattivati)."
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ kan in de chat geen bitcoin ontvangen (oudere Krypta-versie of betalingen in de chat uitgeschakeld)."
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ não pode receber bitcoin no chat (versão antiga do Krypta ou pagamentos no chat desativados)."
+          }
+        }
+      }
+    },
     "%@ möchte mit dir schreiben.": {
       "extractionState": "extracted_with_value",
       "localizations": {
@@ -325,6 +405,86 @@
           "stringUnit": {
             "state": "translated",
             "value": "%@ quer conversar com você."
+          }
+        }
+      }
+    },
+    "%@ nutzt ein anderes Bitcoin-Netz als du.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ is using a different bitcoin network than you."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ usa una red de bitcoin distinta a la tuya."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ utilise un autre réseau bitcoin que toi."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ usa una rete bitcoin diversa dalla tua."
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ gebruikt een ander bitcoinnetwerk dan jij."
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ usa uma rede de bitcoin diferente da sua."
+          }
+        }
+      }
+    },
+    "%@ unterwegs": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ on the way"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ en camino"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ en route"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ in arrivo"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ onderweg"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ a caminho"
           }
         }
       }
@@ -370,6 +530,86 @@
         }
       }
     },
+    "%@ · %lld von 6 Bestätigungen": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ · %2$lld of 6 confirmations"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ · %2$lld de 6 confirmaciones"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ · %2$lld confirmations sur 6"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ · %2$lld di 6 conferme"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ · %2$lld van 6 bevestigingen"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ · %2$lld de 6 confirmações"
+          }
+        }
+      }
+    },
+    "%@ · unbestätigt": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ · unconfirmed"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ · sin confirmar"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ · non confirmé"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ · non confermato"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ · onbevestigd"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ · não confirmado"
+          }
+        }
+      }
+    },
     "%lld": {
       "extractionState": "extracted_with_value",
       "localizations": {
@@ -407,6 +647,46 @@
           "stringUnit": {
             "state": "translated",
             "value": "%lld"
+          }
+        }
+      }
+    },
+    "%lld Wörter, Prüfsumme stimmt.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld words, checksum is correct."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld palabras, la suma de verificación es correcta."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld mots, la somme de contrôle est correcte."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld parole, il checksum è corretto."
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld woorden, controlesom klopt."
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld palavras, a soma de verificação está correta."
           }
         }
       }
@@ -493,6 +773,46 @@
         }
       }
     },
+    "%lld von 12 Wörtern": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld of 12 words"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld de 12 palabras"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld mots sur 12"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld di 12 parole"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld van 12 woorden"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld de 12 palavras"
+          }
+        }
+      }
+    },
     "Abbrechen": {
       "extractionState": "extracted_with_value",
       "localizations": {
@@ -530,6 +850,46 @@
           "stringUnit": {
             "state": "translated",
             "value": "Cancelar"
+          }
+        }
+      }
+    },
+    "Abgeglichen %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Synced %@"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sincronizado %@"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Synchronisé %@"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sincronizzato %@"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gesynchroniseerd %@"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sincronizado %@"
           }
         }
       }
@@ -575,6 +935,46 @@
         }
       }
     },
+    "Absender": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sender"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Remitente"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Expéditeur"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mittente"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Afzender"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Remetente"
+          }
+        }
+      }
+    },
     "Absender nennen": {
       "extractionState": "extracted_with_value",
       "localizations": {
@@ -612,6 +1012,126 @@
           "stringUnit": {
             "state": "translated",
             "value": "Mostrar remetente"
+          }
+        }
+      }
+    },
+    "Achte darauf, dass niemand mitsieht.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Make sure nobody is watching."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Asegúrate de que nadie mire."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Assure-toi que personne ne regarde."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Assicurati che nessuno guardi."
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Let erop dat niemand meekijkt."
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Garanta que ninguém esteja olhando."
+          }
+        }
+      }
+    },
+    "Adresse": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Address"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dirección"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Adresse"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Indirizzo"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Adres"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Endereço"
+          }
+        }
+      }
+    },
+    "Adressen gründlich durchsuchen": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Search addresses thoroughly"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Buscar direcciones a fondo"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rechercher les adresses en profondeur"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cerca a fondo negli indirizzi"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Adressen grondig doorzoeken"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pesquisar endereços a fundo"
           }
         }
       }
@@ -776,6 +1296,86 @@
           "stringUnit": {
             "state": "translated",
             "value": "Apagar tudo?"
+          }
+        }
+      }
+    },
+    "Alles senden": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Send everything"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enviar todo"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tout envoyer"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Invia tutto"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Alles sturen"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enviar tudo"
+          }
+        }
+      }
+    },
+    "Alles, abzüglich Gebühr": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Everything, minus fee"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Todo, menos la comisión"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tout, moins les frais"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tutto, meno la commissione"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Alles, min de kosten"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tudo, menos a taxa"
           }
         }
       }
@@ -985,6 +1585,166 @@
         }
       }
     },
+    "An %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "To %@"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Para %@"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "À %@"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A %@"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aan %@"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Para %@"
+          }
+        }
+      }
+    },
+    "An Adresse": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "To address"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A la dirección"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "À l'adresse"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "All'indirizzo"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Naar adres"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Para o endereço"
+          }
+        }
+      }
+    },
+    "An deine Adresse": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "To your address"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A tu dirección"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "À ton adresse"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Al tuo indirizzo"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Naar jouw adres"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Para o seu endereço"
+          }
+        }
+      }
+    },
+    "Anderes Bitcoin-Netz": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Different bitcoin network"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Otra red de bitcoin"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Autre réseau bitcoin"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Altra rete bitcoin"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ander bitcoinnetwerk"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Outra rede de bitcoin"
+          }
+        }
+      }
+    },
     "Anfrage gesendet. Ihr könnt schreiben, sobald %@ annimmt.": {
       "extractionState": "extracted_with_value",
       "localizations": {
@@ -1022,6 +1782,46 @@
           "stringUnit": {
             "state": "translated",
             "value": "Pedido enviado. Vocês poderão conversar assim que %@ aceitar."
+          }
+        }
+      }
+    },
+    "Angekündigt": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Announced"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Anunciado"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Annoncé"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Annunciato"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aangekondigd"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Anunciado"
           }
         }
       }
@@ -1354,6 +2154,206 @@
         }
       }
     },
+    "Bestätigt": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Confirmed"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Confirmado"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Confirmé"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Confermato"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bevestigd"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Confirmado"
+          }
+        }
+      }
+    },
+    "Bestätigt (%lld von 6)": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Confirmed (%lld of 6)"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Confirmado (%lld de 6)"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Confirmé (%lld sur 6)"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Confermato (%lld di 6)"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bevestigd (%lld van 6)"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Confirmado (%lld de 6)"
+          }
+        }
+      }
+    },
+    "Bestätigungen": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Confirmations"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Confirmaciones"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Confirmations"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Conferme"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bevestigingen"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Confirmações"
+          }
+        }
+      }
+    },
+    "Betrag": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Amount"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Importe"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Montant"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Importo"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bedrag"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Valor"
+          }
+        }
+      }
+    },
+    "Bewahre den Zettel gut auf. Krypta fragt nicht mehr danach; du kannst die Wörter aber jederzeit in den Wallet-Einstellungen wieder ansehen.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Keep the paper safe. Krypta won't ask again, but you can view the words any time in the wallet settings."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Guarda bien el papel. Krypta no volverá a preguntar, pero puedes ver las palabras cuando quieras en los ajustes del monedero."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Garde bien le papier. Krypta ne le redemandera plus, mais tu peux revoir les mots à tout moment dans les réglages du portefeuille."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Conserva bene il foglio. Krypta non lo chiederà più, ma puoi rivedere le parole quando vuoi nelle impostazioni del wallet."
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bewaar het papiertje goed. Krypta vraagt er niet meer naar, maar je kunt de woorden altijd weer bekijken in de wallet-instellingen."
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Guarde bem o papel. O Krypta não vai pedir de novo, mas você pode ver as palavras a qualquer momento nos ajustes da carteira."
+          }
+        }
+      }
+    },
     "Bildschirmfotos und Aufnahmen zeigen statt deiner Chats eine leere Fläche. Dein Kontakt erfährt trotzdem davon.": {
       "extractionState": "extracted_with_value",
       "localizations": {
@@ -1473,6 +2473,326 @@
           "stringUnit": {
             "state": "translated",
             "value": "Biometria"
+          }
+        }
+      }
+    },
+    "Bitcoin": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bitcoin"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bitcoin"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bitcoin"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bitcoin"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bitcoin"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bitcoin"
+          }
+        }
+      }
+    },
+    "Bitcoin für dich": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bitcoin for you"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bitcoin para ti"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Des bitcoins pour toi"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bitcoin per te"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bitcoin voor jou"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bitcoin para você"
+          }
+        }
+      }
+    },
+    "Bitcoin in deiner Hand": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bitcoin in your hands"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bitcoin en tus manos"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Des bitcoins entre tes mains"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bitcoin nelle tue mani"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bitcoin in eigen hand"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bitcoin nas suas mãos"
+          }
+        }
+      }
+    },
+    "Bitcoin senden": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Send bitcoin"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enviar bitcoin"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Envoyer des bitcoins"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Invia bitcoin"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bitcoin sturen"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enviar bitcoin"
+          }
+        }
+      }
+    },
+    "Bitcoin-Adresse scannen": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Scan bitcoin address"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Escanear dirección de bitcoin"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Scanner une adresse bitcoin"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Scansiona indirizzo bitcoin"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bitcoinadres scannen"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ler endereço de bitcoin"
+          }
+        }
+      }
+    },
+    "Bitcoin-Wallet": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bitcoin wallet"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Monedero de bitcoin"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Portefeuille bitcoin"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wallet bitcoin"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bitcoin-wallet"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Carteira de bitcoin"
+          }
+        }
+      }
+    },
+    "Bitcoin-Zahlung": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bitcoin payment"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pago en bitcoin"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Paiement en bitcoin"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pagamento in bitcoin"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bitcoinbetaling"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pagamento em bitcoin"
+          }
+        }
+      }
+    },
+    "Bitcoin-Zahlungen lassen sich nicht zurückholen. Prüfe Empfänger und Betrag. Zum Senden fragt Krypta nach %@ oder deinem Gerätecode.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bitcoin payments can't be reversed. Check recipient and amount. To send, Krypta asks for %@ or your device passcode."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Los pagos en bitcoin no se pueden revertir. Revisa destinatario e importe. Para enviar, Krypta pide %@ o el código del dispositivo."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Les paiements en bitcoin sont irréversibles. Vérifie le destinataire et le montant. Pour envoyer, Krypta demande %@ ou le code de l'appareil."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "I pagamenti in bitcoin non si possono annullare. Controlla destinatario e importo. Per inviare, Krypta chiede %@ o il codice del dispositivo."
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bitcoinbetalingen kun je niet terugdraaien. Controleer ontvanger en bedrag. Om te versturen vraagt Krypta om %@ of je toegangscode."
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pagamentos em bitcoin não podem ser revertidos. Confira destinatário e valor. Para enviar, o Krypta pede %@ ou o código do aparelho."
           }
         }
       }
@@ -2255,6 +3575,46 @@
         }
       }
     },
+    "Das ist keine gültige Bitcoin-Adresse.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "That isn't a valid bitcoin address."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No es una dirección de bitcoin válida."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ce n'est pas une adresse bitcoin valide."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Non è un indirizzo bitcoin valido."
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dat is geen geldig bitcoinadres."
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Este não é um endereço de bitcoin válido."
+          }
+        }
+      }
+    },
     "Das ist keine gültige Kennung.": {
       "extractionState": "extracted_with_value",
       "localizations": {
@@ -2460,6 +3820,86 @@
         }
       }
     },
+    "Davon Gebühr": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Of which fee"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "De ello, comisión"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dont frais"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Di cui commissione"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Waarvan kosten"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dos quais taxa"
+          }
+        }
+      }
+    },
+    "Dein Guthaben hat sich gerade geändert. Prüfe die Zahlung bitte noch einmal.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your balance just changed. Please check the payment again."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tu saldo acaba de cambiar. Revisa el pago otra vez."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ton solde vient de changer. Vérifie à nouveau le paiement."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Il tuo saldo è appena cambiato. Controlla di nuovo il pagamento."
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Je saldo is net veranderd. Controleer de betaling nog eens."
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Seu saldo acabou de mudar. Confira o pagamento de novo."
+          }
+        }
+      }
+    },
     "Dein Kontakt": {
       "extractionState": "extracted_with_value",
       "localizations": {
@@ -2624,6 +4064,46 @@
         }
       }
     },
+    "Dein iPhone hat keinen Gerätecode. Dann kann Krypta das Senden nicht an Face ID binden: wer dein entsperrtes iPhone hat, kann Bitcoin senden. Richte in den iOS-Einstellungen einen Code ein.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your iPhone has no passcode. Then Krypta can't tie sending to Face ID: anyone holding your unlocked iPhone can send bitcoin. Set up a passcode in iOS Settings."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tu iPhone no tiene código. Así Krypta no puede vincular los envíos a Face ID: quien tenga tu iPhone desbloqueado puede enviar bitcoin. Configura un código en los Ajustes de iOS."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ton iPhone n'a pas de code. Krypta ne peut donc pas lier l'envoi à Face ID : quiconque a ton iPhone déverrouillé peut envoyer des bitcoins. Configure un code dans les Réglages d'iOS."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Il tuo iPhone non ha un codice. Così Krypta non può legare l'invio a Face ID: chiunque abbia il tuo iPhone sbloccato può inviare bitcoin. Imposta un codice nelle Impostazioni di iOS."
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Je iPhone heeft geen toegangscode. Dan kan Krypta versturen niet aan Face ID koppelen: wie je ontgrendelde iPhone heeft, kan bitcoin versturen. Stel een code in bij de iOS-instellingen."
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Seu iPhone não tem código. Assim o Krypta não consegue vincular o envio ao Face ID: quem tiver seu iPhone desbloqueado pode enviar bitcoin. Defina um código nos Ajustes do iOS."
+          }
+        }
+      }
+    },
     "Deine Kennung": {
       "extractionState": "extracted_with_value",
       "localizations": {
@@ -2743,6 +4223,86 @@
           "stringUnit": {
             "state": "translated",
             "value": "Não foi possível publicar suas chaves. No momento, ninguém consegue falar com você."
+          }
+        }
+      }
+    },
+    "Der Betrag ist zu klein. Mindestens %@.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The amount is too small. At least %@."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "El importe es demasiado pequeño. Mínimo %@."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Le montant est trop faible. Au moins %@."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "L'importo è troppo piccolo. Almeno %@."
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Het bedrag is te klein. Minstens %@."
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "O valor é muito pequeno. No mínimo %@."
+          }
+        }
+      }
+    },
+    "Der Bitcoin-Server antwortet gerade nicht richtig. Versuch es gleich noch einmal.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The bitcoin server isn't responding properly right now. Try again in a moment."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "El servidor de bitcoin no responde bien ahora mismo. Inténtalo de nuevo enseguida."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Le serveur bitcoin ne répond pas correctement en ce moment. Réessaie dans un instant."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Il server bitcoin al momento non risponde correttamente. Riprova tra poco."
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "De bitcoinserver reageert nu niet goed. Probeer het zo nog eens."
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "O servidor de bitcoin não está respondendo direito agora. Tente de novo em instantes."
           }
         }
       }
@@ -2911,6 +4471,86 @@
         }
       }
     },
+    "Der Schlüssel liegt im Schlüsselbund nur dieses iPhones, nicht in Backups und nicht in iCloud. Selbst Krypta kommt ohne deine Bestätigung nicht an ihn heran.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The key is in this iPhone's keychain only, not in backups and not in iCloud. Even Krypta can't reach it without your confirmation."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "La clave está solo en el llavero de este iPhone, ni en copias de seguridad ni en iCloud. Ni siquiera Krypta llega a ella sin tu confirmación."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "La clé se trouve uniquement dans le trousseau de cet iPhone, ni dans les sauvegardes ni dans iCloud. Même Krypta n'y accède pas sans ta confirmation."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "La chiave è solo nel portachiavi di questo iPhone, non nei backup e non in iCloud. Nemmeno Krypta può usarla senza la tua conferma."
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "De sleutel staat alleen in de sleutelhanger van deze iPhone, niet in back-ups en niet in iCloud. Zelfs Krypta kan er zonder jouw bevestiging niet bij."
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A chave fica só nas chaves deste iPhone, não em backups nem no iCloud. Nem o Krypta chega a ela sem a sua confirmação."
+          }
+        }
+      }
+    },
+    "Der Server hat die Zahlung abgelehnt. Es wurde nichts gesendet.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The server rejected the payment. Nothing was sent."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "El servidor rechazó el pago. No se envió nada."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Le serveur a refusé le paiement. Rien n'a été envoyé."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Il server ha rifiutato il pagamento. Non è stato inviato nulla."
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "De server heeft de betaling geweigerd. Er is niets verstuurd."
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "O servidor recusou o pagamento. Nada foi enviado."
+          }
+        }
+      }
+    },
     "Der Server vergisst": {
       "extractionState": "extracted_with_value",
       "localizations": {
@@ -3034,6 +4674,46 @@
         }
       }
     },
+    "Die Adresse hat dein Kontakt verschlüsselt im Chat geschickt, nur für dich. Jede Zahlung geht an eine neue.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your contact sent this address encrypted in the chat, just for you. Every payment goes to a new one."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tu contacto envió esta dirección cifrada en el chat, solo para ti. Cada pago va a una nueva."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ton contact a envoyé cette adresse chiffrée dans le chat, rien que pour toi. Chaque paiement va vers une nouvelle."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Il tuo contatto ha inviato questo indirizzo cifrato in chat, solo per te. Ogni pagamento va a uno nuovo."
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Je contact heeft dit adres versleuteld in de chat gestuurd, alleen voor jou. Elke betaling gaat naar een nieuw adres."
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Seu contato enviou este endereço criptografado no chat, só para você. Cada pagamento vai para um novo."
+          }
+        }
+      }
+    },
     "Die Codes stimmen nicht überein. Versuche es noch einmal.": {
       "extractionState": "extracted_with_value",
       "localizations": {
@@ -3071,6 +4751,126 @@
           "stringUnit": {
             "state": "translated",
             "value": "Os códigos não coincidem. Tente novamente."
+          }
+        }
+      }
+    },
+    "Die Gebühr bekommen die Miner, nicht Krypta. Höher heißt schneller im Block.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The fee goes to the miners, not to Krypta. Higher means into a block sooner."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "La comisión es para los mineros, no para Krypta. Más alta significa entrar antes en un bloque."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Les frais vont aux mineurs, pas à Krypta. Plus élevés, plus vite dans un bloc."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "La commissione va ai miner, non a Krypta. Più alta significa entrare prima in un blocco."
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "De kosten gaan naar de miners, niet naar Krypta. Hoger betekent sneller in een blok."
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A taxa vai para os mineradores, não para o Krypta. Mais alta significa entrar antes em um bloco."
+          }
+        }
+      }
+    },
+    "Die Gebühr des Servers ist unplausibel. Versuch es später.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The server's fee looks implausible. Try again later."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "La comisión del servidor no es plausible. Inténtalo más tarde."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Les frais du serveur ne sont pas plausibles. Réessaie plus tard."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "La commissione del server non è plausibile. Riprova più tardi."
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "De kosten van de server zijn niet plausibel. Probeer het later."
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A taxa do servidor não é plausível. Tente mais tarde."
+          }
+        }
+      }
+    },
+    "Die Gebühr ist mehr als 10 % des Betrags.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The fee is more than 10% of the amount."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "La comisión supera el 10 % del importe."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Les frais dépassent 10 % du montant."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "La commissione supera il 10% dell'importo."
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "De kosten zijn meer dan 10% van het bedrag."
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A taxa é mais de 10% do valor."
           }
         }
       }
@@ -3152,6 +4952,46 @@
           "stringUnit": {
             "state": "translated",
             "value": "As senhas não coincidem."
+          }
+        }
+      }
+    },
+    "Die Prüfsumme stimmt nicht. Ist ein Wort vertauscht?": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The checksum doesn't match. Is a word mixed up?"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "La suma de verificación no coincide. ¿Hay una palabra cambiada?"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "La somme de contrôle ne correspond pas. Un mot est-il inversé ?"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Il checksum non corrisponde. Una parola è scambiata?"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "De controlesom klopt niet. Is er een woord verwisseld?"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A soma de verificação não confere. Alguma palavra foi trocada?"
           }
         }
       }
@@ -3275,6 +5115,366 @@
           "stringUnit": {
             "state": "translated",
             "value": "O número de segurança de %@ mudou. Verifique-o antes de continuar escrevendo."
+          }
+        }
+      }
+    },
+    "Die Verbindung brach beim Senden ab. Krypta sendet bei jedem Abgleich genau diese Transaktion erneut, bis sie auf der Blockchain ist. Eine zweite Zahlung entsteht dabei nie.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The connection dropped while sending. Krypta resends exactly this transaction at every sync until it's on the blockchain. A second payment is never created."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "La conexión se cortó al enviar. Krypta reenvía exactamente esta transacción en cada sincronización hasta que esté en la blockchain. Nunca se crea un segundo pago."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "La connexion a été coupée pendant l'envoi. Krypta renvoie exactement cette transaction à chaque synchronisation jusqu'à ce qu'elle soit sur la blockchain. Aucun second paiement n'est jamais créé."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "La connessione si è interrotta durante l'invio. Krypta reinvia esattamente questa transazione a ogni sincronizzazione finché non è sulla blockchain. Non viene mai creato un secondo pagamento."
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "De verbinding viel weg tijdens het versturen. Krypta stuurt bij elke synchronisatie precies deze transactie opnieuw tot ze op de blockchain staat. Een tweede betaling ontstaat nooit."
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A conexão caiu durante o envio. O Krypta reenvia exatamente esta transação a cada sincronização até ela estar na blockchain. Nunca surge um segundo pagamento."
+          }
+        }
+      }
+    },
+    "Die Verbindung ist abgebrochen. Ob die Zahlung raus ist, prüft Krypta beim nächsten Abgleich und sendet dann genau dieselbe Zahlung noch einmal, nie eine zweite.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The connection dropped. Krypta checks whether the payment went out at the next sync and then resends exactly the same payment, never a second one."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Se cortó la conexión. Krypta comprueba en la próxima sincronización si el pago salió y reenvía exactamente el mismo pago, nunca uno segundo."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "La connexion a été coupée. Krypta vérifie à la prochaine synchronisation si le paiement est parti, puis renvoie exactement le même, jamais un second."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "La connessione si è interrotta. Krypta verifica alla prossima sincronizzazione se il pagamento è partito e poi reinvia esattamente lo stesso, mai un secondo."
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "De verbinding is weggevallen. Krypta controleert bij de volgende synchronisatie of de betaling is verstuurd en stuurt dan precies dezelfde betaling opnieuw, nooit een tweede."
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A conexão caiu. O Krypta verifica na próxima sincronização se o pagamento saiu e reenvia exatamente o mesmo pagamento, nunca um segundo."
+          }
+        }
+      }
+    },
+    "Die Wallet konnte nicht geöffnet werden. Öffne Krypta noch einmal.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The wallet couldn't be opened. Open Krypta again."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No se pudo abrir el monedero. Abre Krypta de nuevo."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Impossible d'ouvrir le portefeuille. Rouvre Krypta."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Impossibile aprire il wallet. Apri di nuovo Krypta."
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "De wallet kon niet worden geopend. Open Krypta opnieuw."
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Não foi possível abrir a carteira. Abra o Krypta de novo."
+          }
+        }
+      }
+    },
+    "Die Wörter konnten nicht übernommen werden.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The words couldn't be applied."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No se pudieron aplicar las palabras."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Les mots n'ont pas pu être appliqués."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Non è stato possibile applicare le parole."
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "De woorden konden niet worden overgenomen."
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Não foi possível aplicar as palavras."
+          }
+        }
+      }
+    },
+    "Die Zahlung läuft über die Bitcoin-Blockchain. Die Nachricht im Chat sagt deinem Kontakt nur, dass und wohin.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The payment goes over the bitcoin blockchain. The chat message only tells your contact that you paid and where to."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "El pago va por la blockchain de bitcoin. El mensaje del chat solo le dice a tu contacto que pagaste y adónde."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Le paiement passe par la blockchain bitcoin. Le message dans le chat indique seulement à ton contact que tu as payé et vers quelle adresse."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Il pagamento passa dalla blockchain bitcoin. Il messaggio in chat dice al tuo contatto solo che hai pagato e dove."
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "De betaling loopt via de bitcoin-blockchain. Het chatbericht vertelt je contact alleen dat je hebt betaald en waarheen."
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "O pagamento passa pela blockchain do bitcoin. A mensagem no chat só diz ao seu contato que você pagou e para onde."
+          }
+        }
+      }
+    },
+    "Die jetzige Wallet wird durch die aus diesen Wörtern ersetzt.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The current wallet will be replaced by the one from these words."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "El monedero actual se sustituirá por el de estas palabras."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Le portefeuille actuel sera remplacé par celui de ces mots."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Il wallet attuale sarà sostituito da quello di queste parole."
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "De huidige wallet wordt vervangen door die van deze woorden."
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A carteira atual será substituída pela destas palavras."
+          }
+        }
+      }
+    },
+    "Die jetzige Wallet wird ersetzt. Ohne ihre eigenen Wörter ist ihr Guthaben danach verloren.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The current wallet will be replaced. Without its own words, its balance is lost afterwards."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "El monedero actual se sustituirá. Sin sus propias palabras, su saldo se perderá."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Le portefeuille actuel sera remplacé. Sans ses propres mots, son solde sera perdu."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Il wallet attuale sarà sostituito. Senza le sue parole, il suo saldo andrà perso."
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "De huidige wallet wordt vervangen. Zonder zijn eigen woorden is het saldo daarna verloren."
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A carteira atual será substituída. Sem as palavras dela, o saldo se perde."
+          }
+        }
+      }
+    },
+    "Diese Adresse gehört zu einem anderen Bitcoin-Netz.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This address belongs to a different bitcoin network."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Esta dirección pertenece a otra red de bitcoin."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cette adresse appartient à un autre réseau bitcoin."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Questo indirizzo appartiene a un'altra rete bitcoin."
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dit adres hoort bij een ander bitcoinnetwerk."
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Este endereço pertence a outra rede de bitcoin."
+          }
+        }
+      }
+    },
+    "Diese Art Adresse unterstützt Krypta nicht.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Krypta doesn't support this type of address."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Krypta no admite este tipo de dirección."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Krypta ne prend pas en charge ce type d'adresse."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Krypta non supporta questo tipo di indirizzo."
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Krypta ondersteunt dit soort adres niet."
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "O Krypta não aceita este tipo de endereço."
           }
         }
       }
@@ -3602,6 +5802,46 @@
           "stringUnit": {
             "state": "translated",
             "value": "Você vai saber de quem é a mensagem, por exemplo “Nova mensagem de Mãe”. O conteúdo só aparece para quem abrir o Krypta."
+          }
+        }
+      }
+    },
+    "Du hast Bitcoin gesendet": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "You sent bitcoin"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enviaste bitcoin"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tu as envoyé des bitcoins"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hai inviato bitcoin"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Je hebt bitcoin gestuurd"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Você enviou bitcoin"
           }
         }
       }
@@ -3934,6 +6174,86 @@
         }
       }
     },
+    "Du zahlst %@ Gebühr für %@.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "You're paying a fee of %1$@ for %2$@."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pagas %1$@ de comisión por %2$@."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tu paies %1$@ de frais pour %2$@."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Paghi %1$@ di commissione per %2$@."
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Je betaalt %1$@ kosten voor %2$@."
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Você paga %1$@ de taxa por %2$@."
+          }
+        }
+      }
+    },
+    "Einheit": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Unit"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Unidad"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Unité"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Unità"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Eenheid"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Unidade"
+          }
+        }
+      }
+    },
     "Einmal ansehen": {
       "extractionState": "extracted_with_value",
       "localizations": {
@@ -4221,6 +6541,86 @@
         }
       }
     },
+    "Empfangen": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Receive"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recibir"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recevoir"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ricevi"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ontvangen"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Receber"
+          }
+        }
+      }
+    },
+    "Empfänger": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recipient"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Destinatario"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Destinataire"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Destinatario"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ontvanger"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Destinatário"
+          }
+        }
+      }
+    },
     "Ende-zu-Ende-Verschlüsselung": {
       "extractionState": "extracted_with_value",
       "localizations": {
@@ -4426,6 +6826,46 @@
         }
       }
     },
+    "Erhalten": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Received"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recibido"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reçu"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ricevuto"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ontvangen"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recebido"
+          }
+        }
+      }
+    },
     "Erneut": {
       "extractionState": "extracted_with_value",
       "localizations": {
@@ -4504,6 +6944,86 @@
           "stringUnit": {
             "state": "translated",
             "value": "Enviar novamente"
+          }
+        }
+      }
+    },
+    "Ersetzen": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Replace"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sustituir"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Remplacer"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sostituisci"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vervangen"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Substituir"
+          }
+        }
+      }
+    },
+    "Ersetzt die Wallet auf diesem iPhone. Wörter einer anderen Wallet (BIP39, BIP84, native Segwit) funktionieren auch.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Replaces the wallet on this iPhone. Words from another wallet (BIP39, BIP84, native SegWit) work too."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sustituye el monedero de este iPhone. También sirven las palabras de otro monedero (BIP39, BIP84, SegWit nativo)."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Remplace le portefeuille sur cet iPhone. Les mots d'un autre portefeuille (BIP39, BIP84, SegWit natif) fonctionnent aussi."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sostituisce il wallet su questo iPhone. Funzionano anche le parole di un altro wallet (BIP39, BIP84, SegWit nativo)."
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vervangt de wallet op deze iPhone. Woorden van een andere wallet (BIP39, BIP84, native SegWit) werken ook."
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Substitui a carteira neste iPhone. Palavras de outra carteira (BIP39, BIP84, SegWit nativo) também funcionam."
           }
         }
       }
@@ -4918,6 +7438,86 @@
         }
       }
     },
+    "Gebühr": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fee"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Comisión"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Frais"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Commissione"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kosten"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Taxa"
+          }
+        }
+      }
+    },
+    "Gebühren werden geladen …": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Loading fees…"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cargando comisiones…"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Chargement des frais…"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Caricamento commissioni…"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kosten worden geladen…"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Carregando taxas…"
+          }
+        }
+      }
+    },
     "Gedrückt halten, um sofort alles zu löschen.": {
       "localizations": {
         "en": {
@@ -5203,6 +7803,126 @@
         }
       }
     },
+    "Gerade nicht möglich.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Not possible right now."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No es posible en este momento."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Impossible pour le moment."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Non è possibile in questo momento."
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Op dit moment niet mogelijk."
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Não é possível agora."
+          }
+        }
+      }
+    },
+    "Gerätecode": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Device passcode"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Código del dispositivo"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Code de l'appareil"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Codice del dispositivo"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Toegangscode"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Código do aparelho"
+          }
+        }
+      }
+    },
+    "Gesamt": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Total"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Total"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Total"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Totale"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Totaal"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Total"
+          }
+        }
+      }
+    },
     "Geschützte Nachricht": {
       "extractionState": "extracted_with_value",
       "localizations": {
@@ -5281,6 +8001,86 @@
           "stringUnit": {
             "state": "translated",
             "value": "Enviada"
+          }
+        }
+      }
+    },
+    "Gesichert": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Backed up"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Guardadas"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sauvegardés"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Salvate"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Opgeslagen"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Guardadas"
+          }
+        }
+      }
+    },
+    "Gesichert. Bewahre den Zettel gut auf.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Backed up. Keep the paper safe."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Guardadas. Guarda bien el papel."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sauvegardés. Garde bien le papier."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Salvate. Conserva bene il foglio."
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Opgeslagen. Bewaar het papiertje goed."
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Guardadas. Guarde bem o papel."
           }
         }
       }
@@ -5531,6 +8331,46 @@
         }
       }
     },
+    "Gib die Wörter an diesen Stellen ein, so wie sie auf deinem Zettel stehen.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enter the words at these positions as they appear on your paper."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Escribe las palabras de estas posiciones tal como están en tu papel."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Saisis les mots à ces positions, tels qu'ils figurent sur ton papier."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Inserisci le parole in queste posizioni come sono scritte sul tuo foglio."
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vul de woorden op deze plaatsen in zoals ze op je papiertje staan."
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Digite as palavras nestas posições como estão no seu papel."
+          }
+        }
+      }
+    },
     "Gib diesen Code im Rechner ein und tippe auf =, um Krypta zu öffnen.": {
       "extractionState": "extracted_with_value",
       "localizations": {
@@ -5654,6 +8494,46 @@
         }
       }
     },
+    "Günstig": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cheap"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Económica"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Économique"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Economica"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Goedkoop"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Econômica"
+          }
+        }
+      }
+    },
     "Heute %@": {
       "extractionState": "extracted_with_value",
       "localizations": {
@@ -5732,6 +8612,126 @@
           "stringUnit": {
             "state": "translated",
             "value": "Adicionar"
+          }
+        }
+      }
+    },
+    "Hohe Gebühr": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "High fee"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Comisión alta"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Frais élevés"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Commissione alta"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hoge kosten"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Taxa alta"
+          }
+        }
+      }
+    },
+    "Ich habe sie aufgeschrieben": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "I've written them down"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Las he anotado"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Je les ai notés"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Le ho scritte"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ik heb ze opgeschreven"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Já anotei"
+          }
+        }
+      }
+    },
+    "Im Block-Explorer ansehen": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "View in block explorer"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ver en el explorador de bloques"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Voir dans l'explorateur de blocs"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vedi nel block explorer"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bekijken in blockexplorer"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ver no explorador de blocos"
           }
         }
       }
@@ -6021,6 +9021,46 @@
         }
       }
     },
+    "Jedes Konto hat eine eigene Bitcoin-Wallet. Ihr Schlüssel entsteht auf diesem iPhone, verlässt es nie und wird nur nach Face ID oder Code benutzt. Im Chat bekommt jeder Kontakt verschlüsselt eine eigene Adresse; ob eine Zahlung wirklich angekommen ist, prüft Krypta selbst auf der Blockchain.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Every account has its own bitcoin wallet. Its key is created on this iPhone, never leaves it and is only used after Face ID or your passcode. In chat, every contact gets their own address, encrypted; whether a payment really arrived, Krypta checks on the blockchain itself."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cada cuenta tiene su propio monedero de bitcoin. Su clave se crea en este iPhone, nunca sale de él y solo se usa tras Face ID o el código. En el chat cada contacto recibe, cifrada, su propia dirección; si un pago llegó de verdad lo comprueba Krypta en la blockchain."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Chaque compte a son propre portefeuille bitcoin. Sa clé naît sur cet iPhone, ne le quitte jamais et ne sert qu'après Face ID ou le code. Dans le chat, chaque contact reçoit sa propre adresse, chiffrée ; si un paiement est vraiment arrivé, Krypta le vérifie lui-même sur la blockchain."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ogni account ha il proprio wallet bitcoin. La sua chiave nasce su questo iPhone, non lo lascia mai e si usa solo dopo Face ID o il codice. In chat ogni contatto riceve, cifrato, un proprio indirizzo; se un pagamento è davvero arrivato lo verifica Krypta stesso sulla blockchain."
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Elk account heeft een eigen bitcoin-wallet. De sleutel ontstaat op deze iPhone, verlaat hem nooit en wordt alleen na Face ID of code gebruikt. In de chat krijgt elk contact versleuteld een eigen adres; of een betaling echt is aangekomen, controleert Krypta zelf op de blockchain."
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cada conta tem sua própria carteira de bitcoin. A chave nasce neste iPhone, nunca sai dele e só é usada após Face ID ou código. No chat, cada contato recebe, criptografado, seu próprio endereço; se um pagamento realmente chegou, o Krypta verifica ele mesmo na blockchain."
+          }
+        }
+      }
+    },
     "Jedes Krypta-Konto veröffentlicht eine Kette signierter Einträge zu seinem Schlüssel. Jede Nachricht trägt verschlüsselt mit, welche Kette die Gegenseite sieht. Zeigt der Server zwei Leuten verschiedene Schlüssel, fällt das auf.": {
       "extractionState": "extracted_with_value",
       "localizations": {
@@ -6222,6 +9262,126 @@
           "stringUnit": {
             "state": "translated",
             "value": "Nenhuma mensagem"
+          }
+        }
+      }
+    },
+    "Keine Verbindung zum Bitcoin-Server.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No connection to the bitcoin server."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sin conexión con el servidor de bitcoin."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pas de connexion au serveur bitcoin."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nessuna connessione al server bitcoin."
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Geen verbinding met de bitcoinserver."
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sem conexão com o servidor de bitcoin."
+          }
+        }
+      }
+    },
+    "Keine Wallet": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No wallet"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sin monedero"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pas de portefeuille"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nessun wallet"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Geen wallet"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sem carteira"
+          }
+        }
+      }
+    },
+    "Keine Wallet gefunden.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No wallet found."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No se encontró ningún monedero."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aucun portefeuille trouvé."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nessun wallet trovato."
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Geen wallet gevonden."
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nenhuma carteira encontrada."
           }
         }
       }
@@ -6554,6 +9714,46 @@
         }
       }
     },
+    "Kontakte mit Krypta bekommen verschlüsselt eine Adresse, die nur für sie ist, und können dich direkt im Chat bezahlen. Der Server von Krypta sieht davon nichts.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Contacts using Krypta get an encrypted address that's just for them and can pay you right in the chat. Krypta's server sees none of this."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Los contactos con Krypta reciben cifrada una dirección solo para ellos y pueden pagarte directamente en el chat. El servidor de Krypta no ve nada de esto."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Les contacts sur Krypta reçoivent, chiffrée, une adresse rien que pour eux et peuvent te payer directement dans le chat. Le serveur de Krypta n'en voit rien."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "I contatti con Krypta ricevono cifrato un indirizzo solo per loro e possono pagarti direttamente in chat. Il server di Krypta non vede nulla."
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Contacten met Krypta krijgen versleuteld een adres dat alleen voor hen is en kunnen je direct in de chat betalen. De server van Krypta ziet daar niets van."
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Contatos com Krypta recebem, criptografado, um endereço só para eles e podem pagar você direto no chat. O servidor do Krypta não vê nada disso."
+          }
+        }
+      }
+    },
     "Kontaktinfo": {
       "extractionState": "extracted_with_value",
       "localizations": {
@@ -6718,6 +9918,46 @@
         }
       }
     },
+    "Kopiert": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Copied"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Copiado"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Copié"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Copiato"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gekopieerd"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Copiado"
+          }
+        }
+      }
+    },
     "Krypta Chat %@ (%@)": {
       "extractionState": "extracted_with_value",
       "localizations": {
@@ -6800,6 +10040,46 @@
         }
       }
     },
+    "Krypta glaubt der Nachricht nicht, sondern prüft die Transaktion auf der Blockchain: Kennung, Adresse und Betrag. „Bestätigt“ heißt: in einem Block, dessen Beweis Krypta selbst nachgerechnet hat.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Krypta doesn't trust the message; it checks the transaction on the blockchain: ID, address and amount. “Confirmed” means: in a block whose proof Krypta verified itself."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Krypta no se fía del mensaje: comprueba la transacción en la blockchain, su identificador, dirección e importe. «Confirmado» significa: en un bloque cuya prueba Krypta ha verificado por sí mismo."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Krypta ne croit pas le message : il vérifie la transaction sur la blockchain, identifiant, adresse et montant. « Confirmé » signifie : dans un bloc dont Krypta a lui-même vérifié la preuve."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Krypta non si fida del messaggio: verifica la transazione sulla blockchain, identificativo, indirizzo e importo. «Confermato» significa: in un blocco la cui prova Krypta ha verificato da sé."
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Krypta gelooft het bericht niet, maar controleert de transactie op de blockchain: ID, adres en bedrag. „Bevestigd” betekent: in een blok waarvan Krypta het bewijs zelf heeft nagerekend."
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "O Krypta não confia na mensagem: verifica a transação na blockchain, identificador, endereço e valor. “Confirmado” significa: em um bloco cuja prova o Krypta conferiu ele mesmo."
+          }
+        }
+      }
+    },
     "Krypta ist gesperrt": {
       "extractionState": "extracted_with_value",
       "localizations": {
@@ -6837,6 +10117,46 @@
           "stringUnit": {
             "state": "translated",
             "value": "O Krypta está bloqueado"
+          }
+        }
+      }
+    },
+    "Krypta kennt sie nur auf diesem iPhone. Löscht Krypta alles (Löschcode, Notfallknopf, fünfmal falsches Passwort) oder geht das iPhone verloren, holst du dein Bitcoin nur mit diesen Wörtern zurück, in Krypta oder in jeder anderen Bitcoin-Wallet (BIP39, BIP84).": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Krypta only knows them on this iPhone. If Krypta erases everything (delete code, emergency button, five wrong passwords) or the iPhone is lost, only these words bring your bitcoin back, in Krypta or in any other bitcoin wallet (BIP39, BIP84)."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Krypta solo las conoce en este iPhone. Si Krypta lo borra todo (código de borrado, botón de emergencia, cinco contraseñas erróneas) o pierdes el iPhone, solo recuperas tu bitcoin con estas palabras, en Krypta o en cualquier otro monedero de bitcoin (BIP39, BIP84)."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Krypta ne les connaît que sur cet iPhone. Si Krypta efface tout (code d'effacement, bouton d'urgence, cinq mots de passe erronés) ou si l'iPhone est perdu, seuls ces mots te rendent tes bitcoins, dans Krypta ou dans tout autre portefeuille bitcoin (BIP39, BIP84)."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Krypta le conosce solo su questo iPhone. Se Krypta cancella tutto (codice di cancellazione, pulsante di emergenza, cinque password errate) o perdi l'iPhone, recuperi i tuoi bitcoin solo con queste parole, in Krypta o in qualsiasi altro wallet bitcoin (BIP39, BIP84)."
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Krypta kent ze alleen op deze iPhone. Wist Krypta alles (wiscode, noodknop, vijf keer een fout wachtwoord) of raakt de iPhone kwijt, dan krijg je je bitcoin alleen met deze woorden terug, in Krypta of in elke andere bitcoin-wallet (BIP39, BIP84)."
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "O Krypta só as conhece neste iPhone. Se o Krypta apagar tudo (código de exclusão, botão de emergência, cinco senhas erradas) ou o iPhone se perder, só estas palavras trazem o seu bitcoin de volta, no Krypta ou em qualquer outra carteira de bitcoin (BIP39, BIP84)."
           }
         }
       }
@@ -7005,6 +10325,46 @@
         }
       }
     },
+    "Kurz prüfen": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Quick check"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Comprobación rápida"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Petite vérification"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Controllo veloce"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Even controleren"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Verificação rápida"
+          }
+        }
+      }
+    },
     "Lass deinen Kontakt diesen Code mit Krypta scannen. Er gilt zehn Minuten und nur einmal.": {
       "extractionState": "extracted_with_value",
       "localizations": {
@@ -7042,6 +10402,46 @@
           "stringUnit": {
             "state": "translated",
             "value": "Peça ao seu contato para escanear este código com o Krypta. Ele vale por dez minutos e uma única vez."
+          }
+        }
+      }
+    },
+    "Leer: mempool.space. Der Server sieht, welche Adressen deine Wallet abfragt, und deine IP-Adresse, aber nie deine Schlüssel, und er kann keine Zahlung vortäuschen: Krypta prüft jede selbst. Wer einen eigenen Knoten mit Esplora betreibt, trägt ihn hier ein (nur https).": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Empty: mempool.space. The server sees which addresses your wallet looks up and your IP address, but never your keys, and it can't fake a payment: Krypta checks each one itself. If you run your own node with Esplora, enter it here (https only)."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vacío: mempool.space. El servidor ve qué direcciones consulta tu monedero y tu dirección IP, pero nunca tus claves, y no puede simular un pago: Krypta comprueba cada uno. Si tienes tu propio nodo con Esplora, introdúcelo aquí (solo https)."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vide : mempool.space. Le serveur voit quelles adresses ton portefeuille interroge et ton adresse IP, jamais tes clés, et il ne peut pas simuler de paiement : Krypta les vérifie tous. Si tu as ton propre nœud avec Esplora, saisis-le ici (https uniquement)."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vuoto: mempool.space. Il server vede quali indirizzi interroga il tuo wallet e il tuo indirizzo IP, ma mai le tue chiavi, e non può simulare un pagamento: Krypta li verifica tutti. Se hai un tuo nodo con Esplora, inseriscilo qui (solo https)."
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Leeg: mempool.space. De server ziet welke adressen je wallet opvraagt en je IP-adres, maar nooit je sleutels, en kan geen betaling vervalsen: Krypta controleert elke betaling zelf. Draai je een eigen node met Esplora, vul die dan hier in (alleen https)."
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vazio: mempool.space. O servidor vê quais endereços sua carteira consulta e seu IP, mas nunca suas chaves, e não pode forjar um pagamento: o Krypta confere cada um. Se você tem seu próprio nó com Esplora, informe-o aqui (só https)."
           }
         }
       }
@@ -7292,43 +10692,42 @@
         }
       }
     },
-    "Löscht Schlüssel, Chats und dein Konto auf dem Server. Deine Kontakte erfahren, dass es dich nicht mehr gibt.": {
-      "extractionState": "extracted_with_value",
+    "Löscht Schlüssel, Chats und dein Konto auf dem Server. Deine Kontakte erfahren, dass es dich nicht mehr gibt. Auch die Bitcoin-Wallet ist danach weg: ihr Guthaben holst du nur mit deinen zwölf Wörtern zurück.": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Erases keys, chats and your account on the server. Your contacts are told that you no longer exist."
+            "value": "Erases keys, chats and your account on the server. Your contacts are told that you no longer exist. Your bitcoin wallet is gone too: you can only recover its balance with your twelve words."
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Borra las claves, los chats y tu cuenta en el servidor. Tus contactos sabrán que ya no existes."
+            "value": "Borra las claves, los chats y tu cuenta en el servidor. Tus contactos sabrán que ya no existes. El monedero de bitcoin también desaparece: su saldo solo lo recuperas con tus doce palabras."
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Efface les clés, les discussions et ton compte sur le serveur. Tes contacts apprennent que tu n’existes plus."
+            "value": "Efface les clés, les chats et ton compte sur le serveur. Tes contacts apprennent que tu n'existes plus. Le portefeuille bitcoin disparaît aussi : tu ne récupères son solde qu'avec tes douze mots."
           }
         },
         "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Cancella chiavi, chat e il tuo account sul server. I tuoi contatti sapranno che non esisti più."
+            "value": "Cancella le chiavi, le chat e il tuo account sul server. I tuoi contatti sapranno che non esisti più. Anche il wallet bitcoin sparisce: il saldo lo recuperi solo con le tue dodici parole."
           }
         },
         "nl": {
           "stringUnit": {
             "state": "translated",
-            "value": "Wist sleutels, chats en je account op de server. Je contacten horen dat je niet meer bestaat."
+            "value": "Wist sleutels, chats en je account op de server. Je contacten horen dat je niet meer bestaat. Ook de bitcoin-wallet is dan weg: het saldo krijg je alleen terug met je twaalf woorden."
           }
         },
         "pt": {
           "stringUnit": {
             "state": "translated",
-            "value": "Apaga chaves, conversas e sua conta no servidor. Seus contatos ficam sabendo que você não existe mais."
+            "value": "Apaga as chaves, os chats e sua conta no servidor. Seus contatos ficam sabendo que você não existe mais. A carteira de bitcoin também some: o saldo só volta com suas doze palavras."
           }
         }
       }
@@ -7493,6 +10892,46 @@
           "stringUnit": {
             "state": "translated",
             "value": "Mostrar meu código"
+          }
+        }
+      }
+    },
+    "Mindestens ein Wort stimmt nicht. Sieh dir die Wörter noch einmal an.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "At least one word is wrong. Take another look at the words."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Al menos una palabra no coincide. Vuelve a mirar las palabras."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Au moins un mot ne correspond pas. Revois les mots."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Almeno una parola non è corretta. Guarda di nuovo le parole."
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Minstens één woord klopt niet. Bekijk de woorden nog eens."
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pelo menos uma palavra está errada. Veja as palavras de novo."
           }
         }
       }
@@ -8480,6 +11919,86 @@
         }
       }
     },
+    "Netz": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Network"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Red"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Réseau"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rete"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Netwerk"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rede"
+          }
+        }
+      }
+    },
+    "Neue Adresse": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "New address"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nueva dirección"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nouvelle adresse"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nuovo indirizzo"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nieuw adres"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Novo endereço"
+          }
+        }
+      }
+    },
     "Neuer Chat": {
       "extractionState": "extracted_with_value",
       "localizations": {
@@ -8644,6 +12163,46 @@
         }
       }
     },
+    "Nicht auf der Blockchain gefunden": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Not found on the blockchain"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No encontrado en la blockchain"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Introuvable sur la blockchain"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Non trovato sulla blockchain"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Niet gevonden op de blockchain"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Não encontrado na blockchain"
+          }
+        }
+      }
+    },
     "Nicht bei iCloud angemeldet. Andere erreichen dich erst, wenn du dich in den Einstellungen anmeldest.": {
       "extractionState": "extracted_with_value",
       "localizations": {
@@ -8681,6 +12240,86 @@
           "stringUnit": {
             "state": "translated",
             "value": "Sessão do iCloud não iniciada. Ninguém consegue falar com você até você iniciar a sessão nos Ajustes."
+          }
+        }
+      }
+    },
+    "Nicht genug Guthaben. Verfügbar sind %@ (nach Gebühr).": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Not enough balance. %@ is available (after fees)."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Saldo insuficiente. Hay %@ disponibles (tras la comisión)."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Solde insuffisant. %@ disponible(s) (après frais)."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Saldo insufficiente. Disponibili %@ (dopo la commissione)."
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Niet genoeg saldo. Beschikbaar is %@ (na kosten)."
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Saldo insuficiente. Há %@ disponível (após a taxa)."
+          }
+        }
+      }
+    },
+    "Nicht gesendet": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Not sent"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No enviado"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Non envoyé"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Non inviato"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Niet verstuurd"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Não enviado"
           }
         }
       }
@@ -8971,6 +12610,86 @@
         }
       }
     },
+    "Niemand bekommt eine Adresse von dir, und niemand kann dich im Chat bezahlen. Empfangen über den QR-Code geht weiter.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nobody gets an address from you, and nobody can pay you in chat. Receiving via QR code still works."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nadie recibe una dirección tuya y nadie puede pagarte en el chat. Recibir con el código QR sigue funcionando."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Personne ne reçoit d'adresse de ta part et personne ne peut te payer dans le chat. La réception par code QR fonctionne toujours."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nessuno riceve un tuo indirizzo e nessuno può pagarti in chat. Ricevere con il codice QR funziona ancora."
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Niemand krijgt een adres van je en niemand kan je in de chat betalen. Ontvangen via de QR-code blijft werken."
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ninguém recebe um endereço seu e ninguém pode pagar você no chat. Receber pelo código QR continua funcionando."
+          }
+        }
+      }
+    },
+    "Noch keine Zahlungen.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No payments yet."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aún no hay pagos."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aucun paiement pour l'instant."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ancora nessun pagamento."
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nog geen betalingen."
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nenhum pagamento ainda."
+          }
+        }
+      }
+    },
     "Noch nicht geprüft": {
       "extractionState": "extracted_with_value",
       "localizations": {
@@ -9053,6 +12772,86 @@
         }
       }
     },
+    "Noch nicht gesichert. Ohne die Wörter ist dein Bitcoin weg, wenn Krypta alles löscht oder das iPhone verloren geht.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Not backed up yet. Without the words your bitcoin is gone if Krypta erases everything or the iPhone is lost."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aún sin guardar. Sin las palabras tu bitcoin se pierde si Krypta lo borra todo o pierdes el iPhone."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pas encore sauvegardés. Sans les mots, tes bitcoins sont perdus si Krypta efface tout ou si l'iPhone est perdu."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Non ancora salvate. Senza le parole i tuoi bitcoin sono persi se Krypta cancella tutto o perdi l'iPhone."
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nog niet opgeslagen. Zonder de woorden is je bitcoin weg als Krypta alles wist of de iPhone kwijtraakt."
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ainda não guardadas. Sem as palavras, seu bitcoin se perde se o Krypta apagar tudo ou o iPhone se perder."
+          }
+        }
+      }
+    },
+    "Normal": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Normal"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Normal"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Normal"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Normale"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Normaal"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Normal"
+          }
+        }
+      }
+    },
     "Notfall: alles löschen": {
       "localizations": {
         "en": {
@@ -9089,6 +12888,86 @@
           "stringUnit": {
             "state": "translated",
             "value": "Emergência: apagar tudo"
+          }
+        }
+      }
+    },
+    "Notiz": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Note"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nota"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Note"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nota"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Notitie"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nota"
+          }
+        }
+      }
+    },
+    "Nur Bitcoin (%@) an diese Adresse senden. Sobald etwas eingeht, zeigt Krypta eine neue, damit deine Zahlungen nicht miteinander verknüpft werden. Kontakte im Chat bekommen ohnehin jeder ihre eigene.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Only send bitcoin (%@) to this address. As soon as something arrives, Krypta shows a new one so your payments aren't linked to each other. Contacts in chat each get their own anyway."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Envía solo bitcoin (%@) a esta dirección. En cuanto llegue algo, Krypta muestra una nueva para que tus pagos no queden vinculados. Los contactos del chat reciben cada uno la suya."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "N'envoie que des bitcoins (%@) à cette adresse. Dès qu'un paiement arrive, Krypta en affiche une nouvelle pour que tes paiements ne soient pas liés entre eux. Les contacts du chat ont de toute façon chacun la leur."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Invia solo bitcoin (%@) a questo indirizzo. Appena arriva qualcosa, Krypta ne mostra uno nuovo, così i tuoi pagamenti non sono collegati tra loro. I contatti in chat hanno comunque ciascuno il proprio."
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stuur alleen bitcoin (%@) naar dit adres. Zodra er iets binnenkomt, toont Krypta een nieuw adres, zodat je betalingen niet aan elkaar gekoppeld worden. Contacten in de chat krijgen sowieso elk hun eigen adres."
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Envie só bitcoin (%@) para este endereço. Assim que algo chegar, o Krypta mostra um novo para que seus pagamentos não fiquem ligados entre si. Contatos no chat recebem cada um o seu."
           }
         }
       }
@@ -9376,6 +13255,46 @@
           "stringUnit": {
             "state": "translated",
             "value": "Sem número de telefone"
+          }
+        }
+      }
+    },
+    "Ohne diese zwölf Wörter ist dein Bitcoin weg, wenn das iPhone verloren geht oder Krypta alles löscht (Löschcode, Notfallknopf, fünfmal falsches Passwort).": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Without these twelve words your bitcoin is gone if the iPhone is lost or Krypta erases everything (delete code, emergency button, five wrong passwords)."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sin estas doce palabras tu bitcoin se pierde si pierdes el iPhone o Krypta lo borra todo (código de borrado, botón de emergencia, cinco contraseñas erróneas)."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sans ces douze mots, tes bitcoins sont perdus si l'iPhone est perdu ou si Krypta efface tout (code d'effacement, bouton d'urgence, cinq mots de passe erronés)."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Senza queste dodici parole i tuoi bitcoin sono persi se perdi l'iPhone o Krypta cancella tutto (codice di cancellazione, pulsante di emergenza, cinque password errate)."
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zonder deze twaalf woorden is je bitcoin weg als de iPhone kwijtraakt of Krypta alles wist (wiscode, noodknop, vijf keer een fout wachtwoord)."
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sem estas doze palavras, seu bitcoin se perde se o iPhone sumir ou o Krypta apagar tudo (código de exclusão, botão de emergência, cinco senhas erradas)."
           }
         }
       }
@@ -9831,6 +13750,126 @@
         }
       }
     },
+    "Prüfen": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Check"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Comprobar"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vérifier"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Verifica"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Controleren"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Verificar"
+          }
+        }
+      }
+    },
+    "Prüfen und senden": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Review and send"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Revisar y enviar"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vérifier et envoyer"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Controlla e invia"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Controleren en versturen"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Revisar e enviar"
+          }
+        }
+      }
+    },
+    "QR-Code deiner Bitcoin-Adresse": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "QR code of your bitcoin address"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Código QR de tu dirección de bitcoin"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Code QR de ton adresse bitcoin"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Codice QR del tuo indirizzo bitcoin"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "QR-code van je bitcoinadres"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Código QR do seu endereço de bitcoin"
+          }
+        }
+      }
+    },
     "QR-Code scannen": {
       "extractionState": "extracted_with_value",
       "localizations": {
@@ -10077,6 +14116,126 @@
         }
       }
     },
+    "Schnell": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fast"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rápida"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rapide"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Veloce"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Snel"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rápida"
+          }
+        }
+      }
+    },
+    "Schreib die Wörter in dieser Reihenfolge ab.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Copy the words in this order."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Copia las palabras en este orden."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recopie les mots dans cet ordre."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Copia le parole in quest'ordine."
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Schrijf de woorden in deze volgorde over."
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Copie as palavras nesta ordem."
+          }
+        }
+      }
+    },
+    "Schutz": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Protection"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Protección"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Protection"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Protezione"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Beveiliging"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Proteção"
+          }
+        }
+      }
+    },
     "Senden": {
       "extractionState": "extracted_with_value",
       "localizations": {
@@ -10114,6 +14273,46 @@
           "stringUnit": {
             "state": "translated",
             "value": "Enviar"
+          }
+        }
+      }
+    },
+    "Senden nur mit": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sending only with"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enviar solo con"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Envoi uniquement avec"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Invio solo con"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Versturen alleen met"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enviar só com"
           }
         }
       }
@@ -10277,6 +14476,86 @@
           "stringUnit": {
             "state": "translated",
             "value": "Salvar"
+          }
+        }
+      }
+    },
+    "Sicherung": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Backup"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Copia de seguridad"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sauvegarde"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Backup"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Back-up"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Backup"
+          }
+        }
+      }
+    },
+    "Signieren fehlgeschlagen. Es wurde nichts gesendet.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Signing failed. Nothing was sent."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Error al firmar. No se envió nada."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "La signature a échoué. Rien n'a été envoyé."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Firma non riuscita. Non è stato inviato nulla."
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ondertekenen mislukt. Er is niets verstuurd."
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Falha ao assinar. Nada foi enviado."
           }
         }
       }
@@ -10525,6 +14804,86 @@
         }
       }
     },
+    "Stimmt nicht: angekommen sind %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Doesn't match: %@ arrived"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No coincide: llegaron %@"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ne correspond pas : %@ reçu(s)"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Non corrisponde: sono arrivati %@"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Klopt niet: aangekomen is %@"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Não confere: chegaram %@"
+          }
+        }
+      }
+    },
+    "Stimmt nicht: nicht an dich": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Doesn't match: not to you"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No coincide: no es para ti"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ne correspond pas : pas pour toi"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Non corrisponde: non a te"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Klopt niet: niet aan jou"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Não confere: não é para você"
+          }
+        }
+      }
+    },
     "Suchen": {
       "extractionState": "extracted_with_value",
       "localizations": {
@@ -10562,6 +14921,46 @@
           "stringUnit": {
             "state": "translated",
             "value": "Buscar"
+          }
+        }
+      }
+    },
+    "Sucht 200 Adressen tief. Nur nötig, wenn nach dem Wiederherstellen Guthaben fehlt.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Searches 200 addresses deep. Only needed if a balance is missing after restoring."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Busca en 200 direcciones. Solo hace falta si tras restaurar falta saldo."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cherche sur 200 adresses. Nécessaire seulement s'il manque du solde après une restauration."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cerca in 200 indirizzi. Serve solo se dopo il ripristino manca del saldo."
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zoekt 200 adressen diep. Alleen nodig als er na het herstellen saldo ontbreekt."
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Busca em 200 endereços. Só é necessário se faltar saldo após restaurar."
           }
         }
       }
@@ -10648,6 +15047,126 @@
         }
       }
     },
+    "Teilen": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Share"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Compartir"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Partager"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Condividi"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Delen"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Compartilhar"
+          }
+        }
+      }
+    },
+    "Testnet4 und Signet sind Spielgeld zum Ausprobieren, mit denselben zwölf Wörtern. Beide Seiten eines Chats müssen dasselbe Netz nutzen.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Testnet4 and Signet are play money for trying things out, with the same twelve words. Both sides of a chat must use the same network."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Testnet4 y Signet son dinero de juego para probar, con las mismas doce palabras. Ambos lados de un chat deben usar la misma red."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Testnet4 et Signet sont de l'argent fictif pour essayer, avec les mêmes douze mots. Les deux côtés d'un chat doivent utiliser le même réseau."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Testnet4 e Signet sono soldi finti per provare, con le stesse dodici parole. Entrambi i lati di una chat devono usare la stessa rete."
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Testnet4 en Signet zijn speelgeld om te proberen, met dezelfde twaalf woorden. Beide kanten van een chat moeten hetzelfde netwerk gebruiken."
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Testnet4 e Signet são dinheiro de brincadeira para testar, com as mesmas doze palavras. Os dois lados de um chat precisam usar a mesma rede."
+          }
+        }
+      }
+    },
+    "Testnetz, kein echtes Geld": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Test network, not real money"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Red de prueba, no es dinero real"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Réseau de test, pas d'argent réel"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rete di test, non denaro reale"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Testnetwerk, geen echt geld"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rede de teste, não é dinheiro real"
+          }
+        }
+      }
+    },
     "Tippen zum Entsperren": {
       "extractionState": "extracted_with_value",
       "localizations": {
@@ -10730,6 +15249,46 @@
         }
       }
     },
+    "Transaktion": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Transaction"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Transacción"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Transaction"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Transazione"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Transactie"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Transação"
+          }
+        }
+      }
+    },
     "Tresor-Passwort": {
       "extractionState": "extracted_with_value",
       "localizations": {
@@ -10808,6 +15367,166 @@
           "stringUnit": {
             "state": "translated",
             "value": "Remover a senha do cofre?"
+          }
+        }
+      }
+    },
+    "Trotzdem senden": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Send anyway"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enviar de todos modos"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Envoyer quand même"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Invia comunque"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Toch versturen"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enviar mesmo assim"
+          }
+        }
+      }
+    },
+    "Unbestätigt": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Unconfirmed"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sin confirmar"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Non confirmé"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Non confermato"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Onbevestigd"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Não confirmado"
+          }
+        }
+      }
+    },
+    "Unklar, Krypta prüft": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Unclear, Krypta is checking"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sin confirmar, Krypta lo comprueba"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Incertain, Krypta vérifie"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Incerto, Krypta sta verificando"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Onduidelijk, Krypta controleert"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Incerto, o Krypta está verificando"
+          }
+        }
+      }
+    },
+    "Verfügbar: %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Available: %@"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Disponible: %@"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Disponible : %@"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Disponibile: %@"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Beschikbaar: %@"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Disponível: %@"
           }
         }
       }
@@ -10935,6 +15654,46 @@
         }
       }
     },
+    "Verlauf": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "History"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Historial"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Historique"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cronologia"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Geschiedenis"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Histórico"
+          }
+        }
+      }
+    },
     "Verschlüsselter Absender": {
       "extractionState": "extracted_with_value",
       "localizations": {
@@ -11017,6 +15776,46 @@
         }
       }
     },
+    "Von %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "From %@"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "De %@"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "De %@"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Da %@"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Van %@"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "De %@"
+          }
+        }
+      }
+    },
     "Vorschau in der Chatliste": {
       "extractionState": "extracted_with_value",
       "localizations": {
@@ -11095,6 +15894,166 @@
           "stringUnit": {
             "state": "translated",
             "value": "Trocar sinal"
+          }
+        }
+      }
+    },
+    "Wallet": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wallet"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Monedero"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Portefeuille"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wallet"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wallet"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Carteira"
+          }
+        }
+      }
+    },
+    "Wallet ersetzen?": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Replace wallet?"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "¿Sustituir monedero?"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Remplacer le portefeuille ?"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sostituire il wallet?"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wallet vervangen?"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Substituir carteira?"
+          }
+        }
+      }
+    },
+    "Wallet wiederherstellen": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Restore wallet"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Restaurar monedero"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Restaurer le portefeuille"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ripristina wallet"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wallet herstellen"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Restaurar carteira"
+          }
+        }
+      }
+    },
+    "Wallet-Einstellungen": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wallet settings"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ajustes del monedero"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Réglages du portefeuille"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Impostazioni wallet"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wallet-instellingen"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ajustes da carteira"
           }
         }
       }
@@ -11262,6 +16221,46 @@
         }
       }
     },
+    "Wer sie hat, hat dein Bitcoin. Schreib sie auf Papier und bewahre es sicher auf. Kein Foto, keine Notiz-App, nicht in die Cloud.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Whoever has them has your bitcoin. Write them on paper and keep it somewhere safe. No photo, no notes app, not in the cloud."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Quien las tenga tiene tu bitcoin. Escríbelas en papel y guárdalo en un lugar seguro. Nada de fotos, ni app de notas, ni la nube."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Qui les a possède tes bitcoins. Écris-les sur papier et garde-le en lieu sûr. Pas de photo, pas d'app de notes, pas dans le cloud."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Chi le ha possiede i tuoi bitcoin. Scrivile su carta e conservala al sicuro. Niente foto, niente app di note, niente cloud."
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wie ze heeft, heeft je bitcoin. Schrijf ze op papier en bewaar dat veilig. Geen foto, geen notitie-app, niet in de cloud."
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Quem as tiver tem o seu bitcoin. Escreva-as em papel e guarde em lugar seguro. Nada de foto, app de notas ou nuvem."
+          }
+        }
+      }
+    },
     "Widerspruch": {
       "extractionState": "extracted_with_value",
       "localizations": {
@@ -11299,6 +16298,166 @@
           "stringUnit": {
             "state": "translated",
             "value": "Inconsistência"
+          }
+        }
+      }
+    },
+    "Wiederherstellen": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Restore"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Restaurar"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Restaurer"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ripristina"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Herstellen"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Restaurar"
+          }
+        }
+      }
+    },
+    "Wiederherstellungswörter": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recovery words"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Palabras de recuperación"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mots de récupération"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Parole di recupero"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Herstelwoorden"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Palavras de recuperação"
+          }
+        }
+      }
+    },
+    "Wiederherstellungswörter anzeigen": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Show recovery words"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mostrar palabras de recuperación"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Afficher les mots de récupération"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mostra le parole di recupero"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Herstelwoorden tonen"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mostrar palavras de recuperação"
+          }
+        }
+      }
+    },
+    "Wiederherstellungswörter sichern": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Back up recovery words"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Guardar palabras de recuperación"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sauvegarder les mots de récupération"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Salva le parole di recupero"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Herstelwoorden opslaan"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Guardar palavras de recuperação"
           }
         }
       }
@@ -11385,6 +16544,86 @@
         }
       }
     },
+    "Wird abgeglichen …": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Syncing…"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sincronizando…"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Synchronisation…"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sincronizzazione…"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wordt gesynchroniseerd…"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sincronizando…"
+          }
+        }
+      }
+    },
+    "Wird geprüft …": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Checking…"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Comprobando…"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vérification…"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Verifica in corso…"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wordt gecontroleerd…"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Verificando…"
+          }
+        }
+      }
+    },
     "Wird gesendet …": {
       "extractionState": "extracted_with_value",
       "localizations": {
@@ -11422,6 +16661,366 @@
           "stringUnit": {
             "state": "translated",
             "value": "Enviando…"
+          }
+        }
+      }
+    },
+    "Wofür? (optional)": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "What for? (optional)"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "¿Para qué? (opcional)"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pour quoi ? (facultatif)"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Per cosa? (facoltativo)"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Waarvoor? (optioneel)"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Para quê? (opcional)"
+          }
+        }
+      }
+    },
+    "Wort %lld": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Word %lld"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Palabra %lld"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mot %lld"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Parola %lld"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Woord %lld"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Palavra %lld"
+          }
+        }
+      }
+    },
+    "Wort %lld gibt es in der Liste nicht.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Word %lld isn't in the list."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "La palabra %lld no está en la lista."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Le mot %lld n'est pas dans la liste."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "La parola %lld non è nell'elenco."
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Woord %lld staat niet in de lijst."
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A palavra %lld não está na lista."
+          }
+        }
+      }
+    },
+    "Wörter": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Words"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Palabras"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mots"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Parole"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Woorden"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Palavras"
+          }
+        }
+      }
+    },
+    "Wörter anzeigen": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Show words"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mostrar palabras"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Afficher les mots"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mostra le parole"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Woorden tonen"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mostrar palavras"
+          }
+        }
+      }
+    },
+    "Wörter noch einmal ansehen": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "View the words again"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ver las palabras otra vez"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Revoir les mots"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rivedi le parole"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Woorden opnieuw bekijken"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ver as palavras de novo"
+          }
+        }
+      }
+    },
+    "Zahlungen im Chat": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Payments in chat"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pagos en el chat"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Paiements dans le chat"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pagamenti in chat"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Betalingen in de chat"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pagamentos no chat"
+          }
+        }
+      }
+    },
+    "Zeigt die Zahlung im Einzelnen": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Shows the payment in detail"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Muestra el pago en detalle"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Affiche le détail du paiement"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mostra il pagamento nel dettaglio"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Toont de betaling in detail"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mostra o pagamento em detalhes"
+          }
+        }
+      }
+    },
+    "Zeit": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Time"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hora"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Heure"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ora"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tijd"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hora"
           }
         }
       }
@@ -11713,6 +17312,246 @@
         }
       }
     },
+    "Zwölf Wörter sind deine Wallet.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Twelve words are your wallet."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Doce palabras son tu monedero."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Douze mots sont ton portefeuille."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dodici parole sono il tuo wallet."
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Twaalf woorden zijn je wallet."
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Doze palavras são a sua carteira."
+          }
+        }
+      }
+    },
+    "bc1q… oder bitcoin:…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "bc1q… or bitcoin:…"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "bc1q… o bitcoin:…"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "bc1q… ou bitcoin:…"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "bc1q… o bitcoin:…"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "bc1q… of bitcoin:…"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "bc1q… ou bitcoin:…"
+          }
+        }
+      }
+    },
+    "einige Stunden": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "a few hours"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "unas horas"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "quelques heures"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "qualche ora"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "enkele uren"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "algumas horas"
+          }
+        }
+      }
+    },
+    "etwa 1 Stunde": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "about 1 hour"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "aproximadamente 1 hora"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "environ 1 heure"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "circa 1 ora"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ongeveer 1 uur"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "cerca de 1 hora"
+          }
+        }
+      }
+    },
+    "etwa 20 Minuten": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "about 20 minutes"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "unos 20 minutos"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "environ 20 minutes"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "circa 20 minuti"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ongeveer 20 minuten"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "cerca de 20 minutos"
+          }
+        }
+      }
+    },
+    "https://mempool.space/api/": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "https://mempool.space/api/"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "https://mempool.space/api/"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "https://mempool.space/api/"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "https://mempool.space/api/"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "https://mempool.space/api/"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "https://mempool.space/api/"
+          }
+        }
+      }
+    },
     "iCloud ist nicht eingerichtet": {
       "extractionState": "extracted_with_value",
       "localizations": {
@@ -11797,6 +17636,46 @@
           "stringUnit": {
             "state": "translated",
             "value": "Krypta Chat: Política de privacidade\n\nÚltima atualização: setembro de 2026\n\n1. Responsável pelo tratamento\nConnexa GmbH\nContacto: https://connexa-gmbh.ch\n\n2. Que dados são recolhidos?\nO Krypta recolhe tão poucos dados quanto é tecnicamente possível:\n• ID aleatório do Krypta (sem e-mail, sem nome, sem número de telefone)\n• Chave pública de cifra (X25519)\n• Uma subscrição de notificações no iCloud (para as notificações)\n\n3. Cifra\nTodas as mensagens são cifradas de ponta a ponta (protocolo Signal: X3DH + Double Ratchet). Em momento algum o servidor tem acesso ao texto simples das suas mensagens. Cifra: XChaCha20-Poly1305. Hashing de palavras-passe: Argon2id.\n\n4. Armazenamento de dados\n• As mensagens são guardadas apenas no seu dispositivo (cifradas)\n• O servidor funciona apenas como retransmissor temporário: as mensagens são eliminadas após a entrega\n• As chaves são guardadas no Porta-chaves do iOS / Android Keystore\n\n5. Sem rastreadores\nO Krypta não contém ferramentas de análise, publicidade nem rastreadores (0 de 432 rastreadores conhecidos).\n\n6. Transmissão de dados\nNão são transmitidos dados pessoais a terceiros. É utilizado o Apple iCloud (CloudKit) como infraestrutura: entrega as mensagens cifradas e as notificações. Para isso é necessária uma Conta Apple; a Apple pode assim saber que Conta Apple utiliza o Krypta, mas não consegue ler nenhuma mensagem.\n\n7. Eliminação de dados\nPode eliminar de forma irreversível todos os seus dados a qualquer momento:\n• Nas definições, através de «Eliminar tudo»\n• Introduzindo o código de eliminação na calculadora\nIsto destrói todos os dados locais, as chaves e os dados no servidor.\n\n8. Os seus direitos (RGPD)\nTem direito de acesso, retificação, apagamento e portabilidade dos dados. Contacte-nos através de: https://connexa-gmbh.ch\n\n9. Alterações\nEsta política de privacidade pode ser atualizada. A versão em vigor está sempre disponível na aplicação."
+          }
+        }
+      }
+    },
+    "Ändern": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Change"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cambiar"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Modifier"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Modifica"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wijzigen"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Alterar"
           }
         }
       }
@@ -11924,6 +17803,46 @@
         }
       }
     },
+    "Übernommen": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Applied"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aplicado"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Appliqué"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Applicato"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Toegepast"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aplicado"
+          }
+        }
+      }
+    },
     "Überprüfen": {
       "extractionState": "extracted_with_value",
       "localizations": {
@@ -11961,6 +17880,86 @@
           "stringUnit": {
             "state": "translated",
             "value": "Verificar"
+          }
+        }
+      }
+    },
+    "₿ Bitcoin-Zahlung": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "₿ Bitcoin payment"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "₿ Pago en bitcoin"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "₿ Paiement en bitcoin"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "₿ Pagamento in bitcoin"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "₿ Bitcoinbetaling"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "₿ Pagamento em bitcoin"
+          }
+        }
+      }
+    },
+    "₿ Du hast Bitcoin gesendet": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "₿ You sent bitcoin"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "₿ Enviaste bitcoin"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "₿ Tu as envoyé des bitcoins"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "₿ Hai inviato bitcoin"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "₿ Je hebt bitcoin gestuurd"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "₿ Você enviou bitcoin"
           }
         }
       }

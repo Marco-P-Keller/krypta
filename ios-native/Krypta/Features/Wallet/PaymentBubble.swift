@@ -53,6 +53,7 @@ struct PaymentDetailView: View {
     @Environment(WalletEngine.self) private var wallet: WalletEngine?
     @Environment(MessengerEngine.self) private var engine
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.closeSheet) private var closeSheet
     let message: Message
 
     var body: some View {
@@ -109,7 +110,9 @@ struct PaymentDetailView: View {
                 .navigationTitle("Bitcoin-Zahlung")
                 .navigationBarTitleDisplayMode(.inline)
                 .toolbar {
-                    ToolbarItem(placement: .confirmationAction) { Button("Fertig") { dismiss() } }
+                    ToolbarItem(placement: .confirmationAction) {
+                        Button("Fertig") { if let closeSheet { closeSheet() } else { dismiss() } }
+                    }
                 }
                 .refreshable { await wallet?.sync() }
             }
