@@ -99,7 +99,8 @@ public final class EsploraClient: ChainSource, @unchecked Sendable {
     static let maxResponse = 4_000_000
 
     public init(baseURL: URL) {
-        self.baseURL = baseURL
+        // Relative Pfade brauchen den Schrägstrich am Ende („…/api/").
+        self.baseURL = baseURL.absoluteString.hasSuffix("/") ? baseURL : URL(string: baseURL.absoluteString + "/") ?? baseURL
         let config = URLSessionConfiguration.ephemeral
         config.timeoutIntervalForRequest = 20
         config.timeoutIntervalForResource = 40

@@ -1,7 +1,9 @@
 import FirebaseAuth
 import Foundation
+import KryptaBitcoin
 import KryptaCore
 import KryptaMessenger
+import KryptaWallet
 import Observation
 import SwiftUI
 
@@ -28,6 +30,9 @@ final class AppModel {
 
     private(set) var phase: Phase = .launching
     private(set) var engine: MessengerEngine?
+    /// Die Bitcoin-Wallet des Kontos. Jedes Konto hat eine (WalletKeychain).
+    private(set) var wallet: WalletEngine?
+    @ObservationIgnored private var vault: FileVault?
     /// Verdeckt den Inhalt, sobald die App nicht vorne ist (App-Umschalter).
     var privacyCover = false
     /// Der Bildschirm wird aufgezeichnet oder gespiegelt.
@@ -94,6 +99,7 @@ final class AppModel {
         if DemoMode.isActive {
             Task {
                 engine = await DemoMode.makeEngine()
+                wallet = DemoMode.wallet
                 phase = .unlocked
             }
             return
@@ -175,7 +181,11 @@ final class AppModel {
             if DemoMode.isOffline { relay = MemoryRelay() }
             #endif
             engine = MessengerEngine(userId: uid, identity: identity, relay: relay, vault: vault)
+            self.vault = vault
+            wallet?.stop()
+            wallet = nil
         }
+        prepareWallet()
         await engine?.start()
         // Während des Startens verlassen oder gelöscht: nicht doch noch öffnen.
         guard phase == .unlocking else { return }
@@ -242,6 +252,7 @@ final class AppModel {
     func lock() {
         guard let target = lockTarget, phase == .unlocked || phase == .unlocking || phase == .vaultPassword else { return }
         engine?.stop()
+        wallet?.stop()
         phase = target
     }
 
@@ -283,6 +294,52 @@ final class AppModel {
         return true
     }
 
+    // MARK: - Bitcoin
+
+    /// Jedes Konto bekommt eine Bitcoin-Wallet: neu eingerichtet, nach dem
+    /// Update von einer Fassung ohne, nach der Übernahme aus Flutter. Der
+    /// Schlüssel entsteht auf diesem Gerät und bleibt dort.
+    func prepareWallet() {
+        guard let engine, let vault else { return }
+        let network = WalletSettings.network
+        if wallet?.network != network {
+            wallet?.stop()
+            wallet = nil
+            let secrets = WalletSettings.secrets
+            do {
+                try secrets.create()
+                let fresh = try WalletEngine(network: network, secrets: secrets, store: vault, chain: WalletSettings.chain(for: network))
+                fresh.preferredCurrency = WalletSettings.currency
+                wallet = fresh
+            } catch {
+                wallet = nil
+            }
+        }
+        engine.attach(wallet: wallet)
+        wallet?.start()
+    }
+
+    /// Anderes Netz oder anderer Server: Wallet neu aufbauen.
+    func reloadWallet() {
+        wallet?.stop()
+        wallet = nil
+        prepareWallet()
+    }
+
+    /// Die Wallet durch die aus diesen Wörtern ersetzen. Der alte Stand
+    /// (Verlauf, Adressen) wird vergessen; danach wird tief gesucht.
+    func restoreWallet(words: [String]) async throws {
+        wallet?.stop()
+        try WalletSettings.secrets.restore(words: words)
+        for network in BitcoinNetwork.allCases {
+            try? vault?.delete(WalletEngine.stateSlot(for: network))
+        }
+        wallet = nil
+        prepareWallet()
+        wallet?.confirmBackup()
+        await wallet?.deepSync()
+    }
+
     // MARK: - Notfall
 
     /// Alles weg: Gerät, Schlüsselbund, Server. Danach Neubeginn.
@@ -298,6 +355,8 @@ final class AppModel {
         phase = .wiping
         EmergencyWipe.markPending(userId: uid)
         engine?.stop()
+        wallet?.stop()
+        wallet = nil
         Keychain.wipe()
         FileVault.destroy()
         PushService.shared.clearDelivered()
@@ -327,6 +386,8 @@ final class AppModel {
         await PushService.shared.wipe()
         EmergencyWipe.clear()
         self.engine = nil
+        wallet = nil
+        vault = nil
         withAnimation(.smooth) { phase = .onboarding }
     }
 }

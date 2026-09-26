@@ -1,5 +1,6 @@
 import FirebaseCore
 import FirebaseFirestore
+import KryptaWallet
 import SwiftUI
 
 @main
@@ -75,6 +76,7 @@ struct RootView: View {
                         ChatsView()
                             .environment(engine)
                             .environment(model)
+                            .environment(model.wallet)
                     }
                     .ignoresSafeArea()
                     .transition(.opacity)

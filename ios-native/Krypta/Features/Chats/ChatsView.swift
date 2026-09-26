@@ -1,15 +1,18 @@
 import KryptaMessenger
+import KryptaWallet
 import SwiftUI
 
 /// Die Chatliste — aufgebaut wie Nachrichten.
 struct ChatsView: View {
     @Environment(MessengerEngine.self) private var engine
     @Environment(AppModel.self) private var app
+    @Environment(WalletEngine.self) private var wallet: WalletEngine?
 
     @State private var path = NavigationPath()
     @State private var search = ""
     @State private var showNewChat = false
     @State private var showSettings = false
+    @State private var showWallet = false
     @State private var chatToDelete: Chat?
 
     var body: some View {
@@ -73,6 +76,21 @@ struct ChatsView: View {
                     }
                     .accessibilityLabel("Einstellungen")
                 }
+                if let wallet {
+                    ToolbarItem(placement: .topBarLeading) {
+                        Button { showWallet = true } label: {
+                            Image(systemName: "bitcoinsign.circle")
+                                // Guthaben ohne gesicherte Wörter: ein Punkt, bis sie gesichert sind.
+                                .overlay(alignment: .topTrailing) {
+                                    if !wallet.backedUp && wallet.balance.total > 0 {
+                                        Circle().fill(.orange).frame(width: 8, height: 8).offset(x: 2, y: -2)
+                                    }
+                                }
+                        }
+                        .accessibilityLabel("Bitcoin-Wallet")
+                        .accessibilityIdentifier("chats.wallet")
+                    }
+                }
                 ToolbarItem(placement: .topBarTrailing) {
                     Button { showNewChat = true } label: {
                         Image(systemName: "square.and.pencil")
@@ -103,6 +121,9 @@ struct ChatsView: View {
         .sheet(isPresented: $showSettings) {
             SettingsView()
         }
+        .sheet(isPresented: $showWallet) {
+            WalletView()
+        }
         .onAppear(perform: openFromNotification)
         .onChange(of: app.pendingOpen) { openFromNotification() }
         .confirmationDialog(
@@ -124,6 +145,7 @@ struct ChatsView: View {
         app.pendingOpen = nil
         showNewChat = false
         showSettings = false
+        showWallet = false
         switch target {
         case .chat(let contactId):
             guard let contact = engine.contact(contactId) else { return }
@@ -212,6 +234,8 @@ private struct ChatRow: View {
 enum MessagePreview {
     static func text(for m: Message, me: String) -> String {
         if let event = m.systemEvent { return SystemEventText.text(event, mine: m.senderId == me, timer: m.selfDestruct) }
+        // Kein Betrag in der Vorschau: ungeprüft stünde dort, was der Absender behauptet.
+        if m.payment != nil { return m.senderId == me ? String(localized: "₿ Du hast Bitcoin gesendet") : String(localized: "₿ Bitcoin-Zahlung") }
         if m.isPasswordProtected && !m.passwordUnlocked { return String(localized: "🔒 Geschützte Nachricht") }
         if m.oneTime { return String(localized: "Einmal ansehen") }
         return m.text ?? ""

@@ -1,10 +1,12 @@
 import KryptaMessenger
+import KryptaWallet
 import SwiftUI
 
 /// Ein Chat — aufgebaut wie Nachrichten.
 struct ConversationView: View {
     @Environment(MessengerEngine.self) private var engine
     @Environment(AppModel.self) private var app
+    @Environment(WalletEngine.self) private var wallet: WalletEngine?
     let chatId: String
 
     @State private var draft = ""
@@ -18,6 +20,9 @@ struct ConversationView: View {
     @State private var oneTimeText: String?
     @State private var oneTimeTarget: Message?
     @State private var resendTarget: Message?
+    @State private var paying = false
+    @State private var payHint: String?
+    @State private var paymentDetail: Message?
     @FocusState private var composerFocused: Bool
 
     var body: some View {
@@ -117,6 +122,17 @@ struct ConversationView: View {
         } message: { _ in
             Text("Du kannst sie nur einmal ansehen. Sobald du sie schließt, ist sie für immer weg.")
         }
+        .sheet(isPresented: $paying) {
+            SendBitcoinView(target: .contact(chatId: chatId, contactId: contact.id))
+        }
+        .sheet(item: $paymentDetail) { m in
+            PaymentDetailView(message: m)
+        }
+        .alert("Bitcoin senden", isPresented: Binding(get: { payHint != nil }, set: { if !$0 { payHint = nil } })) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text(payHint ?? "")
+        }
         .fullScreenCover(isPresented: Binding(get: { oneTimeText != nil }, set: { if !$0 { oneTimeText = nil } })) {
             ScreenshotShield(isEnabled: app.screenshotShield) {
                 OneTimeReveal(text: oneTimeText ?? "") { oneTimeText = nil }
@@ -193,7 +209,9 @@ struct ConversationView: View {
 
     private func tapped(_ m: Message) {
         let mine = m.senderId == engine.userId
-        if mine && m.status == .failed {
+        if m.payment != nil && !(mine && m.status == .failed) {
+            paymentDetail = m
+        } else if mine && m.status == .failed {
             resendTarget = m
         } else if m.isPasswordProtected && !m.passwordUnlocked && !mine {
             unlockError = nil
@@ -281,8 +299,25 @@ struct ConversationView: View {
                 draft: $draft, option: $option, focused: $composerFocused,
                 chatTimer: chat.timer, chatAfterRead: chat.deleteAfterRead,
                 askPassword: { askPassword = true },
+                payBitcoin: wallet == nil ? nil : { startPayment(contact) },
                 send: { send(chat: chat) }
             )
+        }
+    }
+
+    /// Bitcoin an diesen Kontakt: geht nur, wenn er eine Adresse geschickt hat.
+    private func startPayment(_ contact: Contact) {
+        switch engine.paymentBlock(for: contact.id) {
+        case nil:
+            paying = true
+        case .waitingForAddress?:
+            payHint = String(localized: "\(contact.displayName) hat dir noch keine Bitcoin-Adresse geschickt. Sie kommt verschlüsselt mit der nächsten Nachricht von \(contact.displayName).")
+        case .noWalletThere?:
+            payHint = String(localized: "\(contact.displayName) kann im Chat keine Bitcoin empfangen (ältere Krypta-Version oder Zahlungen im Chat ausgeschaltet).")
+        case .otherNetwork?:
+            payHint = String(localized: "\(contact.displayName) nutzt ein anderes Bitcoin-Netz als du.")
+        case .noWallet?, .cannotMessage?:
+            payHint = String(localized: "Gerade nicht möglich.")
         }
     }
 
