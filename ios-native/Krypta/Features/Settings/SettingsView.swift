@@ -186,7 +186,7 @@ struct SettingsView: View {
                     }
                     .accessibilityIdentifier("settings.wipe")
                 } footer: {
-                    Text("Löscht Schlüssel, Chats und dein Konto auf dem Server. Deine Kontakte erfahren, dass es dich nicht mehr gibt.")
+                    Text("Löscht Schlüssel, Chats und dein Konto auf dem Server. Deine Kontakte erfahren, dass es dich nicht mehr gibt. Auch die Bitcoin-Wallet ist danach weg: ihr Guthaben holst du nur mit deinen zwölf Wörtern zurück.")
                 }
 
                 Section {
@@ -495,6 +495,8 @@ private struct SecurityInfoView: View {
                  "Stimmt die Nummer auf beiden Geräten überein, sitzt niemand dazwischen. Ändert sie sich, sperrt Krypta den Chat, bis ihr sie neu vergleicht.")
             item("internaldrive", "Nichts im Klartext auf dem Gerät",
                  "Chats und Schlüssel liegen verschlüsselt auf dem iPhone, der Schlüssel dazu im Schlüsselbund. Nichts davon landet in Backups.")
+            item("bitcoinsign.circle", "Bitcoin in deiner Hand",
+                 "Jedes Konto hat eine eigene Bitcoin-Wallet. Ihr Schlüssel entsteht auf diesem iPhone, verlässt es nie und wird nur nach Face ID oder Code benutzt. Im Chat bekommt jeder Kontakt verschlüsselt eine eigene Adresse; ob eine Zahlung wirklich angekommen ist, prüft Krypta selbst auf der Blockchain.")
             item("icloud.slash", "Der Server vergisst",
                  "Nachrichten liegen nur so lange auf dem Server, bis dein Gerät sie abholt.")
         }
@@ -542,6 +544,7 @@ struct LicensesView: View {
     private let libraries: [Library] = [
         .init(name: "libsodium", license: "ISC", url: "https://github.com/jedisct1/libsodium"),
         .init(name: "swift-sodium", license: "ISC", url: "https://github.com/jedisct1/swift-sodium"),
+        .init(name: "libsecp256k1 (Bitcoin Core)", license: "MIT", url: "https://github.com/bitcoin-core/secp256k1"),
         .init(name: "Firebase iOS SDK", license: "Apache 2.0", url: "https://github.com/firebase/firebase-ios-sdk"),
         .init(name: "gRPC", license: "Apache 2.0", url: "https://github.com/grpc/grpc"),
         .init(name: "Abseil", license: "Apache 2.0", url: "https://github.com/abseil/abseil-cpp"),
