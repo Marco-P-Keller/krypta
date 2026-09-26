@@ -1067,13 +1067,13 @@
         }
       }
     },
-    "Auf dem Sperrbildschirm steht nur „Neue Nachricht“ — ohne Absender und ohne Inhalt.": {
+    "Auf dem Sperrbildschirm steht nur „Neue Nachricht“, ohne Absender und ohne Inhalt.": {
       "extractionState": "extracted_with_value",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "The Lock Screen shows only “New message” — no sender, no content."
+            "value": "The Lock Screen shows only “New message”, no sender, no content."
           }
         },
         "es": {
@@ -1097,24 +1097,24 @@
         "nl": {
           "stringUnit": {
             "state": "translated",
-            "value": "Op het toegangsscherm staat alleen ‘Nieuw bericht’ — zonder afzender en zonder inhoud."
+            "value": "Op het toegangsscherm staat alleen ‘Nieuw bericht’, zonder afzender en zonder inhoud."
           }
         },
         "pt": {
           "stringUnit": {
             "state": "translated",
-            "value": "A tela bloqueada mostra só “Nova mensagem” — sem remetente e sem conteúdo."
+            "value": "A tela bloqueada mostra só “Nova mensagem”, sem remetente e sem conteúdo."
           }
         }
       }
     },
-    "Auf dem Sperrbildschirm steht nur, wer dir geschrieben hat — mit dem Namen, den du dem Kontakt gegeben hast. Was in der Nachricht steht, erfahren weder die Mitteilung noch Apple oder Google.": {
+    "Auf dem Sperrbildschirm steht nur, wer dir geschrieben hat, mit dem Namen, den du dem Kontakt gegeben hast. Was in der Nachricht steht, erfahren weder die Mitteilung noch Apple oder Google.": {
       "extractionState": "extracted_with_value",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "The Lock Screen only shows who wrote to you — with the name you gave the contact. Neither the notification nor Apple or Google learn what the message says."
+            "value": "The Lock Screen only shows who wrote to you, with the name you gave the contact. Neither the notification nor Apple or Google learn what the message says."
           }
         },
         "es": {
@@ -1138,7 +1138,7 @@
         "nl": {
           "stringUnit": {
             "state": "translated",
-            "value": "Het toegangsscherm toont alleen wie je heeft geschreven — met de naam die je het contact hebt gegeven. Wat er in het bericht staat, weten noch de melding noch Apple of Google."
+            "value": "Het toegangsscherm toont alleen wie je heeft geschreven, met de naam die je het contact hebt gegeven. Wat er in het bericht staat, weten noch de melding noch Apple of Google."
           }
         },
         "pt": {
@@ -2870,13 +2870,13 @@
         }
       }
     },
-    "Der Schlüssel im QR-Code passt nicht zu dem auf dem Server. Möglicher Angriff — der Kontakt wurde gesperrt.": {
+    "Der Schlüssel im QR-Code passt nicht zu dem auf dem Server. Möglicher Angriff: Der Kontakt wurde gesperrt.": {
       "extractionState": "extracted_with_value",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "The key in the QR code doesn’t match the one on the server. Possible attack — the contact has been locked."
+            "value": "The key in the QR code doesn’t match the one on the server. Possible attack: the contact has been locked."
           }
         },
         "es": {
@@ -2888,7 +2888,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "La clé du code QR ne correspond pas à celle du serveur. Attaque possible — le contact a été verrouillé."
+            "value": "La clé du code QR ne correspond pas à celle du serveur. Attaque possible : le contact a été verrouillé."
           }
         },
         "it": {
@@ -2900,13 +2900,13 @@
         "nl": {
           "stringUnit": {
             "state": "translated",
-            "value": "De sleutel in de QR-code komt niet overeen met die op de server. Mogelijke aanval — het contact is vergrendeld."
+            "value": "De sleutel in de QR-code komt niet overeen met die op de server. Mogelijke aanval: het contact is vergrendeld."
           }
         },
         "pt": {
           "stringUnit": {
             "state": "translated",
-            "value": "A chave do código QR não corresponde à do servidor. Possível ataque — o contato foi bloqueado."
+            "value": "A chave do código QR não corresponde à do servidor. Possível ataque: o contato foi bloqueado."
           }
         }
       }
@@ -3565,13 +3565,13 @@
         }
       }
     },
-    "Du erfährst, von wem eine Nachricht kommt — zum Beispiel „Neue Nachricht von Mami“. Was drinsteht, sieht nur, wer Krypta öffnet.": {
+    "Du erfährst, von wem eine Nachricht kommt, zum Beispiel „Neue Nachricht von Mami“. Was drinsteht, sieht nur, wer Krypta öffnet.": {
       "extractionState": "extracted_with_value",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "You’ll see who a message is from — for example “New message from Mom”. What it says is only visible to whoever opens Krypta."
+            "value": "You’ll see who a message is from, for example “New message from Mom”. What it says is only visible to whoever opens Krypta."
           }
         },
         "es": {
@@ -3583,7 +3583,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Tu sauras de qui vient un message — par exemple « Nouveau message de Maman ». Son contenu n’est visible qu’en ouvrant Krypta."
+            "value": "Tu sauras de qui vient un message, par exemple « Nouveau message de Maman ». Son contenu n’est visible qu’en ouvrant Krypta."
           }
         },
         "it": {
@@ -3595,13 +3595,13 @@
         "nl": {
           "stringUnit": {
             "state": "translated",
-            "value": "Je ziet van wie een bericht komt — bijvoorbeeld ‘Nieuw bericht van Mama’. Wat erin staat, ziet alleen wie Krypta opent."
+            "value": "Je ziet van wie een bericht komt, bijvoorbeeld ‘Nieuw bericht van Mama’. Wat erin staat, ziet alleen wie Krypta opent."
           }
         },
         "pt": {
           "stringUnit": {
             "state": "translated",
-            "value": "Você vai saber de quem é a mensagem — por exemplo “Nova mensagem de Mãe”. O conteúdo só aparece para quem abrir o Krypta."
+            "value": "Você vai saber de quem é a mensagem, por exemplo “Nova mensagem de Mãe”. O conteúdo só aparece para quem abrir o Krypta."
           }
         }
       }
@@ -5695,13 +5695,13 @@
         }
       }
     },
-    "Im Notfall: dieser Code + = löscht sofort alles — ohne Rückfrage.": {
+    "Im Notfall: dieser Code + = löscht sofort alles, ohne Rückfrage.": {
       "extractionState": "extracted_with_value",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "In an emergency: this code + = erases everything instantly — without asking."
+            "value": "In an emergency: this code + = erases everything instantly, without asking."
           }
         },
         "es": {
@@ -5725,13 +5725,13 @@
         "nl": {
           "stringUnit": {
             "state": "translated",
-            "value": "In noodgevallen: deze code + = wist meteen alles — zonder te vragen."
+            "value": "In noodgevallen: deze code + = wist meteen alles, zonder te vragen."
           }
         },
         "pt": {
           "stringUnit": {
             "state": "translated",
-            "value": "Em emergência: este código + = apaga tudo na hora — sem perguntar."
+            "value": "Em emergência: este código + = apaga tudo na hora, sem perguntar."
           }
         }
       }
@@ -5899,13 +5899,13 @@
         }
       }
     },
-    "Jede Nachricht hat ihren eigenen Schlüssel (Signal-Protokoll: X3DH und Double Ratchet). Wer einen davon erbeutet, liest damit nur diese eine Nachricht — frühere bleiben geschützt.": {
+    "Jede Nachricht hat ihren eigenen Schlüssel (Signal-Protokoll: X3DH und Double Ratchet). Wer einen davon erbeutet, liest damit nur diese eine Nachricht. Frühere bleiben geschützt.": {
       "extractionState": "extracted_with_value",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Every message has its own key (Signal protocol: X3DH and Double Ratchet). Anyone who steals one can read only that one message — earlier ones stay protected."
+            "value": "Every message has its own key (Signal protocol: X3DH and Double Ratchet). Anyone who steals one can read only that one message. Earlier ones stay protected."
           }
         },
         "es": {
@@ -5917,7 +5917,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Chaque message a sa propre clé (protocole Signal : X3DH et Double Ratchet). Quiconque en vole une ne lit que ce message — les précédents restent protégés."
+            "value": "Chaque message a sa propre clé (protocole Signal : X3DH et Double Ratchet). Quiconque en vole une ne lit que ce message. Les précédents restent protégés."
           }
         },
         "it": {
@@ -5929,53 +5929,53 @@
         "nl": {
           "stringUnit": {
             "state": "translated",
-            "value": "Elk bericht heeft zijn eigen sleutel (Signal-protocol: X3DH en Double Ratchet). Wie er één buitmaakt, leest alleen dat ene bericht — eerdere blijven beschermd."
+            "value": "Elk bericht heeft zijn eigen sleutel (Signal-protocol: X3DH en Double Ratchet). Wie er één buitmaakt, leest alleen dat ene bericht. Eerdere blijven beschermd."
           }
         },
         "pt": {
           "stringUnit": {
             "state": "translated",
-            "value": "Cada mensagem tem sua própria chave (protocolo Signal: X3DH e Double Ratchet). Quem roubar uma só lê essa mensagem — as anteriores continuam protegidas."
+            "value": "Cada mensagem tem sua própria chave (protocolo Signal: X3DH e Double Ratchet). Quem roubar uma só lê essa mensagem. As anteriores continuam protegidas."
           }
         }
       }
     },
-    "Jede Nachricht wird vom Server gelöscht, sobald dein Kontakt sie empfangen hat — von seinem Gerät und, sobald die Zustellung bestätigt ist, noch einmal von deinem. Nie abgeholte Nachrichten löscht der Server nach 24 Stunden.": {
+    "Jede Nachricht wird vom Server gelöscht, sobald dein Kontakt sie empfangen hat, von seinem Gerät und, sobald die Zustellung bestätigt ist, noch einmal von deinem. Nie abgeholte Nachrichten löscht der Server nach 24 Stunden.": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Every message is deleted from the server as soon as your contact has received it — by their device and, once delivery is confirmed, again by yours. Messages that are never picked up are deleted by the server after 24 hours."
+            "value": "Every message is deleted from the server as soon as your contact has received it, by their device and, once delivery is confirmed, again by yours. Messages that are never picked up are deleted by the server after 24 hours."
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Cada mensaje se borra del servidor en cuanto tu contacto lo recibe — desde su dispositivo y, cuando se confirma la entrega, de nuevo desde el tuyo. Los mensajes que nunca se recogen los borra el servidor a las 24 horas."
+            "value": "Cada mensaje se borra del servidor en cuanto tu contacto lo recibe, desde su dispositivo y, cuando se confirma la entrega, de nuevo desde el tuyo. Los mensajes que nunca se recogen los borra el servidor a las 24 horas."
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Chaque message est supprimé du serveur dès que ton contact l'a reçu — par son appareil puis, une fois la remise confirmée, une seconde fois par le tien. Les messages jamais récupérés sont supprimés par le serveur au bout de 24 heures."
+            "value": "Chaque message est supprimé du serveur dès que ton contact l'a reçu, par son appareil puis, une fois la remise confirmée, une seconde fois par le tien. Les messages jamais récupérés sont supprimés par le serveur au bout de 24 heures."
           }
         },
         "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Ogni messaggio viene eliminato dal server appena il tuo contatto lo ha ricevuto — dal suo dispositivo e, confermata la consegna, di nuovo dal tuo. I messaggi mai ritirati vengono eliminati dal server dopo 24 ore."
+            "value": "Ogni messaggio viene eliminato dal server appena il tuo contatto lo ha ricevuto, dal suo dispositivo e, confermata la consegna, di nuovo dal tuo. I messaggi mai ritirati vengono eliminati dal server dopo 24 ore."
           }
         },
         "nl": {
           "stringUnit": {
             "state": "translated",
-            "value": "Elk bericht wordt van de server verwijderd zodra je contact het heeft ontvangen — door zijn toestel en, zodra de bezorging bevestigd is, nog een keer door het jouwe. Berichten die nooit worden opgehaald, verwijdert de server na 24 uur."
+            "value": "Elk bericht wordt van de server verwijderd zodra je contact het heeft ontvangen, door zijn toestel en, zodra de bezorging bevestigd is, nog een keer door het jouwe. Berichten die nooit worden opgehaald, verwijdert de server na 24 uur."
           }
         },
         "pt": {
           "stringUnit": {
             "state": "translated",
-            "value": "Cada mensagem é apagada do servidor assim que o teu contacto a recebe — pelo dispositivo dele e, confirmada a entrega, de novo pelo teu. As mensagens nunca recolhidas são apagadas pelo servidor ao fim de 24 horas."
+            "value": "Cada mensagem é apagada do servidor assim que o teu contacto a recebe, pelo dispositivo dele e, confirmada a entrega, de novo pelo teu. As mensagens nunca recolhidas são apagadas pelo servidor ao fim de 24 horas."
           }
         }
       }
@@ -7865,13 +7865,13 @@
         }
       }
     },
-    "Nach Rechner-Code und %@ fragt Krypta nach diesem Passwort. Wer es fünfmal falsch eingibt, löscht alles — wie mit dem Löschcode. Mindestens %lld Zeichen.": {
+    "Nach Rechner-Code und %@ fragt Krypta nach diesem Passwort. Wer es fünfmal falsch eingibt, löscht alles, wie mit dem Löschcode. Mindestens %lld Zeichen.": {
       "extractionState": "extracted_with_value",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "After the calculator code and %1$@, Krypta asks for this password. Entering it wrong five times erases everything — just like the erase code. At least %2$lld characters."
+            "value": "After the calculator code and %1$@, Krypta asks for this password. Entering it wrong five times erases everything, just like the erase code. At least %2$lld characters."
           }
         },
         "es": {
@@ -7883,7 +7883,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Après le code de la calculatrice et %1$@, Krypta demande ce mot de passe. Cinq erreurs effacent tout — comme le code d’effacement. Au moins %2$lld caractères."
+            "value": "Après le code de la calculatrice et %1$@, Krypta demande ce mot de passe. Cinq erreurs effacent tout, comme le code d’effacement. Au moins %2$lld caractères."
           }
         },
         "it": {
@@ -7895,13 +7895,13 @@
         "nl": {
           "stringUnit": {
             "state": "translated",
-            "value": "Na de rekenmachinecode en %1$@ vraagt Krypta om dit wachtwoord. Wie het vijf keer fout invoert, wist alles — net als met de wiscode. Minstens %2$lld tekens."
+            "value": "Na de rekenmachinecode en %1$@ vraagt Krypta om dit wachtwoord. Wie het vijf keer fout invoert, wist alles, net als met de wiscode. Minstens %2$lld tekens."
           }
         },
         "pt": {
           "stringUnit": {
             "state": "translated",
-            "value": "Depois do código da calculadora e do %1$@, o Krypta pede esta senha. Errar cinco vezes apaga tudo — como o código de apagamento. Pelo menos %2$lld caracteres."
+            "value": "Depois do código da calculadora e do %1$@, o Krypta pede esta senha. Errar cinco vezes apaga tudo, como o código de apagamento. Pelo menos %2$lld caracteres."
           }
         }
       }
@@ -10199,42 +10199,42 @@
         }
       }
     },
-    "Sobald dein Kontakt eine Nachricht empfangen hat, wird sie vom Server gelöscht — automatisch, bei jeder Nachricht. Übrig bleibt sie nur auf euren beiden iPhones.": {
+    "Sobald dein Kontakt eine Nachricht empfangen hat, wird sie vom Server gelöscht, automatisch, bei jeder Nachricht. Übrig bleibt sie nur auf euren beiden iPhones.": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "As soon as your contact has received a message, it is deleted from the server — automatically, for every message. It only remains on your two iPhones."
+            "value": "As soon as your contact has received a message, it is deleted from the server, automatically, for every message. It only remains on your two iPhones."
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "En cuanto tu contacto recibe un mensaje, se borra del servidor — automáticamente, con cada mensaje. Solo queda en vuestros dos iPhone."
+            "value": "En cuanto tu contacto recibe un mensaje, se borra del servidor, automáticamente, con cada mensaje. Solo queda en vuestros dos iPhone."
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Dès que ton contact a reçu un message, il est supprimé du serveur — automatiquement, pour chaque message. Il ne reste que sur vos deux iPhone."
+            "value": "Dès que ton contact a reçu un message, il est supprimé du serveur, automatiquement, pour chaque message. Il ne reste que sur vos deux iPhone."
           }
         },
         "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Appena il tuo contatto ha ricevuto un messaggio, viene eliminato dal server — automaticamente, per ogni messaggio. Resta solo sui vostri due iPhone."
+            "value": "Appena il tuo contatto ha ricevuto un messaggio, viene eliminato dal server, automaticamente, per ogni messaggio. Resta solo sui vostri due iPhone."
           }
         },
         "nl": {
           "stringUnit": {
             "state": "translated",
-            "value": "Zodra je contact een bericht heeft ontvangen, wordt het van de server verwijderd — automatisch, bij elk bericht. Het blijft alleen op jullie twee iPhones staan."
+            "value": "Zodra je contact een bericht heeft ontvangen, wordt het van de server verwijderd, automatisch, bij elk bericht. Het blijft alleen op jullie twee iPhones staan."
           }
         },
         "pt": {
           "stringUnit": {
             "state": "translated",
-            "value": "Assim que o teu contacto recebe uma mensagem, ela é apagada do servidor — automaticamente, em cada mensagem. Fica apenas nos vossos dois iPhones."
+            "value": "Assim que o teu contacto recebe uma mensagem, ela é apagada do servidor, automaticamente, em cada mensagem. Fica apenas nos vossos dois iPhones."
           }
         }
       }
@@ -10689,13 +10689,13 @@
         }
       }
     },
-    "Vergleicht diese Zahl auf beiden Geräten — am besten nebeneinander oder in einem Anruf. Stimmt sie überein, liest niemand mit.": {
+    "Vergleicht diese Zahl auf beiden Geräten, am besten nebeneinander oder in einem Anruf. Stimmt sie überein, liest niemand mit.": {
       "extractionState": "extracted_with_value",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Compare this number on both devices — ideally side by side or during a call. If it matches, nobody is listening in."
+            "value": "Compare this number on both devices, ideally side by side or during a call. If it matches, nobody is listening in."
           }
         },
         "es": {
@@ -10707,7 +10707,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Comparez ce numéro sur les deux appareils — idéalement côte à côte ou pendant un appel. S’il est identique, personne ne lit par-dessus votre épaule."
+            "value": "Comparez ce numéro sur les deux appareils, idéalement côte à côte ou pendant un appel. S’il est identique, personne ne lit par-dessus votre épaule."
           }
         },
         "it": {
@@ -10719,13 +10719,13 @@
         "nl": {
           "stringUnit": {
             "state": "translated",
-            "value": "Vergelijk dit nummer op beide apparaten — het liefst naast elkaar of tijdens een gesprek. Komt het overeen, dan leest niemand mee."
+            "value": "Vergelijk dit nummer op beide apparaten, het liefst naast elkaar of tijdens een gesprek. Komt het overeen, dan leest niemand mee."
           }
         },
         "pt": {
           "stringUnit": {
             "state": "translated",
-            "value": "Comparem este número nos dois aparelhos — de preferência lado a lado ou numa ligação. Se coincidir, ninguém está lendo junto."
+            "value": "Comparem este número nos dois aparelhos, de preferência lado a lado ou numa ligação. Se coincidir, ninguém está lendo junto."
           }
         }
       }
@@ -11596,43 +11596,43 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Krypta Chat — Datenschutzerklärung\n\nStand: April 2026\n\n1. Verantwortlicher\nConnexa GmbH\nKontakt: https://connexa-gmbh.ch\n\n2. Welche Daten werden erhoben?\nKrypta erhebt so wenig Daten wie technisch möglich:\n• Anonyme Firebase-ID (keine E-Mail, kein Name, keine Telefonnummer)\n• Öffentlicher Verschlüsselungsschlüssel (X25519)\n• FCM-Push-Token (für Benachrichtigungen)\n\n3. Verschlüsselung\nAlle Nachrichten sind Ende-zu-Ende-verschlüsselt (Signal-Protokoll: X3DH + Double Ratchet). Der Server hat zu keinem Zeitpunkt Zugriff auf den Klartext Ihrer Nachrichten. Verschlüsselung: XChaCha20-Poly1305. Passwort-Hashing: Argon2id.\n\n4. Datenspeicherung\n• Nachrichten werden nur auf Ihrem Gerät gespeichert (verschlüsselt)\n• Der Server fungiert nur als temporärer Relay — Nachrichten werden nach Zustellung gelöscht\n• Schlüssel werden im iOS Keychain / Android Keystore gespeichert\n\n5. Keine Tracker\nKrypta enthält keine Analyse-Tools, keine Werbung und keine Tracker (0 von 432 bekannten Trackern).\n\n6. Datenweitergabe\nEs werden keine personenbezogenen Daten an Dritte weitergegeben. Google Firebase wird als Infrastruktur-Anbieter verwendet (anonyme Authentifizierung und Push-Benachrichtigungen).\n\n7. Datenlöschung\nSie können jederzeit alle Ihre Daten unwiderruflich löschen:\n• In den Einstellungen über \"Alles löschen\"\n• Durch Eingabe des Lösch-Codes im Taschenrechner\nDabei werden alle lokalen Daten, Schlüssel und Server-Daten vernichtet.\n\n8. Ihre Rechte (DSGVO)\nSie haben das Recht auf Auskunft, Berichtigung, Löschung und Datenübertragbarkeit. Kontaktieren Sie uns unter: https://connexa-gmbh.ch\n\n9. Änderungen\nDiese Datenschutzerklärung kann aktualisiert werden. Die aktuelle Version ist immer in der App einsehbar."
+            "value": "Krypta Chat: Datenschutzerklärung\n\nStand: April 2026\n\n1. Verantwortlicher\nConnexa GmbH\nKontakt: https://connexa-gmbh.ch\n\n2. Welche Daten werden erhoben?\nKrypta erhebt so wenig Daten wie technisch möglich:\n• Anonyme Firebase-ID (keine E-Mail, kein Name, keine Telefonnummer)\n• Öffentlicher Verschlüsselungsschlüssel (X25519)\n• FCM-Push-Token (für Benachrichtigungen)\n\n3. Verschlüsselung\nAlle Nachrichten sind Ende-zu-Ende-verschlüsselt (Signal-Protokoll: X3DH + Double Ratchet). Der Server hat zu keinem Zeitpunkt Zugriff auf den Klartext Ihrer Nachrichten. Verschlüsselung: XChaCha20-Poly1305. Passwort-Hashing: Argon2id.\n\n4. Datenspeicherung\n• Nachrichten werden nur auf Ihrem Gerät gespeichert (verschlüsselt)\n• Der Server fungiert nur als temporärer Relay: Nachrichten werden nach Zustellung gelöscht\n• Schlüssel werden im iOS Keychain / Android Keystore gespeichert\n\n5. Keine Tracker\nKrypta enthält keine Analyse-Tools, keine Werbung und keine Tracker (0 von 432 bekannten Trackern).\n\n6. Datenweitergabe\nEs werden keine personenbezogenen Daten an Dritte weitergegeben. Google Firebase wird als Infrastruktur-Anbieter verwendet (anonyme Authentifizierung und Push-Benachrichtigungen).\n\n7. Datenlöschung\nSie können jederzeit alle Ihre Daten unwiderruflich löschen:\n• In den Einstellungen über \"Alles löschen\"\n• Durch Eingabe des Lösch-Codes im Taschenrechner\nDabei werden alle lokalen Daten, Schlüssel und Server-Daten vernichtet.\n\n8. Ihre Rechte (DSGVO)\nSie haben das Recht auf Auskunft, Berichtigung, Löschung und Datenübertragbarkeit. Kontaktieren Sie uns unter: https://connexa-gmbh.ch\n\n9. Änderungen\nDiese Datenschutzerklärung kann aktualisiert werden. Die aktuelle Version ist immer in der App einsehbar."
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Krypta Chat — Privacy Policy\n\nLast updated: April 2026\n\n1. Controller\nConnexa GmbH\nContact: https://connexa-gmbh.ch\n\n2. What data is collected?\nKrypta collects as little data as is technically possible:\n• Anonymous Firebase ID (no email, no name, no phone number)\n• Public encryption key (X25519)\n• FCM push token (for notifications)\n\n3. Encryption\nAll messages are end-to-end encrypted (Signal protocol: X3DH + Double Ratchet). At no point does the server have access to the plaintext of your messages. Encryption: XChaCha20-Poly1305. Password hashing: Argon2id.\n\n4. Data storage\n• Messages are stored only on your device (encrypted)\n• The server acts solely as a temporary relay — messages are deleted after delivery\n• Keys are stored in the iOS Keychain / Android Keystore\n\n5. No trackers\nKrypta contains no analytics tools, no advertising and no trackers (0 of 432 known trackers).\n\n6. Data sharing\nNo personal data is passed on to third parties. Google Firebase is used as the infrastructure provider (anonymous authentication and push notifications).\n\n7. Data deletion\nYou can irreversibly delete all of your data at any time:\n• In the settings via \"Delete everything\"\n• By entering the delete code in the calculator\nThis destroys all local data, keys and server-side data.\n\n8. Your rights (GDPR)\nYou have the right to access, rectification, erasure and data portability. Contact us at: https://connexa-gmbh.ch\n\n9. Changes\nThis privacy policy may be updated. The current version is always available in the app."
+            "value": "Krypta Chat: Privacy Policy\n\nLast updated: April 2026\n\n1. Controller\nConnexa GmbH\nContact: https://connexa-gmbh.ch\n\n2. What data is collected?\nKrypta collects as little data as is technically possible:\n• Anonymous Firebase ID (no email, no name, no phone number)\n• Public encryption key (X25519)\n• FCM push token (for notifications)\n\n3. Encryption\nAll messages are end-to-end encrypted (Signal protocol: X3DH + Double Ratchet). At no point does the server have access to the plaintext of your messages. Encryption: XChaCha20-Poly1305. Password hashing: Argon2id.\n\n4. Data storage\n• Messages are stored only on your device (encrypted)\n• The server acts solely as a temporary relay: messages are deleted after delivery\n• Keys are stored in the iOS Keychain / Android Keystore\n\n5. No trackers\nKrypta contains no analytics tools, no advertising and no trackers (0 of 432 known trackers).\n\n6. Data sharing\nNo personal data is passed on to third parties. Google Firebase is used as the infrastructure provider (anonymous authentication and push notifications).\n\n7. Data deletion\nYou can irreversibly delete all of your data at any time:\n• In the settings via \"Delete everything\"\n• By entering the delete code in the calculator\nThis destroys all local data, keys and server-side data.\n\n8. Your rights (GDPR)\nYou have the right to access, rectification, erasure and data portability. Contact us at: https://connexa-gmbh.ch\n\n9. Changes\nThis privacy policy may be updated. The current version is always available in the app."
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Krypta Chat — Política de privacidad\n\nÚltima actualización: abril de 2026\n\n1. Responsable\nConnexa GmbH\nContacto: https://connexa-gmbh.ch\n\n2. ¿Qué datos se recogen?\nKrypta recoge tan pocos datos como es técnicamente posible:\n• ID anónimo de Firebase (sin correo, sin nombre, sin número de teléfono)\n• Clave pública de cifrado (X25519)\n• Token push de FCM (para las notificaciones)\n\n3. Cifrado\nTodos los mensajes están cifrados de extremo a extremo (protocolo Signal: X3DH + Double Ratchet). En ningún momento tiene el servidor acceso al texto en claro de tus mensajes. Cifrado: XChaCha20-Poly1305. Hash de contraseñas: Argon2id.\n\n4. Almacenamiento de datos\n• Los mensajes se guardan únicamente en tu dispositivo (cifrados)\n• El servidor actúa solo como relé temporal: los mensajes se borran tras la entrega\n• Las claves se guardan en el Llavero de iOS / Android Keystore\n\n5. Sin rastreadores\nKrypta no contiene herramientas de análisis, ni publicidad, ni rastreadores (0 de 432 rastreadores conocidos).\n\n6. Cesión de datos\nNo se ceden datos personales a terceros. Se utiliza Google Firebase como proveedor de infraestructura (autenticación anónima y notificaciones push).\n\n7. Borrado de datos\nPuedes borrar de forma irreversible todos tus datos en cualquier momento:\n• En los ajustes, mediante «Borrar todo»\n• Introduciendo el código de borrado en la calculadora\nEsto destruye todos los datos locales, las claves y los datos del servidor.\n\n8. Tus derechos (RGPD)\nTienes derecho de acceso, rectificación, supresión y portabilidad de los datos. Contáctanos en: https://connexa-gmbh.ch\n\n9. Cambios\nEsta política de privacidad puede actualizarse. La versión vigente siempre está disponible en la aplicación."
+            "value": "Krypta Chat: Política de privacidad\n\nÚltima actualización: abril de 2026\n\n1. Responsable\nConnexa GmbH\nContacto: https://connexa-gmbh.ch\n\n2. ¿Qué datos se recogen?\nKrypta recoge tan pocos datos como es técnicamente posible:\n• ID anónimo de Firebase (sin correo, sin nombre, sin número de teléfono)\n• Clave pública de cifrado (X25519)\n• Token push de FCM (para las notificaciones)\n\n3. Cifrado\nTodos los mensajes están cifrados de extremo a extremo (protocolo Signal: X3DH + Double Ratchet). En ningún momento tiene el servidor acceso al texto en claro de tus mensajes. Cifrado: XChaCha20-Poly1305. Hash de contraseñas: Argon2id.\n\n4. Almacenamiento de datos\n• Los mensajes se guardan únicamente en tu dispositivo (cifrados)\n• El servidor actúa solo como relé temporal: los mensajes se borran tras la entrega\n• Las claves se guardan en el Llavero de iOS / Android Keystore\n\n5. Sin rastreadores\nKrypta no contiene herramientas de análisis, ni publicidad, ni rastreadores (0 de 432 rastreadores conocidos).\n\n6. Cesión de datos\nNo se ceden datos personales a terceros. Se utiliza Google Firebase como proveedor de infraestructura (autenticación anónima y notificaciones push).\n\n7. Borrado de datos\nPuedes borrar de forma irreversible todos tus datos en cualquier momento:\n• En los ajustes, mediante «Borrar todo»\n• Introduciendo el código de borrado en la calculadora\nEsto destruye todos los datos locales, las claves y los datos del servidor.\n\n8. Tus derechos (RGPD)\nTienes derecho de acceso, rectificación, supresión y portabilidad de los datos. Contáctanos en: https://connexa-gmbh.ch\n\n9. Cambios\nEsta política de privacidad puede actualizarse. La versión vigente siempre está disponible en la aplicación."
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Krypta Chat — Politique de confidentialité\n\nDernière mise à jour : avril 2026\n\n1. Responsable du traitement\nConnexa GmbH\nContact : https://connexa-gmbh.ch\n\n2. Quelles données sont collectées ?\nKrypta collecte aussi peu de données que techniquement possible :\n• Identifiant Firebase anonyme (pas d’e-mail, pas de nom, pas de numéro de téléphone)\n• Clé publique de chiffrement (X25519)\n• Jeton push FCM (pour les notifications)\n\n3. Chiffrement\nTous les messages sont chiffrés de bout en bout (protocole Signal : X3DH + Double Ratchet). À aucun moment le serveur n’a accès au texte en clair de vos messages. Chiffrement : XChaCha20-Poly1305. Hachage des mots de passe : Argon2id.\n\n4. Conservation des données\n• Les messages sont conservés uniquement sur votre appareil (chiffrés)\n• Le serveur ne sert que de relais temporaire — les messages sont supprimés après remise\n• Les clés sont conservées dans le trousseau iOS / Android Keystore\n\n5. Aucun traceur\nKrypta ne contient aucun outil d’analyse, aucune publicité et aucun traceur (0 sur 432 traceurs connus).\n\n6. Transmission des données\nAucune donnée personnelle n’est transmise à des tiers. Google Firebase est utilisé comme fournisseur d’infrastructure (authentification anonyme et notifications push).\n\n7. Suppression des données\nVous pouvez supprimer irréversiblement toutes vos données à tout moment :\n• Dans les réglages, via « Tout supprimer »\n• En saisissant le code d’effacement dans la calculatrice\nCela détruit toutes les données locales, les clés et les données côté serveur.\n\n8. Vos droits (RGPD)\nVous disposez d’un droit d’accès, de rectification, d’effacement et de portabilité des données. Contactez-nous à : https://connexa-gmbh.ch\n\n9. Modifications\nCette politique de confidentialité peut être mise à jour. La version en vigueur est toujours consultable dans l’application."
+            "value": "Krypta Chat : Politique de confidentialité\n\nDernière mise à jour : avril 2026\n\n1. Responsable du traitement\nConnexa GmbH\nContact : https://connexa-gmbh.ch\n\n2. Quelles données sont collectées ?\nKrypta collecte aussi peu de données que techniquement possible :\n• Identifiant Firebase anonyme (pas d’e-mail, pas de nom, pas de numéro de téléphone)\n• Clé publique de chiffrement (X25519)\n• Jeton push FCM (pour les notifications)\n\n3. Chiffrement\nTous les messages sont chiffrés de bout en bout (protocole Signal : X3DH + Double Ratchet). À aucun moment le serveur n’a accès au texte en clair de vos messages. Chiffrement : XChaCha20-Poly1305. Hachage des mots de passe : Argon2id.\n\n4. Conservation des données\n• Les messages sont conservés uniquement sur votre appareil (chiffrés)\n• Le serveur ne sert que de relais temporaire : les messages sont supprimés après remise\n• Les clés sont conservées dans le trousseau iOS / Android Keystore\n\n5. Aucun traceur\nKrypta ne contient aucun outil d’analyse, aucune publicité et aucun traceur (0 sur 432 traceurs connus).\n\n6. Transmission des données\nAucune donnée personnelle n’est transmise à des tiers. Google Firebase est utilisé comme fournisseur d’infrastructure (authentification anonyme et notifications push).\n\n7. Suppression des données\nVous pouvez supprimer irréversiblement toutes vos données à tout moment :\n• Dans les réglages, via « Tout supprimer »\n• En saisissant le code d’effacement dans la calculatrice\nCela détruit toutes les données locales, les clés et les données côté serveur.\n\n8. Vos droits (RGPD)\nVous disposez d’un droit d’accès, de rectification, d’effacement et de portabilité des données. Contactez-nous à : https://connexa-gmbh.ch\n\n9. Modifications\nCette politique de confidentialité peut être mise à jour. La version en vigueur est toujours consultable dans l’application."
           }
         },
         "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Krypta Chat — Informativa sulla privacy\n\nUltimo aggiornamento: aprile 2026\n\n1. Titolare del trattamento\nConnexa GmbH\nContatto: https://connexa-gmbh.ch\n\n2. Quali dati vengono raccolti?\nKrypta raccoglie il minor numero di dati tecnicamente possibile:\n• ID Firebase anonimo (nessuna e-mail, nessun nome, nessun numero di telefono)\n• Chiave pubblica di cifratura (X25519)\n• Token push FCM (per le notifiche)\n\n3. Cifratura\nTutti i messaggi sono cifrati end-to-end (protocollo Signal: X3DH + Double Ratchet). In nessun momento il server ha accesso al testo in chiaro dei tuoi messaggi. Cifratura: XChaCha20-Poly1305. Hashing delle password: Argon2id.\n\n4. Conservazione dei dati\n• I messaggi sono conservati solo sul tuo dispositivo (cifrati)\n• Il server funge solo da relè temporaneo: i messaggi vengono eliminati dopo la consegna\n• Le chiavi sono conservate nel Portachiavi iOS / Android Keystore\n\n5. Nessun tracciatore\nKrypta non contiene strumenti di analisi, pubblicità o tracciatori (0 su 432 tracciatori noti).\n\n6. Comunicazione dei dati\nNessun dato personale viene comunicato a terzi. Google Firebase è utilizzato come fornitore di infrastruttura (autenticazione anonima e notifiche push).\n\n7. Cancellazione dei dati\nPuoi cancellare in modo irreversibile tutti i tuoi dati in qualsiasi momento:\n• Nelle impostazioni, tramite «Cancella tutto»\n• Inserendo il codice di cancellazione nella calcolatrice\nQuesto distrugge tutti i dati locali, le chiavi e i dati sul server.\n\n8. I tuoi diritti (GDPR)\nHai diritto di accesso, rettifica, cancellazione e portabilità dei dati. Contattaci all’indirizzo: https://connexa-gmbh.ch\n\n9. Modifiche\nLa presente informativa può essere aggiornata. La versione in vigore è sempre consultabile nell’app."
+            "value": "Krypta Chat: Informativa sulla privacy\n\nUltimo aggiornamento: aprile 2026\n\n1. Titolare del trattamento\nConnexa GmbH\nContatto: https://connexa-gmbh.ch\n\n2. Quali dati vengono raccolti?\nKrypta raccoglie il minor numero di dati tecnicamente possibile:\n• ID Firebase anonimo (nessuna e-mail, nessun nome, nessun numero di telefono)\n• Chiave pubblica di cifratura (X25519)\n• Token push FCM (per le notifiche)\n\n3. Cifratura\nTutti i messaggi sono cifrati end-to-end (protocollo Signal: X3DH + Double Ratchet). In nessun momento il server ha accesso al testo in chiaro dei tuoi messaggi. Cifratura: XChaCha20-Poly1305. Hashing delle password: Argon2id.\n\n4. Conservazione dei dati\n• I messaggi sono conservati solo sul tuo dispositivo (cifrati)\n• Il server funge solo da relè temporaneo: i messaggi vengono eliminati dopo la consegna\n• Le chiavi sono conservate nel Portachiavi iOS / Android Keystore\n\n5. Nessun tracciatore\nKrypta non contiene strumenti di analisi, pubblicità o tracciatori (0 su 432 tracciatori noti).\n\n6. Comunicazione dei dati\nNessun dato personale viene comunicato a terzi. Google Firebase è utilizzato come fornitore di infrastruttura (autenticazione anonima e notifiche push).\n\n7. Cancellazione dei dati\nPuoi cancellare in modo irreversibile tutti i tuoi dati in qualsiasi momento:\n• Nelle impostazioni, tramite «Cancella tutto»\n• Inserendo il codice di cancellazione nella calcolatrice\nQuesto distrugge tutti i dati locali, le chiavi e i dati sul server.\n\n8. I tuoi diritti (GDPR)\nHai diritto di accesso, rettifica, cancellazione e portabilità dei dati. Contattaci all’indirizzo: https://connexa-gmbh.ch\n\n9. Modifiche\nLa presente informativa può essere aggiornata. La versione in vigore è sempre consultabile nell’app."
           }
         },
         "nl": {
           "stringUnit": {
             "state": "translated",
-            "value": "Krypta Chat — Privacyverklaring\n\nLaatst bijgewerkt: april 2026\n\n1. Verwerkingsverantwoordelijke\nConnexa GmbH\nContact: https://connexa-gmbh.ch\n\n2. Welke gegevens worden verzameld?\nKrypta verzamelt zo weinig gegevens als technisch mogelijk is:\n• Anoniem Firebase-ID (geen e-mailadres, geen naam, geen telefoonnummer)\n• Openbare versleutelingssleutel (X25519)\n• FCM-pushtoken (voor meldingen)\n\n3. Versleuteling\nAlle berichten zijn end-to-end versleuteld (Signal-protocol: X3DH + Double Ratchet). De server heeft op geen enkel moment toegang tot de leesbare tekst van je berichten. Versleuteling: XChaCha20-Poly1305. Wachtwoord-hashing: Argon2id.\n\n4. Gegevensopslag\n• Berichten worden alleen op je eigen apparaat bewaard (versleuteld)\n• De server dient uitsluitend als tijdelijke doorgeefluik — berichten worden na bezorging verwijderd\n• Sleutels worden bewaard in de iOS-sleutelhanger / Android Keystore\n\n5. Geen trackers\nKrypta bevat geen analysetools, geen advertenties en geen trackers (0 van 432 bekende trackers).\n\n6. Doorgifte van gegevens\nEr worden geen persoonsgegevens aan derden doorgegeven. Google Firebase wordt gebruikt als infrastructuuraanbieder (anonieme authenticatie en pushmeldingen).\n\n7. Gegevens wissen\nJe kunt al je gegevens op elk moment onherroepelijk wissen:\n• In de instellingen via «Alles wissen»\n• Door de wiscode in de rekenmachine in te voeren\nDaarmee worden alle lokale gegevens, sleutels en servergegevens vernietigd.\n\n8. Jouw rechten (AVG)\nJe hebt recht op inzage, rectificatie, wissing en overdraagbaarheid van gegevens. Neem contact met ons op via: https://connexa-gmbh.ch\n\n9. Wijzigingen\nDeze privacyverklaring kan worden bijgewerkt. De geldende versie is altijd in de app te raadplegen."
+            "value": "Krypta Chat: Privacyverklaring\n\nLaatst bijgewerkt: april 2026\n\n1. Verwerkingsverantwoordelijke\nConnexa GmbH\nContact: https://connexa-gmbh.ch\n\n2. Welke gegevens worden verzameld?\nKrypta verzamelt zo weinig gegevens als technisch mogelijk is:\n• Anoniem Firebase-ID (geen e-mailadres, geen naam, geen telefoonnummer)\n• Openbare versleutelingssleutel (X25519)\n• FCM-pushtoken (voor meldingen)\n\n3. Versleuteling\nAlle berichten zijn end-to-end versleuteld (Signal-protocol: X3DH + Double Ratchet). De server heeft op geen enkel moment toegang tot de leesbare tekst van je berichten. Versleuteling: XChaCha20-Poly1305. Wachtwoord-hashing: Argon2id.\n\n4. Gegevensopslag\n• Berichten worden alleen op je eigen apparaat bewaard (versleuteld)\n• De server dient uitsluitend als tijdelijke doorgeefluik: berichten worden na bezorging verwijderd\n• Sleutels worden bewaard in de iOS-sleutelhanger / Android Keystore\n\n5. Geen trackers\nKrypta bevat geen analysetools, geen advertenties en geen trackers (0 van 432 bekende trackers).\n\n6. Doorgifte van gegevens\nEr worden geen persoonsgegevens aan derden doorgegeven. Google Firebase wordt gebruikt als infrastructuuraanbieder (anonieme authenticatie en pushmeldingen).\n\n7. Gegevens wissen\nJe kunt al je gegevens op elk moment onherroepelijk wissen:\n• In de instellingen via «Alles wissen»\n• Door de wiscode in de rekenmachine in te voeren\nDaarmee worden alle lokale gegevens, sleutels en servergegevens vernietigd.\n\n8. Jouw rechten (AVG)\nJe hebt recht op inzage, rectificatie, wissing en overdraagbaarheid van gegevens. Neem contact met ons op via: https://connexa-gmbh.ch\n\n9. Wijzigingen\nDeze privacyverklaring kan worden bijgewerkt. De geldende versie is altijd in de app te raadplegen."
           }
         },
         "pt": {
           "stringUnit": {
             "state": "translated",
-            "value": "Krypta Chat — Política de privacidade\n\nÚltima atualização: abril de 2026\n\n1. Responsável pelo tratamento\nConnexa GmbH\nContacto: https://connexa-gmbh.ch\n\n2. Que dados são recolhidos?\nO Krypta recolhe tão poucos dados quanto é tecnicamente possível:\n• ID anónimo do Firebase (sem e-mail, sem nome, sem número de telefone)\n• Chave pública de cifra (X25519)\n• Token push do FCM (para as notificações)\n\n3. Cifra\nTodas as mensagens são cifradas de ponta a ponta (protocolo Signal: X3DH + Double Ratchet). Em momento algum o servidor tem acesso ao texto simples das suas mensagens. Cifra: XChaCha20-Poly1305. Hashing de palavras-passe: Argon2id.\n\n4. Armazenamento de dados\n• As mensagens são guardadas apenas no seu dispositivo (cifradas)\n• O servidor funciona apenas como retransmissor temporário — as mensagens são eliminadas após a entrega\n• As chaves são guardadas no Porta-chaves do iOS / Android Keystore\n\n5. Sem rastreadores\nO Krypta não contém ferramentas de análise, publicidade nem rastreadores (0 de 432 rastreadores conhecidos).\n\n6. Transmissão de dados\nNão são transmitidos dados pessoais a terceiros. É utilizado o Google Firebase como fornecedor de infraestrutura (autenticação anónima e notificações push).\n\n7. Eliminação de dados\nPode eliminar de forma irreversível todos os seus dados a qualquer momento:\n• Nas definições, através de «Eliminar tudo»\n• Introduzindo o código de eliminação na calculadora\nIsto destrói todos os dados locais, as chaves e os dados no servidor.\n\n8. Os seus direitos (RGPD)\nTem direito de acesso, retificação, apagamento e portabilidade dos dados. Contacte-nos através de: https://connexa-gmbh.ch\n\n9. Alterações\nEsta política de privacidade pode ser atualizada. A versão em vigor está sempre disponível na aplicação."
+            "value": "Krypta Chat: Política de privacidade\n\nÚltima atualização: abril de 2026\n\n1. Responsável pelo tratamento\nConnexa GmbH\nContacto: https://connexa-gmbh.ch\n\n2. Que dados são recolhidos?\nO Krypta recolhe tão poucos dados quanto é tecnicamente possível:\n• ID anónimo do Firebase (sem e-mail, sem nome, sem número de telefone)\n• Chave pública de cifra (X25519)\n• Token push do FCM (para as notificações)\n\n3. Cifra\nTodas as mensagens são cifradas de ponta a ponta (protocolo Signal: X3DH + Double Ratchet). Em momento algum o servidor tem acesso ao texto simples das suas mensagens. Cifra: XChaCha20-Poly1305. Hashing de palavras-passe: Argon2id.\n\n4. Armazenamento de dados\n• As mensagens são guardadas apenas no seu dispositivo (cifradas)\n• O servidor funciona apenas como retransmissor temporário: as mensagens são eliminadas após a entrega\n• As chaves são guardadas no Porta-chaves do iOS / Android Keystore\n\n5. Sem rastreadores\nO Krypta não contém ferramentas de análise, publicidade nem rastreadores (0 de 432 rastreadores conhecidos).\n\n6. Transmissão de dados\nNão são transmitidos dados pessoais a terceiros. É utilizado o Google Firebase como fornecedor de infraestrutura (autenticação anónima e notificações push).\n\n7. Eliminação de dados\nPode eliminar de forma irreversível todos os seus dados a qualquer momento:\n• Nas definições, através de «Eliminar tudo»\n• Introduzindo o código de eliminação na calculadora\nIsto destrói todos os dados locais, as chaves e os dados no servidor.\n\n8. Os seus direitos (RGPD)\nTem direito de acesso, retificação, apagamento e portabilidade dos dados. Contacte-nos através de: https://connexa-gmbh.ch\n\n9. Alterações\nEsta política de privacidade pode ser atualizada. A versão em vigor está sempre disponível na aplicação."
           }
         }
       }

@@ -40,7 +40,7 @@ struct OnboardingFlow: View {
                     case .deleteCode:
                         PasscodeEntryView(
                             title: "Löschcode festlegen",
-                            message: "Im Notfall: dieser Code + = löscht sofort alles — ohne Rückfrage.",
+                            message: "Im Notfall: dieser Code + = löscht sofort alles, ohne Rückfrage.",
                             symbol: "trash.fill", tint: .red
                         ) { code in
                             guard code != secret else { return String(localized: "Der Löschcode muss sich vom Geheimcode unterscheiden.") }
@@ -167,7 +167,7 @@ private struct VanishView: View {
                     Text("Spurlos zugestellt")
                         .font(.largeTitle.weight(.bold))
                         .multilineTextAlignment(.center)
-                    Text("Sobald dein Kontakt eine Nachricht empfangen hat, wird sie vom Server gelöscht — automatisch, bei jeder Nachricht. Übrig bleibt sie nur auf euren beiden iPhones.")
+                    Text("Sobald dein Kontakt eine Nachricht empfangen hat, wird sie vom Server gelöscht, automatisch, bei jeder Nachricht. Übrig bleibt sie nur auf euren beiden iPhones.")
                         .foregroundStyle(.secondary)
                         .multilineTextAlignment(.center)
                     VStack(alignment: .leading, spacing: 18) {
@@ -302,7 +302,7 @@ private struct NotificationsOfferView: View {
                 Text("Mitteilungen erlauben?")
                     .font(.largeTitle.weight(.bold))
                     .multilineTextAlignment(.center)
-                Text("Du erfährst, von wem eine Nachricht kommt — zum Beispiel „Neue Nachricht von Mami“. Was drinsteht, sieht nur, wer Krypta öffnet.")
+                Text("Du erfährst, von wem eine Nachricht kommt, zum Beispiel „Neue Nachricht von Mami“. Was drinsteht, sieht nur, wer Krypta öffnet.")
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
             }

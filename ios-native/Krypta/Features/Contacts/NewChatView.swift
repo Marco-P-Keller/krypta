@@ -107,7 +107,7 @@ struct NewChatView: View {
                 if let chat = engine.chat(forContact: contact.id) { open(chat.id) } else { dismiss() }
             case .keyMismatch:
                 Haptics.error()
-                error = String(localized: "Der Schlüssel im QR-Code passt nicht zu dem auf dem Server. Möglicher Angriff — der Kontakt wurde gesperrt.")
+                error = String(localized: "Der Schlüssel im QR-Code passt nicht zu dem auf dem Server. Möglicher Angriff: Der Kontakt wurde gesperrt.")
             case .notFound:
                 Haptics.error()
                 error = String(localized: "Zu diesem QR-Code gibt es kein Konto.")

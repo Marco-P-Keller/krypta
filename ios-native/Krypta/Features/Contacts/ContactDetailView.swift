@@ -232,7 +232,7 @@ struct ContactDetailView: View {
         } header: {
             Text("Sicherheitsnummer")
         } footer: {
-            Text("Vergleicht diese Zahl auf beiden Geräten — am besten nebeneinander oder in einem Anruf. Stimmt sie überein, liest niemand mit.")
+            Text("Vergleicht diese Zahl auf beiden Geräten, am besten nebeneinander oder in einem Anruf. Stimmt sie überein, liest niemand mit.")
         }
     }
 

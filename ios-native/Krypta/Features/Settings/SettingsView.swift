@@ -76,8 +76,8 @@ struct SettingsView: View {
                     Text("Mitteilungen")
                 } footer: {
                     Text(push && pushNames
-                         ? "Auf dem Sperrbildschirm steht nur, wer dir geschrieben hat — mit dem Namen, den du dem Kontakt gegeben hast. Was in der Nachricht steht, erfahren weder die Mitteilung noch Apple oder Google."
-                         : "Auf dem Sperrbildschirm steht nur „Neue Nachricht“ — ohne Absender und ohne Inhalt.")
+                         ? "Auf dem Sperrbildschirm steht nur, wer dir geschrieben hat, mit dem Namen, den du dem Kontakt gegeben hast. Was in der Nachricht steht, erfahren weder die Mitteilung noch Apple oder Google."
+                         : "Auf dem Sperrbildschirm steht nur „Neue Nachricht“, ohne Absender und ohne Inhalt.")
                 }
 
                 Section {
@@ -100,7 +100,7 @@ struct SettingsView: View {
                     Text("Datenschutz")
                 } footer: {
                     VStack(alignment: .leading, spacing: 8) {
-                        Text("Jede Nachricht wird vom Server gelöscht, sobald dein Kontakt sie empfangen hat — von seinem Gerät und, sobald die Zustellung bestätigt ist, noch einmal von deinem. Nie abgeholte Nachrichten löscht der Server nach 24 Stunden.")
+                        Text("Jede Nachricht wird vom Server gelöscht, sobald dein Kontakt sie empfangen hat, von seinem Gerät und, sobald die Zustellung bestätigt ist, noch einmal von deinem. Nie abgeholte Nachrichten löscht der Server nach 24 Stunden.")
                         Text("Zustellungen werden immer gemeldet, weil an ihnen der Start der Löschfristen hängt. Lesebestätigungen nur, wenn du sie einschaltest.")
                         if app.screenshotShield {
                             Text(ScreenshotProtection.isEffective
@@ -329,7 +329,7 @@ private struct ChangeCodeSheet: View {
                 } else {
                     PasscodeEntryView(
                         title: "Neuer Löschcode",
-                        message: "Im Notfall: dieser Code + = löscht sofort alles — ohne Rückfrage.",
+                        message: "Im Notfall: dieser Code + = löscht sofort alles, ohne Rückfrage.",
                         symbol: "trash.fill", tint: .red
                     ) { code in save(code) }
                 }
@@ -378,7 +378,7 @@ private struct VaultPasswordSettings: View {
                     .textContentType(.newPassword)
                     .accessibilityIdentifier("vault.repeat")
             } footer: {
-                Text("Nach Rechner-Code und \(Biometrics.name) fragt Krypta nach diesem Passwort. Wer es fünfmal falsch eingibt, löscht alles — wie mit dem Löschcode. Mindestens \(VaultPassword.minimumLength) Zeichen.")
+                Text("Nach Rechner-Code und \(Biometrics.name) fragt Krypta nach diesem Passwort. Wer es fünfmal falsch eingibt, löscht alles, wie mit dem Löschcode. Mindestens \(VaultPassword.minimumLength) Zeichen.")
             }
             if let error {
                 Section { Text(error).foregroundStyle(.red) }
@@ -454,7 +454,7 @@ private struct CalculatorSetupSheet: View {
                 if let secret {
                     PasscodeEntryView(
                         title: "Löschcode festlegen",
-                        message: "Im Notfall: dieser Code + = löscht sofort alles — ohne Rückfrage.",
+                        message: "Im Notfall: dieser Code + = löscht sofort alles, ohne Rückfrage.",
                         symbol: "trash.fill", tint: .red
                     ) { code in
                         guard code != secret else { return String(localized: "Der Löschcode muss sich vom Geheimcode unterscheiden.") }
@@ -486,7 +486,7 @@ private struct SecurityInfoView: View {
     var body: some View {
         List {
             item("lock.fill", "Ende-zu-Ende-Verschlüsselung",
-                 "Jede Nachricht hat ihren eigenen Schlüssel (Signal-Protokoll: X3DH und Double Ratchet). Wer einen davon erbeutet, liest damit nur diese eine Nachricht — frühere bleiben geschützt.")
+                 "Jede Nachricht hat ihren eigenen Schlüssel (Signal-Protokoll: X3DH und Double Ratchet). Wer einen davon erbeutet, liest damit nur diese eine Nachricht. Frühere bleiben geschützt.")
             item("person.fill.questionmark", "Versteckter Absender",
                  "Wer dir schreibt, steht verschlüsselt in der Nachricht. Der Server sieht nur, dass etwas für dich ankommt.")
             item("text.alignleft", "Gleich lange Nachrichten",
