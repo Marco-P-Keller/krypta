@@ -98,7 +98,9 @@ void main() {
     test('32-byte key is fully zeroed', () {
       // Simulates a 256-bit AES/ECDH key
       final key = Uint8List(32);
-      for (var i = 0; i < 32; i++) key[i] = i + 1;
+      for (var i = 0; i < 32; i++) {
+        key[i] = i + 1;
+      }
 
       SensitiveBuffer.zeroBytes(key);
 
@@ -109,7 +111,9 @@ void main() {
 
     test('large buffer (1KB) is fully zeroed', () {
       final buf = Uint8List(1024);
-      for (var i = 0; i < buf.length; i++) buf[i] = 0xFF;
+      for (var i = 0; i < buf.length; i++) {
+        buf[i] = 0xFF;
+      }
 
       SensitiveBuffer.zeroBytes(buf);
 

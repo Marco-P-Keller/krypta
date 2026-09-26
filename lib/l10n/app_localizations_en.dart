@@ -416,6 +416,12 @@ class AppLocalizationsEn extends AppLocalizations {
       'This message will be deleted for both you and the recipient.';
 
   @override
+  String get resendMessage => 'Send again';
+
+  @override
+  String get messageNotSent => 'Not sent. Tap to try again.';
+
+  @override
   String get qrInvalidFormat =>
       'Invalid QR code format. Only Krypta QR codes are accepted.';
 

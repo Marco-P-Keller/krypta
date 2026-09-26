@@ -127,6 +127,8 @@
   "deleteForMe": "Voor mij verwijderen",
   "deleteForEveryone": "Voor iedereen verwijderen",
   "deleteForEveryoneConfirm": "Dit bericht wordt zowel bij jou als bij de ontvanger verwijderd.",
+  "resendMessage": "Opnieuw versturen",
+  "messageNotSent": "Niet verstuurd. Tik om het opnieuw te proberen.",
   "qrInvalidFormat": "Ongeldig QR-codeformaat. Alleen QR-codes van Krypta worden geaccepteerd.",
   "qrUnsupportedVersion": "Niet-ondersteunde QR-codeversie. Werk de app bij.",
   "qrFingerprintMismatch": "Beveiligingswaarschuwing: de vingerafdruk van de QR-code is gemanipuleerd. Bewerking afgebroken.",

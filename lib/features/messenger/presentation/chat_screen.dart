@@ -487,7 +487,7 @@ class _ChatScreenState extends State<ChatScreen>
           final istBestaetigt =
               messenger.contactForId(widget.chat.recipientId)?.isVerified ??
                   false;
-          final colors = _avatarGradient(name);
+          final colors = AppColors.avatarGradientFor(name);
 
           return GestureDetector(
             onTap: () => ChatSettingsSheet.show(context, widget.chat.id),
@@ -574,20 +574,6 @@ class _ChatScreenState extends State<ChatScreen>
         EmergencyButton(onWipe: widget.onEmergencyWipe),
       ],
     );
-  }
-
-  static const _chatAvatarGradients = [
-    [Color(0xFF5B7FFF), Color(0xFF7C5CFC)],
-    [Color(0xFF00C9A7), Color(0xFF00B4D8)],
-    [Color(0xFFFF6B6B), Color(0xFFFF8E72)],
-    [Color(0xFFFFC75F), Color(0xFFFF9671)],
-    [Color(0xFFE04DE8), Color(0xFF7C5CFC)],
-    [Color(0xFF43E97B), Color(0xFF38F9D7)],
-  ];
-
-  List<Color> _avatarGradient(String name) {
-    final idx = name.isEmpty ? 0 : name.codeUnitAt(0) % _chatAvatarGradients.length;
-    return _chatAvatarGradients[idx];
   }
 
   Widget _buildMessageList(BuildContext context, AppLocalizations l10n) {

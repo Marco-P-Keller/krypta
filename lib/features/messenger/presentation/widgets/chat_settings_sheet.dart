@@ -32,15 +32,6 @@ class ChatSettingsSheet extends StatefulWidget {
   State<ChatSettingsSheet> createState() => _ChatSettingsSheetState();
 }
 
-const _avatarGradients = [
-  [Color(0xFF5B7FFF), Color(0xFF7C5CFC)],
-  [Color(0xFF00C9A7), Color(0xFF00B4D8)],
-  [Color(0xFFFF6B6B), Color(0xFFFF8E72)],
-  [Color(0xFFFFC75F), Color(0xFFFF9671)],
-  [Color(0xFFE04DE8), Color(0xFF7C5CFC)],
-  [Color(0xFF43E97B), Color(0xFF38F9D7)],
-];
-
 class _ChatSettingsSheetState extends State<ChatSettingsSheet> {
   /// Die Löschregeln für den ganzen Chat. Bewusst gröber als die Auswahl an
   /// einer einzelnen Nachricht: 30 Sekunden auf alles anzuwenden wäre kein
@@ -61,11 +52,6 @@ class _ChatSettingsSheetState extends State<ChatSettingsSheet> {
     (frist: Duration(days: 7), nachLesen: false),
   ];
 
-  List<Color> _gradientForName(String name) {
-    final idx = name.isEmpty ? 0 : name.codeUnitAt(0) % _avatarGradients.length;
-    return _avatarGradients[idx];
-  }
-
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -74,7 +60,7 @@ class _ChatSettingsSheetState extends State<ChatSettingsSheet> {
     if (chat == null) return const SizedBox.shrink();
 
     final l10n = AppLocalizations.of(context)!;
-    final colors = _gradientForName(chat.recipientName);
+    final colors = AppColors.avatarGradientFor(chat.recipientName);
 
     return Padding(
       padding: EdgeInsets.only(

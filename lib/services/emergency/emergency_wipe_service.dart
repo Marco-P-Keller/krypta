@@ -41,6 +41,7 @@ class EmergencyWipeService {
     required FirestoreService firestore,
     PreKeyManager? preKeyManager,
     FirebaseAuth? auth,
+    this.serverTimeout = standardServerTimeout,
   })  : _secureStorage = secureStorage,
         _keyManager = keyManager,
         _localStore = localStore,
@@ -114,14 +115,34 @@ class EmergencyWipeService {
     try { await io.wipeCacheAndTemp(); } catch (_) {}
   }
 
+  /// Wie lange auf den Server gewartet wird, bevor die Loeschung weitergeht.
+  ///
+  /// Firestore meldet Schreibvorgaenge erst fertig, wenn der Server sie
+  /// bestaetigt hat — ohne Netz also nie. Bis zum 25.09.2026 wartete die
+  /// Notfall-Loeschung aus Rechner und Chatliste darauf ohne Frist: im
+  /// Flugmodus war das Geraet zwar schon geraeumt, aber die App kam nie
+  /// auf der Einrichtung an, sondern blieb stehen, wo die Loeschung
+  /// ausgeloest wurde. Nur der Weg ueber `FreshInstallGuard` hatte eine
+  /// eigene Frist.
+  ///
+  /// Laeuft sie ab, arbeitet der Server-Teil im Hintergrund weiter; was
+  /// Firestore dann noch in der Warteschlange hat, geht mit dem naechsten
+  /// Netz raus. Der Rest bleibt der 24-Stunden-Aufraeumung auf dem Server.
+  final Duration serverTimeout;
+
+  /// Die Vorgabe fuer [serverTimeout]. Der Test setzt eine kuerzere.
+  static const standardServerTimeout = Duration(seconds: 6);
+
   Future<void> _wipeServer(String? userId) async {
     if (userId == null) return;
-    try { await _firestore.deleteAllUserData(userId); } catch (_) {}
+    try {
+      await _firestore.deleteAllUserData(userId).timeout(serverTimeout);
+    } catch (_) {}
   }
 
   Future<void> _wipeAuth(User? user) async {
     try {
-      await user?.delete();
+      await user?.delete().timeout(serverTimeout);
     } catch (_) {}
     try {
       await _auth.signOut();

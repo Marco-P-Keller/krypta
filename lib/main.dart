@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
@@ -152,11 +154,19 @@ Future<void> main() async {
     onCommitmentCreated: (KeyCommitment commitment) async {
       final userId = await secureStorage.getUserId();
       if (userId != null) {
-        await firestoreService.publishKeyCommitment(
-          userId: userId,
-          commitment: commitment.toMap(),
-          epoch: commitment.epoch,
-        );
+        // Nicht abgewartet. Das hier laeuft beim ersten Schluesselzugriff
+        // jedes Starts, also mitten im Entsperren — und Firestore meldet
+        // einen Schreibvorgang erst fertig, wenn der Server ihn bestaetigt
+        // hat. Ohne Netz blieb die App deshalb auf dem Willkommensbildschirm
+        // stehen. Lokal steht der Eintrag zu diesem Zeitpunkt schon im Log;
+        // der Server bekommt ihn, sobald er erreichbar ist.
+        unawaited(firestoreService
+            .publishKeyCommitment(
+              userId: userId,
+              commitment: commitment.toMap(),
+              epoch: commitment.epoch,
+            )
+            .catchError((_) {}));
       }
     },
   );

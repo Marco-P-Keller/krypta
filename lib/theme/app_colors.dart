@@ -57,6 +57,26 @@ abstract final class AppColors {
   static const Color messageReceivedLight = Color(0xFFE9E9EB);
   static const Color online = Color(0xFF30D158);
 
+  // ── Avatare ───────────────────────────────────────────────────────────
+  /// Verlauf hinter dem Anfangsbuchstaben eines Kontakts.
+  ///
+  /// Stand bis 25.09.2026 dreimal im Code, in zwei verschiedenen Fassungen:
+  /// derselbe Kontakt war in der Chatliste blau und im Chat gruen. Die Farbe
+  /// ist das, woran man einen Chat auf einen Blick wiedererkennt — sie muss
+  /// ueberall dieselbe sein.
+  static const List<List<Color>> avatarGradients = [
+    [Color(0xFF0A84FF), Color(0xFF5856D6)],
+    [Color(0xFF30D158), Color(0xFF34C759)],
+    [Color(0xFFFF453A), Color(0xFFFF6B6B)],
+    [Color(0xFFFFD60A), Color(0xFFFF9F0A)],
+    [Color(0xFFBF5AF2), Color(0xFF5856D6)],
+    [Color(0xFF32ADE6), Color(0xFF007AFF)],
+  ];
+
+  /// Der Verlauf fuer [name] — fuer denselben Namen immer derselbe.
+  static List<Color> avatarGradientFor(String name) => avatarGradients[
+      name.isEmpty ? 0 : name.codeUnitAt(0) % avatarGradients.length];
+
   // ── Borders & Dividers (hairline) ─────────────────────────────────────
   static const Color dividerDark = Color(0xFF38383A);
   static const Color dividerLight = Color(0xFFC6C6C8);
