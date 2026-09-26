@@ -118,7 +118,10 @@ public final class WalletEngine {
     /// Mehr unbenutzte Adressen als das vergibt Krypta nicht.
     public static let maxOutstanding: UInt32 = 150
 
-    var slot: String { "wallet.\(network.rawValue)" }
+    var slot: String { Self.stateSlot(for: network) }
+
+    /// Wo der Stand einer Wallet im Tresor liegt (je Netz einer).
+    public static func stateSlot(for network: BitcoinNetwork) -> String { "wallet.\(network.rawValue)" }
 
     public init(network: BitcoinNetwork, secrets: WalletSecrets, store: WalletStore, chain: ChainSource) throws {
         guard let account = secrets.accountKey(for: network) else { throw WalletFailure.noWallet }

@@ -1,6 +1,7 @@
 import Foundation
 import KryptaCore
 import KryptaMessenger
+import KryptaWallet
 
 /// Der lokale Speicher: ein Blob je Slot, XChaCha20-Poly1305 mit dem Slot
 /// als AAD, der Schlüssel im Schlüsselbund.
@@ -12,7 +13,7 @@ import KryptaMessenger
 /// sich keine Datei mehr öffnen — neue schreiben geht aber, damit ein
 /// Speichervorgang kurz nach dem Sperren nicht verloren geht (der Schlüssel
 /// liegt dann noch im Arbeitsspeicher).
-final class FileVault: Vault, @unchecked Sendable {
+final class FileVault: Vault, WalletStore, @unchecked Sendable {
     private let directory: URL
     private let key: Data
     private let lock = NSLock()

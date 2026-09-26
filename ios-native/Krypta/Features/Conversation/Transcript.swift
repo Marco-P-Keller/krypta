@@ -1,4 +1,5 @@
 import KryptaMessenger
+import KryptaWallet
 import SwiftUI
 
 /// Der Verlauf als Zeilen: Zeittrenner, Blasen (gruppiert), Hinweise und
@@ -98,7 +99,9 @@ struct MessageRow: View {
     @ViewBuilder
     private var bubble: some View {
         Group {
-            if message.isPasswordProtected && !message.passwordUnlocked && !mine {
+            if let payment = message.payment {
+                PaymentBubbleContent(payment: payment, messageId: message.id, note: message.text, mine: mine)
+            } else if message.isPasswordProtected && !message.passwordUnlocked && !mine {
                 special(symbol: "lock.fill", title: "Geschützte Nachricht", subtitle: "Tippen zum Entsperren")
             } else if message.oneTime && !mine {
                 special(symbol: "eye.fill", title: "Einmal ansehen", subtitle: "Tippen zum Öffnen")
@@ -124,6 +127,7 @@ struct MessageRow: View {
     /// Was ein Tippen auf die Blase tut — `nil`, wenn nichts.
     private var tapHint: LocalizedStringKey? {
         if mine && message.status == .failed { return "Optionen zum erneuten Senden" }
+        if message.payment != nil { return "Zeigt die Zahlung im Einzelnen" }
         if !mine && message.isPasswordProtected && !message.passwordUnlocked { return "Mit Passwort entsperren" }
         if !mine && message.oneTime { return "Öffnet die Nachricht. Danach ist sie weg." }
         return nil
@@ -155,6 +159,7 @@ struct MessageRow: View {
 
     private var accessibility: String {
         let who = mine ? String(localized: "Du") : String(localized: "Kontakt")
+        if message.payment != nil { return "\(who): " + String(localized: "Bitcoin-Zahlung") + " " + (message.text ?? "") }
         if message.isPasswordProtected && !message.passwordUnlocked { return "\(who): " + String(localized: "Geschützte Nachricht") }
         if message.oneTime { return "\(who): " + String(localized: "Einmal ansehen") }
         return "\(who): \(message.text ?? "")"
@@ -178,6 +183,8 @@ struct Composer: View {
     let chatTimer: TimeInterval?
     let chatAfterRead: Bool
     let askPassword: () -> Void
+    /// `nil`: keine Wallet, kein Menüpunkt.
+    var payBitcoin: (() -> Void)?
     let send: () -> Void
 
     var body: some View {
@@ -200,6 +207,10 @@ struct Composer: View {
             }
             HStack(alignment: .bottom, spacing: 8) {
                 Menu {
+                    if let payBitcoin {
+                        Button(action: payBitcoin) { Label("Bitcoin senden", systemImage: "bitcoinsign.circle") }
+                        Divider()
+                    }
                     Menu {
                         ForEach(Timers.perMessage, id: \.self) { s in
                             Button(Format.duration(s)) { option = .timer(s) }

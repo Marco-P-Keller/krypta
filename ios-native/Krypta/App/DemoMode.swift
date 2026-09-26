@@ -1,7 +1,9 @@
 #if DEBUG
 import Foundation
+import KryptaBitcoin
 import KryptaCore
 import KryptaMessenger
+import KryptaWallet
 
 /// Nur in Debug-Builds: die App gegen einen Server im Speicher, mit einem
 /// zweiten, echten Messenger im selben Prozess als Gesprächspartnerin.
@@ -45,6 +47,27 @@ enum DemoMode {
 
     /// Hält die Gegenseite am Leben.
     private static var peers: [MessengerEngine] = []
+    private static var peerWallets: [WalletEngine] = []
+
+    /// Die Wallet im Demo: eine Blockchain im Speicher (Regtest), Guthaben
+    /// von 0,05 BTC, und Lena bezahlt im Chat.
+    private(set) static var wallet: WalletEngine?
+    static let demoChain = MemoryChain(network: .regtest)
+
+    /// `-KryptaOffline`: Schlüssel und Kette der Wallet im Speicher.
+    static let offlineWalletSecrets = MemoryWalletSecrets()
+    static let offlineChain = MemoryChain(network: .regtest)
+
+    private static func makeWallet(for engine: MessengerEngine, funds: Int64) async -> WalletEngine? {
+        let secrets = MemoryWalletSecrets()
+        guard (try? secrets.create()) != nil,
+              let wallet = try? WalletEngine(network: .regtest, secrets: secrets, store: MemoryVault(), chain: demoChain) else { return nil }
+        engine.attach(wallet: wallet)
+        demoChain.fund(wallet.receiveAddress().string, funds)
+        demoChain.mine()
+        await wallet.sync()
+        return wallet
+    }
 
     static func makeEngine() async -> MessengerEngine {
         let relay = MemoryRelay()
@@ -56,6 +79,9 @@ enum DemoMode {
         await me.start()
         await lena.start()
         await jonas.start()
+        wallet = await makeWallet(for: me, funds: 5_000_000)
+        let lenaWallet = await makeWallet(for: lena, funds: 20_000_000)
+        peerWallets = [lenaWallet].compactMap { $0 }
 
         // Lena ist per QR verbunden (sofort fest und verifiziert).
         _ = await me.addContact(qr: lena.myQRPayload)
@@ -72,6 +98,16 @@ enum DemoMode {
         await lena.send(chatId: lenaChat.id, text: "Der Code für die Tür", options: SendOptions(password: "blau"))
         await lena.send(chatId: lenaChat.id, text: "Nur einmal lesen 🤫", options: SendOptions(oneTime: true))
         await wait { me.messages(in: myChat.id).count >= 7 }
+
+        // Lena zahlt ihren Anteil in Bitcoin, direkt im Chat.
+        await wait { lena.paymentAddress(for: me.userId) != nil }
+        if let lenaWallet, let address = lena.paymentAddress(for: me.userId),
+           let draft = try? lenaWallet.prepare(to: address, amount: .exact(210_000), feeRate: 2, contactId: me.userId, note: "Für die Pizza 🍕"),
+           (try? await lena.pay(chatId: lenaChat.id, draft: draft, reason: "Demo")) != nil {
+            await wait { me.messages(in: myChat.id).count >= 8 }
+            demoChain.mine()
+            await wallet?.sync()
+        }
 
         // Jonas hat angefragt, aber noch keine Antwort.
         _ = await jonas.addContact(id: me.userId)

@@ -17,7 +17,7 @@ settings:
     # Über der Flutter-Fassung im Store (4.2.0); die Build-Nummer zählt dort
     # weiter (zuletzt 105, siehe ios-testflight.yml).
     MARKETING_VERSION: "5.0.0"
-    CURRENT_PROJECT_VERSION: "109"
+    CURRENT_PROJECT_VERSION: "110"
     ENABLE_USER_SCRIPT_SANDBOXING: YES
     SWIFT_STRICT_CONCURRENCY: complete
     SWIFT_EMIT_LOC_STRINGS: YES
@@ -37,6 +37,11 @@ targets:
         product: KryptaCore
       - package: KryptaCore
         product: KryptaMessenger
+      # Bitcoin: Kern (libsecp256k1, BIP39/32/84) und Wallet.
+      - package: KryptaCore
+        product: KryptaBitcoin
+      - package: KryptaCore
+        product: KryptaWallet
       - target: KryptaNotifications
     # Nur, was sich nicht über INFOPLIST_KEY_* setzen lässt; der Rest wird
     # erzeugt (GENERATE_INFOPLIST_FILE) und zusammengeführt.

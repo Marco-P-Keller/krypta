@@ -14,7 +14,7 @@ public protocol WalletSecrets: AnyObject, Sendable {
     /// Legt eine neue Wallet an. Überschreibt nie eine vorhandene.
     func create() throws
     /// Der geheime Zufall. Fragt nach Face ID oder Code (`reason` steht im Dialog).
-    func entropy(reason: String) async throws -> SecretBytes
+    @MainActor func entropy(reason: String) async throws -> SecretBytes
     /// Ersetzt die Wallet durch die aus diesen Wörtern.
     func restore(words: [String]) throws
 }
@@ -68,6 +68,7 @@ public final class MemoryWalletSecrets: WalletSecrets, @unchecked Sendable {
         }
     }
 
+    @MainActor
     public func entropy(reason: String) async throws -> SecretBytes {
         try lock.withLock {
             prompts += 1
