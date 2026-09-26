@@ -5,7 +5,7 @@ import 'package:kryptaapp/security/ratchet/ratchet_state.dart';
 
 void main() {
   group('RatchetState', () {
-    RatchetState _createState({
+    RatchetState createState({
       int? protocolVersion,
       String? sessionId,
       String? previousSessionId,
@@ -32,7 +32,7 @@ void main() {
 
     test('serialization roundtrip preserves all new fields', () {
       final now = DateTime.now();
-      final state = _createState(
+      final state = createState(
         protocolVersion: 1,
         sessionId: 'test-session-123',
         previousSessionId: 'old-session-456',
@@ -71,7 +71,7 @@ void main() {
     });
 
     test('copyWith preserves new fields', () {
-      final state = _createState(
+      final state = createState(
         sessionId: 'sid-1',
         globalSendSeqNo: 10,
       );
@@ -82,25 +82,25 @@ void main() {
     });
 
     test('copyWith can update sessionId', () {
-      final state = _createState(sessionId: 'old');
+      final state = createState(sessionId: 'old');
       final updated = state.copyWith(sessionId: 'new');
       expect(updated.sessionId, 'new');
     });
 
     test('copyWith can set sessionId to null', () {
-      final state = _createState(sessionId: 'has-value');
+      final state = createState(sessionId: 'has-value');
       final updated = state.copyWith(sessionId: null);
       expect(updated.sessionId, isNull);
     });
 
     test('toMap includes protocol version', () {
-      final state = _createState();
+      final state = createState();
       final map = state.toMap();
       expect(map['pv'], RatchetState.currentProtocolVersion);
     });
 
     test('toMap includes sequence numbers', () {
-      final state = _createState(globalSendSeqNo: 5, highestRecvSeq: 3);
+      final state = createState(globalSendSeqNo: 5, highestRecvSeq: 3);
       final map = state.toMap();
       expect(map['gsn'], 5);
       expect(map['hrs'], 3);

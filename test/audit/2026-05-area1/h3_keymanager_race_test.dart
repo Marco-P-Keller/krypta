@@ -21,8 +21,6 @@
 // PoC-Status (nach Fix):
 //   Test A — GREEN (two parallel calls share a single generated key)
 
-import 'dart:async';
-
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kryptaapp/core/constants/storage_keys.dart';
