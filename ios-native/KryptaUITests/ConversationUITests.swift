@@ -12,6 +12,27 @@ final class ConversationUITests: XCTestCase {
         }
     }
 
+    /// Eine Kontaktanfrage lässt sich mit einem sichtbaren Knopf annehmen.
+    func testAcceptRequest() {
+        let app = XCUIApplication()
+        app.launchArguments = ["-AppleLanguages", "(de)", "-KryptaDemo", "-shield.off", "YES"]
+        app.launch()
+
+        let requests = app.staticTexts["Kontaktanfragen"].firstMatch
+        XCTAssertTrue(requests.waitForExistence(timeout: 20))
+        requests.tap()
+
+        let accept = app.buttons["request.accept"].firstMatch
+        XCTAssertTrue(accept.waitForExistence(timeout: 5))
+        shot("30-request")
+        accept.tap()
+
+        XCTAssertTrue(app.staticTexts["Keine Anfragen"].waitForExistence(timeout: 5))
+        app.navigationBars.buttons.element(boundBy: 0).tap()
+        XCTAssertFalse(app.staticTexts["Kontaktanfragen"].waitForExistence(timeout: 2))
+        shot("31-accepted")
+    }
+
     func testDemoConversation() {
         let app = XCUIApplication()
         app.launchArguments = ["-AppleLanguages", "(de)", "-KryptaDemo"]

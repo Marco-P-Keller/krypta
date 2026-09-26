@@ -165,14 +165,31 @@ struct RequestsView: View {
     var body: some View {
         List {
             ForEach(engine.incomingRequests) { contact in
-                HStack(spacing: 12) {
-                    Avatar(id: contact.id, name: contact.displayName, size: 44)
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(contact.displayName).font(.body.weight(.semibold))
-                        Text(contact.id).font(.caption.monospaced()).foregroundStyle(.secondary).lineLimit(1)
+                VStack(alignment: .leading, spacing: 12) {
+                    HStack(spacing: 12) {
+                        Avatar(id: contact.id, name: contact.displayName, size: 44)
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(contact.displayName).font(.body.weight(.semibold))
+                            Text(contact.id).font(.caption.monospaced()).foregroundStyle(.secondary).lineLimit(1)
+                        }
+                        Spacer()
                     }
-                    Spacer()
+                    // Sichtbar statt nur per Wischen: sonst findet niemand das Annehmen.
+                    HStack(spacing: 12) {
+                        Button(role: .destructive) { Haptics.destructive(); Task { await engine.declineRequest(contact.id) } } label: {
+                            Text("Ablehnen").frame(maxWidth: .infinity)
+                        }
+                        .buttonStyle(.bordered)
+                        .accessibilityIdentifier("request.decline")
+                        Button { Haptics.success(); Task { await engine.acceptRequest(contact.id) } } label: {
+                            Text("Annehmen").frame(maxWidth: .infinity)
+                        }
+                        .buttonStyle(.borderedProminent)
+                        .accessibilityIdentifier("request.accept")
+                    }
+                    .controlSize(.regular)
                 }
+                .padding(.vertical, 4)
                 .swipeActions(edge: .trailing) {
                     Button(role: .destructive) { Haptics.destructive(); Task { await engine.declineRequest(contact.id) } } label: {
                         Label("Ablehnen", systemImage: "xmark")
