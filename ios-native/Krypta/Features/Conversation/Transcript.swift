@@ -171,6 +171,8 @@ struct MessageRow: View {
         Group {
             if let payment = message.payment {
                 PaymentBubbleContent(payment: payment, messageId: message.id, note: message.text, mine: mine)
+            } else if let request = message.paymentRequest {
+                PaymentRequestBubbleContent(request: request, note: message.text, mine: mine)
             } else if message.isPasswordProtected && !message.passwordUnlocked && !mine {
                 special(symbol: "lock.fill", title: "Geschützte Nachricht", subtitle: "Tippen zum Entsperren")
             } else if message.oneTime && !mine {
@@ -198,6 +200,10 @@ struct MessageRow: View {
     private var tapHint: LocalizedStringKey? {
         if mine && message.status == .failed { return "Optionen zum erneuten Senden" }
         if message.payment != nil { return "Zeigt die Zahlung im Einzelnen" }
+        if let request = message.paymentRequest {
+            if request.isPaid { return "Zeigt die Zahlung" }
+            if !mine { return "Öffnet das Bezahlen" }
+        }
         if !mine && message.isPasswordProtected && !message.passwordUnlocked { return "Mit Passwort entsperren" }
         if !mine && message.oneTime { return "Öffnet die Nachricht. Danach ist sie weg." }
         if let a = message.attachment {
@@ -240,6 +246,9 @@ struct MessageRow: View {
         }
         if message.payment != nil {
             parts.append("\(who): " + String(localized: "Bitcoin-Zahlung") + " " + (message.text ?? ""))
+        } else if let request = message.paymentRequest {
+            let state = request.isPaid ? String(localized: "Bezahlt") : String(localized: "Offen")
+            parts.append("\(who): " + String(localized: "Bitte um \(BitcoinFormat.btc(request.sats))") + ". \(state). " + (message.text ?? ""))
         } else if message.isPasswordProtected && !message.passwordUnlocked {
             parts.append("\(who): " + String(localized: "Geschützte Nachricht"))
         } else if message.oneTime {
@@ -355,6 +364,7 @@ struct Composer: View {
     let askPassword: () -> Void
     /// `nil`: keine Wallet, kein Menüpunkt.
     var payBitcoin: (() -> Void)?
+    var requestBitcoin: (() -> Void)?
     /// `nil`: hier keine Anhänge (Flutter-Kontakt, kein Speicher).
     var attach: AttachmentActions?
     let send: () -> Void
@@ -387,6 +397,11 @@ struct Composer: View {
                     }
                     if let payBitcoin {
                         Button(action: payBitcoin) { Label("Bitcoin senden", systemImage: "bitcoinsign.circle") }
+                    }
+                    if let requestBitcoin {
+                        Button(action: requestBitcoin) { Label("Bitcoin anfordern", systemImage: "arrow.down.left.circle") }
+                    }
+                    if payBitcoin != nil || requestBitcoin != nil {
                         Divider()
                     }
                     Menu {

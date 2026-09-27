@@ -25,7 +25,10 @@ struct ConversationView: View {
     @State private var oneTimeTarget: Message?
     @State private var resendTarget: Message?
     @State private var paying = false
-    @State private var payHint: String?
+    /// Bezahlen auf eine Bitte hin.
+    @State private var answering: SendBitcoinView.Answering?
+    @State private var requesting = false
+    @State private var payHint: PayHint?
     @State private var paymentDetail: Message?
     /// Antwort auf oder Bearbeitung einer Nachricht (Kennung).
     @State private var context: ComposeContext?
@@ -85,7 +88,7 @@ struct ConversationView: View {
     private func content(chat: Chat, contact: Contact?) -> some View {
         // In Teilen: am Stück ist die Kette für den Compiler zu lang.
         let base = transcript(chat: chat, contact: contact)
-        let dialogs = messageDialogs(base, contact: contact)
+        let dialogs = bitcoinDialogs(messageDialogs(base, contact: contact), contact: contact)
         attachmentViewers(attachmentPresentations(dialogs, chat: chat))
     }
 
@@ -138,7 +141,7 @@ struct ConversationView: View {
         }
     }
 
-    /// Passwort, Entsperren, erneut senden, einmal ansehen, Bitcoin.
+    /// Passwort, Entsperren, erneut senden, einmal ansehen.
     private func messageDialogs<V: View>(_ view: V, contact: Contact?) -> some View {
         view
         .alert("Passwort für diese Nachricht", isPresented: $askPassword) {
@@ -179,24 +182,39 @@ struct ConversationView: View {
         } message: { _ in
             Text("Du kannst sie nur einmal ansehen. Sobald du sie schließt, ist sie für immer weg.")
         }
-        .sheet(isPresented: $paying) {
-            if let contact {
-                ShieldedSheet { SendBitcoinView(target: .contact(chatId: chatId, contactId: contact.id)) }
-            }
-        }
-        .sheet(item: $paymentDetail) { m in
-            ShieldedSheet { PaymentDetailView(message: m) }
-        }
-        .alert("Bitcoin senden", isPresented: Binding(get: { payHint != nil }, set: { if !$0 { payHint = nil } })) {
-            Button("OK", role: .cancel) {}
-        } message: {
-            Text(payHint ?? "")
-        }
         .fullScreenCover(isPresented: Binding(get: { oneTimeText != nil }, set: { if !$0 { oneTimeText = nil } })) {
             ScreenshotShield(isEnabled: app.screenshotShield) {
                 OneTimeReveal(text: oneTimeText ?? "") { oneTimeText = nil }
             }
             .ignoresSafeArea()
+        }
+    }
+
+    /// Bitcoin senden, anfordern, auf eine Bitte zahlen, Zahlung ansehen.
+    private func bitcoinDialogs<V: View>(_ view: V, contact: Contact?) -> some View {
+        view
+        .sheet(isPresented: $paying) {
+            if let contact {
+                ShieldedSheet { SendBitcoinView(target: .contact(chatId: chatId, contactId: contact.id)) }
+            }
+        }
+        .sheet(item: $answering) { request in
+            if let contact {
+                ShieldedSheet { SendBitcoinView(target: .contact(chatId: chatId, contactId: contact.id), answering: request) }
+            }
+        }
+        .sheet(isPresented: $requesting) {
+            if let contact {
+                ShieldedSheet { RequestBitcoinView(chatId: chatId, contactName: contact.displayName) }
+            }
+        }
+        .sheet(item: $paymentDetail) { m in
+            ShieldedSheet { PaymentDetailView(message: m) }
+        }
+        .alert(payHint?.title ?? "Bitcoin senden", isPresented: Binding(get: { payHint != nil }, set: { if !$0 { payHint = nil } })) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text(payHint?.text ?? "")
         }
     }
 
@@ -417,6 +435,14 @@ struct ConversationView: View {
             }
             return
         }
+        if let r = m.paymentRequest, !(mine && m.status == .failed) {
+            if r.isPaid {
+                scrollTarget = r.paidBy
+            } else if !mine, let contact = engine.contact(m.senderId) {
+                startPayment(contact, request: m)
+            }
+            return
+        }
         if m.payment != nil && !(mine && m.status == .failed) {
             paymentDetail = m
         } else if mine && m.status == .failed {
@@ -535,6 +561,7 @@ struct ConversationView: View {
                     chatTimer: chat.timer, chatAfterRead: chat.deleteAfterRead,
                     askPassword: { askPassword = true },
                     payBitcoin: wallet == nil ? nil : { startPayment(contact) },
+                    requestBitcoin: wallet == nil ? nil : { startRequest(contact) },
                     attach: attachmentActions,
                     send: { send(chat: chat) }
                 )
@@ -543,18 +570,46 @@ struct ConversationView: View {
     }
 
     /// Bitcoin an diesen Kontakt: geht nur, wenn er eine Adresse geschickt hat.
-    private func startPayment(_ contact: Contact) {
+    /// `request`: seine Bitte, die damit bezahlt wird.
+    private func startPayment(_ contact: Contact, request: Message? = nil) {
+        func hint(_ text: String) { payHint = PayHint(title: "Bitcoin senden", text: text) }
         switch engine.paymentBlock(for: contact.id) {
         case nil:
-            paying = true
+            if let request, let r = request.paymentRequest {
+                guard r.network == wallet?.network else {
+                    return hint(String(localized: "\(contact.displayName) nutzt ein anderes Bitcoin-Netz als du."))
+                }
+                answering = SendBitcoinView.Answering(messageId: request.id, sats: r.sats, note: request.text ?? "")
+            } else {
+                paying = true
+            }
         case .waitingForAddress?:
-            payHint = String(localized: "\(contact.displayName) hat dir noch keine Bitcoin-Adresse geschickt. Sie kommt verschlüsselt mit der nächsten Nachricht von \(contact.displayName).")
+            hint(String(localized: "\(contact.displayName) hat dir noch keine Bitcoin-Adresse geschickt. Sie kommt verschlüsselt mit der nächsten Nachricht von \(contact.displayName)."))
         case .noWalletThere?:
-            payHint = String(localized: "\(contact.displayName) kann im Chat keine Bitcoin empfangen (ältere Krypta-Version oder Zahlungen im Chat ausgeschaltet).")
+            hint(String(localized: "\(contact.displayName) kann im Chat keine Bitcoin empfangen (ältere Krypta-Version oder Zahlungen im Chat ausgeschaltet)."))
         case .otherNetwork?:
-            payHint = String(localized: "\(contact.displayName) nutzt ein anderes Bitcoin-Netz als du.")
+            hint(String(localized: "\(contact.displayName) nutzt ein anderes Bitcoin-Netz als du."))
         case .noWallet?, .cannotMessage?:
-            payHint = String(localized: "Gerade nicht möglich.")
+            hint(String(localized: "Gerade nicht möglich."))
+        }
+    }
+
+    /// Um Bitcoin bitten: der Kontakt braucht eine Wallet im selben Netz.
+    private func startRequest(_ contact: Contact) {
+        func hint(_ text: String) { payHint = PayHint(title: "Bitcoin anfordern", text: text) }
+        switch engine.requestBlock(for: contact.id) {
+        case nil:
+            requesting = true
+        case .waitingForAddress?:
+            hint(String(localized: "Noch ist unklar, ob \(contact.displayName) im Chat Bitcoin senden kann. Das zeigt sich mit der nächsten Nachricht von \(contact.displayName)."))
+        case .noWalletThere?:
+            hint(String(localized: "\(contact.displayName) kann im Chat keine Bitcoin senden (ältere Krypta-Version oder Zahlungen im Chat ausgeschaltet)."))
+        case .otherNetwork?:
+            hint(String(localized: "\(contact.displayName) nutzt ein anderes Bitcoin-Netz als du."))
+        case .noWallet?:
+            hint(String(localized: "Schalte zuerst in den Wallet-Einstellungen Zahlungen im Chat ein."))
+        case .cannotMessage?:
+            hint(String(localized: "Gerade nicht möglich."))
         }
     }
 
@@ -763,4 +818,10 @@ private struct OneTimeReveal: View {
             }
         }
     }
+}
+
+/// Warum Bitcoin senden oder anfordern gerade nicht geht.
+private struct PayHint {
+    let title: LocalizedStringKey
+    let text: String
 }

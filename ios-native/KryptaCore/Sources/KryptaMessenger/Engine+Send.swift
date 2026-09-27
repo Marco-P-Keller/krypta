@@ -25,7 +25,8 @@ extension MessengerEngine {
         }
     }
 
-    func sendLocked(chatId: String, text: String, options: SendOptions, asRequest: Bool, qrToken: String?, preverifiedKey: String?, payment: ChatPayment? = nil) async {
+    func sendLocked(chatId: String, text: String, options: SendOptions, asRequest: Bool, qrToken: String?, preverifiedKey: String?,
+                    payment: ChatPayment? = nil, answering requestId: String? = nil, paymentRequest: ChatPaymentRequest? = nil) async {
         guard !deletingChats.contains(chatId), let chat = chat(chatId), let contact = contact(chat.recipientId) else { return }
 
         // Vertrauensprüfung — fail-closed. Eine Anfrage darf an einer
@@ -55,8 +56,12 @@ extension MessengerEngine {
             m.isPasswordProtected = password != nil
             m.passwordUnlocked = password == nil
             m.payment = payment
+            m.paymentRequest = paymentRequest
             m.replyTo = replyTo
             append(m, to: chatId)
+            if let payment, let requestId {
+                markRequestPaid(chatId: chatId, requestId: requestId, requester: contact.id, payment: payment, by: messageId)
+            }
         }
 
         func fail() {
@@ -82,7 +87,12 @@ extension MessengerEngine {
         if options.burnAfterRead && !oneTime { extra["_bar"] = true }
         if oneTime { extra["_once"] = true }
         if password != nil { extra["_pw"] = true }
-        if let payment { extra["_pay"] = payment.json }
+        if let payment {
+            var fields = payment.fields
+            if let requestId { fields["rq"] = .string(requestId) }
+            extra["_pay"] = .object(fields)
+        }
+        if let paymentRequest { extra["_req"] = paymentRequest.json }
         if let replyTo { extra["_re"] = .string(replyTo) }
 
         do {
@@ -191,7 +201,18 @@ extension MessengerEngine {
         // Eine Zahlung ist längst auf der Blockchain: erneut geht nur die
         // Nachricht darüber, nie eine zweite Transaktion.
         if let payment = m.payment {
-            await sendPaymentMessage(chatId: chatId, payment: payment, note: text)
+            // Beantwortete sie eine Bitte, nennt die neue Nachricht dieselbe.
+            let requestId = messages(in: chatId).first { $0.paymentRequest?.paidBy == messageId }?.id
+            if let requestId { updateMessage(chatId, requestId) { $0.paymentRequest?.paidBy = nil } }
+            await sendPaymentMessage(chatId: chatId, payment: payment, note: text, answering: requestId)
+            return
+        }
+        if let request = m.paymentRequest {
+            let options = SendOptions(selfDestruct: m.selfDestruct, fromChatRule: m.selfDestructFromChat)
+            await enqueue(chatId) { [self] in
+                await sendLocked(chatId: chatId, text: text, options: options, asRequest: false, qrToken: nil, preverifiedKey: nil,
+                                 paymentRequest: ChatPaymentRequest(sats: request.sats, network: request.network))
+            }
             return
         }
         await send(chatId: chatId, text: text, options: SendOptions(selfDestruct: m.selfDestruct, fromChatRule: m.selfDestructFromChat, burnAfterRead: m.burnAfterRead, replyTo: m.replyTo))

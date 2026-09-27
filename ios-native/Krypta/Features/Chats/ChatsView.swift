@@ -486,6 +486,9 @@ enum MessagePreview {
         }
         // Kein Betrag in der Vorschau: ungeprüft stünde dort, was der Absender behauptet.
         if m.payment != nil { return m.senderId == me ? String(localized: "₿ Du hast Bitcoin gesendet") : String(localized: "₿ Bitcoin-Zahlung") }
+        if let r = m.paymentRequest {
+            return m.senderId == me ? String(localized: "₿ Du bittest um \(BitcoinFormat.btc(r.sats))") : String(localized: "₿ Bitte um \(BitcoinFormat.btc(r.sats))")
+        }
         if m.isPasswordProtected && !m.passwordUnlocked { return String(localized: "🔒 Geschützte Nachricht") }
         if m.oneTime { return String(localized: "Einmal ansehen") }
         if let a = m.attachment {

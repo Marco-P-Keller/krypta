@@ -648,6 +648,46 @@
         }
       }
     },
+    "%@ kann im Chat keine Bitcoin senden (ältere Krypta-Version oder Zahlungen im Chat ausgeschaltet).": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ can't send bitcoin in chat (older Krypta version or chat payments turned off)."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ no puede enviar bitcoin en el chat (versión antigua de Krypta o pagos en el chat desactivados)."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ ne peut pas envoyer de bitcoins dans le chat (ancienne version de Krypta ou paiements dans le chat désactivés)."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ non può inviare bitcoin in chat (versione precedente di Krypta o pagamenti in chat disattivati)."
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ kan in de chat geen bitcoin sturen (oudere Krypta-versie of betalingen in de chat uitgeschakeld)."
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ não pode enviar bitcoin no chat (versão antiga do Krypta ou pagamentos no chat desativados)."
+          }
+        }
+      }
+    },
     "%@ möchte mit dir schreiben.": {
       "extractionState": "extracted_with_value",
       "localizations": {
@@ -725,6 +765,46 @@
           "stringUnit": {
             "state": "translated",
             "value": "%@ usa uma rede de bitcoin diferente da sua."
+          }
+        }
+      }
+    },
+    "%@ sieht Betrag und Notiz und kann mit einem Tippen bezahlen. Deine Adresse reist verschlüsselt mit, nur für %@.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ sees the amount and note and can pay with one tap. Your address travels along encrypted, only for %2$@."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ ve el importe y la nota y puede pagar con un toque. Tu dirección viaja cifrada, solo para %2$@."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ voit le montant et la note et peut payer d'un geste. Ton adresse voyage chiffrée, uniquement pour %2$@."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ vede importo e nota e può pagare con un tocco. Il tuo indirizzo viaggia cifrato, solo per %2$@."
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ ziet bedrag en notitie en kan met één tik betalen. Je adres reist versleuteld mee, alleen voor %2$@."
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ vê o valor e a nota e pode pagar com um toque. O teu endereço segue cifrado, só para %2$@."
           }
         }
       }
@@ -2385,6 +2465,46 @@
         }
       }
     },
+    "Anfordern": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Request"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pedir"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Demander"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Richiedi"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vragen"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pedir"
+          }
+        }
+      }
+    },
     "Anfrage gesendet. Ihr könnt schreiben, sobald %@ annimmt.": {
       "extractionState": "extracted_with_value",
       "localizations": {
@@ -3714,6 +3834,86 @@
         }
       }
     },
+    "Bezahlen": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pay"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pagar"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Payer"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Paga"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Betalen"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pagar"
+          }
+        }
+      }
+    },
+    "Bezahlt": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Paid"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pagado"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Payé"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pagato"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Betaald"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pago"
+          }
+        }
+      }
+    },
     "Bildschirmfotos und Aufnahmen zeigen statt deiner Chats eine leere Fläche. Dein Kontakt erfährt trotzdem davon.": {
       "extractionState": "extracted_with_value",
       "localizations": {
@@ -3997,6 +4197,46 @@
         }
       }
     },
+    "Bitcoin anfordern": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Request bitcoin"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pedir bitcoin"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Demander des bitcoins"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Richiedi bitcoin"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bitcoin vragen"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pedir bitcoin"
+          }
+        }
+      }
+    },
     "Bitcoin für dich": {
       "localizations": {
         "en": {
@@ -4273,6 +4513,86 @@
           "stringUnit": {
             "state": "translated",
             "value": "Pagamentos em bitcoin não podem ser revertidos. Confira destinatário e valor. Para enviar, o Krypta pede %@ ou o código do aparelho."
+          }
+        }
+      }
+    },
+    "Bitte um %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Request for %@"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Solicitud de %@"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Demande de %@"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Richiesta di %@"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Verzoek om %@"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pedido de %@"
+          }
+        }
+      }
+    },
+    "Bitte um Bitcoin": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bitcoin request"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Solicitud de bitcoin"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Demande de bitcoins"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Richiesta di bitcoin"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Verzoek om bitcoin"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pedido de bitcoin"
           }
         }
       }
@@ -7965,6 +8285,46 @@
         }
       }
     },
+    "Du bittest um Bitcoin": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "You requested bitcoin"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Has pedido bitcoin"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tu as demandé des bitcoins"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hai chiesto bitcoin"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Je vraagt om bitcoin"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pediste bitcoin"
+          }
+        }
+      }
+    },
     "Du erfährst, von wem eine Nachricht kommt, zum Beispiel „Neue Nachricht von Mami“. Was drinsteht, sieht nur, wer Krypta öffnet.": {
       "extractionState": "extracted_with_value",
       "localizations": {
@@ -9341,6 +9701,46 @@
           "stringUnit": {
             "state": "translated",
             "value": "Desbloqueada"
+          }
+        }
+      }
+    },
+    "Erbeten": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Requested"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Solicitado"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Demandé"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Richiesto"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gevraagd"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pedido"
           }
         }
       }
@@ -16647,6 +17047,46 @@
         }
       }
     },
+    "Noch ist unklar, ob %@ im Chat Bitcoin senden kann. Das zeigt sich mit der nächsten Nachricht von %@.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "It's not clear yet whether %1$@ can send bitcoin in chat. You'll know with the next message from %2$@."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aún no está claro si %1$@ puede enviar bitcoin en el chat. Se sabrá con el próximo mensaje de %2$@."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "On ne sait pas encore si %1$@ peut envoyer des bitcoins dans le chat. Ce sera clair avec le prochain message de %2$@."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Non è ancora chiaro se %1$@ può inviare bitcoin in chat. Lo saprai con il prossimo messaggio di %2$@."
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Het is nog niet duidelijk of %1$@ in de chat bitcoin kan sturen. Dat blijkt uit het volgende bericht van %2$@."
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ainda não é claro se %1$@ pode enviar bitcoin no chat. Vai ver-se com a próxima mensagem de %2$@."
+          }
+        }
+      }
+    },
     "Noch keine Zahlungen.": {
       "localizations": {
         "en": {
@@ -17128,6 +17568,46 @@
           "stringUnit": {
             "state": "translated",
             "value": "OK"
+          }
+        }
+      }
+    },
+    "Offen": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pendiente"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "En attente"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "In sospeso"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pendente"
           }
         }
       }
@@ -18186,6 +18666,46 @@
           "stringUnit": {
             "state": "translated",
             "value": "Aponte a câmera para o código Krypta do seu contato."
+          }
+        }
+      }
+    },
+    "Schalte zuerst in den Wallet-Einstellungen Zahlungen im Chat ein.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "First turn on chat payments in the wallet settings."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Primero activa los pagos en el chat en los ajustes de la wallet."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Active d'abord les paiements dans le chat dans les réglages du portefeuille."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Prima attiva i pagamenti in chat nelle impostazioni del wallet."
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Schakel eerst betalingen in de chat in bij de walletinstellingen."
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Primeiro ativa os pagamentos no chat nas definições da carteira."
           }
         }
       }
@@ -21782,6 +22302,46 @@
         }
       }
     },
+    "Zeigt die Zahlung": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Shows the payment"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Muestra el pago"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Affiche le paiement"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mostra il pagamento"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Toont de betaling"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mostra o pagamento"
+          }
+        }
+      }
+    },
     "Zeigt die Zahlung im Einzelnen": {
       "localizations": {
         "en": {
@@ -22557,6 +23117,46 @@
         }
       }
     },
+    "Öffnet das Bezahlen": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Opens the payment"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Abre el pago"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ouvre le paiement"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Apre il pagamento"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Opent het betalen"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Abre o pagamento"
+          }
+        }
+      }
+    },
     "Öffnet den Anhang": {
       "localizations": {
         "en": {
@@ -22796,6 +23396,86 @@
           "stringUnit": {
             "state": "translated",
             "value": "₿ Pagamento em bitcoin"
+          }
+        }
+      }
+    },
+    "₿ Bitte um %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "₿ Request for %@"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "₿ Solicitud de %@"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "₿ Demande de %@"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "₿ Richiesta di %@"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "₿ Verzoek om %@"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "₿ Pedido de %@"
+          }
+        }
+      }
+    },
+    "₿ Du bittest um %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "₿ You requested %@"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "₿ Has pedido %@"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "₿ Tu as demandé %@"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "₿ Hai chiesto %@"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "₿ Je vraagt om %@"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "₿ Pediste %@"
           }
         }
       }

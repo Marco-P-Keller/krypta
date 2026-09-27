@@ -54,7 +54,7 @@ public enum EditPolicy {
     }
 
     static func isEditable(_ m: Message) -> Bool {
-        !m.isSystemEvent && !m.oneTime && !m.isPasswordProtected && m.payment == nil && m.text != nil
+        !m.isSystemEvent && !m.oneTime && !m.isPasswordProtected && m.payment == nil && m.paymentRequest == nil && m.text != nil
     }
 }
 

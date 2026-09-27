@@ -16,7 +16,16 @@ struct SendBitcoinView: View {
     @Environment(MessengerEngine.self) private var engine
     @Environment(\.dismiss) private var dismiss
     @Environment(\.closeSheet) private var closeSheet
+    /// Eine Bitte aus dem Chat: der Betrag steht fest, die Notiz ist vorbelegt.
+    struct Answering: Identifiable, Equatable {
+        let messageId: String
+        let sats: Int64
+        let note: String
+        var id: String { messageId }
+    }
+
     let target: Target
+    var answering: Answering?
     /// Nach dem Senden (schließt auch das Blatt darunter).
     var onSent: () -> Void = {}
 
@@ -86,38 +95,7 @@ struct SendBitcoinView: View {
                 }
             }
 
-            Section {
-                if sendAll {
-                    HStack {
-                        Text("Alles, abzüglich Gebühr")
-                        Spacer()
-                        Button("Ändern") { sendAll = false; amountFocused = true }.buttonStyle(.borderless)
-                    }
-                } else {
-                    HStack {
-                        TextField(inSats ? "0" : "0" + BitcoinFormat.decimalSeparator + "00", text: $amountText)
-                            .keyboardType(inSats ? .numberPad : .decimalPad)
-                            .font(.title2.weight(.semibold).monospacedDigit())
-                            .focused($amountFocused)
-                            .accessibilityIdentifier("wallet.send.amount")
-                        Picker("Einheit", selection: $inSats) {
-                            Text(verbatim: "BTC").tag(false)
-                            Text(verbatim: "sat").tag(true)
-                        }
-                        .pickerStyle(.segmented)
-                        .frame(width: 110)
-                        .onChange(of: inSats) { _, sats in convertAmount(toSats: sats) }
-                    }
-                    if let sats = amountSats, let fiat = BitcoinFormat.fiat(sats, rate: wallet.fiatRate) {
-                        Text(verbatim: fiat).font(.footnote).foregroundStyle(.secondary)
-                    }
-                    Button("Alles senden") { sendAll = true; amountFocused = false }
-                }
-            } header: {
-                Text("Betrag")
-            } footer: {
-                Text("Verfügbar: \(BitcoinFormat.btc(wallet.balance.spendable))")
-            }
+            amountSection(wallet)
 
             Section {
                 if let fees = wallet.feeEstimates {
@@ -158,7 +136,7 @@ struct SendBitcoinView: View {
                 } label: {
                     Text("Weiter").frame(maxWidth: .infinity).fontWeight(.semibold)
                 }
-                .disabled(recipient == nil || (!sendAll && amountSats == nil) || wallet.feeEstimates == nil)
+                .disabled(recipient == nil || (answering == nil && !sendAll && amountSats == nil) || wallet.feeEstimates == nil)
                 .accessibilityIdentifier("wallet.send.next")
             }
         }
@@ -177,7 +155,7 @@ struct SendBitcoinView: View {
             }
         }
         .navigationDestination(item: $draft) { step in
-            ConfirmPaymentView(draft: step.draft, target: target) {
+            ConfirmPaymentView(draft: step.draft, target: target, answering: answering?.messageId) {
                 close()
                 onSent()
             }
@@ -195,6 +173,61 @@ struct SendBitcoinView: View {
             }
         }
         .onChange(of: feeLevel) { error = nil }
+        .onAppear {
+            if let answering, note.isEmpty { note = answering.note }
+        }
+    }
+
+    /// Der Betrag: eingetippt, oder auf eine Bitte hin fest.
+    @ViewBuilder
+    private func amountSection(_ wallet: WalletEngine) -> some View {
+        if let answering {
+            Section {
+                LabeledContent("Erbeten") {
+                    Text(verbatim: BitcoinFormat.btc(answering.sats)).font(.title3.weight(.semibold)).monospacedDigit()
+                }
+                if let fiat = BitcoinFormat.fiat(answering.sats, rate: wallet.fiatRate) {
+                    Text(verbatim: fiat).font(.footnote).foregroundStyle(.secondary)
+                }
+            } header: {
+                Text("Betrag")
+            } footer: {
+                Text("Verfügbar: \(BitcoinFormat.btc(wallet.balance.spendable))")
+            }
+        } else {
+            Section {
+                if sendAll {
+                    HStack {
+                        Text("Alles, abzüglich Gebühr")
+                        Spacer()
+                        Button("Ändern") { sendAll = false; amountFocused = true }.buttonStyle(.borderless)
+                    }
+                } else {
+                    HStack {
+                        TextField(inSats ? "0" : "0" + BitcoinFormat.decimalSeparator + "00", text: $amountText)
+                            .keyboardType(inSats ? .numberPad : .decimalPad)
+                            .font(.title2.weight(.semibold).monospacedDigit())
+                            .focused($amountFocused)
+                            .accessibilityIdentifier("wallet.send.amount")
+                        Picker("Einheit", selection: $inSats) {
+                            Text(verbatim: "BTC").tag(false)
+                            Text(verbatim: "sat").tag(true)
+                        }
+                        .pickerStyle(.segmented)
+                        .frame(width: 110)
+                        .onChange(of: inSats) { _, sats in convertAmount(toSats: sats) }
+                    }
+                    if let sats = amountSats, let fiat = BitcoinFormat.fiat(sats, rate: wallet.fiatRate) {
+                        Text(verbatim: fiat).font(.footnote).foregroundStyle(.secondary)
+                    }
+                    Button("Alles senden") { sendAll = true; amountFocused = false }
+                }
+            } header: {
+                Text("Betrag")
+            } footer: {
+                Text("Verfügbar: \(BitcoinFormat.btc(wallet.balance.spendable))")
+            }
+        }
     }
 
     /// Das Blatt schließen, auch aus dem Screenshot-Schutz heraus.
@@ -270,7 +303,9 @@ struct SendBitcoinView: View {
         error = nil
         guard let recipient else { return }
         let amount: TransactionPlanner.Amount
-        if sendAll {
+        if let answering {
+            amount = .exact(answering.sats)
+        } else if sendAll {
             amount = .all
         } else {
             guard let sats = amountSats else { return }
@@ -305,6 +340,8 @@ struct ConfirmPaymentView: View {
     @Environment(MessengerEngine.self) private var engine
     let draft: PaymentDraft
     let target: SendBitcoinView.Target
+    /// Die Bitte, die damit bezahlt wird.
+    var answering: String?
     let done: () -> Void
 
     @State private var sending = false
@@ -406,7 +443,7 @@ struct ConfirmPaymentView: View {
         do {
             switch target {
             case .contact(let chatId, _):
-                _ = try await engine.pay(chatId: chatId, draft: draft, reason: reason)
+                _ = try await engine.pay(chatId: chatId, draft: draft, reason: reason, answering: answering)
             case .address:
                 _ = try await wallet.send(draft, reason: reason)
             }

@@ -147,15 +147,21 @@ extension MessengerEngine {
         // Eine Zahlung ist nie verschlüsselt oder einmalig; so etwas ist keine.
         // In Gruppen gibt es keine Zahlungen.
         m.payment = m.isPasswordProtected || m.oneTime || inGroup ? nil : Self.payment(in: inner)
+        // Eine Bitte um Bitcoin ebenso: offen lesbar, nur im Einzelchat.
+        if !m.isPasswordProtected, !m.oneTime, !inGroup, m.payment == nil { m.paymentRequest = Self.paymentRequest(in: inner) }
         if let re = inner["_re"]?.stringValue, (8...64).contains(re.count) { m.replyTo = re }
         // Anhänge nur ohne Passwort und nur, wenn es einen Blob-Speicher gibt.
-        if blobs != nil, !m.isPasswordProtected, m.payment == nil { m.attachment = Self.parseAttachment(inner["_att"]) }
+        if blobs != nil, !m.isPasswordProtected, m.payment == nil, m.paymentRequest == nil { m.attachment = Self.parseAttachment(inner["_att"]) }
         append(m, to: target)
         surfaceIfArchived(target)
         markProcessed(env.messageId)
         if m.attachment != nil { fetchAttachment(chatId: target, messageId: m.id) }
         // Eine angekündigte Zahlung: die Wallet prüft sie an der Blockchain.
         if let payment = m.payment { wallet?.registerClaim(payment, from: env.senderId, messageId: env.messageId, note: content) }
+        // Die Zahlung auf eine eigene Bitte: die Bitte gilt als bezahlt.
+        if let payment = m.payment, let requestId = inner["_pay"]?.objectValue?["rq"]?.stringValue {
+            markRequestPaid(chatId: target, requestId: requestId, requester: userId, payment: payment, by: m.id)
+        }
 
         // Zustellung wird immer gemeldet: an ihr hängt der Start jeder Frist.
         sendControlLater(chatId: chat.id, contact: contact, type: "delivered", messageId: env.messageId)

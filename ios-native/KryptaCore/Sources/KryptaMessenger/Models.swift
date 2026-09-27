@@ -1,4 +1,5 @@
 import Foundation
+import KryptaBitcoin
 import KryptaCore
 import KryptaWallet
 
@@ -158,6 +159,8 @@ public struct Message: Codable, Identifiable, Equatable, Sendable {
     /// Ein Foto, Video, eine Sprachnachricht oder Datei (`_att`); der Text
     /// ist dann die Bildunterschrift.
     public var attachment: Attachment?
+    /// Eine Bitte um Bitcoin (`_req`); der Text ist die Notiz dazu.
+    public var paymentRequest: ChatPaymentRequest?
 
     public var isSystemEvent: Bool { systemEvent != nil }
 
@@ -180,6 +183,25 @@ public struct Message: Codable, Identifiable, Equatable, Sendable {
         self.timestamp = timestamp
         self.status = status
     }
+}
+
+/// Eine Bitte um Bitcoin im Chat (`_req`: Betrag und Netz).
+///
+/// Die Adresse steht nicht darin: sie reist wie immer als `_btc` mit
+/// derselben Nachricht, nur für diesen Kontakt. Bezahlt wird wie jede
+/// Zahlung im Chat; die Zahlung nennt die Bitte (`_pay.rq`).
+public struct ChatPaymentRequest: Codable, Equatable, Sendable {
+    public let sats: Int64
+    public let network: BitcoinNetwork
+    /// Die Nachricht mit der Zahlung darauf. `nil`: offen.
+    public var paidBy: String?
+
+    public init(sats: Int64, network: BitcoinNetwork) {
+        self.sats = sats
+        self.network = network
+    }
+
+    public var isPaid: Bool { paidBy != nil }
 }
 
 public struct Chat: Codable, Identifiable, Equatable, Sendable {

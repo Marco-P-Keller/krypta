@@ -126,3 +126,55 @@ struct PaymentDetailView: View {
         }
     }
 }
+
+/// Eine Bitte um Bitcoin als Blase im Chat. Beim Kontakt: ein Tippen führt
+/// zum Bezahlen, Betrag und Notiz stehen dann schon da.
+struct PaymentRequestBubbleContent: View {
+    @Environment(WalletEngine.self) private var wallet: WalletEngine?
+    let request: ChatPaymentRequest
+    let note: String?
+    let mine: Bool
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            HStack(spacing: 10) {
+                Image(systemName: "bitcoinsign.circle")
+                    .font(.system(size: 30))
+                    .foregroundStyle(mine ? AnyShapeStyle(.white) : AnyShapeStyle(Color.orange))
+                    .accessibilityHidden(true)
+                VStack(alignment: .leading, spacing: 1) {
+                    Text(mine ? "Du bittest um Bitcoin" : "Bitte um Bitcoin")
+                        .font(.caption.weight(.semibold))
+                        .opacity(0.85)
+                    Text(verbatim: BitcoinFormat.btc(request.sats))
+                        .font(.title3.weight(.bold))
+                        .monospacedDigit()
+                }
+                NetworkBadge(network: request.network)
+            }
+            if let fiat = BitcoinFormat.fiat(request.sats, rate: wallet?.fiatRate) {
+                Text(verbatim: fiat).font(.caption).opacity(0.8)
+            }
+            if let note, !note.isEmpty {
+                Text(note)
+                    .font(.body)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            if request.isPaid {
+                Label("Bezahlt", systemImage: "checkmark.circle.fill")
+                    .font(.caption.weight(.medium))
+            } else if mine {
+                Label("Offen", systemImage: "clock")
+                    .font(.caption.weight(.medium))
+            } else {
+                Text("Bezahlen")
+                    .font(.subheadline.weight(.semibold))
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 6)
+                    .background(Color.orange, in: Capsule())
+                    .foregroundStyle(.white)
+            }
+        }
+        .frame(minWidth: 180, alignment: .leading)
+    }
+}
