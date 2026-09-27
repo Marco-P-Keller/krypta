@@ -53,6 +53,34 @@ struct BubblePosition: Equatable {
     let isLast: Bool
 }
 
+/// Das Zitat über einer Antwort. `text == nil`: das Original ist weg.
+struct QuoteInfo: Equatable {
+    let targetId: String
+    let author: String
+    let text: String?
+}
+
+/// Eine Reaktion unter der Blase, mit Anzahl.
+struct ReactionChip: Identifiable, Equatable {
+    let emoji: String
+    let count: Int
+    let mine: Bool
+    var id: String { emoji }
+
+    /// Gleiche Emoji zusammengefasst, eigene zuerst.
+    static func build(_ m: Message, me: String) -> [ReactionChip] {
+        var order: [String] = []
+        var counts: [String: Int] = [:]
+        var mineSet: Set<String> = []
+        for (sender, emoji) in m.sortedReactions(me: me) {
+            if counts[emoji] == nil { order.append(emoji) }
+            counts[emoji, default: 0] += 1
+            if sender == me { mineSet.insert(emoji) }
+        }
+        return order.map { ReactionChip(emoji: $0, count: counts[$0] ?? 1, mine: mineSet.contains($0)) }
+    }
+}
+
 /// Eine Nachricht mit Blase, Symbolen und ggf. Ablaufzeit.
 struct MessageRow: View {
     let message: Message
@@ -60,6 +88,10 @@ struct MessageRow: View {
     let mine: Bool
     let deadline: Date?
     let onTap: () -> Void
+    var quote: QuoteInfo?
+    var reactions: [ReactionChip] = []
+    var onQuoteTap: (String) -> Void = { _ in }
+    var onReactionTap: (ReactionChip) -> Void = { _ in }
 
     var body: some View {
         HStack(alignment: .bottom, spacing: 6) {
@@ -67,6 +99,16 @@ struct MessageRow: View {
             VStack(alignment: mine ? .trailing : .leading, spacing: 3) {
                 bubble
                     .onTapGesture(perform: onTap)
+                if !reactions.isEmpty {
+                    ReactionsBar(chips: reactions, onTap: onReactionTap)
+                        .padding(.top, -8)
+                        .padding(mine ? .trailing : .leading, 8)
+                }
+                if message.editedAt != nil {
+                    Text("Bearbeitet")
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                }
                 if let deadline {
                     TimelineView(.periodic(from: .now, by: 1)) { context in
                         Label(Format.remaining(deadline.timeIntervalSince(context.date)), systemImage: "timer")
@@ -98,6 +140,26 @@ struct MessageRow: View {
 
     @ViewBuilder
     private var bubble: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            if let quote {
+                QuoteView(quote: quote, mine: mine)
+                    .onTapGesture { onQuoteTap(quote.targetId) }
+            }
+            content
+        }
+        .padding(.horizontal, 13)
+        .padding(.vertical, 8)
+        .foregroundStyle(mine ? .white : .primary)
+        .background(mine ? AnyShapeStyle(Color.accentColor.gradient) : AnyShapeStyle(Color(.systemGray5)), in: shape)
+        .opacity(message.status == .sending ? 0.7 : 1)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(accessibility)
+        .accessibilityAddTraits(tapHint == nil ? [] : .isButton)
+        .accessibilityHint(tapHint.map { Text($0) } ?? Text(verbatim: ""))
+    }
+
+    @ViewBuilder
+    private var content: some View {
         Group {
             if let payment = message.payment {
                 PaymentBubbleContent(payment: payment, messageId: message.id, note: message.text, mine: mine)
@@ -113,15 +175,6 @@ struct MessageRow: View {
                     .fixedSize(horizontal: false, vertical: true)
             }
         }
-        .padding(.horizontal, 13)
-        .padding(.vertical, 8)
-        .foregroundStyle(mine ? .white : .primary)
-        .background(mine ? AnyShapeStyle(Color.accentColor.gradient) : AnyShapeStyle(Color(.systemGray5)), in: shape)
-        .opacity(message.status == .sending ? 0.7 : 1)
-        .accessibilityElement(children: .combine)
-        .accessibilityLabel(accessibility)
-        .accessibilityAddTraits(tapHint == nil ? [] : .isButton)
-        .accessibilityHint(tapHint.map { Text($0) } ?? Text(verbatim: ""))
     }
 
     /// Was ein Tippen auf die Blase tut — `nil`, wenn nichts.
@@ -159,10 +212,90 @@ struct MessageRow: View {
 
     private var accessibility: String {
         let who = mine ? String(localized: "Du") : String(localized: "Kontakt")
-        if message.payment != nil { return "\(who): " + String(localized: "Bitcoin-Zahlung") + " " + (message.text ?? "") }
-        if message.isPasswordProtected && !message.passwordUnlocked { return "\(who): " + String(localized: "Geschützte Nachricht") }
-        if message.oneTime { return "\(who): " + String(localized: "Einmal ansehen") }
-        return "\(who): \(message.text ?? "")"
+        var parts: [String] = []
+        if let quote {
+            let quoted = quote.text ?? String(localized: "Nachricht nicht mehr verfügbar")
+            parts.append(String(localized: "Antwort auf: \(quoted)"))
+        }
+        if message.payment != nil {
+            parts.append("\(who): " + String(localized: "Bitcoin-Zahlung") + " " + (message.text ?? ""))
+        } else if message.isPasswordProtected && !message.passwordUnlocked {
+            parts.append("\(who): " + String(localized: "Geschützte Nachricht"))
+        } else if message.oneTime {
+            parts.append("\(who): " + String(localized: "Einmal ansehen"))
+        } else {
+            parts.append("\(who): \(message.text ?? "")")
+        }
+        if !reactions.isEmpty {
+            let emojis = reactions.map(\.emoji).joined(separator: " ")
+            parts.append(String(localized: "Reaktionen: \(emojis)"))
+        }
+        return parts.joined(separator: ". ")
+    }
+}
+
+/// Das Zitat in einer Antwort: Strich, Absender, erste Zeilen.
+private struct QuoteView: View {
+    let quote: QuoteInfo
+    let mine: Bool
+
+    var body: some View {
+        HStack(spacing: 8) {
+            RoundedRectangle(cornerRadius: 1.5)
+                .fill(mine ? Color.white.opacity(0.8) : Color.accentColor)
+                .frame(width: 3)
+            VStack(alignment: .leading, spacing: 1) {
+                Text(quote.author)
+                    .font(.caption.weight(.semibold))
+                if let text = quote.text {
+                    Text(text)
+                        .font(.caption)
+                        .lineLimit(2)
+                        .opacity(0.85)
+                } else {
+                    Text("Nachricht nicht mehr verfügbar")
+                        .font(.caption)
+                        .italic()
+                        .opacity(0.7)
+                }
+            }
+            Spacer(minLength: 0)
+        }
+        .padding(.vertical, 5)
+        .padding(.horizontal, 8)
+        .background(mine ? Color.white.opacity(0.18) : Color(.systemBackground).opacity(0.6), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+        .fixedSize(horizontal: false, vertical: true)
+    }
+}
+
+/// Reaktionen in einer Kapsel unter der Blase.
+private struct ReactionsBar: View {
+    let chips: [ReactionChip]
+    let onTap: (ReactionChip) -> Void
+
+    var body: some View {
+        HStack(spacing: 4) {
+            ForEach(chips) { chip in
+                Button { onTap(chip) } label: {
+                    HStack(spacing: 2) {
+                        Text(verbatim: chip.emoji)
+                        if chip.count > 1 {
+                            Text(verbatim: "\(chip.count)").font(.caption2.weight(.semibold)).foregroundStyle(.secondary)
+                        }
+                    }
+                    .padding(.horizontal, 6)
+                    .padding(.vertical, 2)
+                    .background(chip.mine ? Color.accentColor.opacity(0.18) : Color.clear, in: Capsule())
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel(chip.mine ? String(localized: "Deine Reaktion \(chip.emoji). Tippen zum Entfernen.") : chip.emoji)
+            }
+        }
+        .font(.footnote)
+        .padding(.horizontal, 4)
+        .padding(.vertical, 2)
+        .background(.regularMaterial, in: Capsule())
+        .overlay(Capsule().strokeBorder(Color(.systemBackground), lineWidth: 1.5))
     }
 }
 

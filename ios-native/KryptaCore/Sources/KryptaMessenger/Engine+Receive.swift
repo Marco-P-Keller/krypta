@@ -96,6 +96,12 @@ extension MessengerEngine {
         learnSealedKey(from: env.senderId, inner: inner)
         learnBitcoin(from: env.senderId, inner: inner)
 
+        // Reaktion oder Bearbeitung: kein eigener Eintrag im Verlauf.
+        if applySide(chatId: chat.id, senderId: env.senderId, inner: inner) {
+            markProcessed(env.messageId)
+            return
+        }
+
         let now = Date()
         let isRead = activeChatId == chat.id && isForeground
         var m = Message(
@@ -113,6 +119,7 @@ extension MessengerEngine {
         m.passwordUnlocked = !m.isPasswordProtected
         // Eine Zahlung ist nie verschlüsselt oder einmalig; so etwas ist keine.
         m.payment = m.isPasswordProtected || m.oneTime ? nil : Self.payment(in: inner)
+        if let re = inner["_re"]?.stringValue, (8...64).contains(re.count) { m.replyTo = re }
         append(m, to: chat.id)
         markProcessed(env.messageId)
         // Eine angekündigte Zahlung: die Wallet prüft sie an der Blockchain.

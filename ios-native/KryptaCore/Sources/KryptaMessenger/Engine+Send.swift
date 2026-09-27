@@ -36,6 +36,7 @@ extension MessengerEngine {
         let now = Date()
         let password = options.password.flatMap { $0.isEmpty ? nil : $0 }
         let oneTime = options.oneTime
+        let replyTo = asRequest ? nil : validReplyTarget(options.replyTo, in: chatId)
 
         if !asRequest {
             var m = Message(
@@ -50,26 +51,12 @@ extension MessengerEngine {
             m.isPasswordProtected = password != nil
             m.passwordUnlocked = password == nil
             m.payment = payment
+            m.replyTo = replyTo
             append(m, to: chatId)
         }
 
         func fail() {
             if !asRequest { updateMessage(chatId, messageId) { $0.status = .failed } }
-        }
-
-        // Hat der Server einen anderen Schlüssel als ich? Dann nichts senden,
-        // sondern den Schlüsselwechsel auslösen.
-        if preverifiedKey == nil || preverifiedKey != contact.publicKey.base64 {
-            do {
-                if let serverKey = try await relay.publicKey(uid: contact.id), serverKey != contact.publicKey.base64 {
-                    // Nicht hier drin abwarten: der Schlüsselwechsel sendet
-                    // selbst an diesen Chat und stünde hinter uns in der Schlange.
-                    Task { [weak self] in _ = await self?.addContact(id: contact.id) }
-                    return fail()
-                }
-            } catch {
-                return fail()
-            }
         }
 
         var content = text
@@ -81,50 +68,92 @@ extension MessengerEngine {
             content = blob
         }
 
+        var extra: JSONObject = [:]
+        if asRequest {
+            extra["_rq"] = 1
+            if let qrToken { extra["_rt"] = .string(qrToken) }
+        }
+        if let sd = options.selfDestruct { extra["_sd"] = .int(Int(sd * 1000)) }
+        if options.fromChatRule { extra["_sdc"] = true }
+        if options.burnAfterRead && !oneTime { extra["_bar"] = true }
+        if oneTime { extra["_once"] = true }
+        if password != nil { extra["_pw"] = true }
+        if let payment { extra["_pay"] = payment.json }
+        if let replyTo { extra["_re"] = .string(replyTo) }
+
         do {
-            if ratchets[chatId] == nil {
-                try await initOutboundSession(chatId: chatId, contact: contact)
-            }
-            guard let state = ratchets[chatId] else { return fail() }
-
-            // v3: alle Metadaten innerhalb der Verschlüsselung.
-            var inner: JSONObject = [
-                "_t": .string(content),
-                "_sid": .string(userId),
-                "_seq": .int(state.globalSendSeqNo),
-            ]
-            if asRequest {
-                inner["_rq"] = 1
-                if let qrToken { inner["_rt"] = .string(qrToken) }
-            }
-            if state.globalSendSeqNo == 0, let psid = state.previousSessionId { inner["_psid"] = .string(psid) }
-            if let sd = options.selfDestruct { inner["_sd"] = .int(Int(sd * 1000)) }
-            if options.fromChatRule { inner["_sdc"] = true }
-            if options.burnAfterRead && !oneTime { inner["_bar"] = true }
-            if oneTime { inner["_once"] = true }
-            if password != nil { inner["_pw"] = true }
-            if !asRequest, let kt = gossip(for: contact.id) { inner["_kt"] = .object(kt) }
-            inner["_dk"] = .string(sealedAccessKey.base64)
-            // Bitcoin: eigene Adresse für diesen Kontakt, und die Zahlung selbst.
-            if !asRequest, let btc = bitcoinField(for: contact) { inner["_btc"] = btc }
-            if let payment { inner["_pay"] = payment.json }
-
-            var payload = try encrypt(chatId: chatId, content: try inner.jsonString())
-            if let tag = notificationTag(for: contact, request: asRequest) { payload["nt"] = .string(tag) }
-            ratchets[chatId]?.globalSendSeqNo += 1
-            saveRatchet(chatId)
-
-            let delivery = try await deliver(to: contact.id, messageId: messageId, payload: payload)
-            handshakeDelivered(chatId: chatId)
+            let delivery = try await transmit(chatId: chatId, contact: contact, messageId: messageId, content: content, extra: extra,
+                                              asRequest: asRequest, preverifiedKey: preverifiedKey)
             if !asRequest {
                 rememberServerCopy(messageId: messageId, to: contact.id, delivery: delivery)
                 updateMessage(chatId, messageId) { if $0.status == .sending { $0.status = .sent } }
             }
-        } catch SessionFailure.identityMismatch {
-            fail()
         } catch {
             fail()
         }
+    }
+
+    enum TransmitFailure: Error {
+        /// Der Server nennt einen anderen Schlüssel: der Schlüsselwechsel läuft.
+        case serverKeyChanged
+    }
+
+    /// Eine Nachricht verschlüsseln und zum Server bringen.
+    ///
+    /// Die Metadaten stehen alle innerhalb der Verschlüsselung (v3):
+    /// `_t` der Inhalt, `_sid`, `_seq`, der eigene Zustellschlüssel `_dk`,
+    /// Klatsch `_kt` und `_btc`; `extra` legt weitere Felder dazu. `quiet`:
+    /// keine Mitteilung beim Empfänger (Reaktionen, Bearbeitungen).
+    func transmit(chatId: String, contact: Contact, messageId: String, content: String, extra: JSONObject,
+                  asRequest: Bool = false, preverifiedKey: String? = nil, quiet: Bool = false) async throws -> Delivery {
+        // Hat der Server einen anderen Schlüssel als ich? Dann nichts senden,
+        // sondern den Schlüsselwechsel auslösen.
+        if preverifiedKey == nil || preverifiedKey != contact.publicKey.base64 {
+            if let serverKey = try await relay.publicKey(uid: contact.id), serverKey != contact.publicKey.base64 {
+                // Nicht hier drin abwarten: der Schlüsselwechsel sendet
+                // selbst an diesen Chat und stünde hinter uns in der Schlange.
+                Task { [weak self] in _ = await self?.addContact(id: contact.id) }
+                throw TransmitFailure.serverKeyChanged
+            }
+        }
+
+        if ratchets[chatId] == nil {
+            try await initOutboundSession(chatId: chatId, contact: contact)
+        }
+        guard let state = ratchets[chatId] else { throw SessionFailure.noSession }
+
+        // v3: alle Metadaten innerhalb der Verschlüsselung.
+        var inner: JSONObject = [
+            "_t": .string(content),
+            "_sid": .string(userId),
+            "_seq": .int(state.globalSendSeqNo),
+        ]
+        if state.globalSendSeqNo == 0, let psid = state.previousSessionId { inner["_psid"] = .string(psid) }
+        if !asRequest, let kt = gossip(for: contact.id) { inner["_kt"] = .object(kt) }
+        inner["_dk"] = .string(sealedAccessKey.base64)
+        // Bitcoin: eigene Adresse für diesen Kontakt.
+        if !asRequest, let btc = bitcoinField(for: contact) { inner["_btc"] = btc }
+        inner.merge(extra) { _, new in new }
+
+        var payload = try encrypt(chatId: chatId, content: try inner.jsonString())
+        if quiet {
+            payload["nt"] = .string(NotificationTag.quiet)
+        } else if let tag = notificationTag(for: contact, request: asRequest) {
+            payload["nt"] = .string(tag)
+        }
+        ratchets[chatId]?.globalSendSeqNo += 1
+        saveRatchet(chatId)
+
+        let delivery = try await deliver(to: contact.id, messageId: messageId, payload: payload)
+        handshakeDelivered(chatId: chatId)
+        return delivery
+    }
+
+    /// Nur Kennungen von Nachrichten, die in diesem Chat stehen und sich
+    /// zitieren lassen.
+    func validReplyTarget(_ id: String?, in chatId: String) -> String? {
+        guard let id, let m = messages(in: chatId).first(where: { $0.id == id }), ReplyPolicy.canQuote(m) else { return nil }
+        return id
     }
 
     /// Warum an diesen Kontakt nichts rausgeht — _validateSendPermission.
@@ -148,7 +177,7 @@ extension MessengerEngine {
             await sendPaymentMessage(chatId: chatId, payment: payment, note: text)
             return
         }
-        await send(chatId: chatId, text: text, options: SendOptions(selfDestruct: m.selfDestruct, fromChatRule: m.selfDestructFromChat, burnAfterRead: m.burnAfterRead))
+        await send(chatId: chatId, text: text, options: SendOptions(selfDestruct: m.selfDestruct, fromChatRule: m.selfDestructFromChat, burnAfterRead: m.burnAfterRead, replyTo: m.replyTo))
     }
 
     // MARK: - Steuernachrichten

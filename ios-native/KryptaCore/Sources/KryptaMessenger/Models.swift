@@ -144,8 +144,24 @@ public struct Message: Codable, Identifiable, Equatable, Sendable {
     public var systemEvent: SystemEventKind?
     /// Eine Bitcoin-Zahlung (`_pay`); der Text ist dann die Notiz dazu.
     public var payment: ChatPayment?
+    /// Antwort auf diese Nachricht (`_re`). Nur die Kennung reist mit: das
+    /// Zitat kommt aus dem eigenen Verlauf und verschwindet mit dem Original.
+    public var replyTo: String?
+    /// Reaktionen, je Absender ein Emoji (`_rx`).
+    public var reactions: [String: String]?
+    /// Zuletzt bearbeitet (`_ed`).
+    public var editedAt: Date?
 
     public var isSystemEvent: Bool { systemEvent != nil }
+
+    /// Reaktionen in fester Reihenfolge: eigene zuerst, dann nach Absender.
+    public func sortedReactions(me: String) -> [(sender: String, emoji: String)] {
+        (reactions ?? [:]).sorted { a, b in
+            if a.key == me { return b.key != me }
+            if b.key == me { return false }
+            return a.key < b.key
+        }.map { ($0.key, $0.value) }
+    }
     public func isMine(_ me: String) -> Bool { senderId == me }
 
     public init(id: String, chatId: String, senderId: String, recipientId: String, text: String?, timestamp: Date, status: MessageStatus) {
@@ -187,13 +203,16 @@ public struct SendOptions: Equatable, Sendable {
     public var burnAfterRead = false
     public var oneTime = false
     public var password: String?
+    /// Antwort auf diese Nachricht.
+    public var replyTo: String?
 
-    public init(selfDestruct: TimeInterval? = nil, fromChatRule: Bool = false, burnAfterRead: Bool = false, oneTime: Bool = false, password: String? = nil) {
+    public init(selfDestruct: TimeInterval? = nil, fromChatRule: Bool = false, burnAfterRead: Bool = false, oneTime: Bool = false, password: String? = nil, replyTo: String? = nil) {
         self.selfDestruct = selfDestruct
         self.fromChatRule = fromChatRule
         self.burnAfterRead = burnAfterRead
         self.oneTime = oneTime
         self.password = password
+        self.replyTo = replyTo
     }
 
     public static let plain = SendOptions()

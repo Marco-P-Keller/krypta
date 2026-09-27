@@ -23,6 +23,9 @@ struct ConversationView: View {
     @State private var paying = false
     @State private var payHint: String?
     @State private var paymentDetail: Message?
+    /// Antwort auf oder Bearbeitung einer Nachricht (Kennung).
+    @State private var context: ComposeContext?
+    @State private var scrollTarget: String?
     @FocusState private var composerFocused: Bool
 
     var body: some View {
@@ -62,15 +65,24 @@ struct ConversationView: View {
 
     @ViewBuilder
     private func content(chat: Chat, contact: Contact) -> some View {
-        let items = TranscriptItem.build(engine.messages(in: chatId), me: engine.userId)
-        ScrollView {
-            LazyVStack(spacing: 0) {
-                ForEach(items) { item in
-                    row(item, chat: chat)
+        let all = engine.messages(in: chatId)
+        let items = TranscriptItem.build(all, me: engine.userId)
+        let byId = Dictionary(all.map { ($0.id, $0) }, uniquingKeysWith: { a, _ in a })
+        ScrollViewReader { proxy in
+            ScrollView {
+                LazyVStack(spacing: 0) {
+                    ForEach(items) { item in
+                        row(item, chat: chat, byId: byId)
+                    }
                 }
+                .padding(.horizontal, 12)
+                .padding(.vertical, 8)
             }
-            .padding(.horizontal, 12)
-            .padding(.vertical, 8)
+            .onChange(of: scrollTarget) { _, target in
+                guard let target else { return }
+                withAnimation(.smooth) { proxy.scrollTo(target, anchor: .center) }
+                scrollTarget = nil
+            }
         }
         .defaultScrollAnchor(.bottom)
         .scrollDismissesKeyboard(.interactively)
@@ -144,7 +156,7 @@ struct ConversationView: View {
     // MARK: - Verlauf
 
     @ViewBuilder
-    private func row(_ item: TranscriptItem, chat: Chat) -> some View {
+    private func row(_ item: TranscriptItem, chat: Chat, byId: [String: Message]) -> some View {
         switch item.kind {
         case .separator(let date):
             Text(Format.separator(date))
@@ -162,7 +174,15 @@ struct ConversationView: View {
         case .message(let m, let position):
             MessageRow(message: m, position: position, mine: m.senderId == engine.userId,
                        deadline: engine.deadline(of: m),
-                       onTap: { tapped(m) })
+                       onTap: { tapped(m) },
+                       quote: quote(for: m, chat: chat, byId: byId),
+                       reactions: ReactionChip.build(m, me: engine.userId),
+                       onQuoteTap: { scrollTarget = $0 },
+                       onReactionTap: { chip in
+                           guard chip.mine else { return }
+                           Haptics.selection()
+                           Task { await engine.react(chatId: chatId, messageId: m.id, emoji: nil) }
+                       })
                 .contextMenu { menu(for: m) }
                 .padding(.top, position.isFirst ? 6 : 1)
         case .status(let status):
@@ -186,9 +206,61 @@ struct ConversationView: View {
         }
     }
 
+    /// Das Zitat über einer Antwort, aus dem eigenen Verlauf.
+    private func quote(for m: Message, chat: Chat, byId: [String: Message]) -> QuoteInfo? {
+        guard let target = m.replyTo else { return nil }
+        guard let original = byId[target] else {
+            return QuoteInfo(targetId: target, author: chat.name, text: nil)
+        }
+        let author = original.senderId == engine.userId ? String(localized: "Du") : chat.name
+        let text = ReplyPolicy.canQuote(original) ? MessagePreview.text(for: original, me: engine.userId) : nil
+        return QuoteInfo(targetId: target, author: author, text: text)
+    }
+
     @ViewBuilder
     private func menu(for m: Message) -> some View {
         let mine = m.senderId == engine.userId
+        let extras = engine.supportsExtras(chatId: chatId)
+        if extras && ReactionPolicy.canReact(to: m) && m.status != .failed && m.status != .sending {
+            Menu {
+                ForEach(ReactionPolicy.quick, id: \.self) { emoji in
+                    Button {
+                        Haptics.selection()
+                        Task { await engine.react(chatId: chatId, messageId: m.id, emoji: emoji) }
+                    } label: {
+                        Text(verbatim: m.reactions?[engine.userId] == emoji ? "\(emoji) ✓" : emoji)
+                    }
+                }
+                if m.reactions?[engine.userId] != nil {
+                    Divider()
+                    Button(role: .destructive) {
+                        Task { await engine.react(chatId: chatId, messageId: m.id, emoji: nil) }
+                    } label: {
+                        Label("Reaktion entfernen", systemImage: "xmark")
+                    }
+                }
+            } label: {
+                Label("Reagieren", systemImage: "face.smiling")
+            }
+        }
+        if engine.contact(engine.chat(chatId)?.recipientId ?? "")?.canSendMessages == true && ReplyPolicy.canQuote(m) && m.status != .failed {
+            Button {
+                context = .reply(m.id)
+                composerFocused = true
+            } label: {
+                Label("Antworten", systemImage: "arrowshape.turn.up.left")
+            }
+        }
+        if extras && EditPolicy.canEdit(m, me: engine.userId) {
+            Button {
+                context = .edit(m.id)
+                draft = m.text ?? ""
+                option = .chatRule
+                composerFocused = true
+            } label: {
+                Label("Bearbeiten", systemImage: "pencil")
+            }
+        }
         if let text = m.text, !m.oneTime, m.passwordUnlocked {
             Button { SecurePasteboard.copy(text); Haptics.confirm() } label: { Label("Kopieren", systemImage: "doc.on.doc") }
         }
@@ -295,13 +367,18 @@ struct ConversationView: View {
             .padding(16)
             .background(.bar)
         } else if contact.canSendMessages {
-            Composer(
-                draft: $draft, option: $option, focused: $composerFocused,
-                chatTimer: chat.timer, chatAfterRead: chat.deleteAfterRead,
-                askPassword: { askPassword = true },
-                payBitcoin: wallet == nil ? nil : { startPayment(contact) },
-                send: { send(chat: chat) }
-            )
+            VStack(spacing: 0) {
+                if let context {
+                    contextBar(context, chat: chat)
+                }
+                Composer(
+                    draft: $draft, option: $option, focused: $composerFocused,
+                    chatTimer: chat.timer, chatAfterRead: chat.deleteAfterRead,
+                    askPassword: { askPassword = true },
+                    payBitcoin: wallet == nil ? nil : { startPayment(contact) },
+                    send: { send(chat: chat) }
+                )
+            }
         }
     }
 
@@ -321,21 +398,82 @@ struct ConversationView: View {
         }
     }
 
+    /// Leiste über der Eingabe: worauf man antwortet oder was man bearbeitet.
+    @ViewBuilder
+    private func contextBar(_ context: ComposeContext, chat: Chat) -> some View {
+        let target = engine.messages(in: chatId).first { $0.id == context.messageId }
+        HStack(spacing: 10) {
+            Image(systemName: context.isEdit ? "pencil" : "arrowshape.turn.up.left")
+                .foregroundStyle(.tint)
+            VStack(alignment: .leading, spacing: 1) {
+                if context.isEdit {
+                    Text("Nachricht bearbeiten").font(.caption.weight(.semibold))
+                } else if target?.senderId == engine.userId {
+                    Text("Antwort auf deine Nachricht").font(.caption.weight(.semibold))
+                } else {
+                    Text("Antwort an \(chat.name)").font(.caption.weight(.semibold))
+                }
+                Text(target.map { MessagePreview.text(for: $0, me: engine.userId) } ?? "")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+            }
+            Spacer(minLength: 0)
+            Button {
+                if context.isEdit { draft = "" }
+                self.context = nil
+            } label: {
+                Image(systemName: "xmark.circle.fill").foregroundStyle(.secondary)
+            }
+            .accessibilityLabel(context.isEdit ? Text("Bearbeiten abbrechen") : Text("Antwort abbrechen"))
+        }
+        .padding(.horizontal, 16)
+        .padding(.top, 8)
+        .background(.bar)
+        .onChange(of: target == nil) { _, gone in if gone { self.context = nil } }
+    }
+
     private func send(chat: Chat) {
         let text = draft.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !text.isEmpty else { return }
-        let options: SendOptions = switch option {
+        if case .edit(let id)? = context {
+            draft = ""
+            context = nil
+            Haptics.confirm()
+            Task { await engine.edit(chatId: chatId, messageId: id, text: text) }
+            return
+        }
+        var options: SendOptions = switch option {
         case .chatRule: SendOptions(selfDestruct: chat.timer, fromChatRule: true)
         case .timer(let seconds): SendOptions(selfDestruct: seconds)
         case .afterRead: SendOptions(burnAfterRead: true)
         case .oneTime: SendOptions(oneTime: true)
         case .password: SendOptions(selfDestruct: chat.timer, fromChatRule: true, password: password)
         }
+        if case .reply(let id)? = context { options.replyTo = id }
+        context = nil
         draft = ""
         option = .chatRule
         password = nil
         Haptics.confirm()
         Task { await engine.send(chatId: chatId, text: text, options: options) }
+    }
+}
+
+/// Worauf sich die nächste Eingabe bezieht.
+enum ComposeContext: Equatable {
+    case reply(String)
+    case edit(String)
+
+    var messageId: String {
+        switch self {
+        case .reply(let id), .edit(let id): id
+        }
+    }
+
+    var isEdit: Bool {
+        if case .edit = self { return true }
+        return false
     }
 }
 
