@@ -54,8 +54,15 @@ jobs:
       - name: App bauen (Simulator, ohne Signatur)
         working-directory: ios-native
         run: |
+          set -o pipefail
           xcodebuild -project Krypta.xcodeproj -scheme Krypta \
             -configuration Debug \
             -destination 'generic/platform=iOS Simulator' \
             CODE_SIGNING_ALLOWED=NO \
-            build
+            build 2>&1 | tee "${RUNNER_TEMP}/build.log"
+
+      # Die Fehler stehen sonst irgendwo in Tausenden Zeilen.
+      - name: Übersetzungsfehler zusammengefasst
+        if: failure()
+        run: |
+          grep -E '(error|warning: .*will be an error)' "${RUNNER_TEMP}/build.log" | sort -u | head -80 || true

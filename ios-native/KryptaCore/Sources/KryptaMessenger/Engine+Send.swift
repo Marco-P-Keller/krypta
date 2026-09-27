@@ -175,6 +175,17 @@ extension MessengerEngine {
     public func resend(chatId: String, messageId: String) async {
         guard let m = messages[chatId]?.first(where: { $0.id == messageId }),
               m.status == .failed, m.senderId == userId, let text = m.text, !m.isPasswordProtected else { return }
+        // Ein Anhang geht mit neuem Schlüssel und neuer Kennung noch einmal hinaus.
+        if let a = m.attachment {
+            guard let data = try? vault.load(a.slot) else { return }
+            messages[chatId]?.removeAll { $0.id == messageId }
+            saveMessages(chatId)
+            let out = OutgoingAttachment(data: data, kind: a.kind, mime: a.mime, name: a.name, width: a.width, height: a.height,
+                                         duration: a.duration, thumbnail: a.thumbnail)
+            await sendAttachment(chatId: chatId, out, caption: text,
+                                 options: SendOptions(selfDestruct: m.selfDestruct, fromChatRule: m.selfDestructFromChat, burnAfterRead: m.burnAfterRead, replyTo: m.replyTo))
+            return
+        }
         messages[chatId]?.removeAll { $0.id == messageId }
         saveMessages(chatId)
         // Eine Zahlung ist längst auf der Blockchain: erneut geht nur die

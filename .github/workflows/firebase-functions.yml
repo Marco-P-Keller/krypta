@@ -22,6 +22,7 @@ on:
           - beide
           - onNewMessage
           - cleanupExpiredMessages
+          - cleanupExpiredAttachments
       reason:
         description: "Wofür ist dieser Deploy? (steht im Titel des Laufs)"
         required: false
@@ -66,6 +67,7 @@ jobs:
           case "${ONLY_INPUT}" in
             onNewMessage)           TARGET="functions:onNewMessage" ;;
             cleanupExpiredMessages) TARGET="functions:cleanupExpiredMessages" ;;
+            cleanupExpiredAttachments) TARGET="functions:cleanupExpiredAttachments" ;;
             *)                      TARGET="functions" ;;
           esac
           echo "target=${TARGET}" >> "$GITHUB_OUTPUT"

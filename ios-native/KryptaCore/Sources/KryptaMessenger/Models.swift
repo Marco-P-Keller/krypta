@@ -155,6 +155,9 @@ public struct Message: Codable, Identifiable, Equatable, Sendable {
     public var reactions: [String: String]?
     /// Zuletzt bearbeitet (`_ed`).
     public var editedAt: Date?
+    /// Ein Foto, Video, eine Sprachnachricht oder Datei (`_att`); der Text
+    /// ist dann die Bildunterschrift.
+    public var attachment: Attachment?
 
     public var isSystemEvent: Bool { systemEvent != nil }
 
@@ -250,6 +253,82 @@ public struct GroupInfo: Codable, Equatable, Sendable {
 
     public var hasLeft: Bool { left == true }
     public func isAdmin(_ uid: String) -> Bool { admin == uid }
+}
+
+public enum AttachmentKind: String, Codable, Sendable {
+    case image, video, audio, file
+}
+
+public enum AttachmentState: String, Codable, Sendable {
+    /// Wird hochgeladen (Absender) oder geholt (Empfänger).
+    case transferring
+    /// Liegt verschlüsselt im Tresor dieses Geräts.
+    case ready
+    /// Holen ist gescheitert; erneut versuchen geht, solange der Server ihn hat.
+    case failed
+    /// Einmal angesehen oder abgelaufen: weg.
+    case gone
+}
+
+/// Ein Anhang: wo der verschlüsselte Blob liegt, der Schlüssel dazu und was
+/// die Oberfläche vor dem Laden zeigen kann. Der Inhalt selbst liegt im
+/// Tresor (Slot `att.<id>`), nie im Klartext auf der Platte.
+public struct Attachment: Codable, Equatable, Sendable {
+    public let id: String
+    public let key: Data
+    public let digest: Data
+    public let size: Int
+    public let kind: AttachmentKind
+    public let mime: String
+    public var name: String?
+    public var width: Int?
+    public var height: Int?
+    public var duration: Double?
+    /// Kleines JPEG ohne Metadaten, reist in der Nachricht mit.
+    public var thumbnail: Data?
+    public var state: AttachmentState
+
+    public init(id: String, key: Data, digest: Data, size: Int, kind: AttachmentKind, mime: String, name: String? = nil,
+                width: Int? = nil, height: Int? = nil, duration: Double? = nil, thumbnail: Data? = nil, state: AttachmentState) {
+        self.id = id
+        self.key = key
+        self.digest = digest
+        self.size = size
+        self.kind = kind
+        self.mime = mime
+        self.name = name
+        self.width = width
+        self.height = height
+        self.duration = duration
+        self.thumbnail = thumbnail
+        self.state = state
+    }
+
+    public var slot: String { "att.\(id)" }
+}
+
+/// Was die App über eine Datei weiß, bevor sie verschickt wird.
+public struct OutgoingAttachment: Sendable {
+    public var data: Data
+    public var kind: AttachmentKind
+    public var mime: String
+    public var name: String?
+    public var width: Int?
+    public var height: Int?
+    public var duration: Double?
+    public var thumbnail: Data?
+
+    public init(data: Data, kind: AttachmentKind, mime: String, name: String? = nil, width: Int? = nil, height: Int? = nil,
+                duration: Double? = nil, thumbnail: Data? = nil) {
+        self.data = data
+        self.kind = kind
+        self.mime = mime
+        self.name = name
+        self.width = width
+        self.height = height
+        self.duration = duration
+        self.thumbnail = thumbnail
+    }
 }
 
 /// Eine Chat-Regel zum Auswählen: aus, Frist oder nach dem Lesen.

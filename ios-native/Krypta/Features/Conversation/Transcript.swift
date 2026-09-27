@@ -177,6 +177,15 @@ struct MessageRow: View {
                 special(symbol: "eye.fill", title: "Einmal ansehen", subtitle: "Tippen zum Öffnen")
             } else if message.oneTime && mine {
                 special(symbol: "eye", title: "Einmalige Nachricht", subtitle: "Du behältst keine Kopie")
+            } else if let attachment = message.attachment {
+                VStack(alignment: .leading, spacing: 6) {
+                    AttachmentBubbleContent(message: message, attachment: attachment, mine: mine)
+                    if let caption = message.text, !caption.isEmpty {
+                        Text(caption)
+                            .font(.body)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                }
             } else {
                 Text(message.text ?? "")
                     .font(.body)
@@ -191,6 +200,10 @@ struct MessageRow: View {
         if message.payment != nil { return "Zeigt die Zahlung im Einzelnen" }
         if !mine && message.isPasswordProtected && !message.passwordUnlocked { return "Mit Passwort entsperren" }
         if !mine && message.oneTime { return "Öffnet die Nachricht. Danach ist sie weg." }
+        if let a = message.attachment {
+            if a.state == .failed && !mine { return "Lädt den Anhang erneut" }
+            if a.state == .ready && a.kind != .audio { return "Öffnet den Anhang" }
+        }
         return nil
     }
 
@@ -231,6 +244,8 @@ struct MessageRow: View {
             parts.append("\(who): " + String(localized: "Geschützte Nachricht"))
         } else if message.oneTime {
             parts.append("\(who): " + String(localized: "Einmal ansehen"))
+        } else if let a = message.attachment {
+            parts.append("\(who): " + AttachmentLabel.text(a) + " " + (message.text ?? ""))
         } else {
             parts.append("\(who): \(message.text ?? "")")
         }
@@ -307,6 +322,20 @@ private struct ReactionsBar: View {
     }
 }
 
+/// Wie ein Anhang in Vorschau und Vorlesen heißt.
+enum AttachmentLabel {
+    static func text(_ a: Attachment) -> String {
+        switch a.kind {
+        case .image: return String(localized: "📷 Foto")
+        case .video: return String(localized: "🎥 Video")
+        case .audio: return String(localized: "🎤 Sprachnachricht")
+        case .file:
+            let name = a.name ?? String(localized: "Datei")
+            return "📎 " + name
+        }
+    }
+}
+
 /// Wie eine Nachricht gehen soll.
 enum ComposeOption: Equatable {
     case chatRule
@@ -326,6 +355,8 @@ struct Composer: View {
     let askPassword: () -> Void
     /// `nil`: keine Wallet, kein Menüpunkt.
     var payBitcoin: (() -> Void)?
+    /// `nil`: hier keine Anhänge (Flutter-Kontakt, kein Speicher).
+    var attach: AttachmentActions?
     let send: () -> Void
 
     var body: some View {
@@ -348,6 +379,12 @@ struct Composer: View {
             }
             HStack(alignment: .bottom, spacing: 8) {
                 Menu {
+                    if let attach {
+                        Button(action: attach.photo) { Label("Foto oder Video", systemImage: "photo.on.rectangle") }
+                        Button(action: attach.camera) { Label("Kamera", systemImage: "camera") }
+                        Button(action: attach.file) { Label("Datei", systemImage: "doc") }
+                        Divider()
+                    }
                     if let payBitcoin {
                         Button(action: payBitcoin) { Label("Bitcoin senden", systemImage: "bitcoinsign.circle") }
                         Divider()
@@ -376,7 +413,17 @@ struct Composer: View {
                         .padding(.leading, 12)
                         .padding(.vertical, 7)
                         .accessibilityIdentifier("composer.field")
-                    if !draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                    if draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty, let attach {
+                        Button(action: attach.voice) {
+                            Image(systemName: "mic.fill")
+                                .font(.system(size: 17))
+                                .foregroundStyle(.secondary)
+                                .frame(width: 30, height: 30)
+                        }
+                        .padding(.trailing, 3)
+                        .padding(.bottom, 2)
+                        .accessibilityLabel("Sprachnachricht aufnehmen")
+                    } else if !draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
                         Button(action: send) {
                             Image(systemName: "arrow.up.circle.fill")
                                 .font(.system(size: 28))

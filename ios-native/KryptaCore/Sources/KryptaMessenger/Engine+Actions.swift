@@ -297,6 +297,7 @@ extension MessengerEngine {
         saveChats()
         messages.removeValue(forKey: chatId)
         try? vault.delete("messages.\(chatId)")
+        sweepAttachments()
         setRatchet(nil, for: chatId)
         pendingHeals = pendingHeals.filter { !$0.key.hasPrefix("\(chatId)|") }
         counters.forget(chatId: chatId)
@@ -483,6 +484,9 @@ extension MessengerEngine {
             group.cancelAll()
         }
         try? await relay.deleteAllUserData(uid: userId)
+        if let blobs {
+            for p in meta.pendingBlobs ?? [] { try? await blobs.delete(id: p.id) }
+        }
         for key in hmacKeys.keys { invalidateHmacKey(key) }
         ratchets.removeAll()
         pendingHeals.removeAll()

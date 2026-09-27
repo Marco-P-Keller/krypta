@@ -62,6 +62,50 @@ public protocol Relay: AnyObject, Sendable {
     func keyCommitments(uid: String, since: Int?) async throws -> [JSONObject]
 }
 
+/// Wo verschlüsselte Anhänge auf dem Server liegen — in der App Firebase
+/// Storage, in Tests ein Wörterbuch. Der Server kennt nur Kennung und Größe.
+public protocol BlobStore: AnyObject, Sendable {
+    /// Hochladen, angemeldet (der Server begrenzt Größe und Menge).
+    func upload(_ blob: Data, id: String) async throws
+    /// Holen ohne Anmeldung: wer die zufällige Kennung kennt, darf lesen.
+    func download(id: String, maxSize: Int) async throws -> Data
+    /// Löschen darf nur, wer hochgeladen hat.
+    func delete(id: String) async throws
+}
+
+public final class MemoryBlobStore: BlobStore, @unchecked Sendable {
+    private let lock = NSLock()
+    private var blobs: [String: Data] = [:]
+    public var failUploads = false
+    public var failDownloads = false
+
+    public init() {}
+
+    struct Offline: Error {}
+    struct Missing: Error {}
+
+    public func upload(_ blob: Data, id: String) async throws {
+        try lock.withLock {
+            if failUploads { throw Offline() }
+            blobs[id] = blob
+        }
+    }
+
+    public func download(id: String, maxSize: Int) async throws -> Data {
+        try lock.withLock {
+            if failDownloads { throw Offline() }
+            guard let blob = blobs[id], blob.count <= maxSize else { throw Missing() }
+            return blob
+        }
+    }
+
+    public func delete(id: String) async throws { _ = lock.withLock { blobs.removeValue(forKey: id) } }
+
+    /// Für Tests: was noch auf dem Server liegt.
+    public var storedIds: Set<String> { lock.withLock { Set(blobs.keys) } }
+    public func blob(_ id: String) -> Data? { lock.withLock { blobs[id] } }
+}
+
 /// Verschlüsselter lokaler Speicher, pro Slot ein Blob.
 public protocol Vault: AnyObject, Sendable {
     func load(_ slot: String) throws -> Data?

@@ -1,5 +1,7 @@
+import AVFoundation
 import KryptaMessenger
 import KryptaWallet
+import PhotosUI
 import SwiftUI
 
 /// Ein Chat — aufgebaut wie Nachrichten.
@@ -28,6 +30,17 @@ struct ConversationView: View {
     /// Antwort auf oder Bearbeitung einer Nachricht (Kennung).
     @State private var context: ComposeContext?
     @State private var scrollTarget: String?
+    // Anhänge
+    @State private var showPhotos = false
+    @State private var photoItem: PhotosPickerItem?
+    @State private var showCamera = false
+    @State private var showFiles = false
+    @State private var showVoice = false
+    @State private var preparing = false
+    @State private var pendingAttachment: PendingAttachment?
+    @State private var attachmentError: String?
+    @State private var viewing: Message?
+    @State private var viewingOnce: OnceAttachment?
     @FocusState private var composerFocused: Bool
 
     var body: some View {
@@ -141,7 +154,15 @@ struct ConversationView: View {
         }
         .alert("Einmalige Nachricht öffnen?", isPresented: Binding(get: { oneTimeTarget != nil }, set: { if !$0 { oneTimeTarget = nil } }), presenting: oneTimeTarget) { m in
             Button("Abbrechen", role: .cancel) {}
-            Button("Öffnen") { oneTimeText = engine.consumeOneTime(chatId: chatId, messageId: m.id) }
+            Button("Öffnen") {
+                if m.attachment != nil {
+                    if let opened = engine.openOneTimeAttachment(chatId: chatId, messageId: m.id) {
+                        viewingOnce = OnceAttachment(data: opened.0, attachment: opened.1)
+                    }
+                } else {
+                    oneTimeText = engine.consumeOneTime(chatId: chatId, messageId: m.id)
+                }
+            }
         } message: { _ in
             Text("Du kannst sie nur einmal ansehen. Sobald du sie schließt, ist sie für immer weg.")
         }
@@ -157,6 +178,64 @@ struct ConversationView: View {
             Button("OK", role: .cancel) {}
         } message: {
             Text(payHint ?? "")
+        }
+        .photosPicker(isPresented: $showPhotos, selection: $photoItem, matching: .any(of: [.images, .videos]))
+        .onChange(of: photoItem) { _, item in
+            guard let item else { return }
+            photoItem = nil
+            prepare { try await Self.load(item) }
+        }
+        .fileImporter(isPresented: $showFiles, allowedContentTypes: [.item]) { result in
+            guard case .success(let url) = result else { return }
+            prepare { try AttachmentPreparer.file(at: url) }
+        }
+        .fullScreenCover(isPresented: $showCamera) {
+            CameraPicker { result in
+                showCamera = false
+                switch result {
+                case .photo(let image)?: prepare { try AttachmentPreparer.image(from: image) }
+                case .movie(let url)?: prepare { try await AttachmentPreparer.video(at: url) }
+                case nil: break
+                }
+            }
+            .ignoresSafeArea()
+        }
+        .sheet(isPresented: $showVoice) {
+            VoiceRecorderSheet { url, duration in
+                prepare(sendDirectly: true) {
+                    defer { try? FileManager.default.removeItem(at: url) }
+                    return try AttachmentPreparer.audio(at: url, duration: duration)
+                }
+            }
+        }
+        .sheet(item: $pendingAttachment) { pending in
+            AttachmentComposeSheet(pending: pending) { out, caption, once in
+                sendAttachment(out, caption: caption, once: once, chat: chat)
+            }
+        }
+        .fullScreenCover(item: $viewing) { m in
+            ShieldedSheet {
+                if let a = m.attachment, let data = engine.attachmentData(m) {
+                    AttachmentViewer(data: data, attachment: a)
+                }
+            }
+        }
+        .fullScreenCover(item: $viewingOnce) { once in
+            ShieldedSheet {
+                AttachmentViewer(data: once.data, attachment: once.attachment, once: true)
+            }
+        }
+        .overlay {
+            if preparing {
+                ProgressView("Wird vorbereitet …")
+                    .padding(20)
+                    .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+            }
+        }
+        .alert("Anhang", isPresented: Binding(get: { attachmentError != nil }, set: { if !$0 { attachmentError = nil } })) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text(attachmentError ?? "")
         }
         .fullScreenCover(isPresented: Binding(get: { oneTimeText != nil }, set: { if !$0 { oneTimeText = nil } })) {
             ScreenshotShield(isEnabled: app.screenshotShield) {
@@ -298,6 +377,23 @@ struct ConversationView: View {
 
     private func tapped(_ m: Message) {
         let mine = m.senderId == engine.userId
+        if let a = m.attachment, !(m.oneTime && !mine), !(mine && m.status == .failed) {
+            if a.state == .failed && !mine {
+                engine.retryAttachment(chatId: chatId, messageId: m.id)
+            } else if a.state == .ready && a.kind != .audio {
+                viewing = m
+            }
+            return
+        }
+        if m.oneTime && !mine, let a = m.attachment {
+            // Erst öffnen, wenn der Anhang da ist.
+            if a.state == .ready {
+                oneTimeTarget = m
+            } else if a.state == .failed {
+                engine.retryAttachment(chatId: chatId, messageId: m.id)
+            }
+            return
+        }
         if m.payment != nil && !(mine && m.status == .failed) {
             paymentDetail = m
         } else if mine && m.status == .failed {
@@ -375,6 +471,7 @@ struct ConversationView: View {
                         chatTimer: chat.timer, chatAfterRead: chat.deleteAfterRead,
                         askPassword: { askPassword = true },
                         payBitcoin: nil,
+                        attach: attachmentActions,
                         send: { send(chat: chat) }
                     )
                 }
@@ -415,6 +512,7 @@ struct ConversationView: View {
                     chatTimer: chat.timer, chatAfterRead: chat.deleteAfterRead,
                     askPassword: { askPassword = true },
                     payBitcoin: wallet == nil ? nil : { startPayment(contact) },
+                    attach: attachmentActions,
                     send: { send(chat: chat) }
                 )
             }
@@ -435,6 +533,77 @@ struct ConversationView: View {
         case .noWallet?, .cannotMessage?:
             payHint = String(localized: "Gerade nicht möglich.")
         }
+    }
+
+    // MARK: - Anhänge
+
+    /// Anhänge nur mit Speicher und nur an die native App (Flutter kennt sie nicht).
+    private var attachmentActions: AttachmentActions? {
+        guard engine.supportsAttachments, engine.supportsExtras(chatId: chatId) else { return nil }
+        return AttachmentActions(
+            photo: { showPhotos = true },
+            camera: {
+                Task {
+                    if await Self.cameraAllowed() {
+                        showCamera = true
+                    } else {
+                        attachmentError = String(localized: "Erlaube die Kamera in den iOS-Einstellungen unter Krypta.")
+                    }
+                }
+            },
+            file: { showFiles = true },
+            voice: { showVoice = true }
+        )
+    }
+
+    /// Die Frage nach der Kamera (und fürs Video nach dem Mikrofon) selbst
+    /// stellen: sie gilt nicht als Verlassen der App.
+    private static func cameraAllowed() async -> Bool {
+        if AVCaptureDevice.authorizationStatus(for: .video) == .notDetermined {
+            _ = await SystemPrompt.during { await AVCaptureDevice.requestAccess(for: .video) }
+        }
+        if AVCaptureDevice.authorizationStatus(for: .audio) == .notDetermined {
+            _ = await SystemPrompt.during { await AVCaptureDevice.requestAccess(for: .audio) }
+        }
+        return AVCaptureDevice.authorizationStatus(for: .video) == .authorized
+    }
+
+    /// Aus der Mediathek: Video als Datei, Foto als Daten.
+    private static func load(_ item: PhotosPickerItem) async throws -> OutgoingAttachment {
+        if item.supportedContentTypes.contains(where: { $0.conforms(to: .movie) }),
+           let movie = try await item.loadTransferable(type: PickedMovie.self) {
+            defer { try? FileManager.default.removeItem(at: movie.url) }
+            return try await AttachmentPreparer.video(at: movie.url)
+        }
+        guard let data = try await item.loadTransferable(type: Data.self) else { throw AttachmentPreparer.Failure.unreadable }
+        return try AttachmentPreparer.image(from: data)
+    }
+
+    /// Aufbereiten (Metadaten weg), dann Vorschau oder gleich senden.
+    private func prepare(sendDirectly: Bool = false, _ work: @escaping @MainActor () async throws -> OutgoingAttachment) {
+        preparing = true
+        Task {
+            defer { preparing = false }
+            do {
+                let out = try await work()
+                if sendDirectly, let chat = engine.chat(chatId) {
+                    sendAttachment(out, caption: "", once: false, chat: chat)
+                } else {
+                    pendingAttachment = PendingAttachment(out: out)
+                }
+            } catch {
+                Haptics.error()
+                attachmentError = (error as? LocalizedError)?.errorDescription ?? String(localized: "Der Anhang konnte nicht vorbereitet werden.")
+            }
+        }
+    }
+
+    private func sendAttachment(_ out: OutgoingAttachment, caption: String, once: Bool, chat: Chat) {
+        var options = once ? SendOptions(oneTime: true) : SendOptions(selfDestruct: chat.timer, fromChatRule: true)
+        if case .reply(let id)? = context { options.replyTo = id }
+        context = nil
+        Haptics.confirm()
+        Task { await engine.sendAttachment(chatId: chatId, out, caption: caption, options: options) }
     }
 
     /// Leiste über der Eingabe: worauf man antwortet oder was man bearbeitet.
@@ -497,6 +666,13 @@ struct ConversationView: View {
         Haptics.confirm()
         Task { await engine.send(chatId: chatId, text: text, options: options) }
     }
+}
+
+/// Ein einmal-Anhang, gerade geöffnet.
+struct OnceAttachment: Identifiable {
+    let id = UUID()
+    let data: Data
+    let attachment: Attachment
 }
 
 /// Worauf sich die nächste Eingabe bezieht.

@@ -17,7 +17,7 @@ final class FirebaseRelay: Relay, @unchecked Sendable {
     /// Sealed Sender: eine zweite Firebase-App mit denselben Einstellungen,
     /// bei der sich nie jemand anmeldet. Was über sie geschrieben wird, trägt
     /// kein Konto — der Server sieht nicht, von wem es kommt.
-    private static let sealedAppName = "krypta-sealed"
+    static let sealedAppName = "krypta-sealed"
 
     /// Einmal beim Start, direkt nach `FirebaseApp.configure()`.
     static func configureSealedApp() {

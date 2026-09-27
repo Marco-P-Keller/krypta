@@ -51,6 +51,9 @@ targets:
         product: FirebaseFirestore
       - package: Firebase
         product: FirebaseMessaging
+      # Anhänge (verschlüsselte Blobs), siehe firebase/storage.rules.
+      - package: Firebase
+        product: FirebaseStorage
       - target: KryptaNotifications
     # Nur, was sich nicht über INFOPLIST_KEY_* setzen lässt; der Rest wird
     # erzeugt (GENERATE_INFOPLIST_FILE) und zusammengeführt.
@@ -95,7 +98,8 @@ targets:
         INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents: YES
         INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone: UIInterfaceOrientationPortrait
         INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad: "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight"
-        INFOPLIST_KEY_NSCameraUsageDescription: "Die Kamera scannt den QR-Code eines Kontakts."
+        INFOPLIST_KEY_NSCameraUsageDescription: "Die Kamera scannt QR-Codes und nimmt Fotos und Videos für deine Chats auf. Nichts davon landet in deiner Mediathek."
+        INFOPLIST_KEY_NSMicrophoneUsageDescription: "Das Mikrofon nimmt Sprachnachrichten und den Ton von Videos für deine Chats auf."
         INFOPLIST_KEY_NSFaceIDUsageDescription: "Face ID entsperrt Krypta, ohne dass du einen Code eingibst."
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         CODE_SIGN_STYLE: Automatic

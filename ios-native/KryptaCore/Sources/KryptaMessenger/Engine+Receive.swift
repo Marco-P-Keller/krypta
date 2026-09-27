@@ -148,9 +148,12 @@ extension MessengerEngine {
         // In Gruppen gibt es keine Zahlungen.
         m.payment = m.isPasswordProtected || m.oneTime || inGroup ? nil : Self.payment(in: inner)
         if let re = inner["_re"]?.stringValue, (8...64).contains(re.count) { m.replyTo = re }
+        // Anhänge nur ohne Passwort und nur, wenn es einen Blob-Speicher gibt.
+        if blobs != nil, !m.isPasswordProtected, m.payment == nil { m.attachment = Self.parseAttachment(inner["_att"]) }
         append(m, to: target)
         surfaceIfArchived(target)
         markProcessed(env.messageId)
+        if m.attachment != nil { fetchAttachment(chatId: target, messageId: m.id) }
         // Eine angekündigte Zahlung: die Wallet prüft sie an der Blockchain.
         if let payment = m.payment { wallet?.registerClaim(payment, from: env.senderId, messageId: env.messageId, note: content) }
 
@@ -245,6 +248,7 @@ extension MessengerEngine {
         case "read": applyRead(ctrl.messageId, from: contact.id)
         case "delete": applyRemoteDelete(ctrl.messageId, from: contact.id)
         case "unlock": applyUnlocked(ctrl.messageId)
+        case "fetched": applyFetched(messageId: ctrl.messageId, from: contact.id)
         case "accepted":
             if self.contact(contact.id)?.requestState == .outgoing {
                 updateContact(contact.id) { $0.requestState = .established }

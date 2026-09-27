@@ -45,6 +45,18 @@ struct EngineMeta: Codable {
     /// Gruppen, aus denen ich ausgetreten bin: eine alte Einladung holt mich
     /// nicht zurück.
     var leftGroups: [String]?
+    /// Anhänge, deren Inhalt im Tresor liegt (Kennungen).
+    var attachmentSlots: [String]?
+    /// Eigene Blobs auf dem Server, die noch jemand holen muss.
+    var pendingBlobs: [PendingBlob]?
+
+    struct PendingBlob: Codable, Equatable {
+        let id: String
+        /// Die Nachricht dazu: `fetched` nennt sie.
+        let messageId: String
+        var waiting: [String]
+        let at: Date
+    }
 
     struct PendingBurn: Codable, Equatable {
         let chatId: String
@@ -120,6 +132,8 @@ public final class MessengerEngine {
 
     @ObservationIgnored let relay: Relay
     @ObservationIgnored let vault: Vault
+    /// Server für Anhänge; ohne ihn keine Anhänge.
+    @ObservationIgnored let blobs: BlobStore?
     @ObservationIgnored let config: EngineConfig
 
     @ObservationIgnored var meta = EngineMeta()
@@ -141,6 +155,8 @@ public final class MessengerEngine {
     @ObservationIgnored var timerTask: Task<Void, Never>?
     @ObservationIgnored var jitterTasks: [Task<Void, Never>] = []
     @ObservationIgnored var transparency: [String: TransparencyChain] = [:]
+    @ObservationIgnored var sweepScheduled = false
+    @ObservationIgnored var downloadsInFlight: Set<String> = []
     /// Wann der Server versiegeltes Senden an einen Kontakt zuletzt abgelehnt hat.
     @ObservationIgnored var sealedDeniedAt: [String: Date] = [:]
 
@@ -160,11 +176,12 @@ public final class MessengerEngine {
     static let unlockCooldown: TimeInterval = 30
     static let pendingBurnMaxAge: TimeInterval = 30 * 24 * 3600
 
-    public init(userId: String, identity: KeyPair, relay: Relay, vault: Vault, config: EngineConfig = EngineConfig()) {
+    public init(userId: String, identity: KeyPair, relay: Relay, vault: Vault, blobs: BlobStore? = nil, config: EngineConfig = EngineConfig()) {
         self.userId = userId
         self.identity = identity
         self.relay = relay
         self.vault = vault
+        self.blobs = blobs
         self.config = config
         load()
     }
@@ -245,7 +262,10 @@ public final class MessengerEngine {
         // Der Name in der Mitteilung ist der Chatname.
         onContactsChanged?()
     }
-    func saveMessages(_ chatId: String) { vault.saveValue(messages[chatId] ?? [], slot: "messages.\(chatId)") }
+    func saveMessages(_ chatId: String) {
+        vault.saveValue(messages[chatId] ?? [], slot: "messages.\(chatId)")
+        scheduleAttachmentSweep()
+    }
     func saveMeta() { vault.saveValue(meta, slot: "meta") }
     func savePreKeys() { vault.saveValue(preKeys, slot: "prekeys") }
     func saveCounters() { vault.saveValue(counters, slot: "control") }
@@ -336,6 +356,7 @@ public final class MessengerEngine {
         retryPendingBurns()
         verifyAllTransparency()
         resyncGroups()
+        resumeAttachments()
     }
 
     /// Hintergrund: Empfang und Uhr anhalten. Offene Meldungen bleiben liegen.

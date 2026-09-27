@@ -178,10 +178,14 @@ final class AppModel {
         if engine == nil || engine?.userId != uid {
             guard let vault = try? FileVault() else { return }
             var relay: Relay = FirebaseRelay()
+            var blobs: BlobStore = FirebaseBlobStore()
             #if DEBUG
-            if DemoMode.isOffline { relay = MemoryRelay() }
+            if DemoMode.isOffline {
+                relay = MemoryRelay()
+                blobs = MemoryBlobStore()
+            }
             #endif
-            engine = MessengerEngine(userId: uid, identity: identity, relay: relay, vault: vault)
+            engine = MessengerEngine(userId: uid, identity: identity, relay: relay, vault: vault, blobs: blobs)
             self.vault = vault
             wallet?.stop()
             wallet = nil
@@ -251,6 +255,8 @@ final class AppModel {
     }
 
     func lock() {
+        // Entschlüsselte Kopien zum Ansehen (Video, Datei) nie liegen lassen.
+        AttachmentPreparer.clearTemporaryFiles()
         guard let target = lockTarget, phase == .unlocked || phase == .unlocking || phase == .vaultPassword else { return }
         engine?.stop()
         wallet?.stop()
@@ -360,6 +366,7 @@ final class AppModel {
         wallet = nil
         Keychain.wipe()
         FileVault.destroy()
+        AttachmentPreparer.clearTemporaryFiles()
         PushService.shared.clearDelivered()
         await finishWipe(engine: engine, uid: uid)
     }

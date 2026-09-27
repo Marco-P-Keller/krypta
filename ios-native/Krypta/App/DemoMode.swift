@@ -71,10 +71,11 @@ enum DemoMode {
 
     static func makeEngine() async -> MessengerEngine {
         let relay = MemoryRelay()
+        let blobs = MemoryBlobStore()
         let config = EngineConfig(ackJitter: 0...0, announceTimeout: 1, tick: 1)
-        let me = MessengerEngine(userId: "demoUserMe00000000001", identity: .generate(), relay: relay, vault: MemoryVault(), config: config)
-        let lena = MessengerEngine(userId: "demoLena000000000002", identity: .generate(), relay: relay, vault: MemoryVault(), config: config)
-        let jonas = MessengerEngine(userId: "demoJonas00000000003", identity: .generate(), relay: relay, vault: MemoryVault(), config: config)
+        let me = MessengerEngine(userId: "demoUserMe00000000001", identity: .generate(), relay: relay, vault: MemoryVault(), blobs: blobs, config: config)
+        let lena = MessengerEngine(userId: "demoLena000000000002", identity: .generate(), relay: relay, vault: MemoryVault(), blobs: blobs, config: config)
+        let jonas = MessengerEngine(userId: "demoJonas00000000003", identity: .generate(), relay: relay, vault: MemoryVault(), blobs: blobs, config: config)
         peers = [lena, jonas]
         await me.start()
         await lena.start()

@@ -474,6 +474,7 @@ private struct ChatRow: View {
     }
 }
 
+@MainActor
 enum MessagePreview {
     static func text(for m: Message, me: String, engine: MessengerEngine? = nil) -> String {
         if let event = m.systemEvent {
@@ -487,6 +488,10 @@ enum MessagePreview {
         if m.payment != nil { return m.senderId == me ? String(localized: "₿ Du hast Bitcoin gesendet") : String(localized: "₿ Bitcoin-Zahlung") }
         if m.isPasswordProtected && !m.passwordUnlocked { return String(localized: "🔒 Geschützte Nachricht") }
         if m.oneTime { return String(localized: "Einmal ansehen") }
+        if let a = m.attachment {
+            let caption = m.text ?? ""
+            return caption.isEmpty ? AttachmentLabel.text(a) : AttachmentLabel.text(a) + " " + caption
+        }
         return m.text ?? ""
     }
 }

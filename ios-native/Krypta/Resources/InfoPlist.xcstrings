@@ -7,43 +7,43 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Die Kamera scannt den QR-Code eines Kontakts."
+            "value": "Die Kamera scannt QR-Codes und nimmt Fotos und Videos für deine Chats auf. Nichts davon landet in deiner Mediathek."
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "The camera scans a contact’s QR code."
+            "value": "The camera scans QR codes and takes photos and videos for your chats. None of it ends up in your photo library."
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "La cámara escanea el código QR de un contacto."
+            "value": "La cámara escanea códigos QR y toma fotos y vídeos para tus chats. Nada de eso llega a tu fototeca."
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "L’appareil photo scanne le code QR d’un contact."
+            "value": "L’appareil photo scanne les codes QR et prend des photos et vidéos pour tes discussions. Rien n’arrive dans ta photothèque."
           }
         },
         "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "La fotocamera scansiona il codice QR di un contatto."
+            "value": "La fotocamera scansiona codici QR e scatta foto e video per le tue chat. Niente finisce nella tua libreria foto."
           }
         },
         "nl": {
           "stringUnit": {
             "state": "translated",
-            "value": "De camera scant de QR-code van een contact."
+            "value": "De camera scant QR-codes en maakt foto’s en video’s voor je chats. Niets daarvan komt in je fotobibliotheek."
           }
         },
         "pt": {
           "stringUnit": {
             "state": "translated",
-            "value": "A câmera escaneia o código QR de um contato."
+            "value": "A câmera escaneia códigos QR e tira fotos e vídeos para suas conversas. Nada disso vai para sua fototeca."
           }
         }
       }
@@ -91,6 +91,53 @@
           "stringUnit": {
             "state": "translated",
             "value": "O Face ID desbloqueia o Krypta sem digitar um código."
+          }
+        }
+      }
+    },
+    "NSMicrophoneUsageDescription": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Das Mikrofon nimmt Sprachnachrichten und den Ton von Videos für deine Chats auf."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The microphone records voice messages and the sound of videos for your chats."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "El micrófono graba mensajes de voz y el sonido de los vídeos para tus chats."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Le micro enregistre les messages vocaux et le son des vidéos pour tes discussions."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Il microfono registra messaggi vocali e l’audio dei video per le tue chat."
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "De microfoon neemt spraakberichten en het geluid van video’s voor je chats op."
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "O microfone grava mensagens de voz e o som dos vídeos para suas conversas."
           }
         }
       }

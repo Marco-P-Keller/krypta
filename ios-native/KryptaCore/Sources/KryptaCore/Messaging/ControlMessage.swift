@@ -88,6 +88,8 @@ public enum ControlMessagePolicy {
     public static let long: TimeInterval = 30 * 24 * 3600
     public static let stateChanging: Set<String> = [
         "chatGone", "burned", "unlock", "delete", "clearMine", "gone", "accepted", "delivered",
+        // Anhang abgeholt: der Absender löscht den Blob vom Server.
+        "fetched",
     ]
 
     public static func maxAge(_ type: String) -> TimeInterval {

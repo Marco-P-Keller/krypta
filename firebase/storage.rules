@@ -1,0 +1,44 @@
+rules_version = '2';
+
+// Anhänge von Krypta (ios-native/…/Engine+Attachments.swift).
+//
+// Unter att/<Kennung> liegt je Anhang ein verschlüsselter Blob. Die Kennung
+// ist zufällig (128 Bit, 32 Hex-Zeichen), Schlüssel und Hash reisen nur in
+// der Ende-zu-Ende-verschlüsselten Nachricht. Der Server sieht Größe und
+// Zeit, nicht Inhalt, nicht Empfänger.
+//
+// - Hochladen: angemeldet, nur neu (kein Überschreiben), höchstens so groß
+//   wie der größte erlaubte Anhang nach dem Auffüllen, als
+//   application/octet-stream, und mit der eigenen Kennung als `o`.
+// - Holen: ohne Anmeldung, wer die Kennung kennt. So erfährt Firebase nicht,
+//   welches Konto einen Anhang abholt (wie Sealed Sender). Auflisten nie.
+// - Löschen: nur, wer hochgeladen hat. Was niemand holt, löscht die Cloud
+//   Function cleanupExpiredAttachments nach 48 Stunden.
+service firebase.storage {
+  match /b/{bucket}/o {
+    match /att/{blobId} {
+      function validId() {
+        return blobId.matches('^[0-9a-f]{32}$');
+      }
+
+      allow get: if validId();
+      allow list: if false;
+      allow create: if request.auth != null
+                    && validId()
+                    && resource == null
+                    && request.resource.size > 41
+                    && request.resource.size <= 28000000
+                    && request.resource.contentType == 'application/octet-stream'
+                    && request.resource.metadata.keys().hasOnly(['o'])
+                    && request.resource.metadata.o == request.auth.uid;
+      allow update: if false;
+      allow delete: if request.auth != null
+                    && validId()
+                    && resource.metadata.o == request.auth.uid;
+    }
+
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}

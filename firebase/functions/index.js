@@ -208,3 +208,44 @@ exports.cleanupExpiredMessages = functions.pubsub
 
     console.log(`Expired message cleanup: deleted ${totalDeleted} messages`);
   });
+
+/**
+ * Anhänge (ios-native/…/Engine+Attachments.swift): verschlüsselte Blobs unter
+ * att/<Kennung> in Firebase Storage. Der Absender löscht seinen Blob, sobald
+ * alle Empfänger ihn geholt haben. Was niemand holt, liegt hier höchstens
+ * 48 Stunden — doppelt so lange wie eine Nachricht, damit ein Empfänger, der
+ * seine Nachricht kurz vor Ablauf abholt, auch den Anhang noch bekommt.
+ */
+const ATTACHMENT_TTL_MS = 48 * 60 * 60 * 1000;
+
+function attachmentExpired(timeCreated, now) {
+  const created = Date.parse(timeCreated || "");
+  if (Number.isNaN(created)) return false;
+  return now - created > ATTACHMENT_TTL_MS;
+}
+exports.attachmentExpired = attachmentExpired;
+
+exports.cleanupExpiredAttachments = functions.pubsub
+  .schedule("every 1 hours")
+  .onRun(async () => {
+    const bucket = admin.storage().bucket();
+    const now = Date.now();
+    let pageToken;
+    let deleted = 0;
+    do {
+      const [files, next] = await bucket.getFiles({
+        prefix: "att/",
+        maxResults: 1000,
+        autoPaginate: false,
+        pageToken,
+      });
+      for (const file of files) {
+        if (attachmentExpired(file.metadata && file.metadata.timeCreated, now)) {
+          await file.delete({ ignoreNotFound: true });
+          deleted += 1;
+        }
+      }
+      pageToken = next && next.pageToken;
+    } while (pageToken);
+    console.log(`Expired attachment cleanup: deleted ${deleted} blobs`);
+  });

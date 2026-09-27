@@ -10,6 +10,7 @@ final class GroupTests: XCTestCase {
     let bobId = "bobUid0000000000000002"
     let carolId = "carolUid00000000000003"
     var relay: MemoryRelay!
+    var blobs: MemoryBlobStore!
     var alice: MessengerEngine!
     var bob: MessengerEngine!
     var carol: MessengerEngine!
@@ -17,8 +18,9 @@ final class GroupTests: XCTestCase {
 
     override func setUp() async throws {
         relay = MemoryRelay()
+        blobs = MemoryBlobStore()
         func make(_ id: String) -> MessengerEngine {
-            MessengerEngine(userId: id, identity: .generate(), relay: relay, vault: MemoryVault(), config: .immediate)
+            MessengerEngine(userId: id, identity: .generate(), relay: relay, vault: MemoryVault(), blobs: blobs, config: .immediate)
         }
         alice = make(aliceId)
         bob = make(bobId)
@@ -259,6 +261,18 @@ final class GroupTests: XCTestCase {
         await bob.applyGroupUpdate(from: bob.contact(aliceId)!, map: map)
         XCTAssertNil(groupChat(bob))
         _ = a
+    }
+
+    func testAttachmentInGroupLeavesTheServerWhenEveryoneHasIt() async throws {
+        let (a, b, c) = try await makeGroup()
+        let data = Data.random(count: 20_000)
+        await alice.sendAttachment(chatId: a, OutgoingAttachment(data: data, kind: .file, mime: "application/pdf", name: "Route.pdf"), caption: "Karte")
+        func ready(_ e: MessengerEngine, _ chat: String) -> Bool { e.messages(in: chat).last?.attachment?.state == .ready }
+        await settle(ready(self.bob, b) && ready(self.carol, c) && self.blobs.storedIds.isEmpty)
+        XCTAssertEqual(bob.attachmentData(try XCTUnwrap(bob.messages(in: b).last)), data)
+        XCTAssertEqual(carol.messages(in: c).last?.attachment?.name, "Route.pdf")
+        XCTAssertEqual(carol.messages(in: c).last?.text, "Karte")
+        XCTAssertTrue(blobs.storedIds.isEmpty)
     }
 
     func testBurnAfterReadReachesTheSender() async throws {
