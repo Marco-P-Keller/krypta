@@ -97,16 +97,42 @@ extension MessengerEngine {
         learnSealedKey(from: env.senderId, inner: inner)
         learnBitcoin(from: env.senderId, inner: inner)
 
-        // Reaktion oder Bearbeitung: kein eigener Eintrag im Verlauf.
-        if applySide(chatId: chat.id, senderId: env.senderId, inner: inner) {
+        // Gruppen: Stand, Austritt, und wohin die Nachricht gehört.
+        if let map = inner["_grp"]?.objectValue {
             markProcessed(env.messageId)
+            await applyGroupUpdate(from: contact, map: map)
+            return
+        }
+        if let gid = inner["_gl"]?.stringValue {
+            markProcessed(env.messageId)
+            await applyGroupLeave(from: env.senderId, groupId: gid)
+            return
+        }
+        guard let target = targetChat(for: inner, pairChatId: chat.id, senderId: env.senderId) else {
+            markProcessed(env.messageId)
+            return
+        }
+        let inGroup = target != chat.id
+        if inGroup, messages(in: target).contains(where: { $0.id == env.messageId }) { return }
+
+        // Reaktion oder Bearbeitung: kein eigener Eintrag im Verlauf.
+        if applySide(chatId: target, senderId: env.senderId, inner: inner) {
+            markProcessed(env.messageId)
+            return
+        }
+        // Hinweis aus einer Gruppe (Bildschirmfoto, Aufnahme).
+        if inGroup, let ev = inner["_ev"]?.stringValue {
+            markProcessed(env.messageId)
+            if ev == "screenshot" || ev == "recording" {
+                appendSystemEvent(chatId: target, kind: ev == "screenshot" ? .screenshot : .screenRecording, senderId: env.senderId, messageId: env.messageId)
+            }
             return
         }
 
         let now = Date()
-        let isRead = activeChatId == chat.id && isForeground
+        let isRead = activeChatId == target && isForeground
         var m = Message(
-            id: env.messageId, chatId: chat.id, senderId: env.senderId, recipientId: userId,
+            id: env.messageId, chatId: target, senderId: env.senderId, recipientId: userId,
             text: content, timestamp: now, status: isRead ? .read : .delivered
         )
         m.deliveredAt = now
@@ -119,17 +145,18 @@ extension MessengerEngine {
         m.isPasswordProtected = Self.flag(inner, "_pw") || Self.flag(inner, "pw")
         m.passwordUnlocked = !m.isPasswordProtected
         // Eine Zahlung ist nie verschlüsselt oder einmalig; so etwas ist keine.
-        m.payment = m.isPasswordProtected || m.oneTime ? nil : Self.payment(in: inner)
+        // In Gruppen gibt es keine Zahlungen.
+        m.payment = m.isPasswordProtected || m.oneTime || inGroup ? nil : Self.payment(in: inner)
         if let re = inner["_re"]?.stringValue, (8...64).contains(re.count) { m.replyTo = re }
-        append(m, to: chat.id)
-        surfaceIfArchived(chat.id)
+        append(m, to: target)
+        surfaceIfArchived(target)
         markProcessed(env.messageId)
         // Eine angekündigte Zahlung: die Wallet prüft sie an der Blockchain.
         if let payment = m.payment { wallet?.registerClaim(payment, from: env.senderId, messageId: env.messageId, note: content) }
 
         // Zustellung wird immer gemeldet: an ihr hängt der Start jeder Frist.
         sendControlLater(chatId: chat.id, contact: contact, type: "delivered", messageId: env.messageId)
-        if isRead { sendReadReceipt(chatId: chat.id, senderId: env.senderId, messageId: env.messageId) }
+        if isRead { sendReadReceipt(chatId: target, senderId: env.senderId, messageId: env.messageId) }
     }
 
     /// Dart schreibt Flags als `true`, ältere Fassungen auch als `"true"`.
@@ -214,9 +241,9 @@ extension MessengerEngine {
         saveCounters()
 
         switch ctrl.type {
-        case "delivered": applyDelivered(ctrl.messageId, reportedMs: ctrl.timestamp)
-        case "read": applyRead(ctrl.messageId)
-        case "delete": applyRemoteDelete(ctrl.messageId)
+        case "delivered": applyDelivered(ctrl.messageId, reportedMs: ctrl.timestamp, from: contact.id)
+        case "read": applyRead(ctrl.messageId, from: contact.id)
+        case "delete": applyRemoteDelete(ctrl.messageId, from: contact.id)
         case "unlock": applyUnlocked(ctrl.messageId)
         case "accepted":
             if self.contact(contact.id)?.requestState == .outgoing {
@@ -224,7 +251,7 @@ extension MessengerEngine {
                 await applyDefaultRule(chatId)
             }
         case "clearMine": applyPeerClear(chatId: chatId, peerId: contact.id)
-        case "burned": applyBurned(chatId: chatId, messageId: ctrl.messageId)
+        case "burned": applyBurned(chatId: chatId, messageId: ctrl.messageId, from: contact.id)
         case "chatGone": applyPeerChatGone(chatId: chatId, peerId: contact.id)
         case "gone": applyPeerGone(chatId: chatId, peerId: contact.id)
         case "screenshot": appendSystemEvent(chatId: chatId, kind: .screenshot, senderId: contact.id, messageId: ctrl.messageId)
@@ -240,9 +267,10 @@ extension MessengerEngine {
 
     /// Zustellung meiner Nachricht; der Zeitpunkt aus fremder Uhr wird gekappt
     /// und nie verschoben, wenn er schon steht.
-    func applyDelivered(_ messageId: String, reportedMs: Int) {
+    func applyDelivered(_ messageId: String, reportedMs: Int, from peer: String) {
         guard let (chatId, i) = locate(messageId), messages[chatId]![i].senderId == userId else { return }
         retractServerCopy(messageId: messageId)
+        retractServerCopy(messageId: Self.copyKey(messageId, peer))
         updateMessage(chatId, messageId) { m in
             if m.deliveredAt == nil {
                 m.deliveredAt = SelfDestructPolicy.deliveredAt(reported: Date(timeIntervalSince1970: Double(reportedMs) / 1000), sent: m.timestamp, now: Date())
@@ -251,8 +279,9 @@ extension MessengerEngine {
         }
     }
 
-    func applyRead(_ messageId: String) {
+    func applyRead(_ messageId: String, from peer: String) {
         retractServerCopy(messageId: messageId)
+        retractServerCopy(messageId: Self.copyKey(messageId, peer))
         guard let (chatId, i) = locate(messageId), messages[chatId]![i].senderId == userId, messages[chatId]![i].status != .read else { return }
         updateMessage(chatId, messageId) {
             $0.status = .read
@@ -261,9 +290,9 @@ extension MessengerEngine {
         }
     }
 
-    /// Nur Nachrichten der Gegenseite darf sie zurücknehmen.
-    func applyRemoteDelete(_ messageId: String) {
-        guard let (chatId, i) = locate(messageId), messages[chatId]![i].senderId != userId else { return }
+    /// Nur ihre eigenen Nachrichten darf die Gegenseite zurücknehmen.
+    func applyRemoteDelete(_ messageId: String, from peer: String) {
+        guard let (chatId, i) = locate(messageId, involving: peer), messages[chatId]![i].senderId == peer else { return }
         messages[chatId]!.remove(at: i)
         saveMessages(chatId)
     }
@@ -273,11 +302,21 @@ extension MessengerEngine {
         updateMessage(chatId, messageId) { if $0.isPasswordProtected { $0.passwordUnlocked = true } }
     }
 
-    func applyBurned(chatId: String, messageId: String) {
-        guard let m = messages[chatId]?.first(where: { $0.id == messageId }) else { return }
+    func applyBurned(chatId pairChatId: String, messageId: String, from peer: String) {
+        guard let (chatId, i) = locate(messageId, involving: peer) else { return }
+        let m = messages[chatId]![i]
         guard SelfDestructPolicy.acceptBurn(m, me: userId, chatEphemeral: chat(chatId)?.ruleIsEphemeral ?? false) else { return }
         messages[chatId]?.removeAll { $0.id == messageId }
         saveMessages(chatId)
+    }
+
+    /// Eine Nachricht im Einzelchat mit `peer` oder in einer Gruppe, in der
+    /// `peer` Mitglied ist (oder war).
+    func locate(_ messageId: String, involving peer: String) -> (chatId: String, index: Int)? {
+        for chat in chats where chat.recipientId == peer || chat.group.map({ $0.members.contains(peer) || $0.keys[peer] != nil }) ?? false {
+            if let i = messages[chat.id]?.firstIndex(where: { $0.id == messageId }) { return (chat.id, i) }
+        }
+        return nil
     }
 
     /// Die Gegenseite hat ihren Chat geleert: ihre Nachrichten gehen auch hier.
@@ -308,12 +347,12 @@ extension MessengerEngine {
         appendSystemEvent(chatId: chatId, kind: .accountDeleted, senderId: peerId, messageId: UUID().uuidString.lowercased())
     }
 
-    func appendSystemEvent(chatId: String, kind: SystemEventKind, senderId: String, messageId: String, timer: TimeInterval? = nil) {
+    func appendSystemEvent(chatId: String, kind: SystemEventKind, senderId: String, messageId: String, timer: TimeInterval? = nil, text: String? = nil) {
         guard !meta.processedIds.contains(messageId), !messages(in: chatId).contains(where: { $0.id == messageId }) else { return }
         let now = Date()
         let read = senderId == userId || (activeChatId == chatId && isForeground)
         let recipient = senderId == userId ? (chat(chatId)?.recipientId ?? "") : userId
-        var m = Message(id: messageId, chatId: chatId, senderId: senderId, recipientId: recipient, text: nil, timestamp: now, status: .delivered)
+        var m = Message(id: messageId, chatId: chatId, senderId: senderId, recipientId: recipient, text: text, timestamp: now, status: .delivered)
         m.readAt = read ? now : nil
         m.selfDestruct = timer
         m.systemEvent = kind

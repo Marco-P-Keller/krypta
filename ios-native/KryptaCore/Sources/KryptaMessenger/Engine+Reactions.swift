@@ -93,6 +93,10 @@ extension MessengerEngine {
     /// Eine Nachricht ohne eigenen Eintrag im Verlauf: Reaktion, Bearbeitung.
     /// Scheitert sie, bleibt es still bei der lokalen Änderung.
     func sendSide(chatId: String, fields: JSONObject, content: String = "") async {
+        if chat(chatId)?.isGroup == true {
+            await sendGroupSide(chatId: chatId, fields: fields, content: content)
+            return
+        }
         guard let chat = chat(chatId), let contact = contact(chat.recipientId) else { return }
         await enqueue(chatId) { [self] in
             guard let current = self.contact(contact.id), sendBlockReason(current) == nil, Self.understandsExtras(current) else { return }
@@ -107,6 +111,7 @@ extension MessengerEngine {
 
     /// Reagieren und Bearbeiten gehen in diesem Chat.
     public func supportsExtras(chatId: String) -> Bool {
+        if let g = group(chatId) { return !g.hasLeft }
         guard let chat = chat(chatId), let c = contact(chat.recipientId) else { return false }
         return sendBlockReason(c) == nil && Self.understandsExtras(c)
     }

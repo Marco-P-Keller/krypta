@@ -190,7 +190,8 @@ extension MessengerEngine {
 
     public func rename(chatId: String, to name: String) {
         let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmed.isEmpty, let chat = chat(chatId) else { return }
+        // Gruppen benennt die Verwalterin um (renameGroup), für alle.
+        guard !trimmed.isEmpty, let chat = chat(chatId), !chat.isGroup else { return }
         updateChat(chatId) { $0.name = trimmed }
         updateContact(chat.recipientId) { $0.displayName = trimmed }
     }
@@ -249,12 +250,16 @@ extension MessengerEngine {
 
     /// Nur eigene Nachrichten. Die Meldung darf das Löschen nicht aufhalten.
     public func deleteForEveryone(chatId: String, messageId: String) async {
-        guard let m = messages[chatId]?.first(where: { $0.id == messageId }), m.senderId == userId else { return }
-        if let chat = chat(chatId), let c = contact(chat.recipientId) {
+        guard let m = messages[chatId]?.first(where: { $0.id == messageId }), m.senderId == userId, let chat = chat(chatId) else { return }
+        let targets: [Contact] = chat.group.map { g in g.members.filter { $0 != userId }.compactMap(contact) }
+            ?? contact(chat.recipientId).map { [$0] } ?? []
+        if !targets.isEmpty {
             let timeout = config.announceTimeout
             await withTaskGroup(of: Void.self) { group in
                 group.addTask { @MainActor [self] in
-                    await sendControl(chatId: chatId, contact: c, type: "delete", messageId: messageId)
+                    for c in targets {
+                        await sendControl(chatId: chatId, contact: c, type: "delete", messageId: messageId)
+                    }
                 }
                 group.addTask { try? await Task.sleep(for: .seconds(timeout)) }
                 await group.next()
@@ -267,7 +272,8 @@ extension MessengerEngine {
     /// Chat leeren: meine Nachrichten gehen auch drüben.
     public func clearChat(_ chatId: String) async {
         let hasMine = messages(in: chatId).contains { $0.senderId == userId }
-        if hasMine, let chat = chat(chatId), let c = contact(chat.recipientId) {
+        // In Gruppen nur hier: „meine Nachrichten auch drüben" kennt die Gruppe nicht.
+        if hasMine, let chat = chat(chatId), !chat.isGroup, let c = contact(chat.recipientId) {
             await sendControlBounded(chatId: chatId, contact: c, type: "clearMine")
         }
         messages[chatId] = []
@@ -276,6 +282,11 @@ extension MessengerEngine {
 
     /// Chat löschen: Meldung, dann weg — mit Sitzung.
     public func deleteChat(_ chatId: String, announce: Bool = true) async {
+        // Eine Gruppe verlässt man zuerst, dann ist sie weg.
+        if let g = group(chatId) {
+            if announce && !g.hasLeft { await leaveGroup(chatId) }
+            if let id = group(chatId)?.id { remember(leftGroup: id) }
+        }
         guard deletingChats.insert(chatId).inserted else { return }
         defer { deletingChats.remove(chatId) }
         if announce, ratchets[chatId] != nil, let chat = chat(chatId), let c = contact(chat.recipientId), !c.isGone {
@@ -299,6 +310,10 @@ extension MessengerEngine {
 
     /// Chat-Regel setzen und der Gegenseite melden.
     public func setChatRule(_ chatId: String, timer: TimeInterval?, afterRead: Bool) async {
+        if chat(chatId)?.isGroup == true {
+            await setGroupRule(chatId, timer: timer, afterRead: afterRead)
+            return
+        }
         guard let current = chat(chatId) else { return }
         let version = current.ruleVersion + 1
         let id = adoptRule(chatId: chatId, timer: afterRead ? nil : timer, afterRead: afterRead, version: version, from: userId)
@@ -313,7 +328,7 @@ extension MessengerEngine {
               let text = m.text, !text.isEmpty else { return nil }
         messages[chatId]?.removeAll { $0.id == messageId }
         saveMessages(chatId)
-        reportBurn(chatId: chatId, messageId: messageId)
+        reportBurn(chatId: chatId, messageId: messageId, to: m.senderId)
         return text
     }
 
@@ -371,7 +386,7 @@ extension MessengerEngine {
             }
             guard !due.isEmpty else { continue }
             for m in due where SelfDestructPolicy.announceBurn(m, me: userId, chatEphemeral: chat.ruleIsEphemeral) {
-                reportBurn(chatId: chat.id, messageId: m.id)
+                reportBurn(chatId: chat.id, messageId: m.id, to: m.senderId)
             }
             let ids = Set(due.map(\.id))
             messages[chat.id]?.removeAll { ids.contains($0.id) }
@@ -385,7 +400,7 @@ extension MessengerEngine {
         let due = list.filter { ($0.burnAfterRead && $0.readAt != nil) || SelfDestructPolicy.afterReadDue($0, ruleAfterRead: chat.deleteAfterRead) }
         guard !due.isEmpty else { return }
         for m in due where SelfDestructPolicy.announceBurn(m, me: userId, chatEphemeral: chat.ruleIsEphemeral) {
-            reportBurn(chatId: chatId, messageId: m.id)
+            reportBurn(chatId: chatId, messageId: m.id, to: m.senderId)
         }
         let ids = Set(due.map(\.id))
         messages[chatId]?.removeAll { ids.contains($0.id) }
@@ -393,21 +408,23 @@ extension MessengerEngine {
     }
 
     /// Ablauf melden — wird gespeichert und nachgeholt, bis er raus ist.
-    func reportBurn(chatId: String, messageId: String) {
+    func reportBurn(chatId: String, messageId: String, to sender: String? = nil) {
         if !meta.pendingBurns.contains(where: { $0.chatId == chatId && $0.messageId == messageId }) {
-            meta.pendingBurns.append(.init(chatId: chatId, messageId: messageId, at: Date()))
+            meta.pendingBurns.append(.init(chatId: chatId, messageId: messageId, at: Date(), to: sender))
             saveMeta()
         }
-        scheduleBurn(chatId: chatId, messageId: messageId)
+        scheduleBurn(chatId: chatId, messageId: messageId, to: sender)
     }
 
-    func scheduleBurn(chatId: String, messageId: String) {
+    func scheduleBurn(chatId: String, messageId: String, to sender: String?) {
         let key = "\(chatId)|\(messageId)"
         guard burnsInFlight.insert(key).inserted else { return }
         later { [weak self] in
             guard let self else { return }
             defer { self.burnsInFlight.remove(key) }
-            guard let chat = self.chat(chatId), let c = self.contact(chat.recipientId) else {
+            // In Gruppen geht die Meldung an den Absender der Nachricht.
+            let recipient = self.chat(chatId).flatMap { $0.isGroup ? sender : $0.recipientId }
+            guard self.chat(chatId) != nil, let c = recipient.flatMap({ self.contact($0) }) else {
                 self.meta.pendingBurns.removeAll { $0.chatId == chatId && $0.messageId == messageId }
                 self.saveMeta()
                 return
@@ -424,17 +441,25 @@ extension MessengerEngine {
         let before = meta.pendingBurns.count
         meta.pendingBurns.removeAll { $0.at < cutoff }
         if meta.pendingBurns.count != before { saveMeta() }
-        for b in meta.pendingBurns { scheduleBurn(chatId: b.chatId, messageId: b.messageId) }
+        for b in meta.pendingBurns { scheduleBurn(chatId: b.chatId, messageId: b.messageId, to: b.to) }
     }
 
     // MARK: - Hinweise
 
     /// Bildschirmfoto oder Aufnahme im offenen Chat melden.
     public func reportSystemEvent(chatId: String, kind: SystemEventKind) async {
-        guard kind == .screenshot || kind == .screenRecording, let chat = chat(chatId), let c = contact(chat.recipientId) else { return }
+        guard kind == .screenshot || kind == .screenRecording, let chat = chat(chatId) else { return }
         let id = UUID().uuidString.lowercased()
+        let type = kind == .screenshot ? "screenshot" : "recording"
+        if chat.isGroup {
+            guard group(chatId)?.hasLeft == false else { return }
+            appendSystemEvent(chatId: chatId, kind: kind, senderId: userId, messageId: id)
+            await sendGroupSide(chatId: chatId, fields: ["_ev": .string(type)])
+            return
+        }
+        guard let c = contact(chat.recipientId) else { return }
         appendSystemEvent(chatId: chatId, kind: kind, senderId: userId, messageId: id)
-        await sendControl(chatId: chatId, contact: c, type: kind == .screenshot ? "screenshot" : "recording", messageId: id)
+        await sendControl(chatId: chatId, contact: c, type: type, messageId: id)
     }
 
     // MARK: - Notfall

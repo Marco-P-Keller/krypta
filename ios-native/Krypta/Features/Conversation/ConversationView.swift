@@ -32,8 +32,8 @@ struct ConversationView: View {
 
     var body: some View {
         Group {
-            if let chat = engine.chat(chatId), let contact = engine.contact(chat.recipientId) {
-                content(chat: chat, contact: contact)
+            if let chat = engine.chat(chatId), chat.isGroup || engine.contact(chat.recipientId) != nil {
+                content(chat: chat, contact: engine.contact(chat.recipientId))
             } else {
                 ContentUnavailableView("Chat gelöscht", systemImage: "bubble.left.and.exclamationmark.bubble.right")
             }
@@ -69,7 +69,7 @@ struct ConversationView: View {
     }
 
     @ViewBuilder
-    private func content(chat: Chat, contact: Contact) -> some View {
+    private func content(chat: Chat, contact: Contact?) -> some View {
         let all = engine.messages(in: chatId)
         let items = TranscriptItem.build(all, me: engine.userId)
         let byId = Dictionary(all.map { ($0.id, $0) }, uniquingKeysWith: { a, _ in a })
@@ -91,14 +91,20 @@ struct ConversationView: View {
         }
         .defaultScrollAnchor(.bottom)
         .scrollDismissesKeyboard(.interactively)
-        .safeAreaInset(edge: .top, spacing: 0) { banner(contact: contact) }
+        .safeAreaInset(edge: .top, spacing: 0) {
+            if let contact {
+                banner(contact: contact)
+            } else if chat.group?.hasLeft == true {
+                Banner(symbol: "person.3", text: "Du bist nicht mehr in dieser Gruppe.", tint: .secondary)
+            }
+        }
         .safeAreaInset(edge: .bottom, spacing: 0) { bottomBar(chat: chat, contact: contact) }
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .principal) {
-                NavigationLink(value: Route.contact(contact.id)) {
+                NavigationLink(value: chat.isGroup ? Route.groupInfo(chat.id) : Route.contact(chat.recipientId)) {
                     VStack(spacing: 2) {
-                        Avatar(id: contact.id, name: chat.name, size: 30)
+                        ChatAvatar(chat: chat, size: 30)
                         HStack(spacing: 2) {
                             Text(chat.name).font(.caption.weight(.medium))
                             Image(systemName: "chevron.right").font(.system(size: 8, weight: .bold)).foregroundStyle(.tertiary)
@@ -106,7 +112,7 @@ struct ConversationView: View {
                         .foregroundStyle(.primary)
                     }
                 }
-                .accessibilityLabel("Kontaktinfo für \(chat.name)")
+                .accessibilityLabel(chat.isGroup ? Text("Gruppeninfo für \(chat.name)") : Text("Kontaktinfo für \(chat.name)"))
             }
         }
         .alert("Passwort für diese Nachricht", isPresented: $askPassword) {
@@ -140,7 +146,9 @@ struct ConversationView: View {
             Text("Du kannst sie nur einmal ansehen. Sobald du sie schließt, ist sie für immer weg.")
         }
         .sheet(isPresented: $paying) {
-            ShieldedSheet { SendBitcoinView(target: .contact(chatId: chatId, contactId: contact.id)) }
+            if let contact {
+                ShieldedSheet { SendBitcoinView(target: .contact(chatId: chatId, contactId: contact.id)) }
+            }
         }
         .sheet(item: $paymentDetail) { m in
             ShieldedSheet { PaymentDetailView(message: m) }
@@ -170,7 +178,10 @@ struct ConversationView: View {
                 .padding(.top, 14)
                 .padding(.bottom, 6)
         case .event(let m):
-            Text(SystemEventText.text(m.systemEvent!, mine: m.senderId == engine.userId, timer: m.selfDestruct, name: chat.name))
+            Text(chat.isGroup
+                 ? SystemEventText.text(m.systemEvent!, mine: m.senderId == engine.userId, timer: m.selfDestruct,
+                                        name: engine.memberName(m.senderId), subject: SystemEventText.subject(of: m, engine: engine))
+                 : SystemEventText.text(m.systemEvent!, mine: m.senderId == engine.userId, timer: m.selfDestruct, name: chat.name))
                 .font(.caption)
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
@@ -182,6 +193,7 @@ struct ConversationView: View {
                        onTap: { tapped(m) },
                        quote: quote(for: m, chat: chat, byId: byId),
                        reactions: ReactionChip.build(m, me: engine.userId),
+                       senderName: chat.isGroup ? engine.memberName(m.senderId) : nil,
                        onQuoteTap: { scrollTarget = $0 },
                        onReactionTap: { chip in
                            guard chip.mine else { return }
@@ -215,9 +227,9 @@ struct ConversationView: View {
     private func quote(for m: Message, chat: Chat, byId: [String: Message]) -> QuoteInfo? {
         guard let target = m.replyTo else { return nil }
         guard let original = byId[target] else {
-            return QuoteInfo(targetId: target, author: chat.name, text: nil)
+            return QuoteInfo(targetId: target, author: chat.isGroup ? "" : chat.name, text: nil)
         }
-        let author = original.senderId == engine.userId ? String(localized: "Du") : chat.name
+        let author = original.senderId == engine.userId ? String(localized: "Du") : (chat.isGroup ? engine.memberName(original.senderId) : chat.name)
         let text = ReplyPolicy.canQuote(original) ? MessagePreview.text(for: original, me: engine.userId) : nil
         return QuoteInfo(targetId: target, author: author, text: text)
     }
@@ -248,7 +260,7 @@ struct ConversationView: View {
                 Label("Reagieren", systemImage: "face.smiling")
             }
         }
-        if engine.contact(engine.chat(chatId)?.recipientId ?? "")?.canSendMessages == true && ReplyPolicy.canQuote(m) && m.status != .failed {
+        if engine.canWrite(chatId: chatId) && ReplyPolicy.canQuote(m) && m.status != .failed {
             Button {
                 context = .reply(m.id)
                 composerFocused = true
@@ -351,7 +363,29 @@ struct ConversationView: View {
     // MARK: - Unten: Eingabe oder Anfrage beantworten
 
     @ViewBuilder
-    private func bottomBar(chat: Chat, contact: Contact) -> some View {
+    private func bottomBar(chat: Chat, contact: Contact?) -> some View {
+        if chat.isGroup {
+            if engine.canWrite(chatId: chat.id) {
+                VStack(spacing: 0) {
+                    if let context {
+                        contextBar(context, chat: chat)
+                    }
+                    Composer(
+                        draft: $draft, option: $option, focused: $composerFocused,
+                        chatTimer: chat.timer, chatAfterRead: chat.deleteAfterRead,
+                        askPassword: { askPassword = true },
+                        payBitcoin: nil,
+                        send: { send(chat: chat) }
+                    )
+                }
+            }
+        } else if let contact {
+            directBottomBar(chat: chat, contact: contact)
+        }
+    }
+
+    @ViewBuilder
+    private func directBottomBar(chat: Chat, contact: Contact) -> some View {
         if contact.requestState == .incoming {
             VStack(spacing: 10) {
                 Text("\(contact.displayName) möchte mit dir schreiben.")
@@ -416,7 +450,7 @@ struct ConversationView: View {
                 } else if target?.senderId == engine.userId {
                     Text("Antwort auf deine Nachricht").font(.caption.weight(.semibold))
                 } else {
-                    Text("Antwort an \(chat.name)").font(.caption.weight(.semibold))
+                    Text("Antwort an \(chat.isGroup ? engine.memberName(target?.senderId ?? "") : chat.name)").font(.caption.weight(.semibold))
                 }
                 Text(target.map { MessagePreview.text(for: $0, me: engine.userId) } ?? "")
                     .font(.caption)

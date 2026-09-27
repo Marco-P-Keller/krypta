@@ -28,6 +28,15 @@ struct NewChatView: View {
                 }
 
                 Section {
+                    NavigationLink {
+                        NewGroupView(open: open)
+                    } label: {
+                        Label("Neue Gruppe", systemImage: "person.3")
+                    }
+                    .accessibilityIdentifier("newchat.group")
+                }
+
+                Section {
                     TextField("Kennung", text: $contactId)
                         .textInputAutocapitalization(.never)
                         .autocorrectionDisabled()

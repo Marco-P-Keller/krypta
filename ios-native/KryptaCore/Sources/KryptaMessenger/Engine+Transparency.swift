@@ -165,6 +165,6 @@ extension MessengerEngine {
             let chat = chat(forContact: c.id)
             return .init(key: key, name: chat?.name ?? c.displayName, contactId: c.id, mutedUntil: chat?.mutedUntil)
         }
-        return NotificationIndex(entries: entries, requestKey: NotificationTag.requestKey(recipientIdentityPublicKey: identity.publicKey), showNames: showNames)
+        return NotificationIndex(entries: entries + groupNotificationEntries(), requestKey: NotificationTag.requestKey(recipientIdentityPublicKey: identity.publicKey), showNames: showNames)
     }
 }

@@ -42,6 +42,46 @@
         }
       }
     },
+    "%@ bekommt keine Nachrichten mehr aus dieser Gruppe.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ won’t receive messages from this group anymore."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ ya no recibirá mensajes de este grupo."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ ne recevra plus de messages de ce groupe."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ non riceverà più messaggi da questo gruppo."
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ ontvangt geen berichten meer uit deze groep."
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ não receberá mais mensagens deste grupo."
+          }
+        }
+      }
+    },
     "%@ für Krypta aktivieren": {
       "extractionState": "extracted_with_value",
       "localizations": {
@@ -79,6 +119,246 @@
           "stringUnit": {
             "state": "translated",
             "value": "Ativar %@ para o Krypta"
+          }
+        }
+      }
+    },
+    "%@ hat %@ entfernt.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ removed %2$@."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ ha eliminado a %2$@."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ a retiré %2$@."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ ha rimosso %2$@."
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ heeft %2$@ verwijderd."
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ removeu %2$@."
+          }
+        }
+      }
+    },
+    "%@ hat %@ hinzugefügt.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ added %2$@."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ ha añadido a %2$@."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ a ajouté %2$@."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ ha aggiunto %2$@."
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ heeft %2$@ toegevoegd."
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ adicionou %2$@."
+          }
+        }
+      }
+    },
+    "%@ hat dich aus der Gruppe entfernt.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ removed you from the group."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ te ha eliminado del grupo."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ t’a retiré du groupe."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ ti ha rimosso dal gruppo."
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ heeft je uit de groep verwijderd."
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ removeu você do grupo."
+          }
+        }
+      }
+    },
+    "%@ hat dich zur Gruppe „%@“ hinzugefügt.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ added you to the group “%2$@”."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ te ha añadido al grupo «%2$@»."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ t’a ajouté au groupe « %2$@ »."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ ti ha aggiunto al gruppo “%2$@”."
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ heeft je aan de groep ‘%2$@’ toegevoegd."
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ adicionou você ao grupo “%2$@”."
+          }
+        }
+      }
+    },
+    "%@ hat die Gruppe in „%@“ umbenannt.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ renamed the group to “%2$@”."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ ha cambiado el nombre del grupo a «%2$@»."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ a renommé le groupe en « %2$@ »."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ ha rinominato il gruppo in “%2$@”."
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ heeft de groep hernoemd naar ‘%2$@’."
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ renomeou o grupo para “%2$@”."
+          }
+        }
+      }
+    },
+    "%@ hat die Gruppe verlassen.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ left the group."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ ha salido del grupo."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ a quitté le groupe."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ ha lasciato il gruppo."
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ heeft de groep verlaten."
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ saiu do grupo."
           }
         }
       }
@@ -489,6 +769,46 @@
         }
       }
     },
+    "%@ verwaltet diese Gruppe. Mitglieder, die du nicht kennst, sind nicht verifiziert, bis du ihre Sicherheitsnummer vergleichst.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ manages this group. Members you don’t know aren’t verified until you compare their safety number."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ administra este grupo. Los miembros que no conoces no están verificados hasta que compares su número de seguridad."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ gère ce groupe. Les membres que tu ne connais pas ne sont pas vérifiés tant que tu n’as pas comparé leur numéro de sécurité."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ gestisce questo gruppo. I membri che non conosci non sono verificati finché non confronti il loro numero di sicurezza."
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ beheert deze groep. Leden die je niet kent, zijn niet geverifieerd tot je hun veiligheidsnummer vergelijkt."
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ administra este grupo. Membros que você não conhece não estão verificados até você comparar o número de segurança deles."
+          }
+        }
+      }
+    },
     "%@ verwenden?": {
       "extractionState": "extracted_with_value",
       "localizations": {
@@ -647,6 +967,46 @@
           "stringUnit": {
             "state": "translated",
             "value": "%lld"
+          }
+        }
+      }
+    },
+    "%lld Mitglieder": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld Members"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld miembros"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld membres"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld membri"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld leden"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld membros"
           }
         }
       }
@@ -1297,6 +1657,86 @@
         }
       }
     },
+    "Alle Mitglieder sehen den Namen der Gruppe. Wie du deine Kontakte genannt hast, sehen sie nicht.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "All members see the group name. They don’t see what you named your contacts."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Todos los miembros ven el nombre del grupo. No ven cómo has llamado a tus contactos."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tous les membres voient le nom du groupe. Ils ne voient pas comment tu as nommé tes contacts."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tutti i membri vedono il nome del gruppo. Non vedono come hai chiamato i tuoi contatti."
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Alle leden zien de groepsnaam. Hoe jij je contacten hebt genoemd, zien ze niet."
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Todos os membros veem o nome do grupo. Eles não veem como você nomeou seus contatos."
+          }
+        }
+      }
+    },
+    "Alle Mitglieder sehen den neuen Namen.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "All members will see the new name."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Todos los miembros verán el nuevo nombre."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tous les membres verront le nouveau nom."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tutti i membri vedranno il nuovo nome."
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Alle leden zien de nieuwe naam."
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Todos os membros verão o novo nome."
+          }
+        }
+      }
+    },
     "Alle Nachrichten verschwinden hier. Deine eigenen werden auch bei %@ entfernt.": {
       "extractionState": "extracted_with_value",
       "localizations": {
@@ -1334,6 +1774,46 @@
           "stringUnit": {
             "state": "translated",
             "value": "Todas as mensagens vão sumir aqui. As suas também serão removidas para %@."
+          }
+        }
+      }
+    },
+    "Alle, die du einladen kannst, sind schon dabei.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Everyone you can invite is already in the group."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Todos los que puedes invitar ya están en el grupo."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tous ceux que tu peux inviter sont déjà dans le groupe."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tutti quelli che puoi invitare sono già nel gruppo."
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Iedereen die je kunt uitnodigen, zit al in de groep."
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Todos que você pode convidar já estão no grupo."
           }
         }
       }
@@ -2628,6 +3108,86 @@
           "stringUnit": {
             "state": "translated",
             "value": "Desarquivar"
+          }
+        }
+      }
+    },
+    "Aus der Gruppe entfernen": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Remove from Group"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Eliminar del grupo"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Retirer du groupe"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rimuovi dal gruppo"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Uit groep verwijderen"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Remover do grupo"
+          }
+        }
+      }
+    },
+    "Aus der Gruppe entfernen?": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Remove from Group?"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "¿Eliminar del grupo?"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Retirer du groupe ?"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rimuovere dal gruppo?"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Uit groep verwijderen?"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Remover do grupo?"
           }
         }
       }
@@ -5353,6 +5913,46 @@
         }
       }
     },
+    "Der Verlauf verschwindet von diesem iPhone.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The history disappears from this iPhone."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "El historial desaparece de este iPhone."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "L’historique disparaît de cet iPhone."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "La cronologia sparisce da questo iPhone."
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "De geschiedenis verdwijnt van deze iPhone."
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "O histórico desaparece deste iPhone."
+          }
+        }
+      }
+    },
     "Details": {
       "extractionState": "extracted_with_value",
       "localizations": {
@@ -5591,6 +6191,46 @@
           "stringUnit": {
             "state": "translated",
             "value": "A taxa é mais de 10% do valor."
+          }
+        }
+      }
+    },
+    "Die Gruppe konnte nicht erstellt werden.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The group couldn’t be created."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No se ha podido crear el grupo."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Le groupe n’a pas pu être créé."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Impossibile creare il gruppo."
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "De groep kon niet worden gemaakt."
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Não foi possível criar o grupo."
           }
         }
       }
@@ -6484,6 +7124,46 @@
         }
       }
     },
+    "Du bekommst keine Nachrichten mehr aus dieser Gruppe.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "You won’t receive messages from this group anymore."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ya no recibirás mensajes de este grupo."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tu ne recevras plus de messages de ce groupe."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Non riceverai più messaggi da questo gruppo."
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Je ontvangt geen berichten meer uit deze groep."
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Você não receberá mais mensagens deste grupo."
+          }
+        }
+      }
+    },
     "Du bekommst keine Nachrichten mehr von diesem Kontakt.": {
       "extractionState": "extracted_with_value",
       "localizations": {
@@ -6521,6 +7201,46 @@
           "stringUnit": {
             "state": "translated",
             "value": "Você não receberá mais mensagens deste contato."
+          }
+        }
+      }
+    },
+    "Du bist nicht mehr in dieser Gruppe.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "You’re no longer in this group."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ya no estás en este grupo."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tu ne fais plus partie de ce groupe."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Non fai più parte di questo gruppo."
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Je zit niet meer in deze groep."
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Você não está mais neste grupo."
           }
         }
       }
@@ -6566,6 +7286,86 @@
         }
       }
     },
+    "Du hast %@ entfernt.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "You removed %@."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Has eliminado a %@."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tu as retiré %@."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hai rimosso %@."
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Je hebt %@ verwijderd."
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Você removeu %@."
+          }
+        }
+      }
+    },
+    "Du hast %@ hinzugefügt.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "You added %@."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Has añadido a %@."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tu as ajouté %@."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hai aggiunto %@."
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Je hebt %@ toegevoegd."
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Você adicionou %@."
+          }
+        }
+      }
+    },
     "Du hast Bitcoin gesendet": {
       "localizations": {
         "en": {
@@ -6602,6 +7402,126 @@
           "stringUnit": {
             "state": "translated",
             "value": "Você enviou bitcoin"
+          }
+        }
+      }
+    },
+    "Du hast die Gruppe in „%@“ umbenannt.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "You renamed the group to “%@”."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Has cambiado el nombre del grupo a «%@»."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tu as renommé le groupe en « %@ »."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hai rinominato il gruppo in “%@”."
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Je hebt de groep hernoemd naar ‘%@’."
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Você renomeou o grupo para “%@”."
+          }
+        }
+      }
+    },
+    "Du hast die Gruppe verlassen.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "You left the group."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Has salido del grupo."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tu as quitté le groupe."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hai lasciato il gruppo."
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Je hebt de groep verlaten."
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Você saiu do grupo."
+          }
+        }
+      }
+    },
+    "Du hast die Gruppe „%@“ erstellt.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "You created the group “%@”."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Has creado el grupo «%@»."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tu as créé le groupe « %@ »."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hai creato il gruppo “%@”."
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Je hebt de groep ‘%@’ gemaakt."
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Você criou o grupo “%@”."
           }
         }
       }
@@ -6889,6 +7809,86 @@
           "stringUnit": {
             "state": "translated",
             "value": "Você só pode vê-la uma vez. Assim que a fechar, ela some para sempre."
+          }
+        }
+      }
+    },
+    "Du verlässt die Gruppe, und der Verlauf verschwindet von diesem iPhone.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "You leave the group, and the history disappears from this iPhone."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sales del grupo y el historial desaparece de este iPhone."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tu quittes le groupe et l’historique disparaît de cet iPhone."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Esci dal gruppo e la cronologia sparisce da questo iPhone."
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Je verlaat de groep en de geschiedenis verdwijnt van deze iPhone."
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Você sai do grupo e o histórico desaparece deste iPhone."
+          }
+        }
+      }
+    },
+    "Du verwaltest diese Gruppe: nur du kannst Mitglieder hinzufügen oder entfernen, sie umbenennen und die Löschfrist ändern.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "You manage this group: only you can add or remove members, rename it and change disappearing messages."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tú administras este grupo: solo tú puedes añadir o eliminar miembros, cambiarle el nombre y cambiar los mensajes temporales."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tu gères ce groupe : toi seul peux ajouter ou retirer des membres, le renommer et modifier les messages éphémères."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gestisci tu questo gruppo: solo tu puoi aggiungere o rimuovere membri, rinominarlo e cambiare i messaggi a tempo."
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Jij beheert deze groep: alleen jij kunt leden toevoegen of verwijderen, de groep hernoemen en verdwijnende berichten wijzigen."
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Você administra este grupo: só você pode adicionar ou remover membros, renomeá-lo e alterar as mensagens temporárias."
           }
         }
       }
@@ -7783,6 +8783,46 @@
           "stringUnit": {
             "state": "translated",
             "value": "Substitui a carteira neste iPhone. Palavras de outra carteira (BIP39, BIP84, SegWit nativo) também funcionam."
+          }
+        }
+      }
+    },
+    "Erstellen": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Create"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Crear"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Créer"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Crea"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Maken"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Criar"
           }
         }
       }
@@ -9253,6 +10293,286 @@
         }
       }
     },
+    "Gruppe gelöscht": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Group Deleted"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Grupo eliminado"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Groupe supprimé"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gruppo eliminato"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Groep verwijderd"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Grupo apagado"
+          }
+        }
+      }
+    },
+    "Gruppe löschen": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Delete Group"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Eliminar grupo"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Supprimer le groupe"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Elimina gruppo"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Groep verwijderen"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Apagar grupo"
+          }
+        }
+      }
+    },
+    "Gruppe löschen?": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Delete Group?"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "¿Eliminar grupo?"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Supprimer le groupe ?"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Eliminare il gruppo?"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Groep verwijderen?"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Apagar grupo?"
+          }
+        }
+      }
+    },
+    "Gruppe verlassen": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Leave Group"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Salir del grupo"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Quitter le groupe"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Esci dal gruppo"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Groep verlaten"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sair do grupo"
+          }
+        }
+      }
+    },
+    "Gruppe verlassen?": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Leave Group?"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "¿Salir del grupo?"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Quitter le groupe ?"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Uscire dal gruppo?"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Groep verlaten?"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sair do grupo?"
+          }
+        }
+      }
+    },
+    "Gruppeninfo": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Group Info"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Info. del grupo"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Infos du groupe"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Info gruppo"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Groepsinfo"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dados do grupo"
+          }
+        }
+      }
+    },
+    "Gruppeninfo für %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Group info for %@"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Info. del grupo %@"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Infos du groupe %@"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Info gruppo %@"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Groepsinfo voor %@"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dados do grupo %@"
+          }
+        }
+      }
+    },
     "Günstig": {
       "localizations": {
         "en": {
@@ -9657,6 +10977,46 @@
         }
       }
     },
+    "In der Gruppe kennengelernt, nicht verifiziert": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Met in the group, not verified"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Conocido en el grupo, sin verificar"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rencontré dans le groupe, non vérifié"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Conosciuto nel gruppo, non verificato"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Via de groep leren kennen, niet geverifieerd"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Conhecido no grupo, não verificado"
+          }
+        }
+      }
+    },
     "Inhalt geschützt": {
       "extractionState": "extracted_with_value",
       "localizations": {
@@ -9735,6 +11095,46 @@
           "stringUnit": {
             "state": "translated",
             "value": "Igual"
+          }
+        }
+      }
+    },
+    "Jede Nachricht geht einzeln und Ende-zu-Ende-verschlüsselt an jedes Mitglied. Der Server erfährt nicht, dass es eine Gruppe gibt. Mitglieder, die sich noch nicht kennen, stellt Krypta einander vor; ihre Sicherheitsnummer vergleichen sie selbst.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Each message goes individually and end-to-end encrypted to every member. The server doesn’t learn that a group exists. Krypta introduces members who don’t know each other yet; they compare their safety numbers themselves."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cada mensaje llega por separado y cifrado de extremo a extremo a cada miembro. El servidor no se entera de que existe un grupo. Krypta presenta entre sí a los miembros que aún no se conocen; ellos mismos comparan su número de seguridad."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Chaque message part séparément et chiffré de bout en bout vers chaque membre. Le serveur n’apprend pas qu’un groupe existe. Krypta présente les membres qui ne se connaissent pas encore ; ils comparent eux-mêmes leur numéro de sécurité."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ogni messaggio arriva separatamente e crittografato end-to-end a ciascun membro. Il server non sa che esiste un gruppo. Krypta presenta tra loro i membri che non si conoscono ancora; il numero di sicurezza lo confrontano da soli."
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Elk bericht gaat afzonderlijk en end-to-end versleuteld naar elk lid. De server weet niet dat er een groep bestaat. Leden die elkaar nog niet kennen, stelt Krypta aan elkaar voor; hun veiligheidsnummer vergelijken ze zelf."
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cada mensagem vai separadamente e com criptografia de ponta a ponta para cada membro. O servidor não sabe que existe um grupo. O Krypta apresenta os membros que ainda não se conhecem; eles mesmos comparam o número de segurança."
           }
         }
       }
@@ -12101,6 +13501,86 @@
         }
       }
     },
+    "Mitglieder": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Members"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Miembros"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Membres"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Membri"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Leden"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Membros"
+          }
+        }
+      }
+    },
+    "Mitglieder hinzufügen": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Add Members"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Añadir miembros"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ajouter des membres"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aggiungi membri"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Leden toevoegen"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Adicionar membros"
+          }
+        }
+      }
+    },
     "Mitteilungen": {
       "extractionState": "extracted_with_value",
       "localizations": {
@@ -12957,6 +14437,46 @@
         }
       }
     },
+    "Name der Gruppe": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Group Name"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nombre del grupo"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nom du groupe"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nome del gruppo"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Groepsnaam"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nome do grupo"
+          }
+        }
+      }
+    },
     "Netz": {
       "localizations": {
         "en": {
@@ -13033,6 +14553,46 @@
           "stringUnit": {
             "state": "translated",
             "value": "Novo endereço"
+          }
+        }
+      }
+    },
+    "Neue Gruppe": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "New Group"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nuevo grupo"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nouveau groupe"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nuovo gruppo"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nieuwe groep"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Novo grupo"
           }
         }
       }
@@ -13805,6 +15365,46 @@
           "stringUnit": {
             "state": "translated",
             "value": "Ainda não guardadas. Sem as palavras, seu bitcoin se perde se o Krypta apagar tudo ou o iPhone se perder."
+          }
+        }
+      }
+    },
+    "Noch niemand, den du einladen kannst. Mitglieder brauchen die aktuelle Krypta-App und müssen deine Anfrage angenommen haben.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No one you can invite yet. Members need the current Krypta app and must have accepted your request."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aún no hay nadie a quien puedas invitar. Los miembros necesitan la app actual de Krypta y deben haber aceptado tu solicitud."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Personne à inviter pour l’instant. Les membres ont besoin de l’app Krypta actuelle et doivent avoir accepté ta demande."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ancora nessuno da invitare. I membri devono avere l’app Krypta aggiornata e aver accettato la tua richiesta."
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nog niemand die je kunt uitnodigen. Leden hebben de actuele Krypta-app nodig en moeten je verzoek hebben geaccepteerd."
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ainda não há ninguém para convidar. Os membros precisam do app Krypta atual e devem ter aceitado sua solicitação."
           }
         }
       }
@@ -15147,6 +16747,46 @@
           "stringUnit": {
             "state": "translated",
             "value": "Chave"
+          }
+        }
+      }
+    },
+    "Schlüssel nicht bestätigt, bekommt nichts von dir": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Key not confirmed, receives nothing from you"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Clave no confirmada, no recibe nada de ti"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Clé non confirmée, ne reçoit rien de toi"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Chiave non confermata, non riceve nulla da te"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sleutel niet bevestigd, ontvangt niets van jou"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Chave não confirmada, não recebe nada de você"
           }
         }
       }
@@ -16648,6 +18288,46 @@
         }
       }
     },
+    "Umbenennen": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rename"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Renombrar"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Renommer"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rinomina"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hernoemen"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Renomear"
+          }
+        }
+      }
+    },
     "Unbestätigt": {
       "localizations": {
         "en": {
@@ -16891,6 +18571,86 @@
         }
       }
     },
+    "Verlassen": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Leave"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Salir"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Quitter"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Esci"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Verlaten"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sair"
+          }
+        }
+      }
+    },
+    "Verlassen: die anderen erfahren es, der Verlauf bleibt bei dir zum Lesen. Löschen: der Verlauf verschwindet von diesem iPhone.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Leave: the others are told, and you keep the history to read. Delete: the history disappears from this iPhone."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Salir: los demás se enteran y conservas el historial para leerlo. Eliminar: el historial desaparece de este iPhone."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Quitter : les autres en sont informés, tu gardes l’historique en lecture. Supprimer : l’historique disparaît de cet iPhone."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Esci: gli altri lo sanno e la cronologia resta a te da leggere. Elimina: la cronologia sparisce da questo iPhone."
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Verlaten: de anderen horen het, de geschiedenis blijft bij jou om te lezen. Verwijderen: de geschiedenis verdwijnt van deze iPhone."
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sair: os outros ficam sabendo e o histórico fica com você para ler. Apagar: o histórico desaparece deste iPhone."
+          }
+        }
+      }
+    },
     "Verlauf": {
       "localizations": {
         "en": {
@@ -17009,6 +18769,46 @@
           "stringUnit": {
             "state": "translated",
             "value": "Remetente oculto"
+          }
+        }
+      }
+    },
+    "Verwaltet": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Admin"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Admin."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Admin"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Admin"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Beheerder"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Admin"
           }
         }
       }
@@ -18625,6 +20425,46 @@
           "stringUnit": {
             "state": "translated",
             "value": "bc1q… ou bitcoin:…"
+          }
+        }
+      }
+    },
+    "dich": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "you"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ti"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "toi"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "te"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "jou"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "você"
           }
         }
       }

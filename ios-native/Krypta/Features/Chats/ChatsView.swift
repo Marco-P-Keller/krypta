@@ -121,6 +121,7 @@ struct ChatsView: View {
                 case .chat(let id): ConversationView(chatId: id)
                 case .message(let chatId, let messageId): ConversationView(chatId: chatId, highlight: messageId)
                 case .contact(let id): ContactDetailView(contactId: id)
+                case .groupInfo(let id): GroupInfoView(chatId: id)
                 case .requests: RequestsView()
                 case .archive: ArchivedChatsView(path: $path, chatToDelete: $chatToDelete)
                 }
@@ -162,7 +163,11 @@ struct ChatsView: View {
         showWallet = false
         switch target {
         case .chat(let contactId):
-            guard let contact = engine.contact(contactId) else { return }
+            guard let contact = engine.contact(contactId) else {
+                // Gruppen: `group:<Kennung>` steht wie ein Kontakt in der Mitteilung.
+                if let chat = engine.chat(forContact: contactId), chat.isGroup { path = NavigationPath([Route.chat(chat.id)]) }
+                return
+            }
             if contact.requestState == .incoming {
                 path = NavigationPath([Route.requests])
             } else if let chat = engine.chat(forContact: contactId) {
@@ -188,6 +193,7 @@ enum Route: Hashable {
     /// Ein Chat, zur Nachricht gescrollt (aus der Suche).
     case message(chatId: String, messageId: String)
     case contact(String)
+    case groupInfo(String)
     case requests
     case archive
 }
@@ -236,8 +242,14 @@ private struct ChatListRow: View {
             .tint(.purple)
         }
         .contextMenu {
-            Button { path.append(Route.contact(chat.recipientId)) } label: {
-                Label("Kontaktinfo", systemImage: "info.circle")
+            if chat.isGroup {
+                Button { path.append(Route.groupInfo(chat.id)) } label: {
+                    Label("Gruppeninfo", systemImage: "info.circle")
+                }
+            } else {
+                Button { path.append(Route.contact(chat.recipientId)) } label: {
+                    Label("Kontaktinfo", systemImage: "info.circle")
+                }
             }
             Button { pin(!chat.isPinned) } label: {
                 if chat.isPinned {
@@ -345,7 +357,9 @@ private struct SearchHitRow: View {
     var body: some View {
         let chat = engine.chat(hit.chatId)
         HStack(spacing: 10) {
-            Avatar(id: chat?.recipientId ?? hit.chatId, name: chat?.name ?? "", size: 36)
+            if let chat {
+                ChatAvatar(chat: chat, size: 36)
+            }
             VStack(alignment: .leading, spacing: 2) {
                 HStack {
                     Text(chat?.name ?? "")
@@ -394,7 +408,7 @@ private struct ChatRow: View {
                 .fill(unread > 0 ? (chat.isMuted() ? Color.secondary : Color.accentColor) : .clear)
                 .frame(width: 10, height: 10)
                 .accessibilityHidden(true)
-            Avatar(id: chat.recipientId, name: chat.name, size: 48)
+            ChatAvatar(chat: chat, size: 48)
             VStack(alignment: .leading, spacing: 3) {
                 HStack(alignment: .firstTextBaseline) {
                     Text(chat.name)
@@ -444,6 +458,13 @@ private struct ChatRow: View {
     }
 
     private var preview: String {
+        if chat.isGroup {
+            guard let last = engine.lastMessage(chat.id) else { return String(localized: "Keine Nachrichten") }
+            if !engine.chatPreviewEnabled { return String(localized: "Nachricht") }
+            if last.isSystemEvent { return MessagePreview.text(for: last, me: engine.userId, engine: engine) }
+            let who = last.senderId == engine.userId ? String(localized: "Du") : engine.memberName(last.senderId)
+            return "\(who): " + MessagePreview.text(for: last, me: engine.userId)
+        }
         guard let contact = engine.contact(chat.recipientId) else { return "" }
         if contact.requestState == .outgoing { return String(localized: "Wartet auf Bestätigung") }
         if contact.isGone { return String(localized: "Konto gelöscht") }
@@ -454,8 +475,14 @@ private struct ChatRow: View {
 }
 
 enum MessagePreview {
-    static func text(for m: Message, me: String) -> String {
-        if let event = m.systemEvent { return SystemEventText.text(event, mine: m.senderId == me, timer: m.selfDestruct) }
+    static func text(for m: Message, me: String, engine: MessengerEngine? = nil) -> String {
+        if let event = m.systemEvent {
+            if let engine, engine.chat(m.chatId)?.isGroup == true {
+                return SystemEventText.text(event, mine: m.senderId == me, timer: m.selfDestruct, name: engine.memberName(m.senderId),
+                                            subject: SystemEventText.subject(of: m, engine: engine))
+            }
+            return SystemEventText.text(event, mine: m.senderId == me, timer: m.selfDestruct)
+        }
         // Kein Betrag in der Vorschau: ungeprüft stünde dort, was der Absender behauptet.
         if m.payment != nil { return m.senderId == me ? String(localized: "₿ Du hast Bitcoin gesendet") : String(localized: "₿ Bitcoin-Zahlung") }
         if m.isPasswordProtected && !m.passwordUnlocked { return String(localized: "🔒 Geschützte Nachricht") }

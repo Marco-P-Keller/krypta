@@ -8,6 +8,10 @@ extension MessengerEngine {
     /// Die Blase steht sofort; scheitert etwas, bleibt sie mit `failed`
     /// stehen, statt still zu verschwinden.
     public func send(chatId: String, text: String, options: SendOptions = .plain) async {
+        if chat(chatId)?.isGroup == true {
+            await sendGroup(chatId: chatId, text: text, options: options)
+            return
+        }
         await enqueue(chatId) { [self] in
             await sendLocked(chatId: chatId, text: text, options: options, asRequest: false, qrToken: nil, preverifiedKey: nil)
         }
@@ -105,7 +109,7 @@ extension MessengerEngine {
     /// Klatsch `_kt` und `_btc`; `extra` legt weitere Felder dazu. `quiet`:
     /// keine Mitteilung beim Empfänger (Reaktionen, Bearbeitungen).
     func transmit(chatId: String, contact: Contact, messageId: String, content: String, extra: JSONObject,
-                  asRequest: Bool = false, preverifiedKey: String? = nil, quiet: Bool = false) async throws -> Delivery {
+                  asRequest: Bool = false, preverifiedKey: String? = nil, quiet: Bool = false, tagOverride: String? = nil) async throws -> Delivery {
         // Hat der Server einen anderen Schlüssel als ich? Dann nichts senden,
         // sondern den Schlüsselwechsel auslösen.
         if preverifiedKey == nil || preverifiedKey != contact.publicKey.base64 {
@@ -138,6 +142,8 @@ extension MessengerEngine {
         var payload = try encrypt(chatId: chatId, content: try inner.jsonString())
         if quiet {
             payload["nt"] = .string(NotificationTag.quiet)
+        } else if let tagOverride {
+            payload["nt"] = .string(tagOverride)
         } else if let tag = notificationTag(for: contact, request: asRequest) {
             payload["nt"] = .string(tag)
         }
@@ -186,9 +192,12 @@ extension MessengerEngine {
     /// `false`: nicht gesendet (keine Sitzung, Kontakt gesperrt).
     @discardableResult
     func sendControl(chatId: String, contact: Contact, type: String, messageId: String) async -> Bool {
+        // Steuernachrichten laufen immer über den Einzelchat: dort liegen
+        // Sitzung und Zähler, auch für Nachrichten aus Gruppen.
+        guard let pair = chat(chatId)?.isGroup == true ? chat(forContact: contact.id)?.id : chatId else { return false }
         var sent = false
-        await enqueue(chatId) { [self] in
-            sent = await sendControlLocked(chatId: chatId, contact: contact, type: type, messageId: messageId)
+        await enqueue(pair) { [self] in
+            sent = await sendControlLocked(chatId: pair, contact: contact, type: type, messageId: messageId)
         }
         return sent
     }

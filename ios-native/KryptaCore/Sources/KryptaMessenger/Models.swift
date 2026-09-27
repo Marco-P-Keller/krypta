@@ -44,6 +44,8 @@ public struct Contact: Codable, Identifiable, Equatable, Sendable {
     /// Der Kontakt hat schon ML-KEM gezeigt (signiert im Bündel oder im
     /// Handschlag). Ab dann wird kein Handschlag ohne mehr angenommen.
     public var postQuantum: Bool?
+    /// Aus einer Gruppe bekannt: wer ihn vorgestellt hat (Kennung).
+    public var introducedBy: String?
     /// Bitcoin im Chat (`_btc`): Der Kontakt hat eine Wallet und nimmt
     /// Zahlungen an. `nil`: noch nichts gehört (oder Flutter-App).
     public var acceptsBitcoin: Bool?
@@ -122,6 +124,8 @@ public enum MessageStatus: String, Codable, Sendable {
 
 public enum SystemEventKind: String, Codable, Sendable {
     case screenshot, screenRecording, accountDeleted, selfDestructChanged, selfDestructAfterRead
+    /// Gruppen: `text` trägt den Namen, um den es geht (Mitglied, neuer Gruppenname).
+    case groupCreated, groupJoined, groupMemberAdded, groupMemberRemoved, groupMemberLeft, groupRenamed, groupRemovedYou, groupLeft
 }
 
 public struct Message: Codable, Identifiable, Equatable, Sendable {
@@ -192,6 +196,11 @@ public struct Chat: Codable, Identifiable, Equatable, Sendable {
     public var pinnedAt: Date?
     /// Im Archiv statt in der Liste.
     public var archived: Bool?
+    /// Gruppenchat: Mitglieder, Name, Version. `nil` bei Einzelchats.
+    public var group: GroupInfo?
+    /// Einzelchat nur als Träger der Sitzung (Mitglied einer Gruppe, mit dem
+    /// man noch nie direkt geschrieben hat): nicht in der Liste.
+    public var hidden: Bool?
 
     public init(id: String = UUID().uuidString.lowercased(), recipientId: String, name: String) {
         self.id = id
@@ -201,9 +210,46 @@ public struct Chat: Codable, Identifiable, Equatable, Sendable {
 
     public var ruleIsEphemeral: Bool { timer != nil || deleteAfterRead }
 
+    public var isGroup: Bool { group != nil }
+    public var isHidden: Bool { hidden == true }
+
     public func isMuted(at now: Date = Date()) -> Bool { mutedUntil.map { $0 > now } ?? false }
     public var isPinned: Bool { pinnedAt != nil }
     public var isArchived: Bool { archived == true }
+}
+
+/// Eine Gruppe: jede Nachricht geht einzeln über die Sitzung mit jedem
+/// Mitglied (Engine+Groups). Den Stand bestimmt die Verwalterin; wer die
+/// höhere Version hat, gilt.
+public struct GroupInfo: Codable, Equatable, Sendable {
+    public let id: String
+    public var name: String
+    /// Kennungen, die eigene eingeschlossen.
+    public var members: [String]
+    public var admin: String
+    public var version: Int
+    /// Zufall der Gruppe: daraus der Schlüssel für Mitteilungs-Anhänger.
+    public var secret: Data
+    /// Die Schlüssel der Mitglieder, wie die Verwalterin sie angekündigt hat.
+    public var keys: [String: Data]
+    /// Ich bin nicht mehr dabei (ausgetreten oder entfernt): nur noch lesen.
+    public var left: Bool?
+    /// Mitglieder, bei denen der aktuelle Stand noch nicht angekommen ist
+    /// (nur bei der Verwalterin). Beim nächsten Start geht er erneut hinaus.
+    public var unsynced: [String]?
+
+    public init(id: String, name: String, members: [String], admin: String, version: Int, secret: Data, keys: [String: Data]) {
+        self.id = id
+        self.name = name
+        self.members = members
+        self.admin = admin
+        self.version = version
+        self.secret = secret
+        self.keys = keys
+    }
+
+    public var hasLeft: Bool { left == true }
+    public func isAdmin(_ uid: String) -> Bool { admin == uid }
 }
 
 /// Eine Chat-Regel zum Auswählen: aus, Frist oder nach dem Lesen.

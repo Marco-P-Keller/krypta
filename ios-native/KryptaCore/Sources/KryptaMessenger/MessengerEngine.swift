@@ -42,11 +42,16 @@ struct EngineMeta: Codable {
     /// Löschfrist für neue Chats: Frist in Sekunden, oder nach dem Lesen.
     var defaultTimer: Double?
     var defaultAfterRead: Bool?
+    /// Gruppen, aus denen ich ausgetreten bin: eine alte Einladung holt mich
+    /// nicht zurück.
+    var leftGroups: [String]?
 
     struct PendingBurn: Codable, Equatable {
         let chatId: String
         let messageId: String
         let at: Date
+        /// In Gruppen: wem die Nachricht gehörte (dorthin geht die Meldung).
+        var to: String?
     }
 
     struct UnlockAttempt: Codable {
@@ -185,7 +190,7 @@ public final class MessengerEngine {
     }
 
     var listedChats: [Chat] {
-        chats.filter { contact($0.recipientId)?.requestState != .incoming }
+        chats.filter { !$0.isHidden && contact($0.recipientId)?.requestState != .incoming }
     }
 
     static func newestFirst(_ a: Chat, _ b: Chat) -> Bool {
@@ -291,6 +296,8 @@ public final class MessengerEngine {
         messages[chatId, default: []].append(message)
         saveMessages(chatId)
         touch(chatId, message.timestamp)
+        // Ein Mitglied, mit dem man zum ersten Mal direkt schreibt: jetzt in die Liste.
+        if !message.isSystemEvent, chat(chatId)?.isHidden == true { updateChat(chatId) { $0.hidden = nil } }
     }
 
     func touch(_ chatId: String, _ time: Date) {
@@ -328,6 +335,7 @@ public final class MessengerEngine {
         startTimer()
         retryPendingBurns()
         verifyAllTransparency()
+        resyncGroups()
     }
 
     /// Hintergrund: Empfang und Uhr anhalten. Offene Meldungen bleiben liegen.

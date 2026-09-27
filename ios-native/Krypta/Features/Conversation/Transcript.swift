@@ -90,6 +90,8 @@ struct MessageRow: View {
     let onTap: () -> Void
     var quote: QuoteInfo?
     var reactions: [ReactionChip] = []
+    /// In Gruppen: wer schreibt (über der ersten Blase einer Folge).
+    var senderName: String?
     var onQuoteTap: (String) -> Void = { _ in }
     var onReactionTap: (ReactionChip) -> Void = { _ in }
 
@@ -97,6 +99,12 @@ struct MessageRow: View {
         HStack(alignment: .bottom, spacing: 6) {
             if mine { Spacer(minLength: 48) }
             VStack(alignment: mine ? .trailing : .leading, spacing: 3) {
+                if let senderName, !mine, position.isFirst {
+                    Text(senderName)
+                        .font(.caption.weight(.medium))
+                        .foregroundStyle(.secondary)
+                        .padding(.leading, 12)
+                }
                 bubble
                     .onTapGesture(perform: onTap)
                 if !reactions.isEmpty {
@@ -211,7 +219,7 @@ struct MessageRow: View {
     }
 
     private var accessibility: String {
-        let who = mine ? String(localized: "Du") : String(localized: "Kontakt")
+        let who = mine ? String(localized: "Du") : (senderName ?? String(localized: "Kontakt"))
         var parts: [String] = []
         if let quote {
             let quoted = quote.text ?? String(localized: "Nachricht nicht mehr verfügbar")
@@ -419,9 +427,25 @@ struct Composer: View {
 enum SystemEventText {
     /// Ganze Sätze je Fall — zusammengesetzte Bruchstücke ließen sich nicht
     /// in jede Sprache übersetzen.
-    static func text(_ kind: SystemEventKind, mine: Bool, timer: TimeInterval?, name: String = "") -> String {
+    static func text(_ kind: SystemEventKind, mine: Bool, timer: TimeInterval?, name: String = "", subject: String = "") -> String {
         let who = name.isEmpty ? String(localized: "Dein Kontakt") : name
         switch kind {
+        case .groupCreated:
+            return String(localized: "Du hast die Gruppe „\(subject)“ erstellt.")
+        case .groupJoined:
+            return String(localized: "\(who) hat dich zur Gruppe „\(subject)“ hinzugefügt.")
+        case .groupMemberAdded:
+            return mine ? String(localized: "Du hast \(subject) hinzugefügt.") : String(localized: "\(who) hat \(subject) hinzugefügt.")
+        case .groupMemberRemoved:
+            return mine ? String(localized: "Du hast \(subject) entfernt.") : String(localized: "\(who) hat \(subject) entfernt.")
+        case .groupMemberLeft:
+            return String(localized: "\(who) hat die Gruppe verlassen.")
+        case .groupRenamed:
+            return mine ? String(localized: "Du hast die Gruppe in „\(subject)“ umbenannt.") : String(localized: "\(who) hat die Gruppe in „\(subject)“ umbenannt.")
+        case .groupRemovedYou:
+            return String(localized: "\(who) hat dich aus der Gruppe entfernt.")
+        case .groupLeft:
+            return String(localized: "Du hast die Gruppe verlassen.")
         case .screenshot:
             return mine ? String(localized: "Du hast ein Bildschirmfoto gemacht.") : String(localized: "\(who) hat ein Bildschirmfoto gemacht.")
         case .screenRecording:
@@ -437,6 +461,19 @@ enum SystemEventText {
                 return mine ? String(localized: "Du hast die Löschfrist auf \(d) gesetzt.") : String(localized: "\(who) hat die Löschfrist auf \(d) gesetzt.")
             }
             return mine ? String(localized: "Du hast die Löschfrist ausgeschaltet.") : String(localized: "\(who) hat die Löschfrist ausgeschaltet.")
+        }
+    }
+
+    /// Worum es in einem Gruppenhinweis geht: ein Mitglied (Kennung → Name)
+    /// oder ein Gruppenname.
+    @MainActor
+    static func subject(of m: Message, engine: MessengerEngine) -> String {
+        guard let text = m.text else { return "" }
+        switch m.systemEvent {
+        case .groupMemberAdded?, .groupMemberRemoved?, .groupMemberLeft?:
+            return text == engine.userId ? String(localized: "dich") : engine.memberName(text)
+        default:
+            return text
         }
     }
 }
