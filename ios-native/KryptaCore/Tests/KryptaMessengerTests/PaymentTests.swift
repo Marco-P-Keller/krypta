@@ -91,6 +91,51 @@ final class PaymentTests: TwoMessengers {
         XCTAssertNotEqual(alice.contact(bobId)?.bitcoinAddress, bobAddress.string)
     }
 
+    /// Gebühr erhöht: Bob bekommt die neue Transaktion verschlüsselt
+    /// nachgereicht und prüft sie wie jede Zahlung.
+    func testFeeBumpUpdatesThePaymentInChat() async throws {
+        let (a, b) = try await connectWithWallets()
+        chain.fund(aliceWallet.receiveAddress().string, 400_000)
+        chain.mine()
+        await aliceWallet.sync()
+        let draft = try aliceWallet.prepare(to: XCTUnwrap(alice.paymentAddress(for: bobId)), amount: .exact(70_000), feeRate: 2, contactId: bobId)
+        let sent = try await alice.pay(chatId: a, draft: draft, reason: "test")
+        await settle(self.bob.messages(in: b).last?.payment != nil)
+        let message = try XCTUnwrap(bob.messages(in: b).last)
+        await settle(self.bobWallet.claimStatus(messageId: message.id) == .unconfirmed(received: 70_000))
+
+        let bump = try aliceWallet.prepareBump(sent.txid, feeRate: 15)
+        let bumped = try await alice.bumpFee(bump, reason: "test")
+        XCTAssertEqual(alice.messages(in: a).last?.payment?.txid, bumped.txid)
+        await settle(self.bob.messages(in: b).last?.payment?.txid == bumped.txid)
+        XCTAssertEqual(bob.messages(in: b).last?.payment?.txid, bumped.txid)
+        XCTAssertEqual(bob.messages(in: b).filter { $0.payment != nil }.count, 1)
+
+        chain.mine()
+        await bobWallet.sync()
+        guard case .confirmed(70_000, _, true)? = bobWallet.claimStatus(messageId: message.id) else {
+            return XCTFail("\(String(describing: bobWallet.claimStatus(messageId: message.id)))")
+        }
+    }
+
+    /// Eine Umleitung auf eine andere Zahlung (anderer Betrag) nimmt Bob nicht an.
+    func testPaymentUpdateMustKeepAmountAndAddress() async throws {
+        let (a, b) = try await connectWithWallets()
+        chain.fund(aliceWallet.receiveAddress().string, 400_000)
+        chain.mine()
+        await aliceWallet.sync()
+        let draft = try aliceWallet.prepare(to: XCTUnwrap(alice.paymentAddress(for: bobId)), amount: .exact(60_000), feeRate: 2, contactId: bobId)
+        let sent = try await alice.pay(chatId: a, draft: draft, reason: "test")
+        await settle(self.bob.messages(in: b).last?.payment != nil)
+        let message = try XCTUnwrap(bob.messages(in: b).last)
+        var forged = sent.payment.json.objectValue!
+        forged["txid"] = .string(String(repeating: "ee", count: 32))
+        forged["sat"] = 90_000
+        await alice.sendSide(chatId: a, fields: ["_payu": .object(["m": .string(message.id), "p": .object(forged)])])
+        await settle()
+        XCTAssertEqual(bob.messages(in: b).last?.payment?.txid, sent.txid)
+    }
+
     /// Scheitert nur die Nachricht, schickt „erneut senden" nur sie — nie
     /// eine zweite Transaktion.
     func testResendPaymentMessageNeverPaysTwice() async throws {

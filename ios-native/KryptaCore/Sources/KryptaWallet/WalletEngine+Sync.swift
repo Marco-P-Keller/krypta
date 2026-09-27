@@ -119,8 +119,11 @@ extension WalletEngine {
     /// Münzen sind woanders hin; niemand → dieselbe Transaktion noch einmal
     /// senden. Eine neue, zweite Zahlung entsteht dabei nie.
     func reconcileOutgoing() async {
-        for (txid, out) in state.outgoing where out.state != .failed {
-            if state.history[txid] != nil {
+        for (txid, out) in state.outgoing where out.state != .failed && out.state != .replaced {
+            // Gibt es eine eigene Ersatztransaktion, zählt allein, wer die
+            // Münzen wirklich ausgegeben hat.
+            let replacements = Set(state.outgoing.values.filter { $0.replaces == txid && $0.state != .failed }.map(\.txid))
+            if let known = state.history[txid], known.isConfirmed || replacements.isEmpty {
                 if out.state != .broadcast { state.outgoing[txid]?.state = .broadcast }
                 continue
             }
@@ -135,7 +138,14 @@ extension WalletEngine {
             }
             if unknown { continue }
             if spenders.contains(where: { $0 != txid }) {
-                state.outgoing[txid]?.state = .failed
+                // Ausgegeben von der eigenen Ersatztransaktion: ersetzt, nicht gescheitert.
+                if !replacements.isEmpty && spenders.subtracting([txid]).isSubset(of: replacements) {
+                    state.outgoing[txid]?.state = .replaced
+                    state.history.removeValue(forKey: txid)
+                    if let change = out.change { state.coins.removeAll { $0.outPoint == change.outPoint } }
+                } else {
+                    state.outgoing[txid]?.state = .failed
+                }
                 continue
             }
             if spenders == [txid] {

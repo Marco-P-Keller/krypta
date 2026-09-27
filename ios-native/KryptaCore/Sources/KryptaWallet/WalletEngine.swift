@@ -41,6 +41,12 @@ struct WalletState: Codable {
         let note: String?
         /// Das eigene Wechselgeld, sofort wieder ausgebbar.
         let change: Coin?
+        /// Die ausgegebenen Münzen mit Wert und Pfad (für eine Ersatztransaktion).
+        var inputCoins: [Coin]?
+        /// Welche Ausgabe an den Empfänger geht.
+        var recipientIndex: Int?
+        /// Diese Transaktion ersetzt jene (höhere Gebühr).
+        var replaces: String?
     }
 
     struct Claim: Codable {
@@ -278,7 +284,7 @@ public final class WalletEngine {
         }
         balance = b
         var list = Array(state.history.values)
-        for out in state.outgoing.values where state.history[out.txid] == nil && out.state != .failed {
+        for out in state.outgoing.values where state.history[out.txid] == nil && out.state != .failed && out.state != .replaced {
             list.append(WalletTransaction(txid: out.txid, net: -(out.amount + out.fee), fee: out.fee, height: nil, time: out.created,
                                           contactId: out.contactId, note: out.note, outgoing: out.state))
         }
@@ -306,7 +312,7 @@ public final class WalletEngine {
 
     /// Eingänge eigener Sendungen, die noch nicht sicher verbucht sind.
     var lockedOutPoints: Set<OutPoint> {
-        Set(state.outgoing.values.filter { $0.state != .failed }.flatMap(\.inputs))
+        Set(state.outgoing.values.filter { $0.state != .failed && $0.state != .replaced }.flatMap(\.inputs))
     }
 
     /// Was jetzt ausgegeben werden darf: bestätigt oder eigenes Wechselgeld.
@@ -336,7 +342,7 @@ public final class WalletEngine {
 
     /// Etwas, das sich ohne Zutun ändern wird.
     var hasPendingActivity: Bool {
-        state.outgoing.values.contains { $0.state != .failed && state.history[$0.txid]?.isConfirmed != true }
+        state.outgoing.values.contains { $0.state != .failed && $0.state != .replaced && state.history[$0.txid]?.isConfirmed != true }
             || state.claims.values.contains(where: { isOpen($0.check) })
             || balance.incoming > 0
             || balance.ownPending > 0

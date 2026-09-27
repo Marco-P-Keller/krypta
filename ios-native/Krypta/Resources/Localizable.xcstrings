@@ -3917,6 +3917,46 @@
         }
       }
     },
+    "Bisher": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Current"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Actual"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Actuel"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Attuale"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Huidig"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Atual"
+          }
+        }
+      }
+    },
     "Bitcoin": {
       "localizations": {
         "en": {
@@ -4729,6 +4769,46 @@
         }
       }
     },
+    "Dafür reicht das freie Guthaben nicht. Bestätigte Münzen kämen dazu, aber es gibt keine.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your available balance isn’t enough. Confirmed coins would be added, but there are none."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "El saldo disponible no alcanza. Se añadirían monedas confirmadas, pero no hay."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Le solde disponible ne suffit pas. Des pièces confirmées seraient ajoutées, mais il n’y en a pas."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Il saldo disponibile non basta. Si aggiungerebbero monete confermate, ma non ce ne sono."
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Het vrije saldo is niet genoeg. Bevestigde munten zouden erbij komen, maar die zijn er niet."
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "O saldo disponível não é suficiente. Moedas confirmadas seriam adicionadas, mas não há nenhuma."
+          }
+        }
+      }
+    },
     "Das Foto wird neu gespeichert, ohne Ort, Kamera und Aufnahmezeit.": {
       "localizations": {
         "en": {
@@ -5009,6 +5089,46 @@
           "stringUnit": {
             "state": "translated",
             "value": "A senha atual está incorreta."
+          }
+        }
+      }
+    },
+    "Das hat nicht geklappt. Die bisherige Zahlung gilt weiter.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "That didn’t work. The existing payment still stands."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No ha funcionado. El pago anterior sigue siendo válido."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cela n’a pas fonctionné. Le paiement actuel reste valable."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Non ha funzionato. Il pagamento precedente resta valido."
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dat is niet gelukt. De bestaande betaling blijft gelden."
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Não deu certo. O pagamento anterior continua valendo."
           }
         }
       }
@@ -6069,6 +6189,46 @@
         }
       }
     },
+    "Der Empfänger bekommt genau denselben Betrag. Die neue Transaktion ersetzt die alte; beide geben dieselben Münzen aus, es kann also nur eine gelten. Im Chat bekommt dein Kontakt die neue Kennung verschlüsselt nachgereicht.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The recipient receives exactly the same amount. The new transaction replaces the old one; both spend the same coins, so only one can be valid. In the chat, your contact receives the new ID encrypted."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "El destinatario recibe exactamente el mismo importe. La nueva transacción sustituye a la anterior; ambas gastan las mismas monedas, así que solo una puede valer. En el chat, tu contacto recibe el nuevo identificador cifrado."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Le destinataire reçoit exactement le même montant. La nouvelle transaction remplace l’ancienne ; les deux dépensent les mêmes pièces, une seule peut donc être valable. Dans la discussion, ton contact reçoit le nouvel identifiant chiffré."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Il destinatario riceve esattamente lo stesso importo. La nuova transazione sostituisce la vecchia; entrambe spendono le stesse monete, quindi solo una può valere. Nella chat il tuo contatto riceve il nuovo identificativo cifrato."
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "De ontvanger krijgt precies hetzelfde bedrag. De nieuwe transactie vervangt de oude; beide geven dezelfde munten uit, dus er kan er maar één gelden. In de chat krijgt je contact de nieuwe ID versleuteld nagestuurd."
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "O destinatário recebe exatamente o mesmo valor. A nova transação substitui a antiga; ambas gastam as mesmas moedas, então só uma pode valer. No chat, seu contato recebe o novo identificador criptografado."
+          }
+        }
+      }
+    },
     "Der Löschcode muss sich vom Geheimcode unterscheiden.": {
       "extractionState": "extracted_with_value",
       "localizations": {
@@ -6187,6 +6347,46 @@
           "stringUnit": {
             "state": "translated",
             "value": "A chave fica só nas chaves deste iPhone, não em backups nem no iCloud. Nem o Krypta chega a ela sem a sua confirmação."
+          }
+        }
+      }
+    },
+    "Der Server hat die Erhöhung abgelehnt. Die bisherige Zahlung gilt weiter.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The server rejected the increase. The existing payment still stands."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "El servidor ha rechazado el aumento. El pago anterior sigue siendo válido."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Le serveur a refusé l’augmentation. Le paiement actuel reste valable."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Il server ha rifiutato l’aumento. Il pagamento precedente resta valido."
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "De server heeft de verhoging geweigerd. De bestaande betaling blijft gelden."
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "O servidor recusou o aumento. O pagamento anterior continua valendo."
           }
         }
       }
@@ -6995,6 +7195,46 @@
           "stringUnit": {
             "state": "translated",
             "value": "O número de segurança de %@ mudou. Verifique-o antes de continuar escrevendo."
+          }
+        }
+      }
+    },
+    "Die Verbindung brach ab. Krypta prüft beim nächsten Abgleich, welche der beiden Transaktionen gilt; doppelt gezahlt wird nie.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The connection dropped. Krypta checks at the next sync which of the two transactions counts; you never pay twice."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Se ha cortado la conexión. Krypta comprueba en la próxima sincronización cuál de las dos transacciones vale; nunca se paga dos veces."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "La connexion a été interrompue. Krypta vérifie à la prochaine synchronisation laquelle des deux transactions est valable ; on ne paie jamais deux fois."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "La connessione si è interrotta. Krypta controlla alla prossima sincronizzazione quale delle due transazioni vale; non si paga mai due volte."
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "De verbinding viel weg. Krypta controleert bij de volgende synchronisatie welke van de twee transacties geldt; er wordt nooit dubbel betaald."
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A conexão caiu. O Krypta verifica na próxima sincronização qual das duas transações vale; nunca se paga duas vezes."
           }
         }
       }
@@ -9347,6 +9587,46 @@
         }
       }
     },
+    "Ersetzt (höhere Gebühr)": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Replaced (Higher Fee)"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sustituido (comisión más alta)"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Remplacé (frais plus élevés)"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sostituito (commissione più alta)"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vervangen (hogere kosten)"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Substituído (taxa maior)"
+          }
+        }
+      }
+    },
     "Ersetzt die Wallet auf diesem iPhone. Wörter einer anderen Wallet (BIP39, BIP84, native Segwit) funktionieren auch.": {
       "localizations": {
         "en": {
@@ -9876,6 +10156,46 @@
         }
       }
     },
+    "Für diese Zahlung lässt sich die Gebühr nicht mehr erhöhen.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The fee for this payment can no longer be increased."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ya no se puede aumentar la comisión de este pago."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Les frais de ce paiement ne peuvent plus être augmentés."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Non è più possibile aumentare la commissione di questo pagamento."
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Voor deze betaling kunnen de kosten niet meer worden verhoogd."
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Não é mais possível aumentar a taxa deste pagamento."
+          }
+        }
+      }
+    },
     "Für mich löschen": {
       "extractionState": "extracted_with_value",
       "localizations": {
@@ -9953,6 +10273,126 @@
           "stringUnit": {
             "state": "translated",
             "value": "Taxa"
+          }
+        }
+      }
+    },
+    "Gebühr erhöhen": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Increase Fee"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aumentar comisión"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Augmenter les frais"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aumenta commissione"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kosten verhogen"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aumentar taxa"
+          }
+        }
+      }
+    },
+    "Gebühr neu": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "New Fee"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nueva comisión"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nouveaux frais"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nuova commissione"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nieuwe kosten"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nova taxa"
+          }
+        }
+      }
+    },
+    "Gebühr vorher": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Previous Fee"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Comisión anterior"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Frais précédents"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Commissione precedente"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vorige kosten"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Taxa anterior"
           }
         }
       }
@@ -11411,6 +11851,46 @@
           "stringUnit": {
             "state": "translated",
             "value": "Taxa alta"
+          }
+        }
+      }
+    },
+    "Hängt die Zahlung, weil die Gebühr zu niedrig war, geht sie mit höherer Gebühr noch einmal hinaus.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "If the payment is stuck because the fee was too low, it goes out again with a higher fee."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Si el pago está atascado porque la comisión era demasiado baja, se vuelve a enviar con una comisión más alta."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Si le paiement est bloqué parce que les frais étaient trop bas, il repart avec des frais plus élevés."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Se il pagamento è bloccato perché la commissione era troppo bassa, viene reinviato con una commissione più alta."
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Blijft de betaling hangen omdat de kosten te laag waren, dan gaat ze met hogere kosten opnieuw de deur uit."
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Se o pagamento está travado porque a taxa era baixa demais, ele sai de novo com uma taxa maior."
           }
         }
       }
@@ -12993,6 +13473,46 @@
           "stringUnit": {
             "state": "translated",
             "value": "Copiado"
+          }
+        }
+      }
+    },
+    "Kostet zusätzlich": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Additional Cost"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Coste adicional"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Coût supplémentaire"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Costo aggiuntivo"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Extra kosten"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Custo adicional"
           }
         }
       }
@@ -15393,6 +15913,46 @@
           "stringUnit": {
             "state": "translated",
             "value": "Rede"
+          }
+        }
+      }
+    },
+    "Neu": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "New"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nueva"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nouveau"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nuova"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nieuw"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nova"
           }
         }
       }

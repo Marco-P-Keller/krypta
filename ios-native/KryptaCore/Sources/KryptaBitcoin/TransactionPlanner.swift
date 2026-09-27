@@ -181,4 +181,75 @@ public enum TransactionPlanner {
             throw Failure.insufficientFunds(available: max(0, available))
         }
     }
+
+    /// Satz, um den eine Ersatztransaktion mindestens mehr zahlen muss
+    /// (incrementalRelayFee von Bitcoin Core, BIP125 Regel 4).
+    public static let incrementalRelayRate = 1.0
+
+    /// Dieselbe Zahlung mit höherer Gebühr (Replace-by-Fee, BIP125).
+    ///
+    /// Gibt dieselben Münzen aus wie das Original, zahlt dem Empfänger genau
+    /// denselben Betrag und nimmt die zusätzliche Gebühr aus dem
+    /// Wechselgeld. Reicht es nicht, kommen bestätigte Münzen dazu — neue
+    /// unbestätigte Eingänge erlaubt BIP125 nicht. Die neue Gebühr ist
+    /// mindestens die alte plus 1 sat/vB auf die neue Größe, und der Satz
+    /// liegt über dem alten.
+    public static func replacement<R: RandomNumberGenerator>(
+        original: [Coin],
+        extra: [Coin],
+        recipient: [UInt8],
+        amount: Int64,
+        oldFee: Int64,
+        oldVSize: Int,
+        feeRate: Double,
+        changeScript: [UInt8],
+        changePath: AddressPath,
+        using rng: inout R
+    ) throws -> PaymentPlan {
+        guard feeRate.isFinite, feeRate >= minFeeRate, feeRate <= maxFeeRate, oldVSize > 0,
+              feeRate > Double(oldFee) / Double(oldVSize) else { throw Failure.feeRateOutOfRange }
+        guard !original.isEmpty else { throw Failure.nothingToSpend }
+        let changeDust = BitcoinAddress.dustLimit(scriptPubKey: changeScript)
+        var inputs = original
+        var pool = extra.filter { $0.confirmed && $0.value > 0 }.sorted { $0.value > $1.value }
+
+        func required(_ vsize: Int) -> Int64 {
+            max(fee(vsize: vsize, rate: feeRate), oldFee + fee(vsize: vsize, rate: incrementalRelayRate))
+        }
+
+        while true {
+            let total = inputs.reduce(0) { $0 + $1.value }
+            let vWith = vsize(inputs: inputs.count, outputScripts: [recipient, changeScript])
+            let change = total - amount - required(vWith)
+            if change >= changeDust {
+                return assemble(inputs, recipient: recipient, send: amount, change: change, changeScript: changeScript,
+                                changePath: changePath, feeRate: feeRate, using: &rng)
+            }
+            let vWithout = vsize(inputs: inputs.count, outputScripts: [recipient])
+            if total - amount >= required(vWithout) {
+                // Ohne Wechselgeld: der Rest (weniger als eine Ausgabe wert) wird Gebühr.
+                return assemble(inputs, recipient: recipient, send: amount, change: nil, changeScript: changeScript,
+                                changePath: changePath, feeRate: feeRate, using: &rng)
+            }
+            guard !pool.isEmpty, inputs.count < maxInputs else {
+                throw Failure.insufficientFunds(available: max(0, total - required(vWithout)))
+            }
+            inputs.append(pool.removeFirst())
+        }
+    }
+
+    static func assemble<R: RandomNumberGenerator>(_ selected: [Coin], recipient: [UInt8], send: Int64, change: Int64?, changeScript: [UInt8],
+                                                   changePath: AddressPath, feeRate: Double, using rng: inout R) -> PaymentPlan {
+        var outputs = [TxOutput(value: send, scriptPubKey: recipient)]
+        if let change { outputs.append(TxOutput(value: change, scriptPubKey: changeScript)) }
+        let swapped = outputs.count == 2 && Bool.random(using: &rng)
+        if swapped { outputs.swapAt(0, 1) }
+        let recipientIndex = swapped ? 1 : 0
+        let total = selected.reduce(0) { $0 + $1.value }
+        return PaymentPlan(
+            inputs: selected, outputs: outputs, recipientIndex: recipientIndex, changeIndex: change == nil ? nil : 1 - recipientIndex,
+            changePath: change == nil ? nil : changePath, amount: send, fee: total - send - (change ?? 0),
+            estimatedVSize: vsize(inputs: selected.count, outputScripts: outputs.map(\.scriptPubKey)), feeRate: feeRate
+        )
+    }
 }

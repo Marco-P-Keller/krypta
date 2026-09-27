@@ -181,6 +181,7 @@ struct TransactionRow: View {
         case .failed?: return String(localized: "Nicht gesendet")
         case .uncertain?: return String(localized: "Unklar, Krypta prüft")
         case .broadcasting?: return String(localized: "Wird gesendet …")
+        case .replaced?: return String(localized: "Ersetzt (höhere Gebühr)")
         default: break
         }
         guard tx.isConfirmed else { return String(localized: "\(date) · unbestätigt") }
@@ -194,6 +195,7 @@ struct TransactionDetailView: View {
     @Environment(WalletEngine.self) private var wallet: WalletEngine?
     @Environment(MessengerEngine.self) private var engine
     let txid: String
+    @State private var bumping = false
 
     var body: some View {
         List {
@@ -235,10 +237,20 @@ struct TransactionDetailView: View {
                         Text("Die Verbindung brach beim Senden ab. Krypta sendet bei jedem Abgleich genau diese Transaktion erneut, bis sie auf der Blockchain ist. Eine zweite Zahlung entsteht dabei nie.")
                     }
                 }
+                if !tx.isIncoming && wallet.canBump(tx.txid) {
+                    Section {
+                        Button { bumping = true } label: {
+                            Label("Gebühr erhöhen", systemImage: "gauge.with.dots.needle.67percent")
+                        }
+                    } footer: {
+                        Text("Hängt die Zahlung, weil die Gebühr zu niedrig war, geht sie mit höherer Gebühr noch einmal hinaus.")
+                    }
+                }
             }
         }
         .navigationTitle("Transaktion")
         .navigationBarTitleDisplayMode(.inline)
+        .sheet(isPresented: $bumping) { ShieldedSheet { BumpFeeView(txid: txid) } }
     }
 }
 

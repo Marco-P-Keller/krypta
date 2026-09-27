@@ -37,6 +37,28 @@ extension WalletEngine {
         Task { [weak self] in await self?.verifyClaim(messageId) }
     }
 
+    /// Der Absender hat die Gebühr erhöht (RBF): dieselbe Zahlung (Betrag,
+    /// Adresse, Netz) steckt jetzt in einer anderen Transaktion. Nur solange
+    /// die alte nicht bestätigt ist, und nur auf eine Transaktion, die keine
+    /// andere Nachricht schon belegt — sonst ließe sich eine Zahlung zweimal
+    /// vorzeigen.
+    @discardableResult
+    public func replaceClaim(messageId: String, with payment: ChatPayment) -> Bool {
+        guard var claim = state.claims[messageId], claim.payment.network == payment.network,
+              claim.payment.address == payment.address, claim.payment.sats == payment.sats,
+              claim.payment.txid != payment.txid,
+              !state.claims.contains(where: { $0.key != messageId && $0.value.payment.txid == payment.txid }) else { return false }
+        if case .confirmed = claim.check { return false }
+        claim = .init(payment: payment, contactId: claim.contactId, received: Date(), attempts: 0,
+                      check: payment.network == network ? .checking : .otherNetwork)
+        state.claims[messageId] = claim
+        if let label = state.labels[claim.payment.txid] { state.labels[payment.txid] = label }
+        save()
+        touch()
+        Task { [weak self] in await self?.verifyClaim(messageId) }
+        return true
+    }
+
     /// Was zu einer Zahlung im Chat feststeht. `nil`: nicht bekannt (z. B.
     /// die eigene; deren Stand steht in `outgoingState`).
     public func claimStatus(messageId: String) -> PaymentCheck? {

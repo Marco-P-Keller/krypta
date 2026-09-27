@@ -84,7 +84,8 @@ extension WalletEngine {
         state.outgoing[txid] = .init(
             txid: txid, raw: tx.serialized().hex, state: .broadcasting, created: Date(),
             inputs: draft.plan.inputs.map(\.outPoint), amount: draft.amount, fee: draft.fee,
-            recipient: draft.recipient.string, contactId: draft.contactId, note: draft.note, change: changeCoin
+            recipient: draft.recipient.string, contactId: draft.contactId, note: draft.note, change: changeCoin,
+            inputCoins: draft.plan.inputs, recipientIndex: draft.plan.recipientIndex
         )
         if let path = draft.plan.changePath { state.nextChange = max(state.nextChange, path.index + 1) }
         save()

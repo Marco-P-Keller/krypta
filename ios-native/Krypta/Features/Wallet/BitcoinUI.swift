@@ -126,6 +126,8 @@ struct PaymentStatus: Equatable {
                 return .init(text: String(localized: "Unklar, Krypta prüft"), symbol: "questionmark.circle", isProblem: true, amount: payment.sats)
             case (.failed, _)?:
                 return .init(text: String(localized: "Nicht gesendet"), symbol: "xmark.octagon", isProblem: true, amount: payment.sats)
+            case (.replaced, _)?:
+                return .init(text: String(localized: "Ersetzt (höhere Gebühr)"), symbol: "arrow.triangle.2.circlepath", isProblem: false, amount: payment.sats)
             case (.broadcast, let height?)?:
                 return confirmed(wallet.confirmations(height: height), amount: payment.sats)
             case (.broadcast, nil)?:

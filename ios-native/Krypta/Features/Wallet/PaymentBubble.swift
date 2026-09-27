@@ -55,6 +55,7 @@ struct PaymentDetailView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.closeSheet) private var closeSheet
     let message: Message
+    @State private var bumping = false
 
     var body: some View {
         NavigationStack {
@@ -101,6 +102,11 @@ struct PaymentDetailView: View {
                         if let url = payment.network.explorerURL(txid: payment.txid) {
                             Link(destination: url) { Label("Im Block-Explorer ansehen", systemImage: "safari") }
                         }
+                        if mine, wallet?.canBump(payment.txid) == true {
+                            Button { bumping = true } label: {
+                                Label("Gebühr erhöhen", systemImage: "gauge.with.dots.needle.67percent")
+                            }
+                        }
                     } footer: {
                         Text(mine
                              ? "Die Zahlung läuft über die Bitcoin-Blockchain. Die Nachricht im Chat sagt deinem Kontakt nur, dass und wohin."
@@ -115,6 +121,7 @@ struct PaymentDetailView: View {
                     }
                 }
                 .refreshable { await wallet?.sync() }
+                .sheet(isPresented: $bumping) { ShieldedSheet { BumpFeeView(txid: payment.txid) } }
             }
         }
     }

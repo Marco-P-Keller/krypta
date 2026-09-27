@@ -113,6 +113,31 @@ extension MessengerEngine {
         return sent
     }
 
+    /// Gebühr einer eigenen Zahlung erhöhen. Stand die Zahlung im Chat,
+    /// bekommt der Empfänger die neue Transaktion verschlüsselt nachgereicht
+    /// (`_payu`), und die Blase zeigt sie.
+    public func bumpFee(_ draft: BumpDraft, reason: String) async throws -> SentPayment {
+        guard let wallet else { throw WalletFailure.noWallet }
+        let sent = try await wallet.bump(draft, reason: reason)
+        for (chatId, list) in messages {
+            guard let m = list.first(where: { $0.senderId == userId && $0.payment?.txid == draft.originalTxid }) else { continue }
+            updateMessage(chatId, m.id) { $0.payment = sent.payment }
+            await sendSide(chatId: chatId, fields: ["_payu": .object(["m": .string(m.id), "p": sent.payment.json])])
+        }
+        return sent
+    }
+
+    /// `_payu` vom Absender einer Zahlung: dieselbe Zahlung, neue Transaktion.
+    func applyPaymentUpdate(chatId: String, senderId: String, map: JSONObject) {
+        guard let messageId = map["m"]?.stringValue, let p = map["p"]?.objectValue,
+              let payment = ChatPayment.parse(txid: p["txid"]?.stringValue, vout: p["vout"]?.intValue, sats: p["sat"]?.intValue,
+                                              address: p["a"]?.stringValue, network: p["n"]?.stringValue),
+              let m = messages(in: chatId).first(where: { $0.id == messageId }), m.senderId == senderId,
+              let old = m.payment, old.address == payment.address, old.sats == payment.sats, old.network == payment.network else { return }
+        guard wallet?.replaceClaim(messageId: messageId, with: payment) != false else { return }
+        updateMessage(chatId, messageId) { $0.payment = payment }
+    }
+
     func sendPaymentMessage(chatId: String, payment: ChatPayment, note: String) async {
         let rule = chat(chatId)?.timer
         await enqueue(chatId) { [self] in

@@ -192,11 +192,12 @@ public final class MemoryChain: ChainSource, @unchecked Sendable {
             if txs[txid] != nil { return txid }
             var prevouts = [ChainTxOutput]()
             var inputs = [TransactionSigner.Input]()
+            var conflicts = Set<String>()
             for input in tx.inputs {
                 guard let parent = txs[input.outPoint.txid], Int(input.outPoint.vout) < parent.tx.outputs.count else {
                     throw ChainError.rejected("missing-inputs")
                 }
-                if spent[input.outPoint] != nil { throw ChainError.rejected("txn-mempool-conflict") }
+                if let other = spent[input.outPoint] { conflicts.insert(other) }
                 let out = parent.tx.outputs[Int(input.outPoint.vout)]
                 prevouts.append(ChainTxOutput(script: out.scriptPubKey, value: out.value))
                 inputs.append(.init(outPoint: input.outPoint, value: out.value, scriptPubKey: out.scriptPubKey, path: AddressPath(chain: .receive, index: 0)))
@@ -206,6 +207,45 @@ public final class MemoryChain: ChainSource, @unchecked Sendable {
             guard outSum <= inSum else { throw ChainError.rejected("bad-txns-in-belowout") }
             guard inSum - outSum >= Int64(tx.virtualSize) else { throw ChainError.rejected("min relay fee not met") }
             guard tx.outputs.allSatisfy({ $0.value >= BitcoinAddress.dustLimit(scriptPubKey: $0.scriptPubKey) }) else { throw ChainError.rejected("dust") }
+            if !conflicts.isEmpty {
+                // Replace-by-Fee wie Bitcoin Core (BIP125): nur unbestätigte,
+                // als ersetzbar markierte Vorgänger; mehr Gebühr insgesamt,
+                // mindestens 1 sat/vB auf die neue Größe mehr, höherer Satz;
+                // keine neuen unbestätigten Eingänge.
+                let fee = inSum - outSum
+                var oldFees: Int64 = 0
+                for c in conflicts {
+                    guard let old = txs[c], old.height == nil, old.tx.inputs.contains(where: { $0.sequence < 0xFFFF_FFFE }) else {
+                        throw ChainError.rejected("txn-mempool-conflict")
+                    }
+                    let oldFee = old.prevouts.reduce(0) { $0 + $1.value } - old.tx.outputs.reduce(0) { $0 + $1.value }
+                    oldFees += oldFee
+                    guard Double(fee) / Double(tx.virtualSize) > Double(oldFee) / Double(old.tx.virtualSize) else {
+                        throw ChainError.rejected("insufficient fee, rejecting replacement")
+                    }
+                }
+                guard fee >= oldFees + Int64(tx.virtualSize) else { throw ChainError.rejected("insufficient fee, rejecting replacement") }
+                let originalInputs = Set(conflicts.flatMap { txs[$0]!.tx.inputs.map(\.outPoint) })
+                for input in tx.inputs where !originalInputs.contains(input.outPoint) && txs[input.outPoint.txid]?.height == nil {
+                    throw ChainError.rejected("replacement-adds-unconfirmed")
+                }
+                // Die ersetzten samt allem, was auf ihnen aufbaut, fliegen raus.
+                var evict = conflicts
+                var grew = true
+                while grew {
+                    grew = false
+                    for (id, entry) in txs where entry.height == nil && !evict.contains(id)
+                        && entry.tx.inputs.contains(where: { evict.contains($0.outPoint.txid) }) {
+                        evict.insert(id)
+                        grew = true
+                    }
+                }
+                for id in evict {
+                    for input in txs[id]!.tx.inputs where spent[input.outPoint] == id { spent.removeValue(forKey: input.outPoint) }
+                    txs.removeValue(forKey: id)
+                    order.removeAll { $0 == id }
+                }
+            }
             for input in tx.inputs { spent[input.outPoint] = txid }
             txs[txid] = Entry(tx: tx, prevouts: prevouts, height: nil, time: Date())
             order.append(txid)

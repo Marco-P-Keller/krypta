@@ -62,6 +62,8 @@ public enum OutgoingState: String, Codable, Sendable {
     case uncertain
     /// Abgelehnt; die Münzen sind wieder frei.
     case failed
+    /// Durch eine Ersatztransaktion mit höherer Gebühr abgelöst (RBF).
+    case replaced
 }
 
 public struct Balance: Equatable, Sendable {
@@ -187,6 +189,23 @@ public struct PaymentDraft: Sendable {
     public var total: Int64 { plan.total }
     /// Gebühr im Verhältnis zum Betrag — über 10 % fragt die App extra nach.
     public var feeShare: Double { Double(plan.fee) / Double(max(1, plan.amount)) }
+}
+
+/// Dieselbe Zahlung mit höherer Gebühr, fertig zum Bestätigen.
+public struct BumpDraft: Sendable {
+    public let originalTxid: String
+    let plan: PaymentPlan
+    public let recipient: BitcoinAddress
+    public let oldFee: Int64
+    public let oldRate: Double
+    let lockTime: UInt32
+    let stateVersion: Int
+
+    public var amount: Int64 { plan.amount }
+    public var newFee: Int64 { plan.fee }
+    public var newRate: Double { Double(plan.fee) / Double(max(1, plan.estimatedVSize)) }
+    /// Was die Erhöhung zusätzlich kostet.
+    public var extraCost: Int64 { plan.fee - oldFee }
 }
 
 /// Gesendet: das geht in den Chat.

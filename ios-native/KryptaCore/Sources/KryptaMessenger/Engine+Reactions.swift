@@ -129,6 +129,10 @@ extension MessengerEngine {
             applyEdit(chatId: chatId, senderId: senderId, target: target, text: inner["_t"]?.stringValue)
             return true
         }
+        if let update = inner["_payu"]?.objectValue {
+            applyPaymentUpdate(chatId: chatId, senderId: senderId, map: update)
+            return true
+        }
         return false
     }
 
