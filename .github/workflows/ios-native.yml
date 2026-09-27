@@ -65,4 +65,4 @@ jobs:
       - name: Übersetzungsfehler zusammengefasst
         if: failure()
         run: |
-          grep -E '(error|warning: .*will be an error)' "${RUNNER_TEMP}/build.log" | sort -u | head -80 || true
+          grep -E '(: error:|^error:|fatal error:|The following build commands failed)' "${RUNNER_TEMP}/build.log" | sort -u | head -60 || true

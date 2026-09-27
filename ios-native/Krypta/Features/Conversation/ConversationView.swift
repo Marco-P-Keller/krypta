@@ -83,6 +83,14 @@ struct ConversationView: View {
 
     @ViewBuilder
     private func content(chat: Chat, contact: Contact?) -> some View {
+        // In Teilen: am Stück ist die Kette für den Compiler zu lang.
+        let base = transcript(chat: chat, contact: contact)
+        let dialogs = messageDialogs(base, contact: contact)
+        attachmentViewers(attachmentPresentations(dialogs, chat: chat))
+    }
+
+    @ViewBuilder
+    private func transcript(chat: Chat, contact: Contact?) -> some View {
         let all = engine.messages(in: chatId)
         let items = TranscriptItem.build(all, me: engine.userId)
         let byId = Dictionary(all.map { ($0.id, $0) }, uniquingKeysWith: { a, _ in a })
@@ -128,6 +136,11 @@ struct ConversationView: View {
                 .accessibilityLabel(chat.isGroup ? Text("Gruppeninfo für \(chat.name)") : Text("Kontaktinfo für \(chat.name)"))
             }
         }
+    }
+
+    /// Passwort, Entsperren, erneut senden, einmal ansehen, Bitcoin.
+    private func messageDialogs<V: View>(_ view: V, contact: Contact?) -> some View {
+        view
         .alert("Passwort für diese Nachricht", isPresented: $askPassword) {
             SecureField("Passwort", text: $passwordInput)
             Button("Abbrechen", role: .cancel) { passwordInput = "" }
@@ -179,6 +192,17 @@ struct ConversationView: View {
         } message: {
             Text(payHint ?? "")
         }
+        .fullScreenCover(isPresented: Binding(get: { oneTimeText != nil }, set: { if !$0 { oneTimeText = nil } })) {
+            ScreenshotShield(isEnabled: app.screenshotShield) {
+                OneTimeReveal(text: oneTimeText ?? "") { oneTimeText = nil }
+            }
+            .ignoresSafeArea()
+        }
+    }
+
+    /// Auswählen, Aufnehmen, Vorschau und Ansehen von Anhängen.
+    private func attachmentPresentations<V: View>(_ view: V, chat: Chat) -> some View {
+        view
         .photosPicker(isPresented: $showPhotos, selection: $photoItem, matching: .any(of: [.images, .videos]))
         .onChange(of: photoItem) { _, item in
             guard let item else { return }
@@ -213,6 +237,11 @@ struct ConversationView: View {
                 sendAttachment(out, caption: caption, once: once, chat: chat)
             }
         }
+    }
+
+    /// Anhänge ansehen und Fehler beim Vorbereiten.
+    private func attachmentViewers<V: View>(_ view: V) -> some View {
+        view
         .fullScreenCover(item: $viewing) { m in
             ShieldedSheet {
                 if let a = m.attachment, let data = engine.attachmentData(m) {
@@ -236,12 +265,6 @@ struct ConversationView: View {
             Button("OK", role: .cancel) {}
         } message: {
             Text(attachmentError ?? "")
-        }
-        .fullScreenCover(isPresented: Binding(get: { oneTimeText != nil }, set: { if !$0 { oneTimeText = nil } })) {
-            ScreenshotShield(isEnabled: app.screenshotShield) {
-                OneTimeReveal(text: oneTimeText ?? "") { oneTimeText = nil }
-            }
-            .ignoresSafeArea()
         }
     }
 
