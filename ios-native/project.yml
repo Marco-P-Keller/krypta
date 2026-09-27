@@ -62,6 +62,12 @@ targets:
       properties:
         CFBundleShortVersionString: $(MARKETING_VERSION)
         CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        # Totmannschalter (DeadManSwitch.swift): iOS darf Krypta im
+        # Hintergrund wecken, um nachzusehen, ob die Frist um ist.
+        UIBackgroundModes:
+          - fetch
+        BGTaskSchedulerPermittedIdentifiers:
+          - com.calcchat.ww.deadman
         # Wie ios/Runner/Info.plist: nur HTTPS, und Firebase/Google nur mit
         # den Google-Wurzeln GTS Root R1 und R4.
         NSAppTransportSecurity:

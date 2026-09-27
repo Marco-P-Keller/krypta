@@ -3353,6 +3353,46 @@
         }
       }
     },
+    "Automatisch löschen": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Erase Automatically"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Borrar automáticamente"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Effacer automatiquement"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cancella automaticamente"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Automatisch wissen"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Apagar automaticamente"
+          }
+        }
+      }
+    },
     "Bearbeiten": {
       "extractionState": "extracted_with_value",
       "localizations": {
@@ -8984,6 +9024,46 @@
         }
       }
     },
+    "Entsperrst du Krypta %lld Tage lang nicht, löscht es alles wie der Löschcode: Schlüssel, Chats, Konto und Wallet. Das Guthaben holst du nur mit deinen zwölf Wörtern zurück. Spätestens beim nächsten Öffnen passiert es; im Hintergrund, wenn iOS Krypta dafür weckt.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "If you don’t unlock Krypta for %lld days, it erases everything like the wipe code: keys, chats, account and wallet. You can only recover the balance with your twelve words. It happens at the latest the next time Krypta is opened, and in the background whenever iOS wakes Krypta for it."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Si no desbloqueas Krypta durante %lld días, lo borra todo como el código de borrado: claves, chats, cuenta y cartera. El saldo solo lo recuperas con tus doce palabras. Ocurre como muy tarde la próxima vez que se abra Krypta, y en segundo plano cuando iOS despierte a Krypta para ello."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Si tu ne déverrouilles pas Krypta pendant %lld jours, tout est effacé comme avec le code d’effacement : clés, discussions, compte et portefeuille. Le solde ne se récupère qu’avec tes douze mots. Cela se produit au plus tard à la prochaine ouverture de Krypta, et en arrière-plan quand iOS réveille Krypta pour cela."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Se non sblocchi Krypta per %lld giorni, cancella tutto come il codice di cancellazione: chiavi, chat, account e wallet. Il saldo lo recuperi solo con le tue dodici parole. Succede al più tardi alla prossima apertura di Krypta, e in background quando iOS risveglia Krypta per farlo."
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ontgrendel je Krypta %lld dagen niet, dan wist het alles zoals de wiscode: sleutels, chats, account en wallet. Het saldo krijg je alleen met je twaalf woorden terug. Uiterlijk bij de volgende keer openen gebeurt het; op de achtergrond als iOS Krypta daarvoor wekt."
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Se você não desbloquear o Krypta por %lld dias, ele apaga tudo como o código de exclusão: chaves, conversas, conta e carteira. O saldo você só recupera com suas doze palavras. Acontece no máximo na próxima vez que o Krypta for aberto, e em segundo plano quando o iOS acordar o Krypta para isso."
+          }
+        }
+      }
+    },
     "Entsperrt": {
       "extractionState": "extracted_with_value",
       "localizations": {
@@ -14500,6 +14580,46 @@
           "stringUnit": {
             "state": "translated",
             "value": "Permitir notificações?"
+          }
+        }
+      }
+    },
+    "Nach %lld Tagen": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "After %lld Days"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tras %lld días"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Après %lld jours"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dopo %lld giorni"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Na %lld dagen"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Após %lld dias"
           }
         }
       }

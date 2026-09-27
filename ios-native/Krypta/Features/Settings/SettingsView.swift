@@ -22,6 +22,7 @@ struct SettingsView: View {
     @State private var vaultPassword = VaultPassword.isSet
     /// Spiegel der Einstellung in der Engine (dort nicht beobachtet).
     @State private var defaultRule: DefaultRuleOption?
+    @State private var deadManDays = DeadManSwitch.days ?? 0
 
     var body: some View {
         @Bindable var engine = engine
@@ -156,12 +157,31 @@ struct SettingsView: View {
                         }
                     }
                     .accessibilityIdentifier("settings.vault")
+                    Picker(selection: Binding(
+                        get: { deadManDays },
+                        set: { value in
+                            Haptics.selection()
+                            deadManDays = value
+                            DeadManSwitch.days = value > 0 ? value : nil
+                        }
+                    )) {
+                        Text("Aus").tag(0)
+                        ForEach(DeadManSwitch.choices, id: \.self) { Text("Nach \($0) Tagen").tag($0) }
+                    } label: {
+                        SettingsLabel("Automatisch löschen", symbol: "hourglass", color: .red)
+                    }
+                    .accessibilityIdentifier("settings.deadman")
                 } header: {
                     Text("Sperre")
                 } footer: {
-                    Text(calculator
-                         ? "Krypta öffnet sich als Rechner. Geheimcode + = zeigt deine Chats, Löschcode + = löscht alles."
-                         : (biometric ? "Ohne Tarnung öffnet sich Krypta nach \(Biometrics.name)." : "Ohne Tarnung öffnet sich Krypta direkt."))
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text(calculator
+                             ? "Krypta öffnet sich als Rechner. Geheimcode + = zeigt deine Chats, Löschcode + = löscht alles."
+                             : (biometric ? "Ohne Tarnung öffnet sich Krypta nach \(Biometrics.name)." : "Ohne Tarnung öffnet sich Krypta direkt."))
+                        if deadManDays > 0 {
+                            Text("Entsperrst du Krypta \(deadManDays) Tage lang nicht, löscht es alles wie der Löschcode: Schlüssel, Chats, Konto und Wallet. Das Guthaben holst du nur mit deinen zwölf Wörtern zurück. Spätestens beim nächsten Öffnen passiert es; im Hintergrund, wenn iOS Krypta dafür weckt.")
+                        }
+                    }
                 }
 
                 Section {

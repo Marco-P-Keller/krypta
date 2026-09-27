@@ -26,6 +26,9 @@ enum Keychain {
         case vaultPassword = "vault.password"
         case vaultFailures = "vault.failures"
         case vaultLastFail = "vault.lastfail"
+        /// Totmannschalter: nach so vielen Tagen ohne Entsperren alles löschen.
+        case deadManDays = "deadman.days"
+        case lastUnlock = "deadman.last"
 
         var accessibility: CFString {
             switch self {

@@ -96,6 +96,11 @@ final class AppModel {
             Task { await finishWipe(engine: nil, uid: EmergencyWipe.pendingUserId) }
             return
         }
+        // Totmannschalter: zu lange nicht entsperrt, dann nichts zeigen, alles löschen.
+        if DeadManSwitch.isDue() {
+            Task { await emergencyWipe() }
+            return
+        }
         #if DEBUG
         if DemoMode.isActive {
             Task {
@@ -195,6 +200,7 @@ final class AppModel {
         // Während des Startens verlassen oder gelöscht: nicht doch noch öffnen.
         guard phase == .unlocking else { return }
         withAnimation(.smooth) { phase = .unlocked }
+        DeadManSwitch.recordUnlock()
         #if DEBUG
         if DemoMode.isOffline, let engine { PushService.shared.attach(engine) }
         if DemoMode.isActive || DemoMode.isOffline { return }
@@ -275,7 +281,18 @@ final class AppModel {
         case .background:
             Task { await engine?.setForeground(false) }
             lock()
+            DeadManSwitch.scheduleBackgroundCheck()
         case .active:
+            if DeadManSwitch.isDue(), phase != .wiping, phase != .onboarding, phase != .launching {
+                Task { await emergencyWipe() }
+                return
+            }
+            // Im Hintergrund gelöscht (Totmannschalter): nicht vor einer Tür
+            // stehen bleiben, hinter der nichts mehr ist.
+            if Keychain.string(.userId) == nil, [Phase.calculator, .locked, .vaultPassword].contains(phase) {
+                withAnimation(.smooth) { phase = .onboarding }
+                return
+            }
             Task { await engine?.setForeground(true) }
             if phase == .unlocked { PushService.shared.clearDelivered() }
         default:

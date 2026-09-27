@@ -14,7 +14,10 @@ struct KryptaApp: App {
         Self.keepFirestoreInMemory()
         FirebaseRelay.configureSealedApp()
         PushService.shared.configure()
-        _model = State(initialValue: AppModel())
+        let model = AppModel()
+        _model = State(initialValue: model)
+        // Totmannschalter: iOS darf die App im Hintergrund wecken, um nachzusehen.
+        DeadManSwitch.registerBackgroundTask { [weak model] in await model?.emergencyWipe() }
     }
 
     /// Firestore legt sonst jede empfangene Nachricht (verschlüsselt) in
