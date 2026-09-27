@@ -28,6 +28,7 @@ extension MessengerEngine {
             if stateChanged, existing.requestState == .incoming, moved.requestState == .established,
                let chat = chat(forContact: id), let now = contact(id) {
                 await sendControl(chatId: chat.id, contact: now, type: "accepted", messageId: UUID().uuidString.lowercased())
+                await applyDefaultRule(chat.id)
             }
             if !sameKey {
                 updateContact(id) { $0.markKeyChanged(newKey: key) }
@@ -124,6 +125,7 @@ extension MessengerEngine {
         updateContact(contactId) { $0.requestState = .established }
         if let chat = chat(forContact: contactId), let c = contact(contactId) {
             await sendControl(chatId: chat.id, contact: c, type: "accepted", messageId: UUID().uuidString.lowercased())
+            await applyDefaultRule(chat.id)
         }
     }
 

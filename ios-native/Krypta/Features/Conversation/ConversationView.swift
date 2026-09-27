@@ -8,6 +8,8 @@ struct ConversationView: View {
     @Environment(AppModel.self) private var app
     @Environment(WalletEngine.self) private var wallet: WalletEngine?
     let chatId: String
+    /// Aus der Suche: zu dieser Nachricht scrollen.
+    var highlight: String?
 
     @State private var draft = ""
     @State private var option: ComposeOption = .chatRule
@@ -38,6 +40,9 @@ struct ConversationView: View {
         }
         .onAppear {
             engine.openChat(chatId)
+            if let highlight {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) { scrollTarget = highlight }
+            }
             if let contactId = engine.chat(chatId)?.recipientId { PushService.shared.clearDelivered(contactId: contactId) }
         }
         .onDisappear { Task { await engine.closeChat(chatId) } }

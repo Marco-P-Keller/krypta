@@ -84,6 +84,7 @@ extension MessengerEngine {
             _ = finalizeAccepted(chatId: chat.id, messageId: env.messageId, payload: env.payload)
             learnSealedKey(from: contact.id, inner: inner)
             markProcessed(env.messageId)
+            if state == .established && contact.requestState != .established { await applyDefaultRule(chat.id) }
             return
         }
 
@@ -121,6 +122,7 @@ extension MessengerEngine {
         m.payment = m.isPasswordProtected || m.oneTime ? nil : Self.payment(in: inner)
         if let re = inner["_re"]?.stringValue, (8...64).contains(re.count) { m.replyTo = re }
         append(m, to: chat.id)
+        surfaceIfArchived(chat.id)
         markProcessed(env.messageId)
         // Eine angekündigte Zahlung: die Wallet prüft sie an der Blockchain.
         if let payment = m.payment { wallet?.registerClaim(payment, from: env.senderId, messageId: env.messageId, note: content) }
@@ -194,6 +196,7 @@ extension MessengerEngine {
 
         if contact.requestState == .established {
             await sendControl(chatId: chatId, contact: contact, type: "accepted", messageId: UUID().uuidString.lowercased())
+            await applyDefaultRule(chatId)
         }
     }
 
@@ -216,7 +219,10 @@ extension MessengerEngine {
         case "delete": applyRemoteDelete(ctrl.messageId)
         case "unlock": applyUnlocked(ctrl.messageId)
         case "accepted":
-            if self.contact(contact.id)?.requestState == .outgoing { updateContact(contact.id) { $0.requestState = .established } }
+            if self.contact(contact.id)?.requestState == .outgoing {
+                updateContact(contact.id) { $0.requestState = .established }
+                await applyDefaultRule(chatId)
+            }
         case "clearMine": applyPeerClear(chatId: chatId, peerId: contact.id)
         case "burned": applyBurned(chatId: chatId, messageId: ctrl.messageId)
         case "chatGone": applyPeerChatGone(chatId: chatId, peerId: contact.id)

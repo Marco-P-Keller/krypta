@@ -59,6 +59,7 @@ final class AppModel {
         guard phase == .unlocked, !privacyCover, let target, let engine else { return false }
         switch target {
         case .chat(let contactId):
+            if engine.chat(forContact: contactId)?.isMuted() == true { return false }
             guard let active = engine.activeChatId else { return true }
             return engine.chat(active)?.recipientId != contactId
         case .requests:

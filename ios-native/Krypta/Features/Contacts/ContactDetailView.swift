@@ -107,6 +107,26 @@ struct ContactDetailView: View {
                     }
                 }
 
+                if let chat {
+                    Section {
+                        Toggle(isOn: Binding(
+                            get: { chat.isMuted() },
+                            set: { on in
+                                Haptics.selection()
+                                engine.setMuted(chat.id, until: on ? .distantFuture : nil)
+                            }
+                        )) {
+                            Label("Stumm", systemImage: "bell.slash")
+                        }
+                    } footer: {
+                        if let until = chat.mutedUntil, chat.isMuted(), until != .distantFuture {
+                            Text("Stumm bis \(until.formatted(date: .abbreviated, time: .shortened)).")
+                        } else {
+                            Text("Mitteilungen aus diesem Chat kommen still: ohne Ton und ohne Zahl am App-Symbol.")
+                        }
+                    }
+                }
+
                 Section {
                     LabeledContent("Kennung") {
                         Text(contact.id)

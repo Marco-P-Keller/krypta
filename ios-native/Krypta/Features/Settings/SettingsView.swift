@@ -20,6 +20,8 @@ struct SettingsView: View {
     @State private var pushNames = PushService.showsNames
     @State private var pushDenied = false
     @State private var vaultPassword = VaultPassword.isSet
+    /// Spiegel der Einstellung in der Engine (dort nicht beobachtet).
+    @State private var defaultRule: DefaultRuleOption?
 
     var body: some View {
         @Bindable var engine = engine
@@ -91,6 +93,16 @@ struct SettingsView: View {
                         SettingsLabel("Bildschirmfotos verhindern", symbol: "eye.slash.fill", color: .indigo)
                     }
                     .accessibilityIdentifier("settings.shield")
+                    Picker(selection: Binding(
+                        get: { defaultRule ?? DefaultRuleOption(engine.defaultChatRule) },
+                        set: { defaultRule = $0; engine.defaultChatRule = $0.rule }
+                    )) {
+                        Text("Aus").tag(DefaultRuleOption.off)
+                        ForEach(Timers.chatRule, id: \.self) { Text(Format.duration($0)).tag(DefaultRuleOption.timer($0)) }
+                        Text("Nach dem Lesen").tag(DefaultRuleOption.afterRead)
+                    } label: {
+                        SettingsLabel("Löschfrist für neue Chats", symbol: "timer", color: .orange)
+                    }
                     LabeledContent {
                         Text("Immer")
                     } label: {
@@ -102,6 +114,7 @@ struct SettingsView: View {
                     VStack(alignment: .leading, spacing: 8) {
                         Text("Jede Nachricht wird vom Server gelöscht, sobald dein Kontakt sie empfangen hat, von seinem Gerät und, sobald die Zustellung bestätigt ist, noch einmal von deinem. Nie abgeholte Nachrichten löscht der Server nach 24 Stunden.")
                         Text("Zustellungen werden immer gemeldet, weil an ihnen der Start der Löschfristen hängt. Lesebestätigungen nur, wenn du sie einschaltest.")
+                        Text("Die Löschfrist für neue Chats gilt ab dem Moment, in dem ein Kontakt angenommen ist, für beide Seiten. In jedem Chat lässt sie sich ändern.")
                         if app.screenshotShield {
                             Text(ScreenshotProtection.isEffective
                                  ? "Bildschirmfotos und Aufnahmen zeigen statt deiner Chats eine leere Fläche. Dein Kontakt erfährt trotzdem davon."
@@ -241,6 +254,29 @@ extension SettingsView {
     private func refreshPushPermission() async {
         let status = await UNUserNotificationCenter.current().notificationSettings().authorizationStatus
         pushDenied = status == .denied
+    }
+}
+
+/// Die Löschfrist für neue Chats als Auswahl (Picker braucht Hashable).
+enum DefaultRuleOption: Hashable {
+    case off
+    case timer(TimeInterval)
+    case afterRead
+
+    init(_ rule: ChatRuleChoice) {
+        switch rule {
+        case .off: self = .off
+        case .timer(let t): self = .timer(t)
+        case .afterRead: self = .afterRead
+        }
+    }
+
+    var rule: ChatRuleChoice {
+        switch self {
+        case .off: .off
+        case .timer(let t): .timer(t)
+        case .afterRead: .afterRead
+        }
     }
 }
 

@@ -162,7 +162,8 @@ extension MessengerEngine {
             guard !c.isBlocked, !c.isGone, c.requestState == .established || c.requestState == .outgoing,
                   let key = try? NotificationTag.pairKey(identity: identity, peerIdentityPublicKey: c.publicKey, ownId: userId, peerId: c.id)
             else { return nil }
-            return .init(key: key, name: chat(forContact: c.id)?.name ?? c.displayName, contactId: c.id)
+            let chat = chat(forContact: c.id)
+            return .init(key: key, name: chat?.name ?? c.displayName, contactId: c.id, mutedUntil: chat?.mutedUntil)
         }
         return NotificationIndex(entries: entries, requestKey: NotificationTag.requestKey(recipientIdentityPublicKey: identity.publicKey), showNames: showNames)
     }

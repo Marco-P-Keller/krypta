@@ -21,9 +21,10 @@ final class NotificationService: UNNotificationServiceExtension {
             return
         }
         let tag = request.content.userInfo["nt"] as? String
+        let index = NotificationIndexStore.load()
         content.title = ""
         content.subtitle = ""
-        switch NotificationIndexStore.load()?.resolve(tag) ?? .unknown {
+        switch index?.resolve(tag) ?? .unknown {
         case .contact(let name?, let id):
             content.title = name
             content.body = String(localized: "Neue Nachricht")
@@ -41,7 +42,13 @@ final class NotificationService: UNNotificationServiceExtension {
         case .unknown:
             content.body = String(localized: "Du hast eine neue Nachricht erhalten")
         }
-        content.badge = NSNumber(value: NotificationIndexStore.nextBadge())
+        if index?.isMuted(tag) == true {
+            // Stumm: still in der Mitteilungszentrale, ohne Ton, ohne Zahl.
+            content.sound = nil
+            content.interruptionLevel = .passive
+        } else {
+            content.badge = NSNumber(value: NotificationIndexStore.nextBadge())
+        }
         handler = nil
         contentHandler(content)
     }

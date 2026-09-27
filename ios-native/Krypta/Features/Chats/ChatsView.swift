@@ -31,24 +31,36 @@ struct ChatsView: View {
                     }
                 }
 
+                if !engine.archivedChats.isEmpty && search.isEmpty {
+                    Section {
+                        NavigationLink(value: Route.archive) {
+                            Label {
+                                Text("Archiviert")
+                            } icon: {
+                                Image(systemName: "archivebox")
+                            }
+                            .badge(engine.archivedChats.count)
+                        }
+                    }
+                }
+
                 Section {
                     ForEach(chats) { chat in
-                        NavigationLink(value: Route.chat(chat.id)) {
-                            ChatRow(chat: chat)
-                        }
-                        .swipeActions(edge: .trailing) {
-                            Button(role: .destructive) { chatToDelete = chat } label: {
-                                Label("Löschen", systemImage: "trash")
+                        ChatListRow(chat: chat, path: $path, chatToDelete: $chatToDelete)
+                    }
+                } header: {
+                    if !search.isEmpty && !chats.isEmpty { Text("Chats") }
+                }
+
+                if !hits.isEmpty {
+                    Section {
+                        ForEach(hits) { hit in
+                            NavigationLink(value: Route.message(chatId: hit.chatId, messageId: hit.messageId)) {
+                                SearchHitRow(hit: hit, query: search)
                             }
                         }
-                        .contextMenu {
-                            Button { path.append(Route.contact(chat.recipientId)) } label: {
-                                Label("Kontaktinfo", systemImage: "info.circle")
-                            }
-                            Button(role: .destructive) { chatToDelete = chat } label: {
-                                Label("Chat löschen", systemImage: "trash")
-                            }
-                        }
+                    } header: {
+                        Text("Nachrichten")
                     }
                 }
             }
@@ -63,7 +75,7 @@ struct ChatsView: View {
                         Button("Neuer Chat") { showNewChat = true }
                             .buttonStyle(.borderedProminent)
                     }
-                } else if !search.isEmpty && chats.isEmpty {
+                } else if !search.isEmpty && chats.isEmpty && hits.isEmpty {
                     ContentUnavailableView.search(text: search)
                 }
             }
@@ -107,8 +119,10 @@ struct ChatsView: View {
             .navigationDestination(for: Route.self) { route in
                 switch route {
                 case .chat(let id): ConversationView(chatId: id)
+                case .message(let chatId, let messageId): ConversationView(chatId: chatId, highlight: messageId)
                 case .contact(let id): ContactDetailView(contactId: id)
                 case .requests: RequestsView()
+                case .archive: ArchivedChatsView(path: $path, chatToDelete: $chatToDelete)
                 }
             }
         }
@@ -160,16 +174,212 @@ struct ChatsView: View {
     }
 
     private var chats: [Chat] {
-        let all = engine.sortedChats
-        guard !search.isEmpty else { return all }
-        return all.filter { $0.name.localizedCaseInsensitiveContains(search) }
+        guard !search.isEmpty else { return engine.sortedChats }
+        return (engine.sortedChats + engine.archivedChats).filter { $0.name.localizedCaseInsensitiveContains(search) }
+    }
+
+    private var hits: [SearchHit] {
+        search.isEmpty ? [] : engine.searchMessages(search)
     }
 }
 
 enum Route: Hashable {
     case chat(String)
+    /// Ein Chat, zur Nachricht gescrollt (aus der Suche).
+    case message(chatId: String, messageId: String)
     case contact(String)
     case requests
+    case archive
+}
+
+/// Ein Chat in der Liste mit allem, was man darauf tun kann.
+private struct ChatListRow: View {
+    @Environment(MessengerEngine.self) private var engine
+    let chat: Chat
+    @Binding var path: NavigationPath
+    @Binding var chatToDelete: Chat?
+    @State private var pinLimit = false
+
+    var body: some View {
+        NavigationLink(value: Route.chat(chat.id)) {
+            ChatRow(chat: chat)
+        }
+        .swipeActions(edge: .trailing) {
+            Button(role: .destructive) { chatToDelete = chat } label: {
+                Label("Löschen", systemImage: "trash")
+            }
+            Button { archive(!chat.isArchived) } label: {
+                if chat.isArchived {
+                    Label("Aus dem Archiv", systemImage: "tray.and.arrow.up")
+                } else {
+                    Label("Archivieren", systemImage: "archivebox")
+                }
+            }
+            .tint(.indigo)
+        }
+        .swipeActions(edge: .leading) {
+            Button { pin(!chat.isPinned) } label: {
+                if chat.isPinned {
+                    Label("Lösen", systemImage: "pin.slash")
+                } else {
+                    Label("Anpinnen", systemImage: "pin")
+                }
+            }
+            .tint(.orange)
+            Button { mute(chat.isMuted() ? nil : .distantFuture) } label: {
+                if chat.isMuted() {
+                    Label("Ton an", systemImage: "bell")
+                } else {
+                    Label("Stumm", systemImage: "bell.slash")
+                }
+            }
+            .tint(.purple)
+        }
+        .contextMenu {
+            Button { path.append(Route.contact(chat.recipientId)) } label: {
+                Label("Kontaktinfo", systemImage: "info.circle")
+            }
+            Button { pin(!chat.isPinned) } label: {
+                if chat.isPinned {
+                    Label("Lösen", systemImage: "pin.slash")
+                } else {
+                    Label("Anpinnen", systemImage: "pin")
+                }
+            }
+            MuteMenu(chatId: chat.id)
+            Button { archive(!chat.isArchived) } label: {
+                if chat.isArchived {
+                    Label("Aus dem Archiv", systemImage: "tray.and.arrow.up")
+                } else {
+                    Label("Archivieren", systemImage: "archivebox")
+                }
+            }
+            Button(role: .destructive) { chatToDelete = chat } label: {
+                Label("Chat löschen", systemImage: "trash")
+            }
+        }
+        .alert("Höchstens \(MessengerEngine.maxPinned) Chats lassen sich anpinnen.", isPresented: $pinLimit) {
+            Button("OK", role: .cancel) {}
+        }
+    }
+
+    private func pin(_ on: Bool) {
+        Haptics.selection()
+        if !engine.setPinned(chat.id, on) { pinLimit = true }
+    }
+
+    private func mute(_ until: Date?) {
+        Haptics.selection()
+        engine.setMuted(chat.id, until: until)
+    }
+
+    private func archive(_ on: Bool) {
+        Haptics.selection()
+        engine.setArchived(chat.id, on)
+    }
+}
+
+/// Stummschalten für eine Weile oder bis auf Weiteres.
+struct MuteMenu: View {
+    @Environment(MessengerEngine.self) private var engine
+    let chatId: String
+
+    var body: some View {
+        if engine.chat(chatId)?.isMuted() == true {
+            Button {
+                Haptics.selection()
+                engine.setMuted(chatId, until: nil)
+            } label: {
+                Label("Ton an", systemImage: "bell")
+            }
+        } else {
+            Menu {
+                Button("1 Stunde") { mute(3600) }
+                Button("8 Stunden") { mute(8 * 3600) }
+                Button("1 Woche") { mute(7 * 86_400) }
+                Button("Bis ich es wieder einschalte") { mute(nil) }
+            } label: {
+                Label("Stumm", systemImage: "bell.slash")
+            }
+        }
+    }
+
+    private func mute(_ seconds: TimeInterval?) {
+        Haptics.selection()
+        engine.setMuted(chatId, until: seconds.map { Date().addingTimeInterval($0) } ?? .distantFuture)
+    }
+}
+
+/// Das Archiv: Chats, die aus der Liste genommen sind.
+private struct ArchivedChatsView: View {
+    @Environment(MessengerEngine.self) private var engine
+    @Binding var path: NavigationPath
+    @Binding var chatToDelete: Chat?
+
+    var body: some View {
+        List {
+            Section {
+                ForEach(engine.archivedChats) { chat in
+                    ChatListRow(chat: chat, path: $path, chatToDelete: $chatToDelete)
+                }
+            } footer: {
+                Text("Archivierte Chats kommen mit der nächsten Nachricht zurück in die Liste, außer sie sind stumm.")
+            }
+        }
+        .listStyle(.plain)
+        .overlay {
+            if engine.archivedChats.isEmpty {
+                ContentUnavailableView("Keine archivierten Chats", systemImage: "archivebox")
+            }
+        }
+        .navigationTitle("Archiviert")
+    }
+}
+
+/// Ein Treffer der Suche: Chat, Ausschnitt, Zeit.
+private struct SearchHitRow: View {
+    @Environment(MessengerEngine.self) private var engine
+    let hit: SearchHit
+    let query: String
+
+    var body: some View {
+        let chat = engine.chat(hit.chatId)
+        HStack(spacing: 10) {
+            Avatar(id: chat?.recipientId ?? hit.chatId, name: chat?.name ?? "", size: 36)
+            VStack(alignment: .leading, spacing: 2) {
+                HStack {
+                    Text(chat?.name ?? "")
+                        .font(.subheadline.weight(.semibold))
+                        .lineLimit(1)
+                    Spacer(minLength: 4)
+                    Text(Format.listTime(hit.timestamp))
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+                Text(snippet)
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(2)
+            }
+        }
+        .accessibilityElement(children: .combine)
+    }
+
+    /// Der Treffer hervorgehoben, mit etwas Text davor.
+    private var snippet: AttributedString {
+        let prefix = hit.mine ? String(localized: "Du: ") : ""
+        var text = hit.text
+        if let range = text.range(of: query, options: [.caseInsensitive, .diacriticInsensitive]) {
+            let start = text.index(range.lowerBound, offsetBy: -30, limitedBy: text.startIndex) ?? text.startIndex
+            if start > text.startIndex { text = "…" + String(text[start...]) }
+        }
+        var result = AttributedString(prefix + text)
+        if let found = result.range(of: query, options: [.caseInsensitive, .diacriticInsensitive]) {
+            result[found].foregroundColor = Color.primary
+            result[found].font = Font.subheadline.weight(.semibold)
+        }
+        return result
+    }
 }
 
 /// Eine Zeile wie in Nachrichten: Punkt, Monogramm, Name, Vorschau, Zeit.
@@ -181,7 +391,7 @@ private struct ChatRow: View {
         let unread = engine.unreadCount(chat.id)
         HStack(spacing: 10) {
             Circle()
-                .fill(unread > 0 ? Color.accentColor : .clear)
+                .fill(unread > 0 ? (chat.isMuted() ? Color.secondary : Color.accentColor) : .clear)
                 .frame(width: 10, height: 10)
                 .accessibilityHidden(true)
             Avatar(id: chat.recipientId, name: chat.name, size: 48)
@@ -190,6 +400,12 @@ private struct ChatRow: View {
                     Text(chat.name)
                         .font(.body.weight(.semibold))
                         .lineLimit(1)
+                    if chat.isMuted() {
+                        Image(systemName: "bell.slash.fill")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                            .accessibilityLabel("Stumm")
+                    }
                     if engine.contact(chat.recipientId)?.isVerified == true {
                         Image(systemName: "checkmark.seal.fill")
                             .font(.caption)
@@ -197,6 +413,12 @@ private struct ChatRow: View {
                             .accessibilityLabel("Verifiziert")
                     }
                     Spacer(minLength: 4)
+                    if chat.isPinned {
+                        Image(systemName: "pin.fill")
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                            .accessibilityLabel("Angepinnt")
+                    }
                     if let time = chat.lastActivity {
                         Text(Format.listTime(time))
                             .font(.subheadline)

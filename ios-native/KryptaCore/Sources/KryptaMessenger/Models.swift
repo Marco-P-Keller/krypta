@@ -186,6 +186,12 @@ public struct Chat: Codable, Identifiable, Equatable, Sendable {
     public var timerSetAt: Date?
     public var deleteAfterRead = false
     public var ruleVersion = 0
+    /// Stumm bis zu diesem Zeitpunkt (`distantFuture`: bis zum Einschalten).
+    public var mutedUntil: Date?
+    /// Angepinnt seit; oben in der Liste, in dieser Reihenfolge.
+    public var pinnedAt: Date?
+    /// Im Archiv statt in der Liste.
+    public var archived: Bool?
 
     public init(id: String = UUID().uuidString.lowercased(), recipientId: String, name: String) {
         self.id = id
@@ -194,6 +200,27 @@ public struct Chat: Codable, Identifiable, Equatable, Sendable {
     }
 
     public var ruleIsEphemeral: Bool { timer != nil || deleteAfterRead }
+
+    public func isMuted(at now: Date = Date()) -> Bool { mutedUntil.map { $0 > now } ?? false }
+    public var isPinned: Bool { pinnedAt != nil }
+    public var isArchived: Bool { archived == true }
+}
+
+/// Eine Chat-Regel zum Auswählen: aus, Frist oder nach dem Lesen.
+public enum ChatRuleChoice: Equatable, Sendable {
+    case off
+    case timer(TimeInterval)
+    case afterRead
+}
+
+/// Ein Treffer der Suche in den Nachrichten.
+public struct SearchHit: Identifiable, Equatable, Sendable {
+    public let chatId: String
+    public let messageId: String
+    public let text: String
+    public let timestamp: Date
+    public let mine: Bool
+    public var id: String { "\(chatId)|\(messageId)" }
 }
 
 /// Wie eine einzelne Nachricht gehen soll.

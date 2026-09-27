@@ -39,6 +39,9 @@ struct EngineMeta: Codable {
     var chatPreview = true
     /// Sealed Sender: der eigene Zustellschlüssel (Engine+Sealed).
     var sealedAccessKey: Data?
+    /// Löschfrist für neue Chats: Frist in Sekunden, oder nach dem Lesen.
+    var defaultTimer: Double?
+    var defaultAfterRead: Bool?
 
     struct PendingBurn: Codable, Equatable {
         let chatId: String
@@ -168,12 +171,25 @@ public final class MessengerEngine {
     public func chat(forContact id: String) -> Chat? { chats.first { $0.recipientId == id } }
     public func messages(in chatId: String) -> [Message] { messages[chatId] ?? [] }
 
-    /// Chats, neueste oben. Offene Anfragen an mich stehen nicht hier,
-    /// sondern in `incomingRequests`.
+    /// Chats, angepinnte zuerst, sonst neueste oben. Offene Anfragen an
+    /// mich stehen nicht hier, sondern in `incomingRequests`; archivierte in
+    /// `archivedChats`.
     public var sortedChats: [Chat] {
-        chats
-            .filter { contact($0.recipientId)?.requestState != .incoming }
-            .sorted { ($0.lastActivity ?? .distantPast) > ($1.lastActivity ?? .distantPast) }
+        let visible = listedChats.filter { !$0.isArchived }
+        let pinned = visible.filter(\.isPinned).sorted { ($0.pinnedAt ?? .distantPast) < ($1.pinnedAt ?? .distantPast) }
+        return pinned + visible.filter { !$0.isPinned }.sorted(by: Self.newestFirst)
+    }
+
+    public var archivedChats: [Chat] {
+        listedChats.filter(\.isArchived).sorted(by: Self.newestFirst)
+    }
+
+    var listedChats: [Chat] {
+        chats.filter { contact($0.recipientId)?.requestState != .incoming }
+    }
+
+    static func newestFirst(_ a: Chat, _ b: Chat) -> Bool {
+        (a.lastActivity ?? .distantPast) > (b.lastActivity ?? .distantPast)
     }
 
     public var incomingRequests: [Contact] { contacts.filter { $0.requestState == .incoming } }

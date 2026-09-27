@@ -63,11 +63,15 @@ public struct NotificationIndex: Codable, Equatable, Sendable {
         /// Bleibt auf dem Gerät: damit stapelt iOS die Mitteilungen je
         /// Absender, und ein Tippen öffnet den richtigen Chat.
         public var contactId: String?
+        /// Stumm bis dahin: die Mitteilung kommt still, ohne Ton und ohne
+        /// Zahl am Symbol.
+        public var mutedUntil: Date?
 
-        public init(key: Data, name: String?, contactId: String? = nil) {
+        public init(key: Data, name: String?, contactId: String? = nil, mutedUntil: Date? = nil) {
             self.key = key
             self.name = name
             self.contactId = contactId
+            self.mutedUntil = mutedUntil
         }
     }
 
@@ -90,10 +94,21 @@ public struct NotificationIndex: Codable, Equatable, Sendable {
 
     public func resolve(_ tag: String?) -> Match {
         guard let tag, !tag.isEmpty else { return .unknown }
-        if let hit = entries.first(where: { NotificationTag.matches(tag, key: $0.key) }) {
+        if let hit = entry(for: tag) {
             return .contact(name: showNames ? hit.name : nil, id: hit.contactId)
         }
         if let requestKey, NotificationTag.matches(tag, key: requestKey) { return .request }
         return .unknown
+    }
+
+    /// Der Eintrag zu einem Anhänger, falls einer passt.
+    public func entry(for tag: String?) -> Entry? {
+        guard let tag, !tag.isEmpty else { return nil }
+        return entries.first { NotificationTag.matches(tag, key: $0.key) }
+    }
+
+    /// Ist der Absender (oder die Gruppe) dieses Anhängers gerade stumm?
+    public func isMuted(_ tag: String?, now: Date = Date()) -> Bool {
+        entry(for: tag)?.mutedUntil.map { $0 > now } ?? false
     }
 }
