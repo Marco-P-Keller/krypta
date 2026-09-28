@@ -1,7 +1,8 @@
 import Foundation
 import Observation
 
-/// Ein Rechner wie der von iOS: Punkt vor Strich, AC/C, ±, %.
+/// Ein Rechner wie der von iOS: Punkt vor Strich, Rücktaste, AC/C, ±, %,
+/// und der ganze Ausdruck steht beim Tippen in der Anzeige.
 ///
 /// Er ist Tarnung und muss deshalb *echt* rechnen — wer ihn ausprobiert,
 /// darf nichts merken.
@@ -10,33 +11,62 @@ final class CalculatorModel {
     enum Op: CaseIterable {
         case add, subtract, multiply, divide
 
-        var precedence: Int { self == .add || self == .subtract ? 1 : 2 }
-
-        func apply(_ a: Decimal, _ b: Decimal) -> Decimal? {
+        var symbol: String {
             switch self {
-            case .add: a + b
-            case .subtract: a - b
-            case .multiply: a * b
-            case .divide: b == 0 ? nil : a / b
+            case .add: "+"
+            case .subtract: "−"
+            case .multiply: "×"
+            case .divide: "÷"
             }
         }
     }
 
-    private enum Token { case number(Decimal), op(Op) }
+    /// Eine fertige Zahl im Ausdruck. `raw` ist, was getippt wurde
+    /// ("2.50"), damit die Anzeige es so zeigt und die Rücktaste es
+    /// zurückholen kann; bei Ergebnissen fehlt es.
+    private struct Number {
+        var value: Decimal
+        var raw: String?
+        var percent = false
+    }
 
+    private enum Token { case number(Number), op(Op) }
+
+    struct HistoryEntry: Identifiable {
+        let id = UUID()
+        let expression: String
+        let result: String
+        fileprivate let value: Decimal
+    }
+
+    /// Endet auf einen Operator, auf eine Prozentzahl oder ist nach "="
+    /// genau das Ergebnis. Die Zahl, die gerade getippt wird, steht in `entry`.
     private var tokens: [Token] = []
     private var entry = ""
-    private var justEvaluated = false
-    private(set) var display = "0"
+    private var showingResult = false
+    /// Die Rechnung über dem Ergebnis, klein und grau — nur nach "=".
+    private(set) var expression = ""
     private(set) var isError = false
-    /// Der Operator, der gerade gewählt ist (hell hinterlegt wie bei iOS).
-    private(set) var activeOp: Op?
+    /// Nur im Speicher: mit der Tarnung verschwindet auch der Verlauf.
+    private(set) var history: [HistoryEntry] = []
+
+    /// Die große Zeile: beim Tippen der Ausdruck, nach "=" das Ergebnis.
+    var display: String {
+        if isError { return String(localized: "Fehler") }
+        let text = tokens.map(render).joined() + (entry.isEmpty ? "" : format(entry: entry))
+        return text.isEmpty ? "0" : text
+    }
 
     /// "AC" solange nichts getippt wurde, sonst "C".
     var clearLabel: String { entry.isEmpty && !isError ? "AC" : "C" }
 
-    /// Die Ziffern in der Anzeige — damit prüft der Rechner auf die Codes.
-    var displayDigits: String { display.filter(\.isNumber) }
+    /// Die Ziffern der zuletzt getippten Zahl — damit prüft der Rechner auf
+    /// die Codes, so wie früher die Ziffern in der Anzeige.
+    var codeDigits: String {
+        if !entry.isEmpty { return entry.filter(\.isNumber) }
+        if case .number(let n)? = tokens.last { return render(n).filter(\.isNumber) }
+        return ""
+    }
 
     private static let maxDigits = 9
 
@@ -45,119 +75,219 @@ final class CalculatorModel {
     // MARK: Eingaben
 
     func digit(_ d: Int) {
-        if isError { allClear() }
-        if justEvaluated { tokens = []; justEvaluated = false }
-        activeOp = nil
-        guard entry.filter(\.isNumber).count < Self.maxDigits else { return }
-        entry = entry == "0" ? "\(d)" : entry + "\(d)"
-        if entry == "-0" { entry = "-\(d)" }
-        display = format(entry: entry)
+        startOverIfNeeded()
+        guard !endsWithPercent, entry.filter(\.isNumber).count < Self.maxDigits else { return }
+        switch entry {
+        case "0": entry = "\(d)"
+        case "-0": entry = "-\(d)"
+        default: entry += "\(d)"
+        }
     }
 
     func decimalPoint() {
-        if isError { allClear() }
-        if justEvaluated { tokens = []; justEvaluated = false }
-        activeOp = nil
-        if entry.isEmpty { entry = "0" }
-        guard !entry.contains(".") else { return }
-        entry += "."
-        display = format(entry: entry)
+        startOverIfNeeded()
+        guard !endsWithPercent, !entry.contains(".") else { return }
+        entry = (entry.isEmpty ? "0" : entry) + "."
     }
 
     func operation(_ op: Op) {
         guard !isError else { return }
-        justEvaluated = false
-        if !entry.isEmpty {
-            tokens.append(.number(Decimal(string: entry) ?? 0))
-            entry = ""
-        } else if tokens.isEmpty {
-            tokens.append(.number(currentValue))
+        continueFromResult()
+        commitEntry()
+        switch tokens.last {
+        case .op?: tokens.removeLast()
+        case nil: tokens.append(.number(Number(value: 0)))
+        case .number?: break
         }
-        if case .op? = tokens.last { tokens.removeLast() }
-        reduce(minPrecedence: op.precedence)
         tokens.append(.op(op))
-        activeOp = op
     }
 
     func equals() {
-        guard !isError else { return }
-        if !entry.isEmpty {
-            tokens.append(.number(Decimal(string: entry) ?? 0))
-            entry = ""
-        }
+        guard !isError, !showingResult else { return }
+        commitEntry()
         if case .op? = tokens.last { tokens.removeLast() }
-        reduce(minPrecedence: 0)
-        activeOp = nil
-        justEvaluated = true
+        guard !tokens.isEmpty else { return }
+        let text = tokens.map(render).joined()
+        let isCalculation = tokens.count > 1 || endsWithPercent
+        guard let result = Self.evaluate(tokens), !result.isNaN else {
+            tokens = []
+            expression = text
+            isError = true
+            return
+        }
+        tokens = [.number(Number(value: result))]
+        showingResult = true
+        if isCalculation {
+            expression = text
+            history.insert(HistoryEntry(expression: text, result: format(result), value: result), at: 0)
+        }
     }
 
     func toggleSign() {
         guard !isError else { return }
-        if entry.isEmpty {
-            let value = -currentValue
-            entry = "\(value)"
-            if justEvaluated { tokens = []; justEvaluated = false }
-        } else {
+        if showingResult, case .number(var n)? = tokens.first {
+            n.value = -n.value
+            tokens = [.number(n)]
+            expression = ""
+        } else if !entry.isEmpty {
             entry = entry.hasPrefix("-") ? String(entry.dropFirst()) : "-" + entry
+        } else if case .number(var n)? = tokens.last {
+            n.value = -n.value
+            n.raw = n.raw.map { $0.hasPrefix("-") ? String($0.dropFirst()) : "-" + $0 }
+            tokens[tokens.count - 1] = .number(n)
+        } else {
+            entry = "-0"
         }
-        display = format(entry: entry)
     }
 
+    /// Wie bei iOS: "200+10%" ist 220, sonst heißt 10% einfach 0,1.
     func percent() {
         guard !isError else { return }
-        let value = (entry.isEmpty ? currentValue : Decimal(string: entry) ?? 0) / 100
-        if justEvaluated { tokens = []; justEvaluated = false }
-        entry = "\(value)"
-        display = format(value)
+        if showingResult, case .number(var n)? = tokens.first {
+            showingResult = false
+            expression = ""
+            n.percent = true
+            tokens = [.number(n)]
+        } else if !entry.isEmpty {
+            tokens.append(.number(Number(value: Decimal(string: entry) ?? 0, raw: entry, percent: true)))
+            entry = ""
+        }
+    }
+
+    func backspace() {
+        if isError { allClear(); return }
+        guard !showingResult else { return }
+        if !entry.isEmpty {
+            entry.removeLast()
+            if entry == "-" { entry = "" }
+            return
+        }
+        switch tokens.popLast() {
+        case .op?:
+            // Die Zahl davor wird wieder zur Eingabe.
+            if case .number(let n)? = tokens.last, !n.percent {
+                tokens.removeLast()
+                entry = n.raw ?? plain(n.value)
+            }
+        case .number(let n)?:
+            entry = n.raw ?? plain(n.value)
+        case nil:
+            break
+        }
     }
 
     func clear() {
-        if entry.isEmpty && !isError {
+        if entry.isEmpty || isError {
             allClear()
         } else {
             entry = ""
-            isError = false
-            display = "0"
         }
     }
 
     func allClear() {
         tokens = []
         entry = ""
-        justEvaluated = false
+        showingResult = false
         isError = false
-        activeOp = nil
-        display = "0"
+        expression = ""
+    }
+
+    /// Holt ein Ergebnis aus dem Verlauf zurück, zum Weiterrechnen.
+    func recall(_ item: HistoryEntry) {
+        allClear()
+        tokens = [.number(Number(value: item.value))]
+        showingResult = true
+        expression = item.expression
+    }
+
+    func clearHistory() { history = [] }
+
+    // MARK: Zustand
+
+    private var endsWithPercent: Bool {
+        if case .number(let n)? = tokens.last, n.percent { return true }
+        return false
+    }
+
+    /// Eine neue Ziffer nach "=" oder einem Fehler beginnt eine neue Rechnung.
+    private func startOverIfNeeded() {
+        if isError || showingResult { allClear() }
+    }
+
+    /// Ein Operator nach "=" rechnet mit dem Ergebnis weiter.
+    private func continueFromResult() {
+        guard showingResult else { return }
+        showingResult = false
+        expression = ""
+    }
+
+    private func commitEntry() {
+        guard !entry.isEmpty else { return }
+        tokens.append(.number(Number(value: Decimal(string: entry) ?? 0, raw: entry)))
+        entry = ""
     }
 
     // MARK: Rechnen
 
-    private var currentValue: Decimal {
-        if case .number(let n)? = tokens.last { return n }
-        if tokens.count >= 2, case .number(let n) = tokens[tokens.count - 2] { return n }
-        return 0
+    private static func evaluate(_ tokens: [Token]) -> Decimal? {
+        var values: [Decimal] = []
+        var ops: [Op] = []
+        for token in tokens {
+            switch token {
+            case .op(let op):
+                ops.append(op)
+            case .number(let n):
+                var value = n.value
+                if n.percent {
+                    // a ± b% ist b Prozent von a; sonst nur geteilt durch 100.
+                    if let op = ops.last, op == .add || op == .subtract,
+                       let base = combine(values, Array(ops.dropLast())) {
+                        value = base * value / 100
+                    } else {
+                        value /= 100
+                    }
+                }
+                values.append(value)
+            }
+        }
+        return combine(values, ops)
     }
 
-    /// Fasst von hinten alle Operatoren mit mindestens dieser Stufe zusammen.
-    private func reduce(minPrecedence: Int) {
-        while tokens.count >= 3,
-              case .number(let b) = tokens[tokens.count - 1],
-              case .op(let op) = tokens[tokens.count - 2],
-              case .number(let a) = tokens[tokens.count - 3],
-              op.precedence >= minPrecedence {
-            tokens.removeLast(3)
-            guard let result = op.apply(a, b) else {
-                tokens = []
-                isError = true
-                display = String(localized: "Fehler")
-                return
+    /// Punkt vor Strich. `ops[i]` steht zwischen `values[i]` und `values[i+1]`.
+    private static func combine(_ values: [Decimal], _ ops: [Op]) -> Decimal? {
+        guard var terms = values.first.map({ [$0] }) else { return nil }
+        var signs: [Op] = []
+        for (op, value) in zip(ops, values.dropFirst()) {
+            switch op {
+            case .multiply:
+                terms.append(terms.removeLast() * value)
+            case .divide:
+                guard value != 0 else { return nil }
+                terms.append(terms.removeLast() / value)
+            case .add, .subtract:
+                terms.append(value)
+                signs.append(op)
             }
-            tokens.append(.number(result))
         }
-        display = format(currentValue)
+        var result = terms[0]
+        for (op, value) in zip(signs, terms.dropFirst()) {
+            result = op == .add ? result + value : result - value
+        }
+        return result
     }
 
     // MARK: Anzeige
+
+    private func render(_ token: Token) -> String {
+        switch token {
+        case .op(let op): op.symbol
+        case .number(let n): render(n)
+        }
+    }
+
+    private func render(_ n: Number) -> String {
+        (n.raw.map(format(entry:)) ?? format(n.value)) + (n.percent ? "%" : "")
+    }
 
     private func format(entry: String) -> String {
         let negative = entry.hasPrefix("-")
@@ -187,6 +317,17 @@ final class CalculatorModel {
             f.exponentSymbol = "e"
             f.maximumSignificantDigits = 6
         }
+        return f.string(from: value as NSDecimalNumber) ?? "0"
+    }
+
+    /// Eine Zahl so, wie man sie tippen würde ("-0.25"), zum Weiterbearbeiten.
+    private func plain(_ value: Decimal) -> String {
+        let f = NumberFormatter()
+        f.locale = Locale(identifier: "en_US_POSIX")
+        f.numberStyle = .decimal
+        f.usesGroupingSeparator = false
+        f.usesSignificantDigits = true
+        f.maximumSignificantDigits = Self.maxDigits
         return f.string(from: value as NSDecimalNumber) ?? "0"
     }
 }
