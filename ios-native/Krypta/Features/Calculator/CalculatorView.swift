@@ -9,8 +9,6 @@ struct CalculatorView: View {
     @State private var calc = CalculatorModel()
     @State private var checking = false
     @State private var showsHistory = false
-    /// Zählt Tastendrücke — jeder gibt genau ein leises Tippen.
-    @State private var presses = 0
 
     // Maße vom Rechner in iOS 26, auf einem 393 pt breiten iPhone abgemessen.
     private let margin: CGFloat = 16
@@ -41,10 +39,6 @@ struct CalculatorView: View {
             .padding(.bottom, 23)
         }
         .background(.black)
-        // Einmal für den ganzen Rechner, weich und leise wie die Tastatur.
-        // (Früher hing es an jeder Taste mit der Anzeige als Auslöser:
-        // bei jeder Änderung tippten alle 19 zugleich.)
-        .sensoryFeedback(.impact(flexibility: .soft, intensity: 0.4), trigger: presses)
         .preferredColorScheme(.dark)
         .statusBarHidden(false)
         .sheet(isPresented: $showsHistory) {
@@ -186,7 +180,6 @@ struct CalculatorView: View {
     // MARK: Aktionen
 
     private func press(_ key: Key) {
-        presses &+= 1
         switch key {
         case .backspace: calc.backspace()
         case .clear: calc.clear()
@@ -333,11 +326,17 @@ private struct CalculatorGlyph: Shape {
     }
 }
 
-/// Aufhellen beim Drücken, wie die Tasten von iOS.
+/// Aufhellen beim Drücken, wie die Tasten von iOS, und ein leichtes Tippen.
+///
+/// Das Tippen kommt beim Herunterdrücken wie bei der Tastatur, nicht erst beim
+/// Loslassen, und nur von der gedrückten Taste. (Weich mit 0,4 nach dem
+/// Loslassen war kaum zu spüren; an der Anzeige als Auslöser tippten einst
+/// alle 19 Tasten zugleich.)
 private struct CalculatorKeyStyle: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
             .brightness(configuration.isPressed ? 0.25 : 0)
             .animation(configuration.isPressed ? nil : .easeOut(duration: 0.35), value: configuration.isPressed)
+            .sensoryFeedback(.impact(weight: .light, intensity: 0.7), trigger: configuration.isPressed) { _, pressed in pressed }
     }
 }

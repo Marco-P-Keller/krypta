@@ -126,11 +126,14 @@ struct BackupView: View {
 
     private var done: some View {
         ContentUnavailableView {
-            Label("Gesichert", systemImage: "checkmark.seal.fill")
+            Label {
+                Text("Gesichert")
+            } icon: {
+                Image(systemName: "checkmark.seal.fill").foregroundStyle(.green)
+            }
         } description: {
             Text("Bewahre den Zettel gut auf. Krypta fragt nicht mehr danach; du kannst die Wörter aber jederzeit in den Wallet-Einstellungen wieder ansehen.")
         }
-        .symbolRenderingMode(.multicolor)
     }
 
     private func reveal() async {

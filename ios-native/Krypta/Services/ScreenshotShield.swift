@@ -13,17 +13,24 @@ import UIKit
 /// Fläche wirklich gefunden wurde; fehlt sie, zeigt die App den Inhalt
 /// ungeschützt und sagt das in den Einstellungen, statt einen Schutz zu
 /// behaupten. Die Meldung an die Gegenseite läuft in jedem Fall.
+///
+/// `placeholder`: „Inhalt geschützt" unter die Fläche legen, damit das
+/// Bildschirmfoto zeigt, was fehlt. Nur für Inhalt mit deckendem Hintergrund:
+/// Durch durchsichtigen (Blätter mit Glas-Hintergrund) schimmert er sonst
+/// auf dem Display durch.
 struct ScreenshotShield<Content: View>: UIViewControllerRepresentable {
     var isEnabled: Bool
+    var placeholder: Bool
     let content: Content
 
-    init(isEnabled: Bool = true, @ViewBuilder content: () -> Content) {
+    init(isEnabled: Bool = true, placeholder: Bool = true, @ViewBuilder content: () -> Content) {
         self.isEnabled = isEnabled
+        self.placeholder = placeholder
         self.content = content()
     }
 
     func makeUIViewController(context: Context) -> ShieldController<Content> {
-        ShieldController(rootView: content, isEnabled: isEnabled)
+        ShieldController(rootView: content, isEnabled: isEnabled, placeholder: placeholder)
     }
 
     func updateUIViewController(_ controller: ShieldController<Content>, context: Context) {
@@ -37,10 +44,12 @@ final class ShieldController<Content: View>: UIViewController {
     private let field = UITextField()
     private var canvas: UIView?
     private var enabled: Bool
+    private let showsPlaceholder: Bool
 
-    init(rootView: Content, isEnabled: Bool) {
+    init(rootView: Content, isEnabled: Bool, placeholder: Bool) {
         hosting = UIHostingController(rootView: rootView)
         enabled = isEnabled
+        showsPlaceholder = placeholder
         super.init(nibName: nil, bundle: nil)
     }
 
@@ -70,9 +79,11 @@ final class ShieldController<Content: View>: UIViewController {
             canvas = surface
             // Liegt unter der geschützten Fläche: auf dem Display verdeckt,
             // im Bildschirmfoto das Einzige, was bleibt.
-            let placeholder = UIHostingController(rootView: ShieldPlaceholder()).view!
-            view.addSubview(placeholder)
-            pin(placeholder, to: view)
+            if showsPlaceholder {
+                let placeholder = UIHostingController(rootView: ShieldPlaceholder()).view!
+                view.addSubview(placeholder)
+                pin(placeholder, to: view)
+            }
             surface.subviews.forEach { $0.removeFromSuperview() }
             surface.isUserInteractionEnabled = true
             surface.translatesAutoresizingMaskIntoConstraints = false

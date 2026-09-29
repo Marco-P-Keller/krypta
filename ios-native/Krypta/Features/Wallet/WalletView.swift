@@ -74,11 +74,11 @@ struct WalletView: View {
                     }
                     HStack(spacing: 12) {
                         Button { showReceive = true } label: {
-                            Label("Empfangen", systemImage: "arrow.down.circle.fill").frame(maxWidth: .infinity)
+                            ActionLabel(title: "Empfangen", symbol: "arrow.down.circle.fill")
                         }
                         .accessibilityIdentifier("wallet.receive")
                         Button { showSend = true } label: {
-                            Label("Senden", systemImage: "arrow.up.circle.fill").frame(maxWidth: .infinity)
+                            ActionLabel(title: "Senden", symbol: "arrow.up.circle.fill")
                         }
                         .disabled(wallet.balance.spendable == 0)
                         .accessibilityIdentifier("wallet.send")
@@ -98,10 +98,11 @@ struct WalletView: View {
                         HStack(alignment: .top, spacing: 12) {
                             Image(systemName: "exclamationmark.triangle.fill").foregroundStyle(.orange).font(.title3)
                             VStack(alignment: .leading, spacing: 3) {
-                                Text("Wiederherstellungswörter sichern").font(.headline).foregroundStyle(.primary)
+                                // `Color`, nicht `.primary`: in einem Knopf hieße das die Akzentfarbe.
+                                Text("Wiederherstellungswörter sichern").font(.headline).foregroundStyle(Color.primary)
                                 Text("Ohne diese zwölf Wörter ist dein Bitcoin weg, wenn das iPhone verloren geht oder Krypta alles löscht (Löschcode, Notfallknopf, fünfmal falsches Passwort).")
                                     .font(.footnote)
-                                    .foregroundStyle(.secondary)
+                                    .foregroundStyle(Color.secondary)
                             }
                         }
                     }
@@ -141,6 +142,21 @@ struct WalletView: View {
         .sheet(isPresented: $showReceive) { ShieldedSheet { ReceiveView() } }
         .sheet(isPresented: $showSend) { ShieldedSheet { SendBitcoinView(target: .address) } }
         .sheet(isPresented: $showBackup) { ShieldedSheet(always: true) { BackupView() } }
+    }
+}
+
+/// Aufschrift der beiden großen Knöpfe. Kein `Label`: in einer Liste färbt
+/// iOS dessen Symbol in der Akzentfarbe, auf dem blauen Knopf verschwände es.
+private struct ActionLabel: View {
+    let title: LocalizedStringKey
+    let symbol: String
+
+    var body: some View {
+        HStack(spacing: 6) {
+            Image(systemName: symbol).accessibilityHidden(true)
+            Text(title)
+        }
+        .frame(maxWidth: .infinity)
     }
 }
 
@@ -224,8 +240,8 @@ struct TransactionDetailView: View {
                         Haptics.confirm()
                     } label: {
                         VStack(alignment: .leading, spacing: 4) {
-                            Text("Transaktion").font(.caption).foregroundStyle(.secondary)
-                            Text(verbatim: tx.txid).font(.caption.monospaced()).foregroundStyle(.primary).multilineTextAlignment(.leading)
+                            Text("Transaktion").font(.caption).foregroundStyle(Color.secondary)
+                            Text(verbatim: tx.txid).font(.caption.monospaced()).foregroundStyle(Color.primary).multilineTextAlignment(.leading)
                             Label("Kopieren", systemImage: "doc.on.doc").font(.caption)
                         }
                     }
@@ -300,7 +316,7 @@ struct ReceiveView: View {
                     }
                     .font(.footnote)
                     Spacer()
-                    Text("Nur Bitcoin (\(BitcoinFormat.networkName(wallet.network))) an diese Adresse senden. Sobald etwas eingeht, zeigt Krypta eine neue, damit deine Zahlungen nicht miteinander verknüpft werden. Kontakte im Chat bekommen ohnehin jeder ihre eigene.")
+                    Text(receiveHint(wallet.network))
                         .font(.footnote)
                         .foregroundStyle(.secondary)
                         .multilineTextAlignment(.center)
@@ -314,6 +330,13 @@ struct ReceiveView: View {
             .toolbar { ToolbarItem(placement: .confirmationAction) { Button("Fertig") { close() } } }
             .onAppear { address = wallet?.receiveAddress() }
         }
+    }
+
+    /// Das Netz nur nennen, wenn es nicht das echte ist (sonst „Bitcoin (Bitcoin)").
+    private func receiveHint(_ network: BitcoinNetwork) -> String {
+        network.isTest
+            ? String(localized: "Nur Bitcoin (\(BitcoinFormat.networkName(network))) an diese Adresse senden. Sobald etwas eingeht, zeigt Krypta eine neue, damit deine Zahlungen nicht miteinander verknüpft werden. Kontakte im Chat bekommen ohnehin jeder ihre eigene.")
+            : String(localized: "Nur Bitcoin an diese Adresse senden. Sobald etwas eingeht, zeigt Krypta eine neue, damit deine Zahlungen nicht miteinander verknüpft werden. Kontakte im Chat bekommen ohnehin jeder ihre eigene.")
     }
 
     /// Das Blatt schließen, auch aus dem Screenshot-Schutz heraus.

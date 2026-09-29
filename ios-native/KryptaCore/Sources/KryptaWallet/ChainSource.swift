@@ -96,9 +96,15 @@ public protocol ChainSource: Sendable {
 public final class EsploraClient: ChainSource, @unchecked Sendable {
     public let baseURL: URL
     private let session: URLSession
+    private let pacer: RequestPacer?
     static let maxResponse = 4_000_000
+    /// So oft wird eine mit 429 abgewiesene Anfrage noch einmal geschickt.
+    static let rateLimitRetries = 3
 
-    public init(baseURL: URL) {
+    /// `pacer`: für öffentliche Server (`RequestPacer.publicServer`); ein
+    /// eigener Knoten braucht keinen.
+    public init(baseURL: URL, pacer: RequestPacer? = nil) {
+        self.pacer = pacer
         // Relative Pfade brauchen den Schrägstrich am Ende („…/api/").
         self.baseURL = baseURL.absoluteString.hasSuffix("/") ? baseURL : URL(string: baseURL.absoluteString + "/") ?? baseURL
         let config = URLSessionConfiguration.ephemeral
@@ -117,7 +123,32 @@ public final class EsploraClient: ChainSource, @unchecked Sendable {
         URL(string: path, relativeTo: baseURL)!.absoluteURL
     }
 
+    /// Wird die Anfrage wegen zu vieler Anfragen abgewiesen (429), kam sie
+    /// beim Server nicht an (nginx lehnt vor dem Weiterreichen ab). Also warten
+    /// und dieselbe Anfrage noch einmal schicken, auch eine Sendung.
     private func request(_ path: String, method: String = "GET", body: Data? = nil) async throws -> Data {
+        var attempt = 0
+        while true {
+            await pacer?.acquire()
+            do {
+                return try await send(path, method: method, body: body)
+            } catch RateLimited.wait(let hint) where attempt < Self.rateLimitRetries {
+                attempt += 1
+                let delay = min(15, hint ?? 2 * Double(attempt))
+                if let pacer {
+                    await pacer.pause(seconds: delay)
+                } else {
+                    try await Task.sleep(for: .seconds(delay))
+                }
+            } catch RateLimited.wait {
+                throw ChainError.rateLimited
+            }
+        }
+    }
+
+    private enum RateLimited: Error { case wait(Double?) }
+
+    private func send(_ path: String, method: String, body: Data?) async throws -> Data {
         var req = URLRequest(url: url(path))
         req.httpMethod = method
         req.httpBody = body
@@ -136,7 +167,7 @@ public final class EsploraClient: ChainSource, @unchecked Sendable {
         switch http.statusCode {
         case 200..<300: return data
         case 404: throw ChainError.notFound
-        case 429: throw ChainError.rateLimited
+        case 429: throw RateLimited.wait(http.value(forHTTPHeaderField: "Retry-After").flatMap(Double.init))
         case 400..<500: throw ChainError.rejected(String(decoding: data.prefix(300), as: UTF8.self))
         default: throw ChainError.unreachable
         }

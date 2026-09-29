@@ -169,6 +169,10 @@ struct PaymentStatus: Equatable {
 /// Grenze nicht weiter, sie wird hier ausdrücklich übergeben.
 ///
 /// `always`: unabhängig von der Einstellung (die zwölf Wörter).
+///
+/// Ohne Platzhalter: Blätter haben unter iOS 26 einen durchsichtigen
+/// Glas-Hintergrund, „Inhalt geschützt" schimmerte sonst auf dem Display
+/// durch. Im Bildschirmfoto ist das Blatt dann einfach leer.
 struct ShieldedSheet<Content: View>: View {
     @Environment(AppModel.self) private var app
     @Environment(MessengerEngine.self) private var engine
@@ -178,7 +182,7 @@ struct ShieldedSheet<Content: View>: View {
     @ViewBuilder var content: () -> Content
 
     var body: some View {
-        ScreenshotShield(isEnabled: always || app.screenshotShield) {
+        ScreenshotShield(isEnabled: always || app.screenshotShield, placeholder: false) {
             content()
                 .environment(engine)
                 .environment(app)

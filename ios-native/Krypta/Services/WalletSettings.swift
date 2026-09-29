@@ -70,6 +70,9 @@ enum WalletSettings {
         #if DEBUG
         if DemoMode.isOffline { return DemoMode.offlineChain }
         #endif
-        return EsploraClient(baseURL: server(for: network))
+        let url = server(for: network)
+        // mempool.space sperrt nach gut zwanzig schnellen Anfragen; der eigene
+        // Knoten nicht.
+        return EsploraClient(baseURL: url, pacer: url == network.defaultEsplora ? .publicServer : nil)
     }
 }

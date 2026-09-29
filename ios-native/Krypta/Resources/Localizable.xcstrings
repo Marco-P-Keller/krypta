@@ -17531,6 +17531,46 @@
         }
       }
     },
+    "Nur Bitcoin an diese Adresse senden. Sobald etwas eingeht, zeigt Krypta eine neue, damit deine Zahlungen nicht miteinander verknüpft werden. Kontakte im Chat bekommen ohnehin jeder ihre eigene.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Only send bitcoin to this address. As soon as something arrives, Krypta shows a new one so your payments aren't linked to each other. Contacts in chat each get their own anyway."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Envía solo bitcoin a esta dirección. En cuanto llegue algo, Krypta muestra una nueva para que tus pagos no queden vinculados. Los contactos del chat reciben cada uno la suya."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "N'envoie que des bitcoins à cette adresse. Dès qu'un paiement arrive, Krypta en affiche une nouvelle pour que tes paiements ne soient pas liés entre eux. Les contacts du chat ont de toute façon chacun la leur."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Invia solo bitcoin a questo indirizzo. Appena arriva qualcosa, Krypta ne mostra uno nuovo, così i tuoi pagamenti non sono collegati tra loro. I contatti in chat hanno comunque ciascuno il proprio."
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stuur alleen bitcoin naar dit adres. Zodra er iets binnenkomt, toont Krypta een nieuw adres, zodat je betalingen niet aan elkaar gekoppeld worden. Contacten in de chat krijgen sowieso elk hun eigen adres."
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Envie só bitcoin para este endereço. Assim que algo chegar, o Krypta mostra um novo para que seus pagamentos não fiquem ligados entre si. Contatos no chat recebem cada um o seu."
+          }
+        }
+      }
+    },
     "Nur du siehst diesen Namen.": {
       "extractionState": "extracted_with_value",
       "localizations": {
